@@ -41,7 +41,17 @@ const formSchema = z.object({
   message: z.string().min(10, { message: "Az üzenet legalább 10 karakter hosszú legyen." }),
 })
 
-export function Contact() {
+interface ContactProps {
+  email?: string
+  phone?: string
+  address?: string
+}
+
+export function Contact({ email, phone, address }: ContactProps) {
+  const displayEmail = email || "iroda@krausz-mester.hu"
+  const displayPhone = phone || "+36 1 234 5678"
+  const displayAddress = address || "123 Ipari Út, Mesterváros, Magyarország"
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,7 +92,7 @@ export function Contact() {
                 </div>
                 <div>
                   <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Telefonszám</h4>
-                  <p className="text-neutral-300 text-lg">+36 1 234 5678</p>
+                  <p className="text-neutral-300 text-lg">{displayPhone}</p>
                 </div>
               </div>
 
@@ -92,7 +102,7 @@ export function Contact() {
                 </div>
                 <div>
                   <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">E-mail</h4>
-                  <p className="text-neutral-300 text-lg">iroda@krausz-mester.hu</p>
+                  <p className="text-neutral-300 text-lg">{displayEmail}</p>
                 </div>
               </div>
 
@@ -102,7 +112,7 @@ export function Contact() {
                 </div>
                 <div>
                   <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Helyszín</h4>
-                  <p className="text-neutral-300 text-lg">123 Ipari Út, Mesterváros, Magyarország</p>
+                  <p className="text-neutral-300 text-lg">{displayAddress}</p>
                 </div>
               </div>
             </div>

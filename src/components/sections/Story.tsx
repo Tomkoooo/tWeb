@@ -11,7 +11,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { Shield, Hammer, Users, Lightbulb } from "lucide-react"
 
-export function Story() {
+interface StoryProps {
+  title?: string
+  content?: string
+}
+
+export function Story({ title, content }: StoryProps) {
+  const displayTitle = title || "A KRAUSZ LEGENDÁJA"
+  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkács Mester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyanolyan keményen dolgoznak, mint az emberek, akik használják őket."
+
   return (
     <section id="about" className="py-32 bg-[#0A0A0A] overflow-hidden">
       <div className="container mx-auto px-6">
@@ -23,10 +31,16 @@ export function Story() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-4xl md:text-7xl font-heading font-black mb-10 text-white uppercase tracking-tighter">
-              A KRAUSZ <span className="text-[#FF5500]">LEGENDÁJA</span>
+              {displayTitle.includes("LEGENDÁJA") ? (
+                <>
+                  A KRAUSZ <span className="text-[#FF5500]">LEGENDÁJA</span>
+                </>
+              ) : (
+                displayTitle
+              )}
             </h2>
             <p className="text-neutral-400 text-xl mb-12 leading-relaxed max-w-xl">
-              Magyarország szívében alapítva, a Krausz Barkács Mester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyanolyan keményen dolgoznak, mint az emberek, akik használják őket. 
+              {displayContent}
             </p>
 
             <Accordion type="single" collapsible className="w-full space-y-4">

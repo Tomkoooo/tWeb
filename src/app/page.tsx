@@ -12,18 +12,32 @@ export const metadata = {
   description: "Mestermunka a kezedben. Kiváló minőségű kalapácsok, csavarkulcsok és elektromos szerszámok a modern mesterembernek.",
 }
 
-export default function LandingPage() {
+import { ShopContentService } from "@/services/shop-content"
+
+export default async function LandingPage() {
+  const content = await ShopContentService.getAll()
+
   return (
     <div className="flex flex-col min-h-screen bg-background-dark selection:bg-accent selection:text-white overflow-x-hidden">
       <Navbar />
       
       <main className="overflow-x-hidden">
-        <Hero />
-        <Story />
+        <Hero 
+          title={content.hero_title} 
+          description={content.hero_description} 
+        />
+        <Story 
+          title={content.story_title} 
+          content={content.story_content} 
+        />
         <Shop />
         <Features />
         <Reviews />
-        <Contact />
+        <Contact 
+          email={content.contact_email}
+          phone={content.contact_phone}
+          address={content.contact_address}
+        />
       </main>
 
       <Footer />
