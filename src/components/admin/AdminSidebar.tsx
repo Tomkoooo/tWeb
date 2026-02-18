@@ -11,7 +11,8 @@ import {
   Users, 
   MessageSquare, 
   FileEdit,
-  LogOut
+  LogOut,
+  Trees
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -20,9 +21,10 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: BarChart3, label: "Statisztikák", href: "/admin/stats" },
   { icon: FileEdit, label: "Tartalomkezelés", href: "/admin/cms" },
+  { icon: Package, label: "Kategóriák", href: "/admin/categories" },
+  { icon: ShoppingCart, label: "Termékek", href: "/admin/products" },
   { icon: Settings, label: "Bolt adatok", href: "/admin/info" },
-  { icon: Package, label: "Termékek", href: "/admin/products" },
-  { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
+  { icon: Users, label: "Vásárlók", href: "/admin/users" },
   { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews" },
 ]
 
