@@ -3,12 +3,13 @@
 import { CategoryService } from "@/services/category";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { slugify } from "@/lib/utils";
 
 export async function createCategory(formData: FormData) {
   const name = formData.get("name") as string;
   const parent = formData.get("parent") as string || null;
   const image = formData.get("image") as string || "";
-  const slug = name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+  const slug = slugify(name);
 
   const seo = {
     title: formData.get("seo_title") as string || name,
@@ -45,6 +46,7 @@ export async function updateCategory(id: string, formData: FormData) {
   try {
     await CategoryService.update(id, {
       name,
+      slug: slugify(name),
       parent: parent as any,
       image,
       seo

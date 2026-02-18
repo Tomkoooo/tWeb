@@ -3,6 +3,7 @@
 import { ProductService } from "@/services/product";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { slugify } from "@/lib/utils";
 
 export async function createProduct(formData: FormData) {
   const name = formData.get("name") as string;
@@ -12,7 +13,7 @@ export async function createProduct(formData: FormData) {
   const netPrice = parseFloat(formData.get("netPrice") as string) || 0;
   const discount = parseFloat(formData.get("discount") as string) || 0;
   const category = formData.get("category") as string;
-  const slug = name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+  const slug = slugify(name);
   
   const isActive = formData.get("isActive") === "true";
   const isVisible = formData.get("isVisible") === "true";
@@ -69,6 +70,7 @@ export async function updateProduct(id: string, formData: FormData) {
       images,
       stock,
       netPrice,
+      slug: slugify(name),
       discount,
       category: category as any,
       seo,

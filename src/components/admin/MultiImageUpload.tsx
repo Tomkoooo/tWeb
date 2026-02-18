@@ -1,18 +1,20 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Upload, X, Loader2, GripVertical, Star, StarOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ImageCropper } from "./ImageCropper"
 
 interface MultiImageUploadProps {
   onUpload: (filenames: string[]) => void
   currentImages?: string[]
+  aspect?: number
 }
 
-export function MultiImageUpload({ onUpload, currentImages = [] }: MultiImageUploadProps) {
+export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: MultiImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [images, setImages] = useState<string[]>(currentImages)
+  const [cropQueue, setCropQueue] = useState<string[]>([])
+  const [isCropping, setIsCropping] = useState(false)
 
   useEffect(() => {
     onUpload(images)
@@ -22,31 +24,57 @@ export function MultiImageUpload({ onUpload, currentImages = [] }: MultiImageUpl
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    setUploading(true)
+    const newQueue: string[] = []
     
-    const newFilenames: string[] = []
-
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      const formData = new FormData()
-      formData.append("file", file)
-
-      try {
-        const res = await fetch("/api/media", {
-          method: "POST",
-          body: formData,
-        })
-        const data = await res.json()
-        if (data.filename) {
-          newFilenames.push(data.filename)
-        }
-      } catch (error) {
-        console.error("Upload failed for file:", file.name, error)
-      }
+      const reader = new FileReader()
+      const promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string)
+      })
+      reader.readAsDataURL(file)
+      newQueue.push(await promise)
     }
 
-    setImages((prev) => [...prev, ...newFilenames])
-    setUploading(false)
+    setCropQueue(prev => [...prev, ...newQueue])
+    setIsCropping(true)
+    e.target.value = "" // Reset input
+  }
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setUploading(true)
+
+    const formData = new FormData()
+    formData.append("file", croppedBlob, "image.jpg")
+
+    try {
+      const res = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.filename) {
+        setImages((prev) => [...prev, data.filename])
+      }
+    } catch (error) {
+      console.error("Upload failed:", error)
+    } finally {
+      // Move to next in queue
+      setCropQueue(prev => {
+        const next = prev.slice(1)
+        if (next.length === 0) setIsCropping(false)
+        return next
+      })
+      setUploading(false)
+    }
+  }
+
+  const handleCancelCrop = () => {
+    setCropQueue(prev => {
+      const next = prev.slice(1)
+      if (next.length === 0) setIsCropping(false)
+      return next
+    })
   }
 
   const removeImage = (index: number) => {
@@ -144,6 +172,15 @@ export function MultiImageUpload({ onUpload, currentImages = [] }: MultiImageUpl
         <p className="text-[10px] text-neutral-500 italic">
           Az első kép lesz a termék fő képe. Használja a csillag ikont a fő kép kiválasztásához, vagy a nyilakat a sorrend módosításához.
         </p>
+      )}
+
+      {isCropping && cropQueue.length > 0 && (
+        <ImageCropper
+          image={cropQueue[0]}
+          aspect={aspect}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCancelCrop}
+        />
       )}
     </div>
   )

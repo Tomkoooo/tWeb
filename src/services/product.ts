@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import Product, { IProduct } from "@/models/Product";
 import { revalidatePath } from "next/cache";
 import { MediaService } from "./media";
+import Review from "@/models/Review"; // Ensure Review is registered
 
 export interface ProductFilters {
   search?: string;
@@ -52,6 +53,26 @@ export class ProductService {
   static async getById(id: string) {
     await dbConnect();
     return await Product.findById(id).populate("category").lean();
+  }
+
+  static async getBySlug(slug: string) {
+    await dbConnect();
+    const product = await Product.findOne({ slug, $or: [{ isActive: true }, { isVisible: true }] })
+      .populate("category")
+      .lean();
+    
+    if (!product) return null;
+
+    // Fetch reviews separately
+    const reviews = await Review.find({ product: product._id })
+      .populate("user", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return {
+      ...product,
+      reviews
+    };
   }
 
   static async create(data: Partial<IProduct>) {

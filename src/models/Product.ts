@@ -15,7 +15,7 @@ export interface IProduct extends Document {
   stock: number;
   netPrice: number;
   discount: number;
-  category: mongoose.Types.ObjectId;
+  category: mongoose.Types.ObjectId | any;
   seo: {
     title?: string;
     description?: string;

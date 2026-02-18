@@ -20,9 +20,19 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { categories, products } from "@/lib/mock-data"
+import Link from "next/link"
+import { Skeleton } from "@/components/ui/skeleton"
+import { categories as mockCategories, products as mockProducts } from "@/lib/mock-data"
 
-export function Shop() {
+interface ShopProps {
+  categories?: any[]
+  products?: any[]
+}
+
+export function Shop({ 
+  categories = mockCategories, 
+  products = mockProducts 
+}: ShopProps) {
   return (
     <section id="shop" className="py-32 bg-black px-4 overflow-hidden">
       <div className="container mx-auto">
@@ -76,9 +86,11 @@ export function Shop() {
                 <p className="text-neutral-300 text-sm mb-6 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 line-clamp-2">
                   {category.description}
                 </p>
-                <Button size="sm" className="bg-[#FF5500] hover:bg-[#FF7722] text-white opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 btn-krausz px-6 h-10 font-black">
-                  FELFEDEZÉS <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
+                <Link href={`/categories/${category.slug}`}>
+                  <Button size="sm" className="bg-[#FF5500] hover:bg-[#FF7722] text-white opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 btn-krausz px-6 h-10 font-black">
+                    FELFEDEZÉS <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           ))}
@@ -102,40 +114,37 @@ export function Shop() {
               {products.map((product) => (
                 <CarouselItem key={product.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <div className="glass-card rounded-none overflow-hidden group border-white/5 h-full">
-                    <div className="relative h-[320px] bg-neutral-900">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100"
-                      />
-                      <Badge className="absolute top-6 left-6 bg-[#FF5500] text-white border-none rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
-                        {product.category}
-                      </Badge>
-                      <div className="absolute bottom-6 right-6 flex gap-1.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "w-4 h-4",
-                              i < Math.floor(product.rating) ? "fill-[#FFD700] text-[#FFD700]" : "text-white/10"
-                            )}
-                          />
-                        ))}
+                      <div className="relative h-[320px] bg-neutral-900 overflow-hidden">
+                        <ProductImage src={product.image} name={product.name} />
+                        <Badge className="absolute top-6 left-6 bg-[#FF5500] text-white border-none rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
+                          {product.category}
+                        </Badge>
+                        <div className="absolute bottom-6 right-6 flex gap-1.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={cn(
+                                "w-4 h-4",
+                                i < Math.floor(product.rating) ? "fill-[#FFD700] text-[#FFD700]" : "text-white/10"
+                              )}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-8">
-                      <h4 className="text-white text-xl font-heading font-black mb-4 tracking-tighter group-hover:text-[#FF5500] transition-colors line-clamp-1">
-                        {product.name}
-                      </h4>
-                      <div className="text-3xl font-black text-white mb-8">
-                        {product.price.toLocaleString("hu-HU")} <span className="text-sm font-black text-[#FF5500]">Ft</span>
+                      <div className="p-8">
+                        <Link href={`/products/${product.slug}`}>
+                          <h4 className="text-white text-xl font-heading font-black mb-4 tracking-tighter group-hover:text-[#FF5500] transition-colors line-clamp-1">
+                            {product.name}
+                          </h4>
+                        </Link>
+                        <div className="text-3xl font-black text-white mb-8">
+                          {product.price.toLocaleString("hu-HU")} <span className="text-sm font-black text-[#FF5500]">Ft</span>
+                        </div>
+                        <Button className="w-full bg-transparent border-2 border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500] font-black h-14 btn-krausz transition-all flex gap-3">
+                          <ShoppingCart className="w-5 h-5 text-[#FF5500] group-hover:text-white" />
+                          KOSÁRBA TESZEM
+                        </Button>
                       </div>
-                      <Button className="w-full bg-transparent border-2 border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500] font-black h-14 btn-krausz transition-all flex gap-3">
-                        <ShoppingCart className="w-5 h-5 text-[#FF5500] group-hover:text-white" />
-                        KOSÁRBA TESZEM
-                      </Button>
-                    </div>
                   </div>
                 </CarouselItem>
               ))}
@@ -148,5 +157,25 @@ export function Shop() {
         </div>
       </div>
     </section>
+  )
+}
+
+function ProductImage({ src, name }: { src: string; name: string }) {
+  const [isLoaded, setIsLoaded] = React.useState(false)
+
+  return (
+    <>
+      {!isLoaded && <Skeleton className="absolute inset-0 z-10" />}
+      <Image
+        src={src}
+        alt={name}
+        fill
+        onLoad={() => setIsLoaded(true)}
+        className={cn(
+          "object-cover transition-all duration-700 group-hover:scale-105",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+      />
+    </>
   )
 }

@@ -1,5 +1,5 @@
 import { ProductService } from "@/services/product";
-import { Plus, Package, Edit2, Trash2, Search as SearchIcon, AlertCircle } from "lucide-react";
+import { Plus, Package, Edit2, Trash2, Search as SearchIcon, AlertCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,12 +154,17 @@ export default async function AdminProducts({
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 text-right">
+                      <Link href={`/products/${product.slug}`} target="_blank">
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-400 hover:text-white" title="Megtekintés a boltban">
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </Link>
                       <Link href={`/admin/products/${product._id}`}>
-                        <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-400 hover:text-white">
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-400 hover:text-white" title="Szerkesztés">
                           <Edit2 className="w-4 h-4" />
                         </Button>
                       </Link>
-                      <Button variant="ghost" size="icon" className="hover:bg-red-500/10 text-neutral-400 hover:text-red-500">
+                      <Button variant="ghost" size="icon" className="hover:bg-red-500/10 text-neutral-400 hover:text-red-500" title="Törlés">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
