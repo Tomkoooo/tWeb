@@ -1,0 +1,121 @@
+"use client"
+
+import * as React from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { motion } from "framer-motion"
+import { ShoppingCart, Search, Menu } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Badge } from "@/components/ui/badge"
+
+const navLinks = [
+  { name: "Kezdőlap", href: "#home" },
+  { name: "Rólunk", href: "#about" },
+  { name: "Bolt", href: "#shop" },
+  { name: "Vélemények", href: "#reviews" },
+  { name: "Kapcsolat", href: "#contact" },
+]
+
+export function Navbar() {
+  const [isScrolled, setIsScrolled] = React.useState(false)
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  return (
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+        isScrolled
+          ? "bg-black/90 backdrop-blur-xl border-b border-white/5 py-3"
+          : "bg-transparent py-6"
+      )}
+    >
+      <div className="container mx-auto px-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-4 group">
+          <div className="relative w-12 h-12">
+            <Image
+              src="/logo.jpg"
+              alt="Krausz Logó"
+              fill
+              className="object-contain"
+            />
+          </div>
+          <span className="text-xl font-heading font-black text-white tracking-[0.2em] group-hover:text-[#FF5500] transition-colors hidden sm:block uppercase">
+            KRAUSZ
+          </span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-10">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className="text-xs font-black text-neutral-400 hover:text-white transition-colors relative group uppercase tracking-[0.2em]"
+            >
+              {link.name}
+              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-[#FF5500] transition-all duration-300 group-hover:w-full" />
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-6">
+          <div className="hidden lg:flex items-center relative">
+            <Search className="absolute left-4 w-4 h-4 text-neutral-600" />
+            <Input
+              placeholder="SZERSZÁM KERESÉSE..."
+              className="pl-12 bg-white/5 border-white/5 focus-visible:ring-[#FF5500] w-64 h-12 rounded-none text-xs font-bold tracking-widest text-white placeholder:text-neutral-700"
+            />
+          </div>
+
+          <Button variant="ghost" size="icon" className="relative group p-0 w-10 h-10 hover:bg-transparent">
+            <ShoppingCart className="w-6 h-6 text-white group-hover:text-[#FF5500] transition-colors" />
+            <Badge className="absolute -top-1 -right-1 bg-[#FF5500] text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
+              0
+            </Badge>
+          </Button>
+
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden p-0 w-10 h-10">
+                <Menu className="w-8 h-8 text-white" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-black border-white/10 w-full sm:max-w-md">
+              <div className="flex flex-col gap-10 mt-20 px-6">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-3xl font-heading font-black text-white hover:text-[#FF5500] transition-colors uppercase tracking-widest"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                <div className="flex items-center relative mt-10">
+                  <Search className="absolute left-4 w-5 h-5 text-neutral-600" />
+                  <Input
+                    placeholder="KERESÉS..."
+                    className="pl-14 bg-white/5 border-white/5 focus-visible:ring-[#FF5500] w-full h-16 rounded-none text-lg font-bold text-white uppercase tracking-widest"
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </motion.header>
+  )
+}
