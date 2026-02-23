@@ -14,11 +14,39 @@ import { Shield, Hammer, Users, Lightbulb } from "lucide-react"
 interface StoryProps {
   title?: string
   content?: string
+  accordions?: string // JSON string
 }
 
-export function Story({ title, content }: StoryProps) {
+export function Story({ title, content, accordions }: StoryProps) {
   const displayTitle = title || "A KRAUSZ LEGENDÁJA"
-  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkács Mester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyanolyan keményen dolgoznak, mint az emberek, akik használják őket."
+  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkács Mester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyalonnan keményen dolgoznak, mint az emberek, akik használják őket."
+
+  const parsedAccordions = React.useMemo(() => {
+    if (!accordions) return null
+    try {
+      const parsed = JSON.parse(accordions)
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
+    } catch (e) {
+      return null
+    }
+  }, [accordions])
+
+  const defaultAccordions = [
+    {
+      title: "KÜLDETÉSÜNK: ERŐ ÉS PRECIZITÁS",
+      content: "Nem csak szerszámokat adunk el; eszközöket biztosítunk az építéshez és az alkotáshoz. Minden darabot úgy tesztelünk, hogy kibírja a legextrémebb ipari igénybevételt is."
+    },
+    {
+      title: "KRAUSZ MINŐSÉGI ÍGÉRET",
+      content: "Szerszámaink magas széntartalmú acélból készülnek, ergonomikus markolattal. Ha Krausz szerszámot fogsz a kezedben, azonnal érzed a különbséget a tömegtermék és a mestermunka között."
+    },
+    {
+      title: "INNOVATÍV FEJLESZTÉSEK",
+      content: "Folyamatosan keressük az új technológiákat, legyen szó rezgéscsillapításról vagy intelligens akkumulátor kezelésről, hogy munkád hatékonyabb legyen."
+    }
+  ]
+
+  const displayAccordions = parsedAccordions || defaultAccordions
 
   return (
     <section id="about" className="py-32 bg-[#0A0A0A] overflow-hidden">
@@ -44,30 +72,16 @@ export function Story({ title, content }: StoryProps) {
             </p>
 
             <Accordion type="single" collapsible className="w-full space-y-4">
-              <AccordionItem value="item-1" className="border-white/5 bg-white/5 px-6 rounded-none">
-                <AccordionTrigger className="text-white hover:text-[#FF5500] font-heading font-black uppercase tracking-widest text-left no-underline py-6">
-                  KÜLDETÉSÜNK: ERŐ ÉS PRECIZITÁS
-                </AccordionTrigger>
-                <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6">
-                  Nem csak szerszámokat adunk el; eszközöket biztosítunk az építéshez és az alkotáshoz. Minden darabot úgy tesztelünk, hogy kibírja a legextrémebb ipari igénybevételt is.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-2" className="border-white/5 bg-white/5 px-6 rounded-none">
-                <AccordionTrigger className="text-white hover:text-[#FF5500] font-heading font-black uppercase tracking-widest text-left no-underline py-6">
-                  KRAUSZ MINŐSÉGI ÍGÉRET
-                </AccordionTrigger>
-                <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6">
-                  Szerszámaink magas széntartalmú acélból készülnek, ergonomikus markolattal. Ha Krausz szerszámot fogsz a kezedben, azonnal érzed a különbséget a tömegtermék és a mestermunka között.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-3" className="border-white/5 bg-white/5 px-6 rounded-none">
-                <AccordionTrigger className="text-white hover:text-[#FF5500] font-heading font-black uppercase tracking-widest text-left no-underline py-6">
-                  INNOVATÍV FEJLESZTÉSEK
-                </AccordionTrigger>
-                <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6">
-                  Folyamatosan keressük az új technológiákat, legyen szó rezgéscsillapításról vagy intelligens akkumulátor kezelésről, hogy munkád hatékonyabb legyen.
-                </AccordionContent>
-              </AccordionItem>
+              {displayAccordions.map((item: any, index: number) => (
+                <AccordionItem key={index} value={`item-${index}`} className="border-white/5 bg-white/5 px-6 rounded-none">
+                  <AccordionTrigger className="text-white hover:text-[#FF5500] font-heading font-black uppercase tracking-widest text-left no-underline py-6">
+                    {item.title}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6 whitespace-pre-wrap">
+                    {item.content}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
             </Accordion>
           </motion.div>
 

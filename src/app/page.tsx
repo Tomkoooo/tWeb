@@ -53,6 +53,7 @@ export default async function LandingPage() {
         <Story 
           title={content.story_title} 
           content={content.story_content} 
+          accordions={content.story_accordions}
         />
         <Shop categories={shopCategories} products={products} />
         <Features />

@@ -5,6 +5,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { ArrowRight, Star, Shield, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface HeroProps {
   title?: string
@@ -111,13 +112,15 @@ export function Hero({ title, description }: HeroProps) {
               transition={{ delay: 0.6, duration: 0.8 }}
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
-              <Button 
-                size="lg" 
-                className="btn-krausz bg-[#FF5500] hover:bg-white hover:text-black text-white h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
-              >
-                IRÁNY A BOLT
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Link href="/shop" className="w-full sm:w-auto">
+                <Button 
+                  size="lg" 
+                  className="btn-krausz w-full sm:w-auto bg-[#FF5500] hover:bg-white hover:text-black text-white h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
+                >
+                  IRÁNY A BOLT
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
               <Button 
                 variant="outline" 
                 size="lg" 

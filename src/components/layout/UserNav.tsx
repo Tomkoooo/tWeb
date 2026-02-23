@@ -66,7 +66,7 @@ export function UserNav() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/orders" className="cursor-pointer flex items-center gap-2 hover:bg-white/5 focus:bg-white/5">
+          <Link href="/profile/orders" className="cursor-pointer flex items-center gap-2 hover:bg-white/5 focus:bg-white/5">
             <Package className="mr-2 h-4 w-4 text-[#FF5500]" />
             <span className="text-xs font-bold uppercase tracking-widest">Rendelések</span>
           </Link>

@@ -2,19 +2,38 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Tag } from "lucide-react";
+import { Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Tag, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCartStore } from "@/store/useCartStore";
 
 export function ProductDetail({ product }: { product: any }) {
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
   const [activeImage, setActiveImage] = useState(product.images?.[0] || "");
+  const [isAdded, setIsAdded] = useState(false);
+  const addItem = useCartStore((state: any) => state.addItem)
 
   const discountAmount = product.discount || 0;
   const price = product.netPrice * 1.27;
-  const finalPrice = price - discountAmount;
+  const finalPrice = price * (1 - discountAmount / 100);
+
+  const handleAddToCart = () => {
+    addItem({
+      id: product._id.toString(),
+      name: product.name,
+      slug: product.slug,
+      price: finalPrice,
+      image: product.images?.[0] ? `/api/media/${product.images[0]}` : "/placeholder-product.jpg",
+      quantity: 1,
+      stock: product.stock,
+      netPrice: product.netPrice,
+      discount: product.discount
+    })
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+  }
 
   return (
     <div className="container mx-auto px-4 py-32 animate-in fade-in duration-1000">
@@ -62,7 +81,7 @@ export function ProductDetail({ product }: { product: any }) {
             </div>
           )}
         </div>
-
+ 
         {/* Right: Product Info */}
         <div className="flex flex-col">
           <div className="mb-8">
@@ -89,7 +108,7 @@ export function ProductDetail({ product }: { product: any }) {
               </span>
             </div>
           </div>
-
+ 
           <div className="mb-12">
             <div className="flex items-baseline gap-4 mb-2">
               <span className="text-5xl font-black text-white">
@@ -103,13 +122,13 @@ export function ProductDetail({ product }: { product: any }) {
             </div>
             <p className="text-neutral-500 text-sm italic font-medium">Bruttó ár (tartalmazza a 27% ÁFÁ-t)</p>
           </div>
-
+ 
           <div className="prose prose-invert max-w-none mb-12">
             <p className="text-neutral-400 text-lg leading-relaxed">
               {product.description}
             </p>
           </div>
-
+ 
           {/* Tags / Keywords */}
           {product.seo?.keywords && product.seo.keywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-12">
@@ -121,11 +140,19 @@ export function ProductDetail({ product }: { product: any }) {
               ))}
             </div>
           )}
-
+ 
           <div className="space-y-6 mb-12">
-            <Button size="lg" className="w-full h-16 bg-accent hover:bg-accent/90 text-white font-black text-lg uppercase tracking-widest btn-krausz flex gap-4">
-              <ShoppingCart className="w-6 h-6" />
-              KOSÁRBA TESZEM
+            <Button 
+              size="lg" 
+              onClick={handleAddToCart}
+              disabled={isAdded}
+              className={cn(
+                "w-full h-16 font-black text-lg uppercase tracking-widest btn-krausz flex gap-4 transition-all duration-300",
+                isAdded ? "bg-green-600 hover:bg-green-600 text-white" : "bg-accent hover:bg-accent/90 text-white"
+              )}
+            >
+              {isAdded ? <Check className="w-6 h-6" /> : <ShoppingCart className="w-6 h-6" />}
+              {isAdded ? "KOSÁRBA TÉVE" : "KOSÁRBA TESZEM"}
             </Button>
           </div>
 

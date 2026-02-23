@@ -10,6 +10,9 @@ export interface ProductFilters {
   isVisible?: boolean;
   isDiscounted?: boolean;
   category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: string;
 }
 
 export class ProductService {
@@ -29,12 +32,44 @@ export class ProductService {
     if (filters.isActive !== undefined) query.isActive = filters.isActive;
     if (filters.isVisible !== undefined) query.isVisible = filters.isVisible;
     if (filters.isDiscounted) query.discount = { $gt: 0 };
-    if (filters.category) query.category = filters.category;
+    
+    if (filters.category) {
+      const { CategoryService } = await import("./category");
+      const categoryIds = await CategoryService.getDescendantIds(filters.category);
+      query.category = { $in: categoryIds };
+    }
+    
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      query.netPrice = {};
+      if (filters.minPrice !== undefined) query.netPrice.$gte = filters.minPrice;
+      if (filters.maxPrice !== undefined) query.netPrice.$lte = filters.maxPrice;
+    }
+
+    let sort: any = { createdAt: -1 };
+    if (filters.sort) {
+      switch (filters.sort) {
+        case "price-asc":
+          sort = { netPrice: 1 };
+          break;
+        case "price-desc":
+          sort = { netPrice: -1 };
+          break;
+        case "newest":
+          sort = { createdAt: -1 };
+          break;
+        case "oldest":
+          sort = { createdAt: 1 };
+          break;
+        case "discount":
+          sort = { discount: -1 };
+          break;
+      }
+    }
 
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate("category")
-        .sort({ createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .lean(),

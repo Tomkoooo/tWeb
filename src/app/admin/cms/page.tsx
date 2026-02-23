@@ -1,6 +1,10 @@
 import { ShopContentService } from "@/services/shop-content"
 import { updateShopContent } from "@/actions/admin-cms"
-import { Save } from "lucide-react"
+import { Save, Mail } from "lucide-react"
+import { AccordionEditor } from "@/components/admin/AccordionEditor"
+import { CMSForm } from "@/components/admin/CMSForm"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function AdminCMS() {
   const content = await ShopContentService.getAll()
@@ -18,6 +22,7 @@ export default async function AdminCMS() {
       fields: [
         { key: "story_title", label: "Történet Cím", type: "text" },
         { key: "story_content", label: "Történet Tartalom", type: "textarea" },
+        { key: "story_accordions", label: "Accordions", type: "accordion" },
       ]
     },
     {
@@ -31,53 +36,58 @@ export default async function AdminCMS() {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div>
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
-          Tartalom <span className="text-accent underline decoration-accent/10 underline-offset-8">Kezelés</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">Itt szabhatja testre a kezdőlapon megjelenő szövegeket és információkat.</p>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-40">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+        <div className="flex flex-col gap-4">
+          <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
+            Tartalom <span className="text-accent underline decoration-accent/10 underline-offset-8">Kezelés</span>
+          </h1>
+          <p className="text-white/40 font-medium italic">Itt szabhatja testre a kezdőlapon megjelenő szövegeket és információkat.</p>
+        </div>
+        
+        <Link href="/admin/emails">
+          <Button variant="ghost" className="h-14 px-6 border border-white/5 text-neutral-400 hover:text-white hover:bg-white/5 uppercase tracking-widest text-[10px] font-black gap-2">
+            <Mail className="w-4 h-4 text-accent" />
+            EMAIL SABLONOK SZERKESZTÉSE
+          </Button>
+        </Link>
       </div>
 
-      <form action={updateShopContent} className="space-y-8">
-        <div className="flex justify-end sticky top-8 z-20">
-          <button 
-            type="submit"
-            className="flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl font-bold transition-all shadow-lg shadow-accent/20 hover:scale-105 active:scale-95"
-          >
-            <Save className="w-5 h-5" />
-            Módosítások mentése
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-8">
+      <CMSForm action={updateShopContent}>
+        <div className="grid grid-cols-1 gap-12">
           {sections.map((section) => (
-            <div key={section.title} className="bg-white/5 border border-white/10 rounded-2xl p-8">
-              <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-                <div className="w-1.5 h-6 bg-accent rounded-full" />
-                {section.title}
-              </h2>
-              <div className="space-y-6">
+            <div key={section.title} className="bg-white/5 border border-white/10 rounded-none p-8 md:p-10 space-y-8">
+              <div className="flex items-center gap-3 text-white">
+                <div className="w-1.5 h-6 bg-accent" />
+                <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">{section.title}</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-8">
                 {section.fields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <label className="text-sm font-medium text-white/60 mb-1.5 block">
+                  <div key={field.key} className="space-y-3">
+                    <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
                       {field.label}
                     </label>
                     {field.type === "textarea" ? (
                       <textarea
                         name={field.key}
                         defaultValue={content[field.key] || ""}
-                        rows={4}
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent/50 transition-colors text-white/90"
-                        placeholder={`Adja meg a következőt: ${field.label.toLowerCase()}...`}
+                        rows={5}
+                        className="w-full bg-black border border-white/5 rounded-none p-5 text-white font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none leading-relaxed"
+                        placeholder={`ADJA MEG A KÖVETKEZŐT: ${field.label.toUpperCase()}...`}
+                      />
+                    ) : field.type === "accordion" ? (
+                      <AccordionEditor 
+                        name={field.key}
+                        initialData={content[field.key]} 
                       />
                     ) : (
                       <input
                         type="text"
                         name={field.key}
                         defaultValue={content[field.key] || ""}
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent/50 transition-colors text-white/90"
-                        placeholder={`Adja meg a következőt: ${field.label.toLowerCase()}...`}
+                        className="w-full h-14 bg-black border border-white/5 rounded-none px-5 text-white font-bold uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+                        placeholder={`ADJA MEG A KÖVETKEZŐT: ${field.label.toUpperCase()}...`}
                       />
                     )}
                   </div>
@@ -86,7 +96,7 @@ export default async function AdminCMS() {
             </div>
           ))}
         </div>
-      </form>
+      </CMSForm>
     </div>
   )
 }

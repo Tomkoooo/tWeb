@@ -6,6 +6,7 @@ export type ShopContentKey =
   | "hero_description"
   | "story_title"
   | "story_content"
+  | "story_accordions"
   | "contact_email"
   | "contact_phone"
   | "contact_address";

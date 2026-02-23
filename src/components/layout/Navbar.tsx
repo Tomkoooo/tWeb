@@ -12,10 +12,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 
 import { UserNav } from "./UserNav"
+import { LiveSearch } from "./LiveSearch"
+import { useCartStore } from "@/store/useCartStore"
 
 const navLinks = [
   { name: "Rólunk", href: "/#about" },
-  { name: "Bolt", href: "/#shop" },
+  { name: "Bolt", href: "/shop" },
   { name: "Vélemények", href: "/#reviews" },
   { name: "Kapcsolat", href: "/#contact" },
 ]
@@ -76,19 +78,15 @@ export function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex flex-none items-center gap-6 lg:gap-10">
-          <div className="hidden xl:flex items-center relative">
-            <Search className="absolute left-4 w-4 h-4 text-neutral-600" />
-            <Input
-              placeholder="KERESÉS..."
-              className="pl-12 bg-white/5 border-white/5 focus-visible:ring-[#FF5500] w-48 h-12 rounded-none text-[10px] font-bold tracking-[0.2em] text-white placeholder:text-neutral-700 transition-all focus:w-64"
-            />
+          <div className="hidden lg:block">
+            <LiveSearch className="w-48 lg:w-40 xl:w-48 focus-within:w-64 transition-all duration-300" />
           </div>
 
-          <Button variant="ghost" size="icon" className="relative group p-0 w-10 h-10 hover:bg-transparent">
-            <ShoppingCart className="w-6 h-6 text-white group-hover:text-[#FF5500] transition-colors" />
-            <Badge className="absolute -top-1 -right-1 bg-[#FF5500] text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
-              0
-            </Badge>
+          <Button asChild variant="ghost" size="icon" className="relative group p-0 w-10 h-10 hover:bg-transparent">
+            <Link href="/cart">
+              <ShoppingCart className="w-6 h-6 text-white group-hover:text-[#FF5500] transition-colors" />
+              <CartCountBadge />
+            </Link>
           </Button>
 
           {/* User Auth Nav */}
@@ -113,12 +111,11 @@ export function Navbar() {
                   </Link>
                 ))}
                 
-                <div className="flex items-center relative mt-10">
-                  <Search className="absolute left-4 w-5 h-5 text-neutral-600" />
-                  <Input
-                    placeholder="KERESÉS..."
-                    className="pl-14 bg-white/5 border-white/5 focus-visible:ring-[#FF5500] w-full h-16 rounded-none text-lg font-bold text-white uppercase tracking-widest"
-                  />
+                <div className="mt-10">
+                   <LiveSearch 
+                    placeholder="KERESÉS..." 
+                    inputClassName="h-16 text-lg"
+                   />
                 </div>
               </div>
             </SheetContent>
@@ -126,7 +123,23 @@ export function Navbar() {
         </div>
       </div>
     </motion.header>
+  )
+}
 
+function CartCountBadge() {
+  const [mounted, setMounted] = React.useState(false)
+  const totalItems = useCartStore((state: any) => state.totalItems)
 
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+  if (totalItems === 0) return null
+
+  return (
+    <Badge className="absolute -top-1 -right-1 bg-[#FF5500] text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
+      {totalItems}
+    </Badge>
   )
 }

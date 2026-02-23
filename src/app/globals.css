@@ -103,6 +103,7 @@
   --border: #333333;
   --input: #1A1A1A;
   --ring: #FF5500;
+  scroll-behavior: smooth;
 }
 
 html,

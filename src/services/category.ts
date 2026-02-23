@@ -70,4 +70,20 @@ export class CategoryService {
 
     return buildTree(null);
   }
+
+  static async getDescendantIds(parentId: string): Promise<string[]> {
+    await dbConnect();
+    const categories = await Category.find({}).lean();
+    
+    const getIds = (id: string): string[] => {
+      const children = categories.filter(cat => (cat.parent?.toString() || null) === id);
+      let ids = [id];
+      for (const child of children) {
+        ids = [...ids, ...getIds(child._id.toString())];
+      }
+      return ids;
+    };
+
+    return getIds(parentId);
+  }
 }
