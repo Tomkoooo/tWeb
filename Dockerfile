@@ -29,9 +29,6 @@ ENV AUTH_SECRET=$AUTH_SECRET
 ENV NEXTAUTH_URL=$NEXTAUTH_URL
 ENV AUTH_TRUST_HOST=$AUTH_TRUST_HOST
 
-# Generate Prisma client
-RUN npx prisma generate
-
 RUN npm run build
 
 # Production image, copy all the files and run next
