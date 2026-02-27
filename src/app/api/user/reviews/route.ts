@@ -49,9 +49,10 @@ export async function POST(req: NextRequest) {
     } else {
       // Add new
       product.ratings.push({
-        user: session.user.id,
+        user: session.user.id as any,
         rating,
         comment,
+        createdAt: new Date(),
       });
     }
 

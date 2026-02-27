@@ -29,7 +29,7 @@ export default function AdminLayout({
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 border-r border-white/10 w-72">
-            <AdminSidebar onAction={() => {}} />
+            <AdminSidebar />
           </SheetContent>
         </Sheet>
       </div>
