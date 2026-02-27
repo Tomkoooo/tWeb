@@ -13,6 +13,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p uploads
 
 # Set environment variables for build
 ARG DATABASE_URL="mongodb://localhost:27017/krausz"
@@ -42,7 +43,7 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 RUN mkdir -p uploads
-COPY --from=builder /app/uploads ./uploads || true
+COPY --from=builder /app/uploads ./uploads
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
