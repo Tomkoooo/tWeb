@@ -6,13 +6,28 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Set environment variables for build
+ARG DATABASE_URL="mongodb://localhost:27017/krausz"
+ARG AUTH_GOOGLE_ID="placeholder"
+ARG AUTH_GOOGLE_SECRET="placeholder"
+ARG AUTH_SECRET="placeholder"
+ARG NEXTAUTH_URL="https://placeholder.com"
+ARG AUTH_TRUST_HOST="true"
+
+ENV DATABASE_URL=$DATABASE_URL
+ENV AUTH_GOOGLE_ID=$AUTH_GOOGLE_ID
+ENV AUTH_GOOGLE_SECRET=$AUTH_GOOGLE_SECRET
+ENV AUTH_SECRET=$AUTH_SECRET
+ENV NEXTAUTH_URL=$NEXTAUTH_URL
+ENV AUTH_TRUST_HOST=$AUTH_TRUST_HOST
 
 # Generate Prisma client
 RUN npx prisma generate
