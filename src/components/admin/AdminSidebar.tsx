@@ -22,10 +22,11 @@ import { useSession, signOut } from "next-auth/react"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
+  { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
   { icon: FileEdit, label: "CMS", href: "/admin/cms" },
   { icon: Mail, label: "Emailek", href: "/admin/emails" },
   { icon: Package, label: "Kategóriák", href: "/admin/categories" },
-  { icon: ShoppingCart, label: "Termékek", href: "/admin/products" },
+  { icon: Package, label: "Termékek", href: "/admin/products" },
   { icon: Truck, label: "Szállítás", href: "/admin/shipping" },
   { icon: CreditCard, label: "Fizetés", href: "/admin/payment" },
   { icon: Tag, label: "Kuponok", href: "/admin/coupons" },

@@ -3,6 +3,8 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Cart from "@/models/Cart";
 import mongoose from "mongoose";
+import { MailerService } from "./mailer";
+import User from "@/models/User";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
@@ -32,6 +34,30 @@ export class OrderService {
         { user: new mongoose.Types.ObjectId(userId) },
         { items: [] }
       );
+    }
+
+
+    // 4. Trigger Order Confirmation Email
+    try {
+      const populatedOrder = await Order.findById(order._id).populate("user");
+      const customerEmail = populatedOrder.user?.email || orderData.billingInfo?.email;
+      const customerName = populatedOrder.user?.name || orderData.shippingAddress?.name;
+
+      if (customerEmail) {
+        await MailerService.sendEmail({
+          to: customerEmail,
+          templateType: "order_confirmation",
+          data: {
+            orderNumber: order._id.toString().slice(-6).toUpperCase(),
+            customerName,
+            totalAmount: order.total.toLocaleString("hu-HU"),
+            shippingAddress: `${order.shippingAddress.zip} ${order.shippingAddress.city}, ${order.shippingAddress.street}`,
+            items: order.items.map((i: any) => `${i.name} (${i.quantity}x)`).join(", ")
+          }
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send order confirmation email:", emailError);
     }
 
     return order;
