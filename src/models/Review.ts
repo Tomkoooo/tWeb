@@ -5,6 +5,7 @@ export interface IReview extends Document {
   user: mongoose.Types.ObjectId;
   rating: number;
   description: string;
+  status: "pending" | "approved" | "rejected";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,11 @@ const ReviewSchema = new Schema<IReview>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     description: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );

@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Navbar } from "@/components/layout/Navbar"
 
 export const metadata: Metadata = {
   title: "Profil | Krausz",
@@ -12,6 +13,7 @@ export default function ProfileLayout({
 }) {
   return (
     <div className="min-h-screen bg-black pt-48 pb-20 px-6">
+      <Navbar />
       <div className="container mx-auto max-w-6xl">
         <div className="flex flex-col md:flex-row gap-12">
           {/* Sidebar */}

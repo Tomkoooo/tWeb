@@ -73,7 +73,7 @@ export default function ShopFeedbackPage() {
             Mennyire voltál elégedett a vásárlásoddal?
           </h3>
           <p className="text-sm text-neutral-400 mb-6 font-medium">
-            Minden visszajelzés segít nekünk, hogy még jobb szolgáltatást és minőségibb ruhákat biztosíthassunk a jövőben. Ezt a funkciót csak sikeres (átvett) rendelés után használhatod.
+            Minden visszajelzés segít nekünk, hogy még jobb szolgáltatást és minőségibb termékeket biztosíthassunk a jövőben. Ezt a funkciót csak feldolgozott rendelés után használhatod.
           </p>
 
           <div className="flex items-center gap-2 mb-8 justify-center p-6 bg-black border border-white/5">

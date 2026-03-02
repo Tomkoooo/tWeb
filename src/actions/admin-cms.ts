@@ -24,5 +24,6 @@ export async function updateShopContent(formData: FormData) {
   await ShopContentService.updateMany(items)
   
   revalidatePath("/")
+  revalidatePath("/shop")
   revalidatePath("/admin/cms")
 }

@@ -7,14 +7,17 @@ export const authConfig = {
   providers: [Google],
   callbacks: {
     async session({ session, token }) {
-      if (session.user && token.role) {
-        session.user.role = token.role as Role
+      if (session.user) {
+        if (token.sub) {
+          session.user.id = token.sub
+        }
+        session.user.role = (token.role as Role) || "USER"
       }
       return session
     },
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role
+        token.role = user.role as Role
       }
       return token
     },

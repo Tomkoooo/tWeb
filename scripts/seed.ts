@@ -26,6 +26,16 @@ const initialContent = [
     section: "story",
   },
   {
+    key: "shop_seo_title",
+    value: "Webshop | Krausz Barkácsmester",
+    section: "shop",
+  },
+  {
+    key: "shop_seo_description",
+    value: "Válogasson prémium szerszámaink és ipari gépeink közül. Krausz - A minőség garanciája.",
+    section: "shop",
+  },
+  {
     key: "contact_email",
     value: "info@krauszbarkacs.hu",
     section: "contact",

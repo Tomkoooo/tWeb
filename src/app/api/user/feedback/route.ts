@@ -19,21 +19,21 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    // Verify user has at least one completed order
-    const hasCompletedOrder = await Order.exists({
+    // Verify user has at least one processed order
+    const hasProcessedOrder = await Order.exists({
       user: session.user.id,
-      status: "delivered"
+      status: { $in: ["processing", "shipped", "delivered", "cancelled"] }
     });
 
-    if (!hasCompletedOrder) {
+    if (!hasProcessedOrder) {
       // Return 403 or specific error so frontend knows why
-      return NextResponse.json({ error: "Csak sikeres / kiküldött rendelés után értékelheted a boltot." }, { status: 403 });
+      return NextResponse.json({ error: "Csak feldolgozott rendelés után értékelheted a boltot." }, { status: 403 });
     }
 
     // UPSERT behaviour: If they already submitted feedback, we update it.
     await ShopFeedback.findOneAndUpdate(
       { user: session.user.id },
-      { rating, comment },
+      { rating, comment, status: "pending" },
       { upsert: true, new: true }
     );
 

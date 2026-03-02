@@ -14,19 +14,27 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { FeatureFlagService } from "@/services/feature-flags"
+import { ShopContentService } from "@/services/shop-content"
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<any> }): Promise<Metadata> {
   const { q, category } = await searchParams
+  const content = await ShopContentService.getAll()
   
-  let title = "Webshop | Krausz Barkács Mester"
-  let description = "Válogasson prémium szerszámaink és ipari gépeink közül. Krausz - A minőség garanciája."
+  const baseTitle = content.shop_seo_title || "Webshop | Krausz Barkácsmester"
+  const baseDescription =
+    content.shop_seo_description ||
+    "Válogasson prémium szerszámaink és ipari gépeink közül. Krausz - A minőség garanciája."
+
+  let title = baseTitle
+  let description = baseDescription
 
   if (q) {
-    title = `Keresés: ${q} | Krausz Barkács Mester`
+    title = `Keresés: ${q} | Krausz Barkácsmester`
   } else if (category) {
     const cat = await CategoryService.getById(category)
     if (cat) {
-      title = `${cat.name} | Krausz Barkács Mester`
+      title = `${cat.name} | Krausz Barkácsmester`
       description = cat.seo?.description || description
     }
   }
@@ -48,6 +56,28 @@ export default async function ShopPage({
     sort?: string;
   }>
 }) {
+  const isShopPageEnabled = await FeatureFlagService.isEnabled("shopPage", true)
+
+  if (!isShopPageEnabled) {
+    return (
+      <main className="min-h-screen bg-black pt-32 pb-20 px-6">
+        <Navbar />
+        <div className="container mx-auto">
+          <div className="max-w-2xl mx-auto border border-white/10 bg-white/5 p-10 text-center space-y-6">
+            <p className="text-xl font-black uppercase tracking-widest text-white">
+              jelenleg nem elérhető vissza a főoldalra
+            </p>
+            <Link href="/">
+              <Button className="rounded-none bg-accent hover:bg-accent/85 text-white font-black uppercase tracking-widest text-xs h-12 px-8">
+                Vissza a főoldalra
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   const params = await searchParams
   const currentPage = parseInt(params.page || "1")
   const limit = 12

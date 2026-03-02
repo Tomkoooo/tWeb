@@ -4,8 +4,11 @@ import { CategoryService } from "@/services/category";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/lib/utils";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function createCategory(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const parent = formData.get("parent") as string || null;
   const image = formData.get("image") as string || "";
@@ -33,6 +36,8 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: string, formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const parent = formData.get("parent") as string || null;
   const image = formData.get("image") as string || "";
@@ -59,6 +64,8 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  await requireAdmin();
+
   try {
     await CategoryService.delete(id);
   } catch (error) {

@@ -4,8 +4,11 @@ import { ProductService } from "@/services/product";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/lib/utils";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function createProduct(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const images = formData.getAll("images") as string[];
@@ -46,6 +49,8 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const images = formData.getAll("images") as string[];
@@ -86,6 +91,8 @@ export async function updateProduct(id: string, formData: FormData) {
 
 
 export async function deleteProduct(id: string) {
+  await requireAdmin();
+
   try {
     await ProductService.delete(id);
   } catch (error) {

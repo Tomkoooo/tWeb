@@ -13,13 +13,13 @@ interface HeroProps {
 }
 
 export function Hero({ title, description }: HeroProps) {
-  const displayTitle = title || "KRAUSZ BARKÁCS MESTER"
+  const displayTitle = title || "KRAUSZ BARKÁCSMESTER"
   const displayDescription = description || "Mestermunka a kezedben. Precíziós szerszámok a modern mesterembernek, aki nem ismer kompromisszumot."
 
-  // To maintain the "Krausz Barkács Mester" structure even with dynamic text, 
+  // To maintain the "Krausz Barkácsmester" structure even with dynamic text, 
   // we check if the title is the default one and then split it.
   // If it's a new title, we just display it.
-  const isDefaultTitle = !title || title === "KRAUSZ BARKÁCS MESTER"
+  const isDefaultTitle = !title || title === "KRAUSZ BARKÁCSMESTER"
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -53,10 +53,10 @@ export function Hero({ title, description }: HeroProps) {
             >
               <div className="absolute inset-0 bg-[#FF5500]/10 blur-[100px] rounded-full scale-110 animate-pulse" />
               <Image
-                src="/logo.jpg"
-                alt="Krausz Barkács Mester"
+                src="/logo.png"
+                alt="Krausz Barkácsmester"
                 fill
-                className="object-contain relative z-10 mix-blend-screen brightness-125"
+                className="object-contain relative z-10"
                 priority
               />
             </motion.div>
@@ -74,8 +74,7 @@ export function Hero({ title, description }: HeroProps) {
                 {isDefaultTitle ? (
                   <>
                     KRAUSZ
-                    <span className="block text-[#FF5500]">BARKÁCS</span>
-                    <span className="block">MESTER</span>
+                    <span className="block text-[#FF5500]">BARKÁCSMESTER</span>
                   </>
                 ) : (
                   <span className="block">

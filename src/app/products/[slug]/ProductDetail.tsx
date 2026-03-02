@@ -18,6 +18,11 @@ export function ProductDetail({ product }: { product: any }) {
   const discountAmount = product.discount || 0;
   const price = product.netPrice * 1.27;
   const finalPrice = price * (1 - discountAmount / 100);
+  const reviewCount = product.reviews?.length || 0;
+  const averageRating = reviewCount
+    ? product.reviews.reduce((sum: number, review: any) => sum + (review.rating || 0), 0) / reviewCount
+    : 0;
+  const roundedRating = Math.round(averageRating);
 
   const handleAddToCart = () => {
     addItem({
@@ -98,13 +103,13 @@ export function ProductDetail({ product }: { product: any }) {
                     key={i}
                     className={cn(
                       "w-5 h-5",
-                      i < 4 ? "fill-accent text-accent" : "text-white/10"
+                      i < roundedRating ? "fill-accent text-accent" : "text-white/10"
                     )}
                   />
                 ))}
               </div>
               <span className="text-neutral-500 text-sm font-bold uppercase tracking-widest">
-                ({product.reviews?.length || 0} Vélemény)
+                {reviewCount > 0 ? `${averageRating.toFixed(1)} (${reviewCount} vélemény)` : "Nincs értékelés"}
               </span>
             </div>
           </div>

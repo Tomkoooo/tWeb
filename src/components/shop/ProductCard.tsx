@@ -21,6 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state: any) => state.addItem)
 
   const finalPrice = product.netPrice * (1 - (product.discount || 0) / 100)
+  const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
   const handleAddToCart = () => {
     addItem({
@@ -76,7 +77,7 @@ export function ProductCard({ product }: ProductCardProps) {
               key={i}
               className={cn(
                 "w-3 h-3",
-                i < 4 ? "fill-[#FFD700] text-[#FFD700]" : "text-white/20"
+                i < Math.round(ratingValue) ? "fill-[#FFD700] text-[#FFD700]" : "text-white/20"
               )}
             />
           ))}

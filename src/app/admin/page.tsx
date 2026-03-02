@@ -1,13 +1,35 @@
+import {
+  TrendingUp,
+  ShoppingCart,
+  Users,
+  Package,
   ArrowUpRight,
   ArrowDownRight,
   Eye
 } from "lucide-react"
-import { getOrders } from "@/actions/admin-orders"
+import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import type { ComponentType } from "react"
 
-async function KpiCard({ title, value, change, trend, icon: Icon }: any) {
+type Trend = "up" | "down"
+
+type KpiCardProps = {
+  title: string
+  value: string
+  change: number
+  trend: Trend
+  icon: ComponentType<{ className?: string }>
+}
+
+type RecentOrder = {
+  _id: string
+  createdAt: string | Date
+  total: number
+}
+
+async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-accent/40 transition-colors group">
       <div className="flex justify-between items-start mb-4">
@@ -28,15 +50,14 @@ async function KpiCard({ title, value, change, trend, icon: Icon }: any) {
 }
 
 export default async function AdminDashboard() {
-  const orders = await getOrders()
-  const totalOrders = orders.length
-  const recentOrders = orders.slice(0, 5)
+  const statsData = await getAdminStats()
+  const { kpis, recentOrders } = statsData as { kpis: { totalRevenue: number; ordersCount: number; activeCustomersCount: number; productsCount: number }; recentOrders: RecentOrder[] }
 
-  const stats = [
-    { title: "Összes Bevétel", value: "8.245.600 Ft", change: 12.5, trend: "up", icon: TrendingUp },
-    { title: "Összes Rendelés", value: totalOrders.toString(), change: 8.2, trend: "up", icon: ShoppingCart },
-    { title: "Aktív Vásárlók", value: "2.154", change: 3.1, trend: "down", icon: Users },
-    { title: "Összes Termék", value: "128", change: 5.4, trend: "up", icon: Package },
+  const stats: KpiCardProps[] = [
+    { title: "Összes Bevétel", value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`, change: 0, trend: "up", icon: TrendingUp },
+    { title: "Összes Rendelés", value: kpis.ordersCount.toString(), change: 0, trend: "up", icon: ShoppingCart },
+    { title: "Aktív Vásárlók", value: kpis.activeCustomersCount.toString(), change: 0, trend: "up", icon: Users },
+    { title: "Összes Termék", value: kpis.productsCount.toString(), change: 0, trend: "up", icon: Package },
   ]
 
   return (
@@ -70,7 +91,7 @@ export default async function AdminDashboard() {
                 <p className="italic">Még nincs rendelés.</p>
               </div>
             ) : (
-              recentOrders.map((order: any) => (
+              recentOrders.map((order) => (
                 <div key={order._id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-accent/30 transition-colors group">
                   <div className="flex flex-col">
                     <span className="font-heading font-black text-white uppercase tracking-wider text-sm">#{order._id.toString().slice(-6).toUpperCase()}</span>

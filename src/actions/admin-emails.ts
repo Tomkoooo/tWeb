@@ -52,7 +52,7 @@ export async function seedEmailTemplates() {
           <p>Amint csomagja útra kel, újabb értesítést küldünk.</p>
           
           <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="font-size: 12px; color: #999;">Krausz Barkács Mester - Minőség a mestereknek.</p>
+          <p style="font-size: 12px; color: #999;">Krausz Barkácsmester - Minőség a mestereknek.</p>
         </div>
       `,
       description: "Vásárló kapja meg sikeres rendelés után.",
@@ -75,7 +75,7 @@ export async function seedEmailTemplates() {
           <p>További információkért látogasson el fiókjába.</p>
           
           <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="font-size: 12px; color: #999;">Krausz Barkács Mester - Minőség a mestereknek.</p>
+          <p style="font-size: 12px; color: #999;">Krausz Barkácsmester - Minőség a mestereknek.</p>
         </div>
       `,
       description: "Vásárló kapja meg, ha a rendelés állapota változik (pl. csomagolva, kiszállítva).",

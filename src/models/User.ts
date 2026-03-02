@@ -5,6 +5,10 @@ export interface IUser extends Document {
   email?: string;
   image?: string;
   emailVerified?: Date;
+  passwordHash?: string;
+  newsletterSubscribed: boolean;
+  newsletterSubscribedAt?: Date;
+  newsletterUnsubscribedAt?: Date;
   role: "ADMIN" | "USER";
   billingInfo?: {
     type: "personal" | "company";
@@ -31,6 +35,10 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, unique: true },
     image: { type: String },
     emailVerified: { type: Date },
+    passwordHash: { type: String },
+    newsletterSubscribed: { type: Boolean, default: false },
+    newsletterSubscribedAt: { type: Date },
+    newsletterUnsubscribedAt: { type: Date },
     role: { type: String, enum: ["ADMIN", "USER"], default: "USER" },
     billingInfo: {
       type: { type: String, enum: ["personal", "company"] },

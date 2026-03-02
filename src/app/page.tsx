@@ -8,39 +8,70 @@ import { Features } from "@/components/sections/Features"
 import { Contact } from "@/components/sections/Contact"
 
 export const metadata = {
-  title: "Krausz Barkács Mester | Professzionális Barkács Szerszámok",
+  title: "Krausz Barkácsmester | Professzionális Barkács Szerszámok",
   description: "Mestermunka a kezedben. Kiváló minőségű kalapácsok, csavarkulcsok és elektromos szerszámok a modern mesterembernek.",
 }
 
 import { ShopContentService } from "@/services/shop-content"
 import { CategoryService } from "@/services/category"
 import { ProductService } from "@/services/product"
+import { FeedbackService } from "@/services/feedback"
+import { FeatureFlagService } from "@/services/feature-flags"
 
 export default async function LandingPage() {
-  const [content, categories, productData] = await Promise.all([
+  const [content, reviews, isShopPageEnabled] = await Promise.all([
     ShopContentService.getAll(),
-    CategoryService.getAll(),
-    ProductService.getPaginated(1, 8, { isVisible: true })
+    FeedbackService.getHomepageReviews(6),
+    FeatureFlagService.isEnabled("shopPage", true),
   ])
 
-  // Process data for the Shop component
-  const products = productData.products.map(p => ({
-    id: p._id.toString(),
-    name: p.name,
-    slug: p.slug,
-    price: (p.netPrice * 1.27) - (p.discount || 0),
-    image: p.images?.[0] ? `/api/media/${p.images[0]}` : "/placeholder-product.jpg",
-    category: (p.category as any)?.name || "Kategória",
-    rating: 5 // Default for now
-  }));
+  let products: Array<{
+    id: string
+    name: string
+    slug: string
+    price: number
+    image: string
+    category: string
+    rating: number
+  }> = []
 
-  const shopCategories = categories.slice(0, 4).map(c => ({
-    id: c._id.toString(),
-    name: c.name,
-    description: c.seo?.description || "Minőségi válogatás",
-    image: c.image ? `/api/media/${c.image}` : "/placeholder-cat.jpg",
-    slug: c.slug
-  }));
+  let shopCategories: Array<{
+    id: string
+    name: string
+    description: string
+    image: string
+    slug: string
+  }> = []
+
+  if (isShopPageEnabled) {
+    const [categories, productData] = await Promise.all([
+      CategoryService.getAll(),
+      ProductService.getPaginated(1, 8, { isVisible: true }),
+    ])
+
+    // Process data for the Shop component
+    products = productData.products.map(p => ({
+      // Fallback to 0 when there is no review data.
+      // This avoids showing an inflated default rating in listings.
+      rating: Array.isArray((p as any).ratings) && (p as any).ratings.length > 0
+        ? (p as any).ratings.reduce((sum: number, rating: any) => sum + (rating.rating || 0), 0) / (p as any).ratings.length
+        : 0,
+      id: p._id.toString(),
+      name: p.name,
+      slug: p.slug,
+      price: (p.netPrice * 1.27) - (p.discount || 0),
+      image: p.images?.[0] ? `/api/media/${p.images[0]}` : "/placeholder-product.jpg",
+      category: (p.category as any)?.name || "Kategória",
+    }))
+
+    shopCategories = categories.slice(0, 4).map(c => ({
+      id: c._id.toString(),
+      name: c.name,
+      description: c.seo?.description || "Minőségi válogatás",
+      image: c.image ? `/api/media/${c.image}` : "/placeholder-cat.jpg",
+      slug: c.slug
+    }))
+  }
   return (
     <div className="flex flex-col min-h-screen bg-background-dark selection:bg-accent selection:text-white overflow-x-hidden">
       <Navbar />
@@ -55,9 +86,9 @@ export default async function LandingPage() {
           content={content.story_content} 
           accordions={content.story_accordions}
         />
-        <Shop categories={shopCategories} products={products} />
+        {isShopPageEnabled ? <Shop categories={shopCategories} products={products} /> : null}
         <Features />
-        <Reviews />
+        <Reviews reviews={reviews} />
         <Contact 
           email={content.contact_email}
           phone={content.contact_phone}

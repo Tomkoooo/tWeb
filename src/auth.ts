@@ -12,14 +12,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       // Fetch the latest user data from the database to ensure the role is up to date
       // even if the JWT token is old.
-      if (session.user && token.email) {
+      if (session.user) {
+        if (token.sub) {
+          session.user.id = token.sub
+        }
+
+        session.user.role = (token.role as "ADMIN" | "USER") || "USER"
+
+        const lookupEmail = typeof token.email === "string" ? token.email : session.user.email
+
+        if (!lookupEmail) {
+          return session
+        }
+
         try {
           const client = await clientPromise;
           const db = client.db();
-          const dbUser = await db.collection("users").findOne({ email: token.email });
+          const dbUser = await db.collection("users").findOne({ email: lookupEmail });
           
-          if (dbUser && dbUser.role) {
-            session.user.role = dbUser.role;
+          if (dbUser) {
+            if (dbUser._id) {
+              session.user.id = String(dbUser._id);
+            }
+            if (dbUser.role) {
+              session.user.role = dbUser.role as "ADMIN" | "USER";
+            }
           }
         } catch (error) {
           console.error("Error fetching user role from DB:", error);

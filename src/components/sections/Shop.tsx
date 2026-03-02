@@ -24,7 +24,6 @@ import {
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCartStore } from "@/store/useCartStore"
-import { categories as mockCategories, products as mockProducts } from "@/lib/mock-data"
 
 interface ShopProps {
   categories?: any[]
@@ -32,8 +31,8 @@ interface ShopProps {
 }
 
 export function Shop({ 
-  categories = mockCategories, 
-  products = mockProducts 
+  categories = [], 
+  products = [] 
 }: ShopProps) {
   const addItem = useCartStore((state: any) => state.addItem)
 

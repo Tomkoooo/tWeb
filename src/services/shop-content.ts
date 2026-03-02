@@ -7,6 +7,8 @@ export type ShopContentKey =
   | "story_title"
   | "story_content"
   | "story_accordions"
+  | "shop_seo_title"
+  | "shop_seo_description"
   | "contact_email"
   | "contact_phone"
   | "contact_address";

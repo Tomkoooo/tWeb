@@ -7,12 +7,14 @@ import Order from "@/models/Order";
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
-    const user = await User.findById(session.user.id).lean();
+    const user = session.user.id
+      ? await User.findById(session.user.id).lean()
+      : await User.findOne({ email: session.user.email }).lean();
     
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -27,19 +29,41 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const data = await req.json();
     await dbConnect();
-    
-    const user = await User.findByIdAndUpdate(
-      session.user.id,
-      {
-        billingInfo: data.billingInfo,
-        shippingAddress: data.shippingAddress,
-      },
+
+    const existingUser = session.user.id
+      ? await User.findById(session.user.id).lean()
+      : await User.findOne({ email: session.user.email }).lean();
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updateData: Record<string, unknown> = {
+      billingInfo: data.billingInfo,
+      shippingAddress: data.shippingAddress,
+    };
+
+    if (typeof data.newsletterSubscribed === "boolean") {
+      updateData.newsletterSubscribed = data.newsletterSubscribed;
+
+      if (data.newsletterSubscribed && !existingUser.newsletterSubscribed) {
+        updateData.newsletterSubscribedAt = new Date();
+        updateData.newsletterUnsubscribedAt = undefined;
+      }
+
+      if (!data.newsletterSubscribed && existingUser.newsletterSubscribed) {
+        updateData.newsletterUnsubscribedAt = new Date();
+      }
+    }
+
+    const user = await User.findOneAndUpdate(
+      { _id: existingUser._id },
+      updateData,
       { new: true }
     );
 
@@ -52,15 +76,22 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
+
+    const existingUser = session.user.id
+      ? await User.findById(session.user.id).lean()
+      : await User.findOne({ email: session.user.email }).lean();
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
     
     // Check for ongoing orders
     const ongoingOrders = await Order.find({
-      user: session.user.id,
+      user: existingUser._id,
       status: { $in: ["pending", "processing", "shipped"] }
     });
 
@@ -68,7 +99,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Nem törölheted a fiókod, amíg folyamatban lévő rendelésed van." }, { status: 400 });
     }
 
-    await User.findByIdAndDelete(session.user.id);
+    await User.findByIdAndDelete(existingUser._id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

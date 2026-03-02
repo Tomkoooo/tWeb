@@ -72,7 +72,6 @@ export function UserNav() {
           </Link>
         </DropdownMenuItem>
         
-        {/* @ts-ignore */}
         {user?.role === "ADMIN" && (
           <>
             <DropdownMenuSeparator className="bg-white/10" />

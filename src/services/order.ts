@@ -5,9 +5,15 @@ import Cart from "@/models/Cart";
 import mongoose from "mongoose";
 import { MailerService } from "./mailer";
 import User from "@/models/User";
+import { FeatureFlagService } from "./feature-flags";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
+    const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
+    if (!isShopEnabled) {
+      throw new Error("Jelenleg a rendelés leadás szünetel");
+    }
+
     await dbConnect();
 
     // 1. Validate items and update stock

@@ -99,7 +99,10 @@ export class ProductService {
     if (!product) return null;
 
     // Fetch reviews separately
-    const reviews = await Review.find({ product: product._id })
+    const reviews = await Review.find({
+      product: product._id,
+      $or: [{ status: "approved" }, { status: { $exists: false } }],
+    })
       .populate("user", "name")
       .sort({ createdAt: -1 })
       .lean();

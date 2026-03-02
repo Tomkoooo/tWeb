@@ -3,7 +3,6 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { Quote, Star } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Carousel,
   CarouselContent,
@@ -11,10 +10,22 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel"
-import { reviews } from "@/lib/mock-data"
 import Image from "next/image"
 
-export function Reviews() {
+type ReviewItem = {
+  id: string
+  name: string
+  role: string
+  content: string
+  rating: number
+  avatar: string
+}
+
+export function Reviews({ reviews = [] }: { reviews?: ReviewItem[] }) {
+  if (reviews.length === 0) {
+    return null
+  }
+
   return (
     <section id="reviews" className="py-32 bg-[#0A0A0A] border-t border-white/5 relative overflow-hidden">
       {/* Background glow shadow */}
