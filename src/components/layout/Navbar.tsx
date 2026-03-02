@@ -47,18 +47,16 @@ export function Navbar() {
       <div className="container mx-auto flex items-center">
         {/* Left: Logo */}
         <div className="flex-none">
-          <Link href="/" className="flex items-center gap-6 group">
-            <div className="relative w-12 h-12 lg:w-14 lg:h-14">
+          <Link href="/" className="flex items-center group">
+            <div className="relative w-40 h-10 sm:w-48 sm:h-12 lg:w-56 lg:h-14">
               <Image
-                src="/logo.jpg"
-                alt="Krausz Logó"
+                src="/navbar.png"
+                alt="Krausz Barkácsmester"
                 fill
                 className="object-contain"
+                priority
               />
             </div>
-            <span className="text-xl lg:text-2xl font-heading font-black text-white tracking-[0.3em] group-hover:text-[#FF5500] transition-colors hidden sm:block uppercase">
-              KRAUSZ
-            </span>
           </Link>
         </div>
 

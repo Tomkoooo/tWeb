@@ -16,7 +16,8 @@ export default function ProfilePage() {
 
   const [formData, setFormData] = React.useState({
     billing: { type: "personal", name: "", taxNumber: "", zip: "", city: "", street: "" },
-    shipping: { isSameAsBilling: true, name: "", zip: "", city: "", street: "", comment: "" }
+    shipping: { isSameAsBilling: true, name: "", zip: "", city: "", street: "", comment: "" },
+    newsletterSubscribed: false
   })
 
   React.useEffect(() => {
@@ -32,7 +33,8 @@ export default function ProfilePage() {
           if (data && !data.error) {
             setFormData({
               billing: data.billingInfo || { type: "personal", name: "", taxNumber: "", zip: "", city: "", street: "" },
-              shipping: data.shippingAddress || { isSameAsBilling: true, name: "", zip: "", city: "", street: "", comment: "" }
+              shipping: data.shippingAddress || { isSameAsBilling: true, name: "", zip: "", city: "", street: "", comment: "" },
+              newsletterSubscribed: Boolean(data.newsletterSubscribed)
             })
           }
         })
@@ -48,7 +50,8 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billingInfo: formData.billing,
-          shippingAddress: formData.shipping
+          shippingAddress: formData.shipping,
+          newsletterSubscribed: formData.newsletterSubscribed
         })
       })
 
@@ -121,6 +124,29 @@ export default function ProfilePage() {
           >
             {saving ? "Mentés folyamatban..." : "Adatok Mentése"}
           </Button>
+
+          <div className="border border-white/10 p-5 bg-white/5 space-y-3">
+            <h4 className="text-xs font-black text-white uppercase tracking-widest">Hírlevél</h4>
+            <p className="text-sm text-neutral-400">
+              Itt tudsz feliratkozni vagy leiratkozni a hírlevelekről.
+            </p>
+            <label className="inline-flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.newsletterSubscribed}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    newsletterSubscribed: e.target.checked,
+                  }))
+                }
+                className="w-4 h-4 accent-[#FF5500]"
+              />
+              <span className="text-sm text-white">
+                Feliratkozva a hírlevélre
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 

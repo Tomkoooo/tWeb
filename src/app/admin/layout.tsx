@@ -3,12 +3,24 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect("/api/auth/signin")
+  }
+
+  if (session.user.role !== "ADMIN") {
+    redirect("/")
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
       {/* Mobile Header */}

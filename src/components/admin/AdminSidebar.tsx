@@ -13,6 +13,7 @@ import {
   FileEdit,
   LogOut,
   Mail,
+  Send,
   Truck,
   CreditCard,
   Tag
@@ -25,6 +26,7 @@ const menuItems = [
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
   { icon: FileEdit, label: "CMS", href: "/admin/cms" },
   { icon: Mail, label: "Emailek", href: "/admin/emails" },
+  { icon: Send, label: "Hírlevelek", href: "/admin/newsletters" },
   { icon: Package, label: "Kategóriák", href: "/admin/categories" },
   { icon: Package, label: "Termékek", href: "/admin/products" },
   { icon: Truck, label: "Szállítás", href: "/admin/shipping" },

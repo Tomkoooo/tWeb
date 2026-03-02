@@ -6,10 +6,92 @@ import Image from "next/image"
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { useSession, signIn } from "next-auth/react"
+import { toast } from "sonner"
+
+type LegalLink = {
+  key: "impresszum" | "terms" | "gdpr"
+  title: string
+  href: string
+}
 
 export function Footer() {
+  const { data: session } = useSession()
+  const [newsletterEmail, setNewsletterEmail] = React.useState("")
+  const [newsletterLoading, setNewsletterLoading] = React.useState(false)
+  const [newsletterSubscribed, setNewsletterSubscribed] = React.useState(false)
+  const [legalLinks, setLegalLinks] = React.useState<LegalLink[]>([])
+
+  React.useEffect(() => {
+    if (session?.user?.email) {
+      setNewsletterEmail(session.user.email)
+    }
+  }, [session?.user?.email])
+
+  React.useEffect(() => {
+    const loadSubscription = async () => {
+      if (!session?.user) {
+        setNewsletterSubscribed(false)
+        return
+      }
+      try {
+        const response = await fetch("/api/user/profile")
+        if (!response.ok) return
+        const data = await response.json()
+        setNewsletterSubscribed(Boolean(data.newsletterSubscribed))
+      } catch {
+        // no-op
+      }
+    }
+    loadSubscription()
+  }, [session?.user])
+
+  React.useEffect(() => {
+    const loadLegalLinks = async () => {
+      try {
+        const response = await fetch("/api/legal-docs")
+        if (!response.ok) return
+        const data = await response.json()
+        setLegalLinks(data)
+      } catch {
+        // Silent fail in footer, links are optional until admin uploads docs
+      }
+    }
+    loadLegalLinks()
+  }, [])
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleSubscribe = async (event: React.FormEvent) => {
+    event.preventDefault()
+
+    if (!session?.user) {
+      signIn("google")
+      return
+    }
+
+    setNewsletterLoading(true)
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        toast.error(data.error || "Nem sikerült a feliratkozás.")
+        return
+      }
+
+      toast.success("Sikeres hírlevél feliratkozás.")
+      setNewsletterSubscribed(true)
+    } catch {
+      toast.error("Hálózati hiba történt.")
+    } finally {
+      setNewsletterLoading(false)
+    }
   }
 
   return (
@@ -25,7 +107,7 @@ export function Footer() {
               <div className="relative w-12 h-12">
                 <Image
                   src="/logo.jpg"
-                  alt="Krausz Barkács Mester"
+                  alt="Krausz Barkácsmester"
                   fill
                   className="object-contain"
                 />
@@ -97,6 +179,29 @@ export function Footer() {
                 <span className="text-base font-medium uppercase tracking-tighter">iroda@krausz-mester.hu</span>
               </li>
             </ul>
+
+            <form onSubmit={handleSubscribe} className="space-y-3 pt-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Hírlevél</p>
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="Email címed"
+                className="w-full h-11 bg-black border border-white/10 px-3 text-white text-sm focus:outline-none focus:border-accent"
+                disabled={Boolean(session?.user?.email)}
+              />
+              <Button
+                type="submit"
+                disabled={newsletterLoading || newsletterSubscribed}
+                className="w-full h-11 rounded-none bg-accent hover:bg-accent/85 text-white text-[10px] font-black uppercase tracking-widest"
+              >
+                {session?.user
+                  ? newsletterSubscribed
+                    ? "Már feliratkoztál"
+                    : "Feliratkozás a hírlevélre"
+                  : "Bejelentkezés és feliratkozás"}
+              </Button>
+            </form>
           </div>
         </div>
 
@@ -104,11 +209,24 @@ export function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <p className="text-neutral-600 text-sm font-bold tracking-widest text-center md:text-left">
-            © {new Date().getFullYear()} KRAUSZ BARKÁCS MESTER. MINDEN JOG FENNTARTVA.
+            © {new Date().getFullYear()} KRAUSZ BARKÁCSMESTER. MINDEN JOG FENNTARTVA.
           </p>
           <div className="flex gap-8 text-xs font-black text-neutral-600 uppercase tracking-widest">
-            <Link href="#" className="hover:text-white transition-colors">Adatvédelem</Link>
-            <Link href="#" className="hover:text-white transition-colors">Feltételek</Link>
+            {legalLinks.find((l) => l.key === "gdpr") ? (
+              <Link href={legalLinks.find((l) => l.key === "gdpr")!.href} className="hover:text-white transition-colors" target="_blank">
+                GDPR
+              </Link>
+            ) : null}
+            {legalLinks.find((l) => l.key === "terms") ? (
+              <Link href={legalLinks.find((l) => l.key === "terms")!.href} className="hover:text-white transition-colors" target="_blank">
+                Feltételek
+              </Link>
+            ) : null}
+            {legalLinks.find((l) => l.key === "impresszum") ? (
+              <Link href={legalLinks.find((l) => l.key === "impresszum")!.href} className="hover:text-white transition-colors" target="_blank">
+                Impresszum
+              </Link>
+            ) : null}
           </div>
           <Button
             variant="outline"

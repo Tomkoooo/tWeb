@@ -32,6 +32,13 @@ export default async function AdminCMS() {
         { key: "contact_phone", label: "Telefonszám", type: "text" },
         { key: "contact_address", label: "Cím", type: "text" },
       ]
+    },
+    {
+      title: "Shop SEO",
+      fields: [
+        { key: "shop_seo_title", label: "Shop SEO Cím", type: "text" },
+        { key: "shop_seo_description", label: "Shop SEO Leírás", type: "textarea" },
+      ]
     }
   ]
 

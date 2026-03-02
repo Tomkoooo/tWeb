@@ -29,6 +29,52 @@ export default function CartPage() {
     totalNetPrice,
     totalItems 
   } = useCartStore()
+  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability")
+        if (!res.ok) {
+          setShopEnabled(false)
+          return
+        }
+        const data = await res.json()
+        setShopEnabled(Boolean(data.enabled))
+      } catch {
+        setShopEnabled(false)
+      }
+    }
+    loadAvailability()
+  }, [])
+
+  if (shopEnabled === false) {
+    return (
+      <main className="min-h-screen bg-black pt-48 pb-20 px-6">
+        <Navbar />
+        <div className="container mx-auto max-w-4xl text-center">
+          <div className="glass-card p-20 border-white/5">
+            <h1 className="text-4xl font-heading font-black text-white mb-6 uppercase tracking-tighter">
+              JELENLEG A RENDELÉS LEADÁS SZÜNETEL
+            </h1>
+            <Link href="/">
+              <Button className="bg-[#FF5500] hover:bg-[#FF7722] text-white h-16 px-12 text-lg btn-krausz font-black">
+                VISSZA A FŐOLDALRA <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (shopEnabled === null) {
+    return (
+      <main className="min-h-screen bg-black pt-48 pb-20 px-6">
+        <Navbar />
+      </main>
+    )
+  }
 
   // For pagination (as requested)
   const [currentPage, setCurrentPage] = React.useState(1)

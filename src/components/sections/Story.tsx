@@ -19,7 +19,7 @@ interface StoryProps {
 
 export function Story({ title, content, accordions }: StoryProps) {
   const displayTitle = title || "A KRAUSZ LEGENDÁJA"
-  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkács Mester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyalonnan keményen dolgoznak, mint az emberek, akik használják őket."
+  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkácsmester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyalonnan keményen dolgoznak, mint az emberek, akik használják őket."
 
   const parsedAccordions = React.useMemo(() => {
     if (!accordions) return null

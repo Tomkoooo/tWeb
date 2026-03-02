@@ -22,6 +22,10 @@ export async function GET(
   else if (ext === '.png') contentType = 'image/png';
   else if (ext === '.webp') contentType = 'image/webp';
   else if (ext === '.gif') contentType = 'image/gif';
+  else if (ext === '.pdf') contentType = 'application/pdf';
+  else if (ext === '.txt') contentType = 'text/plain; charset=utf-8';
+  else if (ext === '.doc') contentType = 'application/msword';
+  else if (ext === '.docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   return new NextResponse(fileBuffer, {
     headers: {

@@ -41,7 +41,7 @@ export const MailerService = {
     const transporter = await this.getTransporter();
 
     const info = await transporter.sendMail({
-      from: `"Krausz Barkács Mester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
+      from: `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
       to,
       subject: compiledSubject,
       html: compiledBody,

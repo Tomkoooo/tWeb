@@ -5,9 +5,12 @@ import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
 import Coupon from "@/models/Coupon";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // Shipping Methods
 export async function createShippingMethod(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const grossPrice = parseFloat(formData.get("grossPrice") as string);
   const isActive = formData.get("isActive") === "true";
@@ -22,6 +25,8 @@ export async function createShippingMethod(formData: FormData) {
 }
 
 export async function updateShippingMethod(id: string, formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const grossPrice = parseFloat(formData.get("grossPrice") as string);
   const isActive = formData.get("isActive") === "true";
@@ -36,6 +41,8 @@ export async function updateShippingMethod(id: string, formData: FormData) {
 }
 
 export async function deleteShippingMethod(id: string) {
+  await requireAdmin();
+
   try {
     await dbConnect();
     await ShippingMethod.findByIdAndDelete(id);
@@ -47,6 +54,8 @@ export async function deleteShippingMethod(id: string) {
 
 // Payment Methods
 export async function createPaymentMethod(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const grossPrice = parseFloat(formData.get("grossPrice") as string);
   const isActive = formData.get("isActive") === "true";
@@ -61,6 +70,8 @@ export async function createPaymentMethod(formData: FormData) {
 }
 
 export async function updatePaymentMethod(id: string, formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const grossPrice = parseFloat(formData.get("grossPrice") as string);
   const isActive = formData.get("isActive") === "true";
@@ -75,6 +86,8 @@ export async function updatePaymentMethod(id: string, formData: FormData) {
 }
 
 export async function deletePaymentMethod(id: string) {
+  await requireAdmin();
+
   try {
     await dbConnect();
     await PaymentMethod.findByIdAndDelete(id);
@@ -86,6 +99,8 @@ export async function deletePaymentMethod(id: string) {
 
 // Coupons
 export async function createCoupon(data: any) {
+  await requireAdmin();
+
   try {
     await dbConnect();
     await Coupon.create(data);
@@ -96,6 +111,8 @@ export async function createCoupon(data: any) {
 }
 
 export async function deleteCoupon(id: string) {
+  await requireAdmin();
+
   try {
     await dbConnect();
     await Coupon.findByIdAndDelete(id);

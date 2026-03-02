@@ -64,13 +64,38 @@ export default function CheckoutPage() {
   const cartTotalPrice = useCartStore((state: any) => state.totalPrice)
   const totalItems = useCartStore((state: any) => state.totalItems)
   const { data: session } = useSession()
+  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
 
   React.useEffect(() => {
     const fetchMethods = async () => {
       const res = await fetch("/api/checkout/methods")
-      if (res.ok) setAvailableMethods(await res.json())
+      if (res.ok) {
+        setAvailableMethods(await res.json())
+      } else {
+        const err = await res.json().catch(() => ({}))
+        if (err?.error) {
+          toast.error(err.error)
+        }
+      }
     }
     fetchMethods()
+  }, [])
+
+  React.useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability")
+        if (!res.ok) {
+          setShopEnabled(false)
+          return
+        }
+        const data = await res.json()
+        setShopEnabled(Boolean(data.enabled))
+      } catch {
+        setShopEnabled(false)
+      }
+    }
+    loadAvailability()
   }, [])
 
   // Pre-fill user data if available...
@@ -167,6 +192,11 @@ export default function CheckoutPage() {
   const clearCart = useCartStore((state: any) => state.clearCart)
 
   const handleSubmitOrder = async () => {
+    if (!shopEnabled) {
+      toast.error("Jelenleg a rendelés leadás szünetel")
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const orderData = {
@@ -211,6 +241,21 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-black pt-48 pb-20 px-6">
       <Navbar />
+      {shopEnabled === false ? (
+        <div className="container mx-auto max-w-4xl">
+          <div className="glass-card p-16 border-white/5 text-center space-y-6">
+            <p className="text-3xl font-heading font-black uppercase tracking-tighter text-white">
+              Jelenleg a rendelés leadás szünetel
+            </p>
+            <Button
+              onClick={() => router.push("/")}
+              className="bg-[#FF5500] hover:bg-[#FF7722] text-white h-14 px-10 font-black uppercase tracking-widest text-xs"
+            >
+              Vissza a főoldalra
+            </Button>
+          </div>
+        </div>
+      ) : (
       <div className="container mx-auto max-w-6xl">
         {/* Step Progress */}
         <div className="sticky top-[80px] lg:top-[90px] z-40 bg-black pt-6 pb-6 mb-10 flex justify-between items-center border-b border-white/10">
@@ -351,6 +396,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      )}
     </main>
   )
 }

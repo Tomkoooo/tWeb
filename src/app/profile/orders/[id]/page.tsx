@@ -131,8 +131,8 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Product Review logic if delivered */}
-              {order.status === "delivered" && item.product && (
+              {/* Product Review logic for processed orders */}
+              {order.status !== "pending" && item.product && (
                 <div className="w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-white/10">
                   <ReviewForm productId={item.product._id} userId={session?.user?.id} existingRatings={item.product.ratings} />
                 </div>

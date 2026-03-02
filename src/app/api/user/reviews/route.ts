@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import Order from "@/models/Order";
+import Review from "@/models/Review";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,40 +24,27 @@ export async function POST(req: NextRequest) {
     const hasOrdered = await Order.exists({
       user: session.user.id,
       "items.product": productId,
-      status: "delivered" // Only allow reviews for delivered orders
+      status: { $in: ["processing", "shipped", "delivered", "cancelled"] }
     });
 
     if (!hasOrdered) {
-      return NextResponse.json({ error: "Csak a megrendelt és átvett termékeket tudod értékelni." }, { status: 403 });
+      return NextResponse.json({ error: "Csak feldolgozott rendelés után tudsz értékelni." }, { status: 403 });
     }
 
-    // Update the product to include the new rating
-    const product = await Product.findById(productId);
-    if (!product) {
+    const productExists = await Product.exists({ _id: productId });
+    if (!productExists) {
       return NextResponse.json({ error: "Termék nem található" }, { status: 404 });
     }
 
-    // Check if user already reviewed
-    const existingReviewIndex = product.ratings.findIndex(
-      (r: any) => r.user.toString() === session.user.id
-    );
-
-    if (existingReviewIndex >= 0) {
-      // Update existing
-      product.ratings[existingReviewIndex].rating = rating;
-      product.ratings[existingReviewIndex].comment = comment;
-      product.ratings[existingReviewIndex].createdAt = new Date();
-    } else {
-      // Add new
-      product.ratings.push({
-        user: session.user.id as any,
+    await Review.findOneAndUpdate(
+      { product: productId, user: session.user.id },
+      {
         rating,
-        comment,
-        createdAt: new Date(),
-      });
-    }
-
-    await product.save();
+        description: comment?.trim() || "Értékelés szöveges megjegyzés nélkül.",
+        status: "pending",
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
