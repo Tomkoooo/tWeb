@@ -24,6 +24,7 @@ import {
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCartStore } from "@/store/useCartStore"
+import { useRouter } from "next/navigation"
 
 interface ShopProps {
   categories?: any[]
@@ -35,6 +36,24 @@ export function Shop({
   products = [] 
 }: ShopProps) {
   const addItem = useCartStore((state: any) => state.addItem)
+  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability")
+        if (!res.ok) {
+          setShopEnabled(false)
+          return
+        }
+        const data = await res.json()
+        setShopEnabled(Boolean(data.enabled))
+      } catch {
+        setShopEnabled(false)
+      }
+    }
+    loadAvailability()
+  }, [])
 
   return (
     <section id="shop" className="py-32 bg-black px-4 overflow-hidden">
@@ -118,7 +137,7 @@ export function Shop({
             <CarouselContent className="-ml-6">
               {products.map((product) => (
                 <CarouselItem key={product.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <ShopProductCard product={product} addItem={addItem} />
+                  <ShopProductCard product={product} addItem={addItem} shopEnabled={shopEnabled} />
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -153,12 +172,20 @@ function ProductImage({ src, name }: { src: string; name: string }) {
   )
 }
 
-function ShopProductCard({ product, addItem }: { product: any; addItem: any }) {
+function ShopProductCard({ product, addItem, shopEnabled }: { product: any; addItem: any; shopEnabled: boolean | null }) {
   const [isAdded, setIsAdded] = React.useState(false)
+  const router = useRouter()
+  const requiresVariantSelection = Boolean(product.requireVariantSelection) && Boolean(product.hasVariants)
 
   const handleAddToCart = () => {
+    if (shopEnabled === false) return
+    if (requiresVariantSelection) {
+      router.push(`/products/${product.slug}`)
+      return
+    }
     addItem({
       id: product.id,
+      productId: product.id,
       name: product.name,
       slug: product.slug,
       price: product.price,
@@ -179,6 +206,11 @@ function ShopProductCard({ product, addItem }: { product: any; addItem: any }) {
         <Badge className="absolute top-6 left-6 bg-[#FF5500] text-white border-none rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
           {product.category}
         </Badge>
+        {requiresVariantSelection ? (
+          <Badge className="absolute top-6 right-6 bg-white/10 border border-white/20 text-white rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
+            VARIÁNSOS
+          </Badge>
+        ) : null}
         <div className="absolute bottom-6 right-6 flex gap-1.5">
           {[...Array(5)].map((_, i) => (
             <Star
@@ -198,18 +230,18 @@ function ShopProductCard({ product, addItem }: { product: any; addItem: any }) {
           </h4>
         </Link>
         <div className="text-3xl font-black text-white mb-8">
-          {product.price.toLocaleString("hu-HU")} <span className="text-sm font-black text-[#FF5500]">Ft</span>
+          {product.price.toLocaleString("hu-HU")} <span className="text-sm font-black text-[#FF5500]">Ft{requiresVariantSelection ? "-tól" : ""}</span>
         </div>
         <Button 
           onClick={handleAddToCart}
-          disabled={isAdded}
+          disabled={shopEnabled === false || isAdded}
           className={cn(
             "w-full border-2 font-black h-14 btn-krausz transition-all flex gap-3",
             isAdded ? "bg-green-600 border-green-600 text-white hover:bg-green-600 hover:border-green-600" : "bg-transparent border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500]"
           )}
         >
           {isAdded ? <Check className="w-5 h-5 text-white" /> : <ShoppingCart className="w-5 h-5 text-[#FF5500] group-hover:text-white" />}
-          {isAdded ? "KOSÁRBA TÉVE" : "KOSÁRBA TESZEM"}
+          {isAdded ? "KOSÁRBA TÉVE" : requiresVariantSelection ? "VARIÁNS VÁLASZTÁSA" : "KOSÁRBA TESZEM"}
         </Button>
       </div>
     </div>

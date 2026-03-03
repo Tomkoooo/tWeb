@@ -7,11 +7,39 @@ export interface IRating {
   createdAt: Date;
 }
 
+export interface IVariantOption {
+  name: string;
+  values: string[];
+}
+
+export interface IProductVariant {
+  id: string;
+  slugPart?: string;
+  sku?: string;
+  attributes: Record<string, string>;
+  nameOverride?: string;
+  descriptionOverride?: string;
+  netPrice: number;
+  discount: number;
+  stock: number;
+  isActive: boolean;
+  isDefault?: boolean;
+  images?: string[];
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string[];
+  };
+}
+
 export interface IProduct extends Document {
   name: string;
   images: string[];
   description: string;
   ratings: IRating[];
+  variantOptions: IVariantOption[];
+  variants: IProductVariant[];
+  requireVariantSelection: boolean;
   stock: number;
   netPrice: number;
   discount: number;
@@ -39,6 +67,34 @@ const ProductSchema = new Schema<IProduct>(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    variantOptions: [
+      {
+        name: { type: String, required: true },
+        values: [{ type: String, required: true }],
+      },
+    ],
+    variants: [
+      {
+        id: { type: String, required: true },
+        slugPart: { type: String },
+        sku: { type: String },
+        attributes: { type: Schema.Types.Mixed, default: {} },
+        nameOverride: { type: String },
+        descriptionOverride: { type: String },
+        netPrice: { type: Number, required: true },
+        discount: { type: Number, default: 0 },
+        stock: { type: Number, required: true, default: 0 },
+        isActive: { type: Boolean, default: true },
+        isDefault: { type: Boolean, default: false },
+        images: [{ type: String }],
+        seo: {
+          title: { type: String },
+          description: { type: String },
+          keywords: [{ type: String }],
+        },
+      },
+    ],
+    requireVariantSelection: { type: Boolean, default: false },
     stock: { type: Number, required: true, default: 0 },
     netPrice: { type: Number, required: true },
     discount: { type: Number, default: 0 },
@@ -54,6 +110,21 @@ const ProductSchema = new Schema<IProduct>(
   },
   { timestamps: true }
 );
+
+ProductSchema.pre("validate", function () {
+  const product = this as IProduct;
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
+  if (variants.length > 0) {
+    const seenIds = new Set<string>();
+    for (const variant of variants) {
+      if (seenIds.has(variant.id)) {
+        throw new Error(`Duplicate variant id: ${variant.id}`);
+      }
+      seenIds.add(variant.id);
+    }
+  }
+});
 
 
 const Product: Model<IProduct> = 

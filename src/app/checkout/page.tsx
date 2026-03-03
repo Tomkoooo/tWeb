@@ -201,7 +201,10 @@ export default function CheckoutPage() {
     try {
       const orderData = {
         items: items.map((i: any) => ({
-          product: i.id,
+          product: i.productId || i.id,
+          variantId: i.variantId || undefined,
+          variantLabel: i.variantLabel || undefined,
+          selectedAttributes: i.selectedAttributes || undefined,
           name: i.name,
           price: i.price,
           quantity: i.quantity
@@ -356,6 +359,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-grow min-w-0">
                       <p className="text-[10px] font-black text-white uppercase truncate">{item.name}</p>
+                      {item.variantLabel ? (
+                        <p className="text-[10px] text-accent font-black uppercase tracking-widest mt-1">
+                          {item.variantLabel}
+                        </p>
+                      ) : null}
                       <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">{item.quantity} x {item.price.toLocaleString("hu-HU")} FT</p>
                     </div>
                   </div>

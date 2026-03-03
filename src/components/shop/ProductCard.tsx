@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
+import { getActiveVariants, hasVariants } from "@/lib/product-variants"
 
 import { useCartStore } from "@/store/useCartStore"
 
@@ -18,14 +20,50 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isLoaded, setIsLoaded] = React.useState(false)
+  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+  const router = useRouter()
   const addItem = useCartStore((state: any) => state.addItem)
+  const variantProduct = hasVariants(product)
+  const requiresVariantSelection = Boolean(product.requireVariantSelection) && variantProduct
+  const activeVariants = getActiveVariants(product)
+  const minNetPrice =
+    requiresVariantSelection && activeVariants.length > 0
+      ? Math.min(...activeVariants.map((variant: any) => variant.netPrice || product.netPrice))
+      : product.netPrice
+  const maxDiscount =
+    requiresVariantSelection && activeVariants.length > 0
+      ? Math.max(...activeVariants.map((variant: any) => variant.discount || 0))
+      : product.discount || 0
 
-  const finalPrice = product.netPrice * (1 - (product.discount || 0) / 100)
+  const finalPrice = minNetPrice * (1 - maxDiscount / 100)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
+  React.useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability")
+        if (!res.ok) {
+          setShopEnabled(false)
+          return
+        }
+        const data = await res.json()
+        setShopEnabled(Boolean(data.enabled))
+      } catch {
+        setShopEnabled(false)
+      }
+    }
+    loadAvailability()
+  }, [])
+
   const handleAddToCart = () => {
+    if (shopEnabled === false) return
+    if (requiresVariantSelection) {
+      router.push(`/products/${product.slug}`)
+      return
+    }
     addItem({
       id: product._id.toString(),
+      productId: product._id.toString(),
       name: product.name,
       slug: product.slug,
       price: finalPrice,
@@ -63,9 +101,14 @@ export function ProductCard({ product }: ProductCardProps) {
           <Badge className="bg-black/60 backdrop-blur-md text-white border-white/10 rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
             {product.category?.name || "Termék"}
           </Badge>
-          {product.discount > 0 && (
+          {requiresVariantSelection ? (
+            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
+              Variansos
+            </Badge>
+          ) : null}
+          {maxDiscount > 0 && (
             <Badge className="bg-[#FF5500] text-white border-none rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
-              -{product.discount}%
+              -{maxDiscount}%
             </Badge>
           )}
         </div>
@@ -95,24 +138,25 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto pt-4 flex flex-col gap-4">
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-black text-white">
-              {finalPrice.toLocaleString("hu-HU")} <span className="text-xs font-black text-[#FF5500]">FT</span>
+              {finalPrice.toLocaleString("hu-HU")} <span className="text-xs font-black text-[#FF5500]">FT{requiresVariantSelection ? "-tól" : ""}</span>
             </span>
-            {product.discount > 0 && (
+            {maxDiscount > 0 && (
               <span className="text-sm font-bold text-neutral-500 line-through">
-                {product.netPrice.toLocaleString("hu-HU")} FT
+                {minNetPrice.toLocaleString("hu-HU")} FT
               </span>
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-2">
             <Button 
               onClick={handleAddToCart}
-              className="flex-grow bg-[#FF5500] border border-[#FF5500] text-white hover:bg-[#FF7722] hover:border-[#FF7722] font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
+              disabled={shopEnabled === false}
+              className="w-full bg-[#FF5500] border border-[#FF5500] text-white hover:bg-[#FF7722] hover:border-[#FF7722] font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               <ShoppingCart className="w-4 h-4" />
-              Kosárba
+              {requiresVariantSelection ? "Varians valasztasa" : "Kosarba"}
             </Button>
-            <Link href={`/products/${product.slug}`} className="flex-grow">
+            <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">
                 Megtekintés
                 <ArrowRight className="w-3 h-3 text-[#FF5500]" />

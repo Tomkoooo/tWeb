@@ -34,7 +34,7 @@ type UserDetailsResponse = {
     total: number;
     status: string;
     createdAt: string | Date;
-    items: { name: string; quantity: number }[];
+    items: { name: string; quantity: number; variantLabel?: string }[];
     billingInfo?: {
       type?: "personal" | "company";
       name?: string;
@@ -177,7 +177,11 @@ export default async function AdminUserDetailsPage({
                   <p>Tételek: {order.items.reduce((sum, item) => sum + item.quantity, 0)} db</p>
                 </div>
                 <div className="text-xs text-neutral-500">
-                  {order.items.map((item) => `${item.name} (${item.quantity} db)`).join(", ")}
+                  {order.items
+                    .map((item) =>
+                      `${item.name}${item.variantLabel ? ` [${item.variantLabel}]` : ""} (${item.quantity} db)`
+                    )
+                    .join(", ")}
                 </div>
               </div>
             ))}

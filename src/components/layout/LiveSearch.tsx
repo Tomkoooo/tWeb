@@ -95,33 +95,43 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
         <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-white/10 shadow-2xl z-50 overflow-hidden">
           {results.length > 0 ? (
             <div className="flex flex-col">
-              {results.map((product) => (
-                <button
-                  key={product._id}
-                  onClick={() => navigateToProduct(product.slug)}
-                  className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-0"
-                >
-                  <div className="relative w-12 h-12 bg-neutral-900 border border-white/5 flex-none">
-                    {product.images?.[0] ? (
-                      <Image
-                        src={`/api/media/${product.images[0]}`}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <Package className="w-6 h-6 absolute inset-0 m-auto text-neutral-700" />
-                    )}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-xs font-black text-white uppercase truncate tracking-widest">{product.name}</p>
-                    <p className="text-[10px] font-bold text-[#FF5500] mt-1">
-                      {product.netPrice.toLocaleString("hu-HU")} FT
-                    </p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-neutral-700" />
-                </button>
-              ))}
+              {results.map((product) => {
+                const variants = Array.isArray(product.variants)
+                  ? product.variants.filter((variant: any) => variant.isActive !== false)
+                  : []
+                const needsVariantSelection = Boolean(product.requireVariantSelection) && variants.length > 0
+                const minNetPrice = needsVariantSelection
+                  ? Math.min(...variants.map((variant: any) => Number(variant.netPrice || product.netPrice) || product.netPrice))
+                  : product.netPrice
+                return (
+                  <button
+                    key={product._id}
+                    onClick={() => navigateToProduct(product.slug)}
+                    className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-0"
+                  >
+                    <div className="relative w-12 h-12 bg-neutral-900 border border-white/5 flex-none">
+                      {product.images?.[0] ? (
+                        <Image
+                          src={`/api/media/${product.images[0]}`}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Package className="w-6 h-6 absolute inset-0 m-auto text-neutral-700" />
+                      )}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <p className="text-xs font-black text-white uppercase truncate tracking-widest">{product.name}</p>
+                      <p className="text-[10px] font-bold text-[#FF5500] mt-1">
+                        {needsVariantSelection ? "Tol " : ""}
+                        {minNetPrice.toLocaleString("hu-HU")} FT
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-neutral-700" />
+                  </button>
+                )
+              })}
               <Button
                 onClick={onSubmit}
                 variant="ghost"

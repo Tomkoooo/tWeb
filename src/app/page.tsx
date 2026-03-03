@@ -33,6 +33,8 @@ export default async function LandingPage() {
     image: string
     category: string
     rating: number
+    hasVariants: boolean
+    requireVariantSelection: boolean
   }> = []
 
   let shopCategories: Array<{
@@ -51,6 +53,7 @@ export default async function LandingPage() {
 
     // Process data for the Shop component
     products = productData.products.map(p => ({
+      hasVariants: Array.isArray((p as any).variants) && (p as any).variants.length > 0,
       // Fallback to 0 when there is no review data.
       // This avoids showing an inflated default rating in listings.
       rating: Array.isArray((p as any).ratings) && (p as any).ratings.length > 0
@@ -59,7 +62,19 @@ export default async function LandingPage() {
       id: p._id.toString(),
       name: p.name,
       slug: p.slug,
-      price: (p.netPrice * 1.27) - (p.discount || 0),
+      requireVariantSelection: Boolean((p as any).requireVariantSelection),
+      price: (() => {
+        const variants = Array.isArray((p as any).variants) ? (p as any).variants.filter((v: any) => v.isActive !== false) : []
+        const needsVariant = Boolean((p as any).requireVariantSelection) && variants.length > 0
+        const minNet = needsVariant
+          ? Math.min(...variants.map((v: any) => Number(v.netPrice || p.netPrice) || p.netPrice))
+          : p.netPrice
+        const maxDiscount = needsVariant
+          ? Math.max(...variants.map((v: any) => Number(v.discount || 0) || 0))
+          : Number(p.discount || 0) || 0
+        const gross = minNet * 1.27
+        return gross * (1 - maxDiscount / 100)
+      })(),
       image: p.images?.[0] ? `/api/media/${p.images[0]}` : "/placeholder-product.jpg",
       category: (p.category as any)?.name || "Kategória",
     }))

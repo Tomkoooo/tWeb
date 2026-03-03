@@ -29,7 +29,7 @@ export function SummaryStep({ data, onChange, cartItems, totalPrice }: SummarySt
         body: JSON.stringify({ 
           code: couponCode,
           cartValue: totalPrice,
-          items: cartItems.map(i => i.id)
+          items: cartItems.map(i => i.productId || i.id)
         })
       })
 

@@ -33,6 +33,7 @@ export function CartSync() {
             dbCart.items.forEach((dbItem: any) => {
               addItem({
                 id: dbItem.product._id,
+                productId: dbItem.product._id,
                 name: dbItem.product.name,
                 slug: dbItem.product.slug,
                 price: dbItem.product.netPrice * 1.27, // Simple formula for now

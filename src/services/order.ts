@@ -21,9 +21,43 @@ export class OrderService {
       const product = await Product.findById(item.product);
       if (!product) throw new Error(`Product ${item.product} not found`);
       if (!product.isActive || !product.isVisible) throw new Error(`${product.name} is no longer available`);
-      if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
+      const hasVariants = Array.isArray((product as any).variants) && (product as any).variants.length > 0;
+      const requireVariantSelection = Boolean((product as any).requireVariantSelection) && hasVariants;
 
-      product.stock -= item.quantity;
+      if (item.variantId) {
+        if (!hasVariants) {
+          throw new Error(`Ervenytelen varians a termekhez: ${product.name}`);
+        }
+        const variantIndex = (product as any).variants.findIndex(
+          (variant: any) => variant.id === item.variantId
+        );
+        if (variantIndex < 0) {
+          throw new Error(`Ervenytelen varians: ${product.name}`);
+        }
+
+        const variant = (product as any).variants[variantIndex];
+        if (variant.isActive === false) {
+          throw new Error(`A kivalasztott varians mar nem elerheto: ${product.name}`);
+        }
+        if ((variant.stock || 0) < item.quantity) {
+          throw new Error(`Nincs eleg keszlet a kivalasztott varianshoz: ${product.name}`);
+        }
+
+        (product as any).variants[variantIndex].stock = (variant.stock || 0) - item.quantity;
+      } else if (requireVariantSelection) {
+        if (!item.variantId) {
+          throw new Error(`Valassz variansot a termekhez: ${product.name}`);
+        }
+      } else {
+        if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
+        product.stock -= item.quantity;
+      }
+      if (hasVariants) {
+        (product as any).stock = (product as any).variants.reduce(
+          (sum: number, current: any) => sum + (current.stock || 0),
+          0
+        );
+      }
       await product.save();
     }
 
@@ -58,7 +92,9 @@ export class OrderService {
             customerName,
             totalAmount: order.total.toLocaleString("hu-HU"),
             shippingAddress: `${order.shippingAddress.zip} ${order.shippingAddress.city}, ${order.shippingAddress.street}`,
-            items: order.items.map((i: any) => `${i.name} (${i.quantity}x)`).join(", ")
+            items: order.items
+              .map((i: any) => `${i.name}${i.variantLabel ? ` [${i.variantLabel}]` : ""} (${i.quantity}x)`)
+              .join(", ")
           }
         });
       }
