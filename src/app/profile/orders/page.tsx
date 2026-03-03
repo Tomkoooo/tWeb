@@ -63,6 +63,7 @@ export default function OrdersPage() {
             {order.items.map((item: any, i: number) => (
               <p key={i} className="text-sm font-medium text-white truncate">
                 {item.quantity}x {item.name}
+                {item.variantLabel ? <span className="text-[#FF5500]"> ({item.variantLabel})</span> : null}
               </p>
             ))}
           </div>

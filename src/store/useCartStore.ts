@@ -3,6 +3,10 @@ import { persist } from "zustand/middleware";
 
 export interface CartItem {
   id: string;
+  productId: string;
+  variantId?: string;
+  variantLabel?: string;
+  selectedAttributes?: Record<string, string>;
   name: string;
   slug: string;
   price: number;
@@ -19,8 +23,8 @@ interface CartState {
   totalPrice: number;
   totalNetPrice: number;
   addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
 }
 
@@ -60,19 +64,19 @@ export const useCartStore = create<CartState>()(
         set({ items: newItems, ...calculateTotals(newItems) });
       },
 
-      removeItem: (id: string) => {
-        const newItems = get().items.filter((item: CartItem) => item.id !== id);
+      removeItem: (lineId: string) => {
+        const newItems = get().items.filter((item: CartItem) => item.id !== lineId);
         set({ items: newItems, ...calculateTotals(newItems) });
       },
 
-      updateQuantity: (id: string, quantity: number) => {
+      updateQuantity: (lineId: string, quantity: number) => {
         const items = get().items;
-        const item = items.find((i: CartItem) => i.id === id);
+        const item = items.find((i: CartItem) => i.id === lineId);
         if (!item) return;
 
         const newQuantity = Math.max(1, Math.min(quantity, item.stock));
         const newItems = items.map((i: CartItem) =>
-          i.id === id ? { ...i, quantity: newQuantity } : i
+          i.id === lineId ? { ...i, quantity: newQuantity } : i
         );
         
         set({ items: newItems, ...calculateTotals(newItems) });

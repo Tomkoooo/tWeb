@@ -30,7 +30,7 @@ type UserOrderRow = {
   total: number;
   status: string;
   createdAt: Date | string;
-  items: { name: string; quantity: number }[];
+  items: { name: string; quantity: number; variantLabel?: string }[];
   billingInfo?: {
     type?: "personal" | "company";
     name?: string;

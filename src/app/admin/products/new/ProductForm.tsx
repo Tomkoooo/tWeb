@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload"
+import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { createProduct, updateProduct, deleteProduct } from "@/actions/admin-products"
 import { cn } from "@/lib/utils"
 
@@ -96,6 +97,13 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               />
             </div>
           </div>
+
+          <ProductVariantsEditor
+            initialOptions={initialData?.variantOptions || []}
+            initialVariants={initialData?.variants || []}
+            defaultNetPrice={initialData?.netPrice || 0}
+            initialRequireVariantSelection={initialData?.requireVariantSelection || false}
+          />
 
           {/* Pricing & Stock */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">

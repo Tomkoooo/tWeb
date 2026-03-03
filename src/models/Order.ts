@@ -4,6 +4,9 @@ export interface IOrder extends Document {
   user?: mongoose.Types.ObjectId;
   items: {
     product: mongoose.Types.ObjectId | any;
+    variantId?: string;
+    variantLabel?: string;
+    selectedAttributes?: Record<string, string>;
     name: string;
     price: number;
     quantity: number;
@@ -42,6 +45,9 @@ const OrderSchema = new Schema<IOrder>(
     items: [
       {
         product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+        variantId: { type: String },
+        variantLabel: { type: String },
+        selectedAttributes: { type: Schema.Types.Mixed },
         name: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },

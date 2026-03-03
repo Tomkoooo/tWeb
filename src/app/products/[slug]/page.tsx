@@ -8,33 +8,46 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Metadata } from "next";
+import { resolveProductView } from "@/lib/product-variants";
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const query = await searchParams;
+  const selectedVariantId = typeof query.variant === "string" ? query.variant : null;
   const product = await ProductService.getBySlug(slug);
 
   if (!product) return { title: "Termék nem található" };
+  const view = resolveProductView(product as any, selectedVariantId);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://krauszbarkacs.hu";
+  const canonicalUrl = `${appUrl}/products/${product.slug}`;
+  const openGraphImage = view.images?.[0] || product.images?.[0];
 
   return {
-    title: `${product.seo?.title || product.name} | Krausz Barkács`,
-    description: product.seo?.description || product.description.substring(0, 160),
-    keywords: product.seo?.keywords?.join(", "),
+    title: `${view.seo.title || product.name} | Krausz Barkács`,
+    description: view.seo.description || product.description.substring(0, 160),
+    keywords: view.seo.keywords?.join(", "),
     openGraph: {
-      title: product.name,
-      description: product.description.substring(0, 160),
-      images: product.images?.[0] ? [`/api/media/${product.images[0]}`] : [],
+      title: view.name || product.name,
+      description: view.seo.description || product.description.substring(0, 160),
+      images: openGraphImage ? [`/api/media/${openGraphImage}`] : [],
+    },
+    alternates: {
+      canonical: canonicalUrl,
     },
   };
 }
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ variant?: string }>;
 }
 
 import { ProductDetail } from "./ProductDetail";
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const selectedVariantId = typeof query.variant === "string" ? query.variant : undefined;
   const product = await ProductService.getBySlug(slug);
 
   if (!product) {
@@ -44,7 +57,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <main className="min-h-screen bg-black text-white">
       <Navbar />
-      <ProductDetail product={product} />
+      <ProductDetail product={product} initialVariantId={selectedVariantId} />
       <Footer />
     </main>
   );

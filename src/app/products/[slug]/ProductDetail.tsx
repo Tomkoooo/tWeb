@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Tag, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,33 +9,96 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCartStore } from "@/store/useCartStore";
+import {
+  getActiveVariants,
+  getVariantLabel,
+  hasVariants,
+  resolveProductView,
+} from "@/lib/product-variants";
 
-export function ProductDetail({ product }: { product: any }) {
+export function ProductDetail({ product, initialVariantId }: { product: any; initialVariantId?: string }) {
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId || "");
   const [activeImage, setActiveImage] = useState(product.images?.[0] || "");
   const [isAdded, setIsAdded] = useState(false);
+  const [shopEnabled, setShopEnabled] = useState<boolean | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const addItem = useCartStore((state: any) => state.addItem)
 
-  const discountAmount = product.discount || 0;
-  const price = product.netPrice * 1.27;
+  const activeVariants = useMemo(() => getActiveVariants(product), [product]);
+  const view = useMemo(() => resolveProductView(product, selectedVariantId), [product, selectedVariantId]);
+  const discountAmount = view.discount || 0;
+  const price = view.netPrice * 1.27;
   const finalPrice = price * (1 - discountAmount / 100);
+  const selectedVariant = view.selectedVariant;
+  const hasVariantOptions = hasVariants(product);
+  const variantRequired = Boolean(product.requireVariantSelection) && hasVariantOptions;
+  const canShowPriceAndStock = !variantRequired || Boolean(selectedVariant);
   const reviewCount = product.reviews?.length || 0;
   const averageRating = reviewCount
     ? product.reviews.reduce((sum: number, review: any) => sum + (review.rating || 0), 0) / reviewCount
     : 0;
   const roundedRating = Math.round(averageRating);
 
+  useEffect(() => {
+    setSelectedVariantId(initialVariantId || "");
+  }, [initialVariantId]);
+
+  useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability");
+        if (!res.ok) {
+          setShopEnabled(false);
+          return;
+        }
+        const data = await res.json();
+        setShopEnabled(Boolean(data.enabled));
+      } catch {
+        setShopEnabled(false);
+      }
+    };
+    loadAvailability();
+  }, []);
+
+  useEffect(() => {
+    setActiveImage(view.images?.[0] || "");
+    setMainImageLoaded(false);
+  }, [view.images]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    const currentVariant = params.get("variant") || "";
+    if ((selectedVariantId || "") === currentVariant) return;
+    if (selectedVariantId) params.set("variant", selectedVariantId);
+    else params.delete("variant");
+    router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [selectedVariantId, pathname, router, searchParams]);
+
   const handleAddToCart = () => {
+    if (shopEnabled === false) return;
+    if (variantRequired && !selectedVariant) {
+      return;
+    }
+    const productId = product._id.toString();
+    const lineId = selectedVariant ? `${productId}:${selectedVariant.id}` : productId;
+    const variantLabel = selectedVariant ? getVariantLabel(selectedVariant) : "";
     addItem({
-      id: product._id.toString(),
-      name: product.name,
+      id: lineId,
+      productId,
+      variantId: selectedVariant?.id,
+      variantLabel,
+      selectedAttributes: selectedVariant?.attributes || {},
+      name: view.name,
       slug: product.slug,
       price: finalPrice,
-      image: product.images?.[0] ? `/api/media/${product.images[0]}` : "/placeholder-product.jpg",
+      image: view.images?.[0] ? `/api/media/${view.images[0]}` : "/placeholder-product.jpg",
       quantity: 1,
-      stock: product.stock,
-      netPrice: product.netPrice,
-      discount: product.discount
+      stock: view.stock,
+      netPrice: view.netPrice,
+      discount: view.discount
     })
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
@@ -49,7 +113,7 @@ export function ProductDetail({ product }: { product: any }) {
             {!mainImageLoaded && <Skeleton className="absolute inset-0 z-10" />}
             <Image
               src={activeImage ? `/api/media/${activeImage}` : "/placeholder-product.jpg"}
-              alt={product.name}
+              alt={view.name}
               fill
               onLoad={() => setMainImageLoaded(true)}
               className={cn(
@@ -64,9 +128,9 @@ export function ProductDetail({ product }: { product: any }) {
             )}
           </div>
           
-          {product.images && product.images.length > 1 && (
+          {view.images && view.images.length > 1 && (
             <div className="grid grid-cols-4 gap-4">
-              {product.images.map((img: string, idx: number) => (
+              {view.images.map((img: string, idx: number) => (
                 <div 
                   key={idx} 
                   onClick={() => setActiveImage(img)}
@@ -77,7 +141,7 @@ export function ProductDetail({ product }: { product: any }) {
                 >
                   <Image
                     src={`/api/media/${img}`}
-                    alt={`${product.name} - ${idx + 1}`}
+                    alt={`${view.name} - ${idx + 1}`}
                     fill
                     className="object-cover"
                   />
@@ -94,7 +158,7 @@ export function ProductDetail({ product }: { product: any }) {
               {product.category?.name || "Kategória nélkül"}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-heading font-black mb-6 uppercase tracking-tighter leading-tight">
-              {product.name}
+              {view.name}
             </h1>
             <div className="flex items-center gap-4 mb-8">
               <div className="flex gap-1">
@@ -115,29 +179,41 @@ export function ProductDetail({ product }: { product: any }) {
           </div>
  
           <div className="mb-12">
-            <div className="flex items-baseline gap-4 mb-2">
-              <span className="text-5xl font-black text-white">
-                {Math.round(finalPrice).toLocaleString("hu-HU")} <span className="text-xl text-accent font-black">Ft</span>
-              </span>
-              {discountAmount > 0 && (
-                <span className="text-2xl text-neutral-600 line-through">
-                  {Math.round(price).toLocaleString("hu-HU")} Ft
-                </span>
-              )}
-            </div>
-            <p className="text-neutral-500 text-sm italic font-medium">Bruttó ár (tartalmazza a 27% ÁFÁ-t)</p>
+            {canShowPriceAndStock ? (
+              <>
+                <div className="flex items-baseline gap-4 mb-2">
+                  <span className="text-5xl font-black text-white">
+                    {Math.round(finalPrice).toLocaleString("hu-HU")} <span className="text-xl text-accent font-black">Ft</span>
+                  </span>
+                  {discountAmount > 0 && (
+                    <span className="text-2xl text-neutral-600 line-through">
+                      {Math.round(price).toLocaleString("hu-HU")} Ft
+                    </span>
+                  )}
+                </div>
+                <p className="text-neutral-500 text-sm italic font-medium">Bruttó ár (tartalmazza a 27% ÁFÁ-t)</p>
+                <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">
+                  Keszlet: {view.stock} db
+                  {selectedVariant ? ` (varians: ${getVariantLabel(selectedVariant)})` : ""}
+                </p>
+              </>
+            ) : (
+              <p className="text-neutral-400 text-sm font-black uppercase tracking-widest">
+                Ez a termek csak varians valasztassal rendelheto.
+              </p>
+            )}
           </div>
  
           <div className="prose prose-invert max-w-none mb-12">
             <p className="text-neutral-400 text-lg leading-relaxed">
-              {product.description}
+              {view.description}
             </p>
           </div>
  
           {/* Tags / Keywords */}
-          {product.seo?.keywords && product.seo.keywords.length > 0 && (
+          {view.seo?.keywords && view.seo.keywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-12">
-              {product.seo.keywords.map((tag: string, i: number) => (
+              {view.seo.keywords.map((tag: string, i: number) => (
                 <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-default">
                   <Tag className="w-3 h-3 text-accent" />
                   {tag}
@@ -145,15 +221,58 @@ export function ProductDetail({ product }: { product: any }) {
               ))}
             </div>
           )}
+
+          {hasVariantOptions && (
+            <div className="mb-10 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                {variantRequired ? "Varians valasztasa (kotelezo)" : "Varians valasztasa (opcionalis)"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {activeVariants.map((variant: any) => {
+                  const isSelected = selectedVariantId === variant.id;
+                  return (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(variant.id)}
+                      className={cn(
+                        "px-4 h-11 border text-xs font-black uppercase tracking-widest transition-colors",
+                        isSelected
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-white/10 text-white hover:border-accent/40"
+                      )}
+                    >
+                      {getVariantLabel(variant)}
+                    </button>
+                  );
+                })}
+              </div>
+              {!selectedVariant && variantRequired ? (
+                <p className="text-xs text-amber-400 font-bold uppercase tracking-widest">
+                  Kosarba helyezeshez valassz egy variansot.
+                </p>
+              ) : selectedVariant ? (
+                <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+                  Kivalasztva: {getVariantLabel(selectedVariant)}
+                </p>
+              ) : null}
+            </div>
+          )}
  
           <div className="space-y-6 mb-12">
+            {shopEnabled === false ? (
+              <p className="text-xs text-amber-400 font-bold uppercase tracking-widest">
+                Jelenleg a rendelés leadás szünetel
+              </p>
+            ) : null}
             <Button 
               size="lg" 
               onClick={handleAddToCart}
-              disabled={isAdded}
+              disabled={shopEnabled === false || isAdded || (variantRequired && !selectedVariant)}
               className={cn(
                 "w-full h-16 font-black text-lg uppercase tracking-widest btn-krausz flex gap-4 transition-all duration-300",
-                isAdded ? "bg-green-600 hover:bg-green-600 text-white" : "bg-accent hover:bg-accent/90 text-white"
+                isAdded ? "bg-green-600 hover:bg-green-600 text-white" : "bg-accent hover:bg-accent/90 text-white",
+                variantRequired && !selectedVariant ? "opacity-60 cursor-not-allowed" : ""
               )}
             >
               {isAdded ? <Check className="w-6 h-6" /> : <ShoppingCart className="w-6 h-6" />}

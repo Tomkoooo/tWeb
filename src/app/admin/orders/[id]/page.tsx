@@ -118,6 +118,11 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <div className="flex-1">
                     <h3 className="font-heading font-black text-white uppercase tracking-wider text-base">{item.name}</h3>
                     <p className="text-[10px] text-neutral-600 font-black tracking-[0.2em] uppercase mt-0.5">Mennység: {item.quantity} DB</p>
+                    {item.variantLabel ? (
+                      <p className="text-[10px] text-accent font-black tracking-[0.2em] uppercase mt-1">
+                        Varians: {item.variantLabel}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="text-right">
                     <p className="font-black text-white text-lg tracking-tighter">{(item.price * item.quantity).toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span></p>

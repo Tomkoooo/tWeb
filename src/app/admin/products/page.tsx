@@ -103,7 +103,19 @@ export default async function AdminProducts({
                   </td>
                 </tr>
               ) : (
-                products.map((product: any) => (
+                products.map((product: any) => {
+                    const variants = Array.isArray(product.variants)
+                      ? product.variants.filter((variant: any) => variant.isActive !== false)
+                      : []
+                    const hasVariants = variants.length > 0
+                    const needsVariantSelection = Boolean(product.requireVariantSelection) && hasVariants
+                    const minNetPrice = needsVariantSelection
+                      ? Math.min(...variants.map((variant: any) => Number(variant.netPrice || product.netPrice) || product.netPrice))
+                      : product.netPrice
+                    const maxDiscount = needsVariantSelection
+                      ? Math.max(...variants.map((variant: any) => Number(variant.discount || 0) || 0))
+                      : Number(product.discount || 0) || 0
+                    return (
                   <tr key={product._id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
@@ -117,6 +129,11 @@ export default async function AdminProducts({
                         <div>
                           <p className="font-heading font-black text-white uppercase tracking-wider text-base">{product.name}</p>
                           <p className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">/{product.slug}</p>
+                          {hasVariants ? (
+                            <p className="text-[10px] text-accent font-black tracking-widest uppercase mt-1">
+                              {variants.length} varians
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </td>
@@ -147,9 +164,12 @@ export default async function AdminProducts({
                     </td>
                     <td className="px-6 py-6">
                       <div>
-                        <p className="font-black text-white text-lg tracking-tighter">{product.netPrice.toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span></p>
-                        {product.discount > 0 && (
-                          <p className="text-[10px] text-[#FFD700] font-black uppercase tracking-widest mt-1">-{product.discount}% KEDVEZMÉNY</p>
+                        <p className="font-black text-white text-lg tracking-tighter">
+                          {needsVariantSelection ? "Tol " : ""}
+                          {minNetPrice.toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span>
+                        </p>
+                        {maxDiscount > 0 && (
+                          <p className="text-[10px] text-[#FFD700] font-black uppercase tracking-widest mt-1">-{maxDiscount}% KEDVEZMÉNY</p>
                         )}
                       </div>
                     </td>
@@ -171,8 +191,8 @@ export default async function AdminProducts({
                       </div>
                     </td>
                   </tr>
-                )
-              ))}
+                    )
+                }))}
             </tbody>
           </table>
         </div>

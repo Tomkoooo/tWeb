@@ -31,14 +31,15 @@ export class CartService {
 
     // Merge logic: For each local item, add or update in DB
     for (const localItem of localItems) {
-      const productObjectId = new mongoose.Types.ObjectId(localItem.id);
+      const productId = localItem.productId || localItem.id;
+      const productObjectId = new mongoose.Types.ObjectId(productId);
       
       // Validate product exists and is active/visible
       const product = await Product.findById(productObjectId);
       if (!product || !product.isActive || !product.isVisible) continue;
 
       const existingItemIndex = cart.items.findIndex(
-        (item) => item.product.toString() === localItem.id
+        (item) => item.product.toString() === productId
       );
 
       if (existingItemIndex > -1) {

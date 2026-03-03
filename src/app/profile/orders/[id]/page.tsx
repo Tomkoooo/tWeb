@@ -128,6 +128,11 @@ export default function OrderDetailPage() {
                     )}
                   </h4>
                   <p className="text-xs text-neutral-500 font-bold tracking-widest">{item.quantity} db x {item.price.toLocaleString("hu-HU")} FT</p>
+                  {item.variantLabel ? (
+                    <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest mt-1">
+                      {item.variantLabel}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

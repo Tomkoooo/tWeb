@@ -18,63 +18,79 @@ export interface ProductFilters {
 export class ProductService {
   static async getPaginated(page: number = 1, limit: number = 10, filters: ProductFilters = {}) {
     await dbConnect();
-    const skip = (page - 1) * limit;
     
     const query: any = {};
     
     if (filters.search) {
       query.$or = [
         { name: { $regex: filters.search, $options: "i" } },
-        { description: { $regex: filters.search, $options: "i" } }
+        { description: { $regex: filters.search, $options: "i" } },
+        { "variantOptions.values": { $regex: filters.search, $options: "i" } },
+        { "variants.nameOverride": { $regex: filters.search, $options: "i" } },
+        { "variants.descriptionOverride": { $regex: filters.search, $options: "i" } },
+        { "variants.sku": { $regex: filters.search, $options: "i" } },
       ];
     }
 
     if (filters.isActive !== undefined) query.isActive = filters.isActive;
     if (filters.isVisible !== undefined) query.isVisible = filters.isVisible;
-    if (filters.isDiscounted) query.discount = { $gt: 0 };
     
     if (filters.category) {
       const { CategoryService } = await import("./category");
       const categoryIds = await CategoryService.getDescendantIds(filters.category);
       query.category = { $in: categoryIds };
     }
-    
-    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-      query.netPrice = {};
-      if (filters.minPrice !== undefined) query.netPrice.$gte = filters.minPrice;
-      if (filters.maxPrice !== undefined) query.netPrice.$lte = filters.maxPrice;
-    }
+    const allProducts = await Product.find(query).populate("category").lean();
+    const normalizedProducts = allProducts.map((product: any) => {
+      const variants = Array.isArray(product.variants)
+        ? product.variants.filter((variant: any) => variant.isActive !== false)
+        : [];
+      const hasActiveVariants = variants.length > 0;
+      const needsVariantSelection = Boolean(product.requireVariantSelection) && hasActiveVariants;
+      const minVariantNetPrice = needsVariantSelection
+        ? Math.min(...variants.map((variant: any) => Number(variant.netPrice || product.netPrice) || product.netPrice))
+        : product.netPrice;
+      const maxVariantDiscount = needsVariantSelection
+        ? Math.max(...variants.map((variant: any) => Number(variant.discount || 0) || 0))
+        : Number(product.discount || 0) || 0;
+      const totalVariantStock = needsVariantSelection
+        ? variants.reduce((sum: number, variant: any) => sum + (Number(variant.stock) || 0), 0)
+        : Number(product.stock || 0) || 0;
+      return {
+        ...product,
+        __displayNetPrice: minVariantNetPrice,
+        __displayDiscount: maxVariantDiscount,
+        __displayStock: totalVariantStock,
+      };
+    });
 
-    let sort: any = { createdAt: -1 };
-    if (filters.sort) {
-      switch (filters.sort) {
+    const filteredProducts = normalizedProducts.filter((product: any) => {
+      if (filters.isDiscounted && product.__displayDiscount <= 0) return false;
+      if (filters.minPrice !== undefined && product.__displayNetPrice < filters.minPrice) return false;
+      if (filters.maxPrice !== undefined && product.__displayNetPrice > filters.maxPrice) return false;
+      return true;
+    });
+
+    filteredProducts.sort((a: any, b: any) => {
+      const sort = filters.sort || "newest";
+      switch (sort) {
         case "price-asc":
-          sort = { netPrice: 1 };
-          break;
+          return a.__displayNetPrice - b.__displayNetPrice;
         case "price-desc":
-          sort = { netPrice: -1 };
-          break;
-        case "newest":
-          sort = { createdAt: -1 };
-          break;
+          return b.__displayNetPrice - a.__displayNetPrice;
         case "oldest":
-          sort = { createdAt: 1 };
-          break;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case "discount":
-          sort = { discount: -1 };
-          break;
+          return b.__displayDiscount - a.__displayDiscount;
+        case "newest":
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
-    }
+    });
 
-    const [products, total] = await Promise.all([
-      Product.find(query)
-        .populate("category")
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments(query)
-    ]);
+    const total = filteredProducts.length;
+    const skip = (page - 1) * limit;
+    const products = filteredProducts.slice(skip, skip + limit);
 
     return {
       products,

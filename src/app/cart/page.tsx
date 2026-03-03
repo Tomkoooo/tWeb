@@ -155,6 +155,11 @@ export default function CartPage() {
                           {item.name}
                         </h3>
                       </Link>
+                      {item.variantLabel ? (
+                        <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest">
+                          {item.variantLabel}
+                        </p>
+                      ) : null}
                       <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm font-bold mt-2">
                         {item.discount > 0 && (
                           <span className="text-[#FF5500]">-{item.discount}% KEDVEZMÉNY</span>
