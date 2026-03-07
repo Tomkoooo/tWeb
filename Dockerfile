@@ -60,5 +60,7 @@ EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+# Auth.js settings should be provided at runtime (docker-compose/k8s/secrets),
+# so redirects and cookies always match the actual deployed host.
 
 CMD ["node", "server.js"]
