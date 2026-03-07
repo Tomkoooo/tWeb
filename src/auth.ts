@@ -3,10 +3,65 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import clientPromise from "@/lib/mongodb"
 import { authConfig } from "./auth.config"
 
+const trustHost = process.env.AUTH_TRUST_HOST
+  ? process.env.AUTH_TRUST_HOST === "true"
+  : process.env.NODE_ENV !== "production"
+
+function safeOrigin(value?: string) {
+  if (!value) return null
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
+function safeMetadata(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object") {
+    return undefined
+  }
+
+  const candidate = metadata as Record<string, unknown>
+  return {
+    provider: typeof candidate.provider === "string" ? candidate.provider : undefined,
+    message: typeof candidate.message === "string" ? candidate.message : undefined,
+    name: typeof candidate.name === "string" ? candidate.name : undefined,
+    type: typeof candidate.type === "string" ? candidate.type : undefined,
+    callbackUrlOrigin: safeOrigin(
+      typeof candidate.callbackUrl === "string" ? candidate.callbackUrl : undefined
+    ),
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
+  trustHost,
   ...authConfig,
+  logger: {
+    error(error) {
+      const authError = error as Error & {
+        type?: string
+        code?: string
+        cause?: unknown
+      }
+      const errorCode = authError.type || authError.code || authError.name
+      const metadata = safeMetadata(authError.cause)
+
+      if (errorCode === "InvalidCheck") {
+        console.error("[auth][diagnostic] InvalidCheck during OAuth check", {
+          code: errorCode,
+          trustHost,
+          authUrlOrigin: safeOrigin(process.env.AUTH_URL),
+          nextauthUrlOrigin: safeOrigin(process.env.NEXTAUTH_URL),
+          ...metadata,
+        })
+        return
+      }
+
+      console.error("[auth][error]", errorCode, metadata)
+    },
+  },
   callbacks: {
     ...authConfig.callbacks,
     async session({ session, token }) {

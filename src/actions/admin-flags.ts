@@ -26,6 +26,12 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     defaultEnabled: true,
   },
   {
+    key: "maintenanceMode",
+    label: "Karbantartás mód",
+    description: "Nem admin felhasználóknak minden oldal helyett a karbantartási oldal jelenik meg.",
+    defaultEnabled: false,
+  },
+  {
     key: "glsParcelPicker",
     label: "GLS csomagpont választó",
     description: "Pénztárban GLS map picker megjelenítése.",

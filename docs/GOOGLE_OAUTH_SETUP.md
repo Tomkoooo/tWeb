@@ -22,12 +22,23 @@ To enable Google Login for the Krausz Webshop, follow these steps to create your
 4. Name: `Krausz Webshop Web Client`.
 5. **Authorized JavaScript origins**:
    - `http://localhost:3000`
-   - (Add your production domain if applicable)
+   - `https://your-production-domain.com`
+   - `https://your-ngrok-subdomain.ngrok-free.app` (only if testing via tunnel)
 6. **Authorized redirect URIs**:
    - `http://localhost:3000/api/auth/callback/google`
-   - (Add your production domain callback if applicable)
+   - `https://your-production-domain.com/api/auth/callback/google`
+   - `https://your-ngrok-subdomain.ngrok-free.app/api/auth/callback/google` (only if testing via tunnel)
 7. Click **Create**.
 8. Copy your **Client ID** and **Client Secret**.
+
+## 3.1 Canonical host rule (important)
+Use one host per login flow from start to callback:
+
+- `localhost` flow: start sign-in on `http://localhost:3000` and return to `http://localhost:3000`.
+- `ngrok` flow: start sign-in on the ngrok URL and return to the same ngrok URL.
+- production flow: start and return on the production domain.
+
+Do not start on one host and complete callback on another host, because PKCE/state cookies are host-bound and Auth.js will fail with `InvalidCheck`.
 
 ## 4. Update .env File
 Add the following variables to your project's `.env` file:
@@ -36,7 +47,17 @@ Add the following variables to your project's `.env` file:
 AUTH_GOOGLE_ID=your_client_id_here
 AUTH_GOOGLE_SECRET=your_client_secret_here
 AUTH_SECRET=a_random_secret_string (run `npx auth secret` to generate one)
+AUTH_URL=http://localhost:3000
 NEXTAUTH_URL=http://localhost:3000
+AUTH_TRUST_HOST=true
+```
+
+For reverse-proxy deployments, set:
+
+```env
+AUTH_URL=https://your-production-domain.com
+NEXTAUTH_URL=https://your-production-domain.com
+AUTH_TRUST_HOST=true
 ```
 
 ## 5. Manually Set Admin Role (Optional)
