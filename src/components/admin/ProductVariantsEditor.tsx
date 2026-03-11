@@ -183,7 +183,7 @@ export function ProductVariantsEditor({
   return (
     <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-heading font-black italic uppercase tracking-wider text-white">Variansok</h2>
+        <h2 className="text-xl font-heading font-black italic uppercase tracking-wider text-white">Variánsok</h2>
         <button
           type="button"
           onClick={() => setEnabled((prev) => !prev)}
@@ -208,17 +208,17 @@ export function ProductVariantsEditor({
 
       {!enabled ? (
         <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-          Variansok kikapcsolva. A termek egyetlen valtozatkent jelenik meg.
+          Variánsok kikapcsolva. A termék egyetlen változatként jelenik meg.
         </p>
       ) : (
         <div className="space-y-8">
           <div className="flex items-center justify-between border border-white/10 p-4">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-white">
-                Kotelezo varians valasztas
+                Kötelező variáns választás
               </p>
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
-                Ha bekapcsolt, a vevo nem teheti a base termeket kosarba varians nelkul.
+                Ha bekapcsolt, a vevő nem teheti a base terméket kosárba variáns nélkül.
               </p>
             </div>
             <button
@@ -240,7 +240,7 @@ export function ProductVariantsEditor({
 
           <div className="space-y-4">
             <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-              Opcio dimenziok
+              Opció dimenziók
             </p>
             {options.map((option, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -251,7 +251,7 @@ export function ProductVariantsEditor({
                       prev.map((item, i) => (i === index ? { ...item, name: event.target.value } : item))
                     )
                   }
-                  placeholder="Pl. Meret"
+                  placeholder="Pl. Méret"
                   className="md:col-span-3 bg-black border-white/5 h-11 text-white rounded-none"
                 />
                 <Input
@@ -282,7 +282,7 @@ export function ProductVariantsEditor({
                 className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Opcio hozzaadasa
+                Opció hozzáadása
               </Button>
               <Button
                 type="button"
@@ -291,7 +291,7 @@ export function ProductVariantsEditor({
                 className="h-10 rounded-none border-accent/40 text-accent hover:bg-accent/10"
               >
                 <WandSparkles className="w-4 h-4 mr-2" />
-                Variansok generalasa
+                Variánsok generálása
               </Button>
             </div>
           </div>
@@ -300,7 +300,7 @@ export function ProductVariantsEditor({
             <>
               <div className="border border-white/10 p-4 space-y-3">
                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                  Bulk szerkesztes
+                  Bulk szerkesztés
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div className="space-y-1">
@@ -334,7 +334,7 @@ export function ProductVariantsEditor({
                     />
                   </div>
                   <Button type="button" onClick={applyBulkValues} className="h-11 rounded-none bg-accent text-white">
-                    Alkalmazas
+                    Alkalmazás
                   </Button>
                 </div>
               </div>
@@ -380,7 +380,7 @@ export function ProductVariantsEditor({
                             )
                           }
                         >
-                          Alapertelmezett
+                          Alapértelmezett
                         </Button>
                         <Button
                           type="button"
@@ -474,7 +474,7 @@ export function ProductVariantsEditor({
                           )
                         }
                         className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="Nev felulirasa (opcionalis)"
+                        placeholder="Név felülírása (opcionális)"
                       />
                       <Input
                         value={activeVariant.descriptionOverride || ""}
@@ -486,7 +486,7 @@ export function ProductVariantsEditor({
                           )
                         }
                         className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="Leiras felulirasa (opcionalis)"
+                        placeholder="Leírás felülírása (opcionális)"
                       />
                     </div>
 
@@ -503,7 +503,7 @@ export function ProductVariantsEditor({
                           )
                         }
                         className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="SEO cim"
+                        placeholder="SEO cím"
                       />
                       <Input
                         value={activeVariant.seo?.description || ""}
@@ -517,7 +517,7 @@ export function ProductVariantsEditor({
                           )
                         }
                         className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="SEO leiras"
+                        placeholder="SEO leírás"
                       />
                       <Input
                         value={(activeVariant.seo?.keywords || []).join(", ")}
@@ -561,7 +561,7 @@ export function ProductVariantsEditor({
                         htmlFor={`variant-active-${activeVariant.id}`}
                         className="text-xs font-black uppercase tracking-widest text-neutral-400"
                       >
-                        Aktiv varians
+                        Aktív variáns
                       </label>
                     </div>
                   </div>
@@ -570,7 +570,7 @@ export function ProductVariantsEditor({
             </>
           ) : (
             <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-              Adj meg opciokat, majd generald a variansokat.
+              Adj meg opciókat, majd generáld a variánsokat.
             </p>
           )}
         </div>

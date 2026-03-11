@@ -1,0 +1,344 @@
+import mongoose from "mongoose";
+import dbConnect from "@/lib/db";
+import Product from "@/models/Product";
+import ShippingMethod from "@/models/ShippingMethod";
+import PaymentMethod from "@/models/PaymentMethod";
+import Coupon, { DiscountType } from "@/models/Coupon";
+import {
+  resolveConfiguredGlsShippingMethod,
+} from "@/services/gls-shipping";
+import { FeatureFlagService } from "@/services/feature-flags";
+import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
+
+export const STRIPE_FIXED_PAYMENT_METHOD_ID = "stripe_fixed";
+
+export type CheckoutInputItem = {
+  product: string;
+  variantId?: string;
+  variantLabel?: string;
+  selectedAttributes?: Record<string, string>;
+  name?: string;
+  price?: number;
+  quantity: number;
+};
+
+export type CheckoutInput = {
+  items: CheckoutInputItem[];
+  billingInfo: {
+    type: "personal" | "company";
+    name: string;
+    taxNumber?: string;
+    zip: string;
+    city: string;
+    street: string;
+    email: string;
+    phone: string;
+  };
+  shippingAddress: {
+    name: string;
+    zip: string;
+    city: string;
+    street: string;
+    comment?: string;
+    email: string;
+    phone: string;
+  };
+  shippingMethod: string;
+  paymentMethod: string;
+  glsParcelPoint?: GlsParcelPoint;
+  couponCodes?: string[];
+  subtotal?: number;
+  shippingFee?: number;
+  paymentFee?: number;
+  discount?: number;
+  total?: number;
+};
+
+export type ValidatedCheckoutData = {
+  items: CheckoutInputItem[];
+  billingInfo: CheckoutInput["billingInfo"];
+  shippingAddress: CheckoutInput["shippingAddress"];
+  shippingMethod: string;
+  paymentMethod: string;
+  glsParcelPoint?: GlsParcelPoint;
+  couponCodes: string[];
+  subtotal: number;
+  shippingFee: number;
+  paymentFee: number;
+  discount: number;
+  total: number;
+  paymentProvider: "stripe" | "standard";
+};
+
+function roundCurrency(value: number): number {
+  return Math.round(value);
+}
+
+function ensureString(value: unknown, field: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`Hiányzó vagy hibás mező: ${field}`);
+  }
+  return value.trim();
+}
+
+function resolveItemPrice(product: any, variantId?: string): { unitPrice: number; variantLabel?: string } {
+  const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+  const requireVariantSelection = Boolean(product.requireVariantSelection) && hasVariants;
+
+  if (variantId) {
+    const variant = (product.variants || []).find((entry: any) => entry.id === variantId);
+    if (!variant) {
+      throw new Error(`Érvénytelen variáns: ${product.name}`);
+    }
+    if (variant.isActive === false) {
+      throw new Error(`A kiválasztott variáns nem aktív: ${product.name}`);
+    }
+    const grossPrice = Number(variant.netPrice || 0) * 1.27;
+    const discounted = grossPrice * (1 - (Number(variant.discount || 0) / 100));
+    return {
+      unitPrice: roundCurrency(discounted),
+      variantLabel: Object.entries(variant.attributes || {})
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(" / "),
+    };
+  }
+
+  if (requireVariantSelection) {
+    throw new Error(`Válassz variánst a termékhez: ${product.name}`);
+  }
+
+  const grossPrice = Number(product.netPrice || 0) * 1.27;
+  const discounted = grossPrice * (1 - (Number(product.discount || 0) / 100));
+  return { unitPrice: roundCurrency(discounted) };
+}
+
+async function validateCoupon(
+  code: string | undefined,
+  subtotal: number,
+  userId?: string
+): Promise<{ couponCodes: string[]; discount: number; freeShipping: boolean }> {
+  if (!code) {
+    return { couponCodes: [], discount: 0, freeShipping: false };
+  }
+
+  const normalizedCode = code.toUpperCase().trim();
+  const coupon = await Coupon.findOne({ code: normalizedCode, isActive: true });
+  if (!coupon) {
+    throw new Error("Érvénytelen kuponkód");
+  }
+
+  const now = new Date();
+  if (now < coupon.startDate || now > coupon.endDate) {
+    throw new Error("A kupon lejárt vagy még nem érvényes");
+  }
+  if (coupon.minCartValue && subtotal < coupon.minCartValue) {
+    throw new Error(`A kupon használatához minimum ${coupon.minCartValue.toLocaleString("hu-HU")} FT értékű kosár szükséges`);
+  }
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+    throw new Error("A kupon felhasználási limitje elfogyott");
+  }
+  if (Array.isArray(coupon.applicableUsers) && coupon.applicableUsers.length > 0) {
+    if (!userId || !coupon.applicableUsers.some((entry: any) => entry.toString() === userId)) {
+      throw new Error("Ez a kupon az Ön számára nem elérhető");
+    }
+  }
+
+  if (coupon.type === DiscountType.FREE_SHIPPING) {
+    return { couponCodes: [coupon.code], discount: 0, freeShipping: true };
+  }
+  if (coupon.type === DiscountType.PERCENTAGE) {
+    return {
+      couponCodes: [coupon.code],
+      discount: roundCurrency(subtotal * (coupon.value / 100)),
+      freeShipping: false,
+    };
+  }
+  return {
+    couponCodes: [coupon.code],
+    discount: Math.max(0, roundCurrency(coupon.value)),
+    freeShipping: false,
+  };
+}
+
+async function resolveStripePaymentMethodId(): Promise<string> {
+  const existing = await PaymentMethod.findOne({ name: "Stripe (bankkártya)" }).lean();
+  if (existing?._id) return existing._id.toString();
+  const created = await PaymentMethod.create({
+    name: "Stripe (bankkártya)",
+    grossPrice: 0,
+    isActive: false,
+  });
+  return created._id.toString();
+}
+
+export async function validateAndNormalizeCheckoutInput(
+  input: CheckoutInput,
+  options?: { userId?: string; allowStripeFixed?: boolean }
+): Promise<ValidatedCheckoutData> {
+  await dbConnect();
+
+  if (!input || !Array.isArray(input.items) || input.items.length === 0) {
+    throw new Error("A kosár üres");
+  }
+
+  const billingInfo = input.billingInfo || ({} as CheckoutInput["billingInfo"]);
+  const shippingAddress = input.shippingAddress || ({} as CheckoutInput["shippingAddress"]);
+  ensureString(billingInfo.name, "billingInfo.name");
+  ensureString(billingInfo.zip, "billingInfo.zip");
+  ensureString(billingInfo.city, "billingInfo.city");
+  ensureString(billingInfo.street, "billingInfo.street");
+  ensureString(billingInfo.email, "billingInfo.email");
+  ensureString(billingInfo.phone, "billingInfo.phone");
+  ensureString(shippingAddress.name, "shippingAddress.name");
+  ensureString(shippingAddress.zip, "shippingAddress.zip");
+  ensureString(shippingAddress.city, "shippingAddress.city");
+  ensureString(shippingAddress.street, "shippingAddress.street");
+  ensureString(shippingAddress.email, "shippingAddress.email");
+  ensureString(shippingAddress.phone, "shippingAddress.phone");
+
+  const isGlsFixed = input.shippingMethod === GLS_FIXED_SHIPPING_METHOD_ID;
+  let resolvedShippingMethodId = "";
+  let shippingMethodGrossPrice = 0;
+  if (isGlsFixed) {
+    const glsParcelPickerEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false);
+    if (!glsParcelPickerEnabled) {
+      throw new Error("A kiválasztott szállítási mód nem támogatott");
+    }
+    const configuredGlsMethod = await resolveConfiguredGlsShippingMethod({ requireActive: true });
+    if (!configuredGlsMethod) {
+      throw new Error("A GLS szállítás jelenleg nem elérhető");
+    }
+    if (!input.glsParcelPoint?.id || !input.glsParcelPoint?.name) {
+      throw new Error("A GLS csomagpont kiválasztása kötelező");
+    }
+    resolvedShippingMethodId = configuredGlsMethod.id;
+    shippingMethodGrossPrice = configuredGlsMethod.grossPrice;
+  } else {
+    if (!mongoose.Types.ObjectId.isValid(input.shippingMethod)) {
+      throw new Error("Érvénytelen szállítási mód");
+    }
+    const shippingMethod = await ShippingMethod.findOne({
+      _id: input.shippingMethod,
+      isActive: true,
+    }).lean();
+    if (!shippingMethod) {
+      throw new Error("A kiválasztott szállítási mód nem elérhető");
+    }
+    resolvedShippingMethodId = shippingMethod._id.toString();
+    shippingMethodGrossPrice = Number(shippingMethod.grossPrice || 0);
+  }
+
+  const isStripeFixed = input.paymentMethod === STRIPE_FIXED_PAYMENT_METHOD_ID;
+  if (isStripeFixed && !options?.allowStripeFixed) {
+    throw new Error("A kiválasztott fizetési mód nem támogatott");
+  }
+  if (isStripeFixed && Array.isArray(input.couponCodes) && input.couponCodes.length > 0) {
+    throw new Error("A kupon használata Stripe fizetésnél jelenleg nem támogatott.");
+  }
+
+  let paymentMethodId = "";
+  let paymentFee = 0;
+  if (isStripeFixed) {
+    paymentMethodId = await resolveStripePaymentMethodId();
+  } else {
+    if (!mongoose.Types.ObjectId.isValid(input.paymentMethod)) {
+      throw new Error("Érvénytelen fizetési mód");
+    }
+    const paymentMethod = await PaymentMethod.findOne({
+      _id: input.paymentMethod,
+      isActive: true,
+    }).lean();
+    if (!paymentMethod) {
+      throw new Error("A kiválasztott fizetési mód nem elérhető");
+    }
+    paymentMethodId = paymentMethod._id.toString();
+    paymentFee = Number(paymentMethod.grossPrice || 0);
+  }
+
+  const normalizedItems: CheckoutInputItem[] = [];
+  let subtotal = 0;
+
+  for (const item of input.items) {
+    if (!item || !mongoose.Types.ObjectId.isValid(item.product)) {
+      throw new Error("Érvénytelen termék a kosárban");
+    }
+    const quantity = Number(item.quantity || 0);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error("Érvénytelen mennyiség a kosárban");
+    }
+
+    const product = await Product.findById(item.product).lean();
+    if (!product) throw new Error("A kosár egyik terméke már nem található");
+    if (!product.isActive || !product.isVisible) {
+      throw new Error(`${product.name} jelenleg nem rendelhető`);
+    }
+
+    const priceInfo = resolveItemPrice(product, item.variantId);
+    const unitPrice = priceInfo.unitPrice;
+    subtotal += unitPrice * quantity;
+
+    normalizedItems.push({
+      product: item.product,
+      variantId: item.variantId || undefined,
+      variantLabel: item.variantLabel || priceInfo.variantLabel || undefined,
+      selectedAttributes: item.selectedAttributes || undefined,
+      name: item.name || product.name,
+      price: unitPrice,
+      quantity,
+    });
+  }
+
+  const couponCode = Array.isArray(input.couponCodes) ? input.couponCodes[0] : undefined;
+  const couponResult = await validateCoupon(couponCode, subtotal, options?.userId);
+  const shippingFee = couponResult.freeShipping ? 0 : shippingMethodGrossPrice;
+  const discount = Math.max(0, couponResult.discount);
+  const total = Math.max(0, roundCurrency(subtotal + shippingFee + paymentFee - discount));
+
+  return {
+    items: normalizedItems,
+    billingInfo: {
+      type: billingInfo.type === "company" ? "company" : "personal",
+      name: billingInfo.name.trim(),
+      taxNumber: billingInfo.taxNumber?.trim() || undefined,
+      zip: billingInfo.zip.trim(),
+      city: billingInfo.city.trim(),
+      street: billingInfo.street.trim(),
+      email: billingInfo.email.trim(),
+      phone: billingInfo.phone.trim(),
+    },
+    shippingAddress: {
+      name: shippingAddress.name.trim(),
+      zip: shippingAddress.zip.trim(),
+      city: shippingAddress.city.trim(),
+      street: shippingAddress.street.trim(),
+      comment: shippingAddress.comment?.trim() || undefined,
+      email: shippingAddress.email.trim(),
+      phone: shippingAddress.phone.trim(),
+    },
+    shippingMethod: resolvedShippingMethodId,
+    paymentMethod: paymentMethodId,
+    glsParcelPoint: isGlsFixed
+      ? {
+          id: ensureString(input.glsParcelPoint?.id, "glsParcelPoint.id"),
+          name: ensureString(input.glsParcelPoint?.name, "glsParcelPoint.name"),
+          contact: input.glsParcelPoint?.contact
+            ? {
+                countryCode: input.glsParcelPoint.contact.countryCode?.trim() || undefined,
+                postalCode: input.glsParcelPoint.contact.postalCode?.trim() || undefined,
+                city: input.glsParcelPoint.contact.city?.trim() || undefined,
+                address: input.glsParcelPoint.contact.address?.trim() || undefined,
+                name: input.glsParcelPoint.contact.name?.trim() || undefined,
+                email: input.glsParcelPoint.contact.email?.trim() || undefined,
+              }
+            : undefined,
+        }
+      : undefined,
+    couponCodes: couponResult.couponCodes,
+    subtotal: roundCurrency(subtotal),
+    shippingFee: roundCurrency(shippingFee),
+    paymentFee: roundCurrency(paymentFee),
+    discount,
+    total,
+    paymentProvider: isStripeFixed ? "stripe" : "standard",
+  };
+}

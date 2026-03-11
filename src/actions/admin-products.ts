@@ -141,7 +141,7 @@ export async function createProduct(formData: FormData) {
   const variantOptions = variantsEnabled ? sanitizeVariantOptions(variantOptionsInput) : [];
   const variants = variantsEnabled ? sanitizeVariants(variantsInput, netPrice) : [];
   if (variantsEnabled && variants.length === 0) {
-    throw new Error("A varians termekhez legalabb egy varians kotelezo.");
+    throw new Error("A variáns termékhez legalább egy variáns kötelező.");
   }
 
   try {
@@ -203,7 +203,7 @@ export async function updateProduct(id: string, formData: FormData) {
   const variantOptions = variantsEnabled ? sanitizeVariantOptions(variantOptionsInput) : [];
   const variants = variantsEnabled ? sanitizeVariants(variantsInput, netPrice) : [];
   if (variantsEnabled && variants.length === 0) {
-    throw new Error("A varians termekhez legalabb egy varians kotelezo.");
+    throw new Error("A variáns termékhez legalább egy variáns kötelező.");
   }
 
   try {

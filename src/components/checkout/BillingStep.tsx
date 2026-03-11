@@ -90,6 +90,27 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
           />
         </div>
+
+        <div className="space-y-2">
+          <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">E-mail</Label>
+          <Input
+            type="email"
+            value={data.email || ""}
+            onChange={(e) => handleChange("email", e.target.value)}
+            placeholder="name@example.com"
+            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Telefonszám</Label>
+          <Input
+            value={data.phone || ""}
+            onChange={(e) => handleChange("phone", e.target.value)}
+            placeholder="+36701234567"
+            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+          />
+        </div>
       </div>
     </div>
   )

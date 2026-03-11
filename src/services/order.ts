@@ -4,19 +4,46 @@ import Product from "@/models/Product";
 import Cart from "@/models/Cart";
 import mongoose from "mongoose";
 import { MailerService } from "./mailer";
-import User from "@/models/User";
 import { FeatureFlagService } from "./feature-flags";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
-    const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
-    if (!isShopEnabled) {
-      throw new Error("Jelenleg a rendelés leadás szünetel");
-    }
+    return this.createOrderFromCheckoutData(orderData, userId, { enforceShopEnabled: true });
+  }
 
+  static async createOrderFromCheckoutData(
+    orderData: any,
+    userId?: string,
+    options?: { enforceShopEnabled?: boolean }
+  ) {
+    if (options?.enforceShopEnabled !== false) {
+      const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
+      if (!isShopEnabled) {
+        throw new Error("Jelenleg a rendelés leadás szünetel");
+      }
+    }
     await dbConnect();
 
-    // 1. Validate items and update stock
+    await this.validateAndUpdateStock(orderData);
+
+    // 2. Create the order
+    const order = new Order({
+      ...orderData,
+      user: userId ? new mongoose.Types.ObjectId(userId) : undefined,
+    });
+    await order.save();
+
+    // 3. Clear the cart if user is logged in
+    await this.clearUserCart(userId);
+
+    // 4. Trigger side effects after successful persistence
+    await this.sendOrderConfirmation(order, orderData);
+    await this.tryIssueInvoice(order);
+
+    return order;
+  }
+
+  private static async validateAndUpdateStock(orderData: any) {
     for (const item of orderData.items) {
       const product = await Product.findById(item.product);
       if (!product) throw new Error(`Product ${item.product} not found`);
@@ -26,27 +53,27 @@ export class OrderService {
 
       if (item.variantId) {
         if (!hasVariants) {
-          throw new Error(`Ervenytelen varians a termekhez: ${product.name}`);
+          throw new Error(`Érvénytelen variáns a termékhez: ${product.name}`);
         }
         const variantIndex = (product as any).variants.findIndex(
           (variant: any) => variant.id === item.variantId
         );
         if (variantIndex < 0) {
-          throw new Error(`Ervenytelen varians: ${product.name}`);
+          throw new Error(`Érvénytelen variáns: ${product.name}`);
         }
 
         const variant = (product as any).variants[variantIndex];
         if (variant.isActive === false) {
-          throw new Error(`A kivalasztott varians mar nem elerheto: ${product.name}`);
+          throw new Error(`A kiválasztott variáns már nem elérhető: ${product.name}`);
         }
         if ((variant.stock || 0) < item.quantity) {
-          throw new Error(`Nincs eleg keszlet a kivalasztott varianshoz: ${product.name}`);
+          throw new Error(`Nincs elég készlet a kiválasztott variánshoz: ${product.name}`);
         }
 
         (product as any).variants[variantIndex].stock = (variant.stock || 0) - item.quantity;
       } else if (requireVariantSelection) {
         if (!item.variantId) {
-          throw new Error(`Valassz variansot a termekhez: ${product.name}`);
+          throw new Error(`Válassz variánst a termékhez: ${product.name}`);
         }
       } else {
         if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
@@ -60,24 +87,18 @@ export class OrderService {
       }
       await product.save();
     }
+  }
 
-    // 2. Create the order
-    const order = new Order({
-      ...orderData,
-      user: userId ? new mongoose.Types.ObjectId(userId) : undefined,
-    });
-    await order.save();
-
-    // 3. Clear the cart if user is logged in
+  private static async clearUserCart(userId?: string) {
     if (userId) {
       await Cart.findOneAndUpdate(
         { user: new mongoose.Types.ObjectId(userId) },
         { items: [] }
       );
     }
+  }
 
-
-    // 4. Trigger Order Confirmation Email
+  private static async sendOrderConfirmation(order: any, orderData: any) {
     try {
       const populatedOrder = await Order.findById(order._id).populate("user");
       const customerEmail = populatedOrder.user?.email || orderData.billingInfo?.email;
@@ -101,8 +122,16 @@ export class OrderService {
     } catch (emailError) {
       console.error("Failed to send order confirmation email:", emailError);
     }
-
-    return order;
   }
 
+  private static async tryIssueInvoice(_order: any) {
+    // Placeholder hook for future invoice providers (e.g. Szamlazz.hu).
+    // Keeping this in one place avoids coupling route handlers to invoicing.
+    try {
+      const invoicingEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false);
+      if (!invoicingEnabled) return;
+    } catch (error) {
+      console.error("Invoice hook check failed:", error);
+    }
+  }
 }
