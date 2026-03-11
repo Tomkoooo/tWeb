@@ -103,7 +103,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </Badge>
           {requiresVariantSelection ? (
             <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
-              Variansos
+              Variánsos
             </Badge>
           ) : null}
           {maxDiscount > 0 && (
@@ -154,7 +154,7 @@ export function ProductCard({ product }: ProductCardProps) {
               className="w-full bg-[#FF5500] border border-[#FF5500] text-white hover:bg-[#FF7722] hover:border-[#FF7722] font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               <ShoppingCart className="w-4 h-4" />
-              {requiresVariantSelection ? "Varians valasztasa" : "Kosarba"}
+              {requiresVariantSelection ? "Variáns választása" : "Kosárba"}
             </Button>
             <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">

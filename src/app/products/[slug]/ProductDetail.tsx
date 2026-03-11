@@ -193,13 +193,13 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                 </div>
                 <p className="text-neutral-500 text-sm italic font-medium">Bruttó ár (tartalmazza a 27% ÁFÁ-t)</p>
                 <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">
-                  Keszlet: {view.stock} db
-                  {selectedVariant ? ` (varians: ${getVariantLabel(selectedVariant)})` : ""}
+                  Készlet: {view.stock} db
+                  {selectedVariant ? ` (variáns: ${getVariantLabel(selectedVariant)})` : ""}
                 </p>
               </>
             ) : (
               <p className="text-neutral-400 text-sm font-black uppercase tracking-widest">
-                Ez a termek csak varians valasztassal rendelheto.
+                Ez a termék csak variáns választással rendelhető.
               </p>
             )}
           </div>
@@ -225,7 +225,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
           {hasVariantOptions && (
             <div className="mb-10 space-y-4">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                {variantRequired ? "Varians valasztasa (kotelezo)" : "Varians valasztasa (opcionalis)"}
+                {variantRequired ? "Variáns választása (kötelező)" : "Variáns választása (opcionális)"}
               </p>
               <div className="flex flex-wrap gap-2">
                 {activeVariants.map((variant: any) => {
@@ -249,11 +249,11 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
               </div>
               {!selectedVariant && variantRequired ? (
                 <p className="text-xs text-amber-400 font-bold uppercase tracking-widest">
-                  Kosarba helyezeshez valassz egy variansot.
+                  Kosárba helyezéshez válassz egy variánst.
                 </p>
               ) : selectedVariant ? (
                 <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-                  Kivalasztva: {getVariantLabel(selectedVariant)}
+                  Kiválasztva: {getVariantLabel(selectedVariant)}
                 </p>
               ) : null}
             </div>

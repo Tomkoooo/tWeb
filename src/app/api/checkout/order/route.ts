@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { OrderService } from "@/services/order";
 import { FeatureFlagService } from "@/services/feature-flags";
+import {
+  STRIPE_FIXED_PAYMENT_METHOD_ID,
+  validateAndNormalizeCheckoutInput,
+} from "@/services/checkout-validation";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -15,8 +19,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const orderData = await req.json();
-    const order = await OrderService.createOrder(orderData, session?.user?.id);
+    const payload = await req.json();
+    if (payload?.paymentMethod === STRIPE_FIXED_PAYMENT_METHOD_ID) {
+      return NextResponse.json(
+        { error: "A Stripe fizetéshez a dedikált fizetési folyamatot kell használni." },
+        { status: 400 }
+      );
+    }
+
+    const validatedOrderData = await validateAndNormalizeCheckoutInput(payload, {
+      userId: session?.user?.id,
+      allowStripeFixed: false,
+    });
+    const order = await OrderService.createOrder(validatedOrderData, session?.user?.id);
     
     return NextResponse.json({ 
       success: true, 

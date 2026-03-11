@@ -1,11 +1,10 @@
-import { getOrderById, updateOrderStatus } from "@/actions/admin-orders"
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, Tag, CheckCircle2 } from "lucide-react"
+import { generateOrderGlsLabel, getOrderById, updateOrderStatus } from "@/actions/admin-orders"
+import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, CheckCircle2, Printer } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
-import { revalidatePath } from "next/cache"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -101,6 +100,51 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </form>
               ))}
             </div>
+            <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">GLS Címke</h3>
+              <form
+                action={async () => {
+                  "use server"
+                  await generateOrderGlsLabel(order._id.toString())
+                }}
+              >
+                <Button
+                  variant="outline"
+                  className="h-12 border-accent/40 text-accent hover:bg-accent/10 rounded-none uppercase tracking-widest text-[10px] font-black"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  GLS CÍMKE GENERÁLÁSA
+                </Button>
+              </form>
+              {order.glsLabel?.parcelNumber ? (
+                <div className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-300 space-y-2">
+                  <p>Parcel Number: <span className="text-white">{order.glsLabel.parcelNumber}</span></p>
+                  {order.glsLabel.generatedAt ? (
+                    <p>
+                      Generálva:{" "}
+                      <span className="text-white">
+                        {format(new Date(order.glsLabel.generatedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
+                      </span>
+                    </p>
+                  ) : null}
+                  {order.glsLabel.labelUrl ? (
+                    <a
+                      href={order.glsLabel.labelUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex text-accent hover:text-accent/80"
+                    >
+                      CÍMKE MEGNYITÁSA
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+              {order.glsLabel?.lastError ? (
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
+                  GLS HIBA: {order.glsLabel.lastError}
+                </p>
+              ) : null}
+            </div>
           </div>
 
           {/* Items Card */}
@@ -110,7 +154,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               Rendelt Tételek
             </h2>
             <div className="space-y-4">
-              {order.items.map((item: any, index: number) => (
+              {order.items.map((item: { name: string; quantity: number; variantLabel?: string; price: number }, index: number) => (
                 <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-accent/30 transition-all">
                   <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-accent/20 transition-colors overflow-hidden shrink-0">
                     <Package className="w-8 h-8 text-neutral-800" />
@@ -197,7 +241,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <p className="text-neutral-400 text-sm">{order.shippingAddress.street}</p>
                   {order.shippingAddress.comment && (
                     <div className="mt-4 p-3 bg-black/40 border-l-2 border-accent text-neutral-400 text-xs italic">
-                      "{order.shippingAddress.comment}"
+                      &quot;{order.shippingAddress.comment}&quot;
                     </div>
                   )}
                 </div>
@@ -216,7 +260,9 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     </div>
                     <div className="flex items-center gap-2 text-white/80">
                       <Truck className="w-3.5 h-3.5" />
-                      <span className="text-xs font-black uppercase tracking-tight">Szállítás: Futár</span>
+                      <span className="text-xs font-black uppercase tracking-tight">
+                        Szállítás: {order.glsParcelPoint?.name ? `GLS Csomagpont (${order.glsParcelPoint.name})` : "Futár"}
+                      </span>
                     </div>
                   </div>
                 </div>

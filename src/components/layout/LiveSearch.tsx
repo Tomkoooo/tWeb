@@ -124,7 +124,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                     <div className="flex-grow min-w-0">
                       <p className="text-xs font-black text-white uppercase truncate tracking-widest">{product.name}</p>
                       <p className="text-[10px] font-bold text-[#FF5500] mt-1">
-                        {needsVariantSelection ? "Tol " : ""}
+                        {needsVariantSelection ? "Tól " : ""}
                         {minNetPrice.toLocaleString("hu-HU")} FT
                       </p>
                     </div>

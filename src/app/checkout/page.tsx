@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Check, 
@@ -23,6 +23,7 @@ import { BillingStep } from "@/components/checkout/BillingStep"
 import { ShippingStep } from "@/components/checkout/ShippingStep"
 import { MethodsStep } from "@/components/checkout/MethodsStep"
 import { SummaryStep } from "@/components/checkout/SummaryStep"
+import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls"
 
 const STEPS = [
   { id: "billing", title: "Számlázás", icon: FileText },
@@ -41,7 +42,9 @@ export default function CheckoutPage() {
       country: "Magyarország",
       city: "",
       zip: "",
-      street: ""
+      street: "",
+      email: "",
+      phone: "",
     },
     shipping: {
       isSameAsBilling: true,
@@ -50,11 +53,14 @@ export default function CheckoutPage() {
       city: "",
       zip: "",
       street: "",
-      comment: ""
+      comment: "",
+      email: "",
+      phone: "",
     },
     methods: {
       shippingMethod: "",
-      paymentMethod: ""
+      paymentMethod: "",
+      glsParcelPoint: null as any,
     },
     coupon: null as any
   })
@@ -65,6 +71,7 @@ export default function CheckoutPage() {
   const totalItems = useCartStore((state: any) => state.totalItems)
   const { data: session } = useSession()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+  const searchParams = useSearchParams()
 
   React.useEffect(() => {
     const fetchMethods = async () => {
@@ -80,6 +87,12 @@ export default function CheckoutPage() {
     }
     fetchMethods()
   }, [])
+
+  React.useEffect(() => {
+    if (searchParams.get("stripeCancelled") === "1") {
+      toast.error("A Stripe fizetés megszakadt, a rendelés nem került létrehozásra.")
+    }
+  }, [searchParams])
 
   React.useEffect(() => {
     const loadAvailability = async () => {
@@ -103,8 +116,16 @@ export default function CheckoutPage() {
     if (session?.user) {
       setFormData(prev => ({
         ...prev,
-        billing: { ...prev.billing, name: session.user.name || "" },
-        shipping: { ...prev.shipping, name: session.user.name || "" }
+        billing: {
+          ...prev.billing,
+          name: session.user.name || "",
+          email: session.user.email || prev.billing.email,
+        },
+        shipping: {
+          ...prev.shipping,
+          name: session.user.name || "",
+          email: session.user.email || prev.shipping.email,
+        },
       }))
     }
   }, [session])
@@ -112,14 +133,14 @@ export default function CheckoutPage() {
   const nextStep = () => {
     if (currentStep === 0) {
       const b = formData.billing
-      if (!b.name || !b.zip || !b.city || !b.street || (b.type === "company" && !b.taxNumber)) {
+      if (!b.name || !b.zip || !b.city || !b.street || !b.email || !b.phone || (b.type === "company" && !b.taxNumber)) {
         toast.error("Kérjük, töltsön ki minden kötelező adatot a számlázásnál!")
         return
       }
     } else if (currentStep === 1) {
       if (!formData.shipping.isSameAsBilling) {
         const s = formData.shipping
-        if (!s.name || !s.zip || !s.city || !s.street) {
+        if (!s.name || !s.zip || !s.city || !s.street || !s.email || !s.phone) {
           toast.error("Kérjük, töltse ki a szállítási adatokat is!")
           return
         }
@@ -127,6 +148,10 @@ export default function CheckoutPage() {
     } else if (currentStep === 2) {
       if (!formData.methods.shippingMethod || !formData.methods.paymentMethod) {
         toast.error("Kérjük, válasszon szállítási és fizetési módot!")
+        return
+      }
+      if (formData.methods.shippingMethod === GLS_FIXED_SHIPPING_METHOD_ID && !formData.methods.glsParcelPoint?.id) {
+        toast.error("Kérjük, válasszon GLS csomagpontot!")
         return
       }
     }
@@ -172,7 +197,13 @@ export default function CheckoutPage() {
       case "shipping":
         return <ShippingStep data={formData.shipping} billingData={formData.billing} onChange={(val: any) => setFormData({ ...formData, shipping: val })} />
       case "methods":
-        return <MethodsStep data={formData.methods} onChange={(val: any) => setFormData({ ...formData, methods: val })} />
+        return (
+          <MethodsStep
+            data={formData.methods}
+            methods={availableMethods}
+            onChange={(val: any) => setFormData({ ...formData, methods: val })}
+          />
+        )
       case "summary":
         return (
           <SummaryStep 
@@ -191,6 +222,47 @@ export default function CheckoutPage() {
   const router = useRouter()
   const clearCart = useCartStore((state: any) => state.clearCart)
 
+  const buildOrderPayload = () => ({
+    items: items.map((i: any) => ({
+      product: i.productId || i.id,
+      variantId: i.variantId || undefined,
+      variantLabel: i.variantLabel || undefined,
+      selectedAttributes: i.selectedAttributes || undefined,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity
+    })),
+    billingInfo: formData.billing,
+    shippingAddress: formData.shipping.isSameAsBilling
+      ? {
+          name: formData.billing.name,
+          zip: formData.billing.zip,
+          city: formData.billing.city,
+          street: formData.billing.street,
+          comment: formData.shipping.comment,
+          email: formData.billing.email,
+          phone: formData.billing.phone,
+        }
+      : {
+          name: formData.shipping.name,
+          zip: formData.shipping.zip,
+          city: formData.shipping.city,
+          street: formData.shipping.street,
+          comment: formData.shipping.comment,
+          email: formData.shipping.email,
+          phone: formData.shipping.phone,
+        },
+    shippingMethod: formData.methods.shippingMethod,
+    paymentMethod: formData.methods.paymentMethod,
+    glsParcelPoint: formData.methods.glsParcelPoint || undefined,
+    couponCodes: formData.coupon ? [formData.coupon.code] : [],
+    subtotal: totals.subtotal,
+    shippingFee: totals.shippingFee,
+    paymentFee: totals.paymentFee,
+    discount: totals.discount,
+    total: totals.total
+  })
+
   const handleSubmitOrder = async () => {
     if (!shopEnabled) {
       toast.error("Jelenleg a rendelés leadás szünetel")
@@ -199,37 +271,28 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true)
     try {
-      const orderData = {
-        items: items.map((i: any) => ({
-          product: i.productId || i.id,
-          variantId: i.variantId || undefined,
-          variantLabel: i.variantLabel || undefined,
-          selectedAttributes: i.selectedAttributes || undefined,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity
-        })),
-        billingInfo: formData.billing,
-        shippingAddress: formData.shipping.isSameAsBilling ? formData.billing : formData.shipping,
-        shippingMethod: formData.methods.shippingMethod,
-        paymentMethod: formData.methods.paymentMethod,
-        couponCodes: formData.coupon ? [formData.coupon.code] : [],
-        subtotal: totals.subtotal,
-        shippingFee: totals.shippingFee,
-        paymentFee: totals.paymentFee,
-        discount: totals.discount,
-        total: totals.total
-      }
+      const orderData = buildOrderPayload()
+      const isStripe = formData.methods.paymentMethod === "stripe_fixed"
+      const endpoint = isStripe ? "/api/checkout/stripe/session" : "/api/checkout/order"
 
-      const res = await fetch("/api/checkout/order", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData)
       })
 
       if (res.ok) {
-        clearCart()
-        router.push("/checkout/success")
+        const payload = await res.json()
+        if (isStripe) {
+          if (payload?.checkoutUrl) {
+            window.location.href = payload.checkoutUrl
+            return
+          }
+          toast.error("Nem sikerült átirányítani a Stripe fizetéshez.")
+        } else {
+          clearCart()
+          router.push("/checkout/success")
+        }
       } else {
         const err = await res.json()
         toast.error(err.error || "Hiba történt a rendelés leadása során")

@@ -66,7 +66,7 @@ export function Shop({
           >
             <h2 className="text-4xl md:text-7xl font-heading font-black mb-6 text-white text-left uppercase">
               PROFESSZIONÁLIS <br />
-              <span className="text-[#FF5500]">SZERSZÁM TARHÁZ</span>
+              <span className="text-[#FF5500]">SZERSZÁM TÁRHÁZ</span>
             </h2>
             <p className="text-neutral-400 text-xl max-w-2xl leading-relaxed">
               Az ipari szintű elektromos berendezésektől a precíziós kéziszerszámokig. Nálunk minden szerszám a tartósság és az erő jelképe.

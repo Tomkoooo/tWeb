@@ -3,17 +3,48 @@
 import * as React from "react"
 import { Truck, CreditCard, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  GLS_FIXED_SHIPPING_METHOD_ID,
+  GLS_WIDGET_SCRIPT_ID,
+  GLS_WIDGET_SCRIPT_URL,
+  GlsParcelPoint,
+} from "@/lib/gls"
 
 interface MethodsStepProps {
-  data: any
-  onChange: (data: any) => void
+  data: MethodsStepData
+  onChange: (data: MethodsStepData) => void
+  methods?: CheckoutMethodsResponse | null
 }
 
-export function MethodsStep({ data, onChange }: MethodsStepProps) {
-  const [methods, setMethods] = React.useState<any>(null)
+type CheckoutMethodItem = {
+  _id: string
+  name: string
+  grossPrice: number
+  isActive: boolean
+}
+
+type CheckoutMethodsResponse = {
+  shippingMethods: CheckoutMethodItem[]
+  paymentMethods: CheckoutMethodItem[]
+}
+
+type MethodsStepData = {
+  shippingMethod: string
+  paymentMethod: string
+  glsParcelPoint?: GlsParcelPoint | null
+}
+
+export function MethodsStep({ data, onChange, methods: initialMethods }: MethodsStepProps) {
+  const [methods, setMethods] = React.useState<CheckoutMethodsResponse | null>(initialMethods || null)
   const [loading, setLoading] = React.useState(true)
+  const [glsElement, setGlsElement] = React.useState<HTMLElement | null>(null)
 
   React.useEffect(() => {
+    if (initialMethods) {
+      setMethods(initialMethods)
+      setLoading(false)
+      return
+    }
     const fetchMethods = async () => {
       try {
         const res = await fetch("/api/checkout/methods")
@@ -28,11 +59,44 @@ export function MethodsStep({ data, onChange }: MethodsStepProps) {
       }
     }
     fetchMethods()
-  }, [])
+  }, [initialMethods])
 
   const handleMethodChange = (type: "shippingMethod" | "paymentMethod", id: string) => {
+    if (type === "shippingMethod" && id !== GLS_FIXED_SHIPPING_METHOD_ID) {
+      onChange({ ...data, shippingMethod: id, glsParcelPoint: null })
+      return
+    }
     onChange({ ...data, [type]: id })
   }
+
+  const isGlsSelected = data.shippingMethod === GLS_FIXED_SHIPPING_METHOD_ID
+
+  React.useEffect(() => {
+    if (!isGlsSelected) return
+    const existing = document.getElementById(GLS_WIDGET_SCRIPT_ID)
+    if (existing) return
+
+    const script = document.createElement("script")
+    script.id = GLS_WIDGET_SCRIPT_ID
+    script.type = "module"
+    script.src = GLS_WIDGET_SCRIPT_URL
+    document.body.appendChild(script)
+  }, [isGlsSelected])
+
+  React.useEffect(() => {
+    if (!isGlsSelected || !glsElement) return
+
+    const handleParcelPointChange = (event: Event) => {
+      const detail = (event as CustomEvent<GlsParcelPoint>).detail
+      if (!detail?.id || !detail?.name) return
+      onChange({ ...data, glsParcelPoint: detail })
+    }
+
+    glsElement.addEventListener("change", handleParcelPointChange)
+    return () => {
+      glsElement.removeEventListener("change", handleParcelPointChange)
+    }
+  }, [isGlsSelected, glsElement, onChange, data])
 
   if (loading) {
     return (
@@ -51,7 +115,7 @@ export function MethodsStep({ data, onChange }: MethodsStepProps) {
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Szállítási mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
-          {methods?.shippingMethods.map((method: any) => (
+          {methods?.shippingMethods.map((method) => (
             <button
               key={method._id}
               onClick={() => handleMethodChange("shippingMethod", method._id)}
@@ -73,6 +137,34 @@ export function MethodsStep({ data, onChange }: MethodsStepProps) {
             </button>
           ))}
         </div>
+        {isGlsSelected && (
+          <div className="mt-6 border border-white/10 p-4 space-y-4">
+            <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest">
+              GLS csomagpont kiválasztása kötelező
+            </p>
+            <div className="h-[420px] bg-black border border-white/10">
+              {React.createElement("gls-dpm", {
+                country: "hu",
+                id: "checkout-gls-map",
+                ref: (el: HTMLElement | null) => setGlsElement(el),
+              })}
+            </div>
+            {data.glsParcelPoint?.id ? (
+              <div className="p-3 bg-white/5 border border-[#FF5500]/40">
+                <p className="text-xs font-black text-white uppercase tracking-wider">
+                  Kiválasztott pont: {data.glsParcelPoint.name}
+                </p>
+                <p className="text-[10px] text-neutral-400 mt-1 uppercase tracking-widest">
+                  {data.glsParcelPoint.contact?.postalCode || ""} {data.glsParcelPoint.contact?.city || ""} {data.glsParcelPoint.contact?.address || ""}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest">
+                Még nem választottál GLS csomagpontot.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Payment Methods */}
@@ -82,7 +174,7 @@ export function MethodsStep({ data, onChange }: MethodsStepProps) {
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Fizetési mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
-          {methods?.paymentMethods.map((method: any) => (
+          {methods?.paymentMethods.map((method) => (
             <button
               key={method._id}
               onClick={() => handleMethodChange("paymentMethod", method._id)}

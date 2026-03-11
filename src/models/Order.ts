@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IOrder extends Document {
   user?: mongoose.Types.ObjectId;
   items: {
-    product: mongoose.Types.ObjectId | any;
+    product: mongoose.Types.ObjectId | unknown;
     variantId?: string;
     variantLabel?: string;
     selectedAttributes?: Record<string, string>;
@@ -18,6 +18,8 @@ export interface IOrder extends Document {
     zip: string;
     city: string;
     street: string;
+    email: string;
+    phone: string;
   };
   shippingAddress: {
     name: string;
@@ -25,6 +27,31 @@ export interface IOrder extends Document {
     city: string;
     street: string;
     comment?: string;
+    email: string;
+    phone: string;
+  };
+  glsParcelPoint?: {
+    id: string;
+    name: string;
+    contact?: {
+      countryCode?: string;
+      postalCode?: string;
+      city?: string;
+      address?: string;
+      name?: string;
+      email?: string;
+    };
+  };
+  glsLabel?: {
+    parcelId?: number;
+    parcelNumber?: string;
+    parcelNumberWithCheckdigit?: string;
+    pin?: string;
+    labelUrl?: string;
+    labelDataBase64?: string;
+    generatedAt?: Date;
+    generatedBy?: mongoose.Types.ObjectId;
+    lastError?: string;
   };
   shippingMethod: mongoose.Types.ObjectId;
   paymentMethod: mongoose.Types.ObjectId;
@@ -60,6 +87,8 @@ const OrderSchema = new Schema<IOrder>(
       zip: { type: String, required: true },
       city: { type: String, required: true },
       street: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
     },
     shippingAddress: {
       name: { type: String, required: true },
@@ -67,6 +96,31 @@ const OrderSchema = new Schema<IOrder>(
       city: { type: String, required: true },
       street: { type: String, required: true },
       comment: { type: String },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+    },
+    glsParcelPoint: {
+      id: { type: String },
+      name: { type: String },
+      contact: {
+        countryCode: { type: String },
+        postalCode: { type: String },
+        city: { type: String },
+        address: { type: String },
+        name: { type: String },
+        email: { type: String },
+      },
+    },
+    glsLabel: {
+      parcelId: { type: Number },
+      parcelNumber: { type: String },
+      parcelNumberWithCheckdigit: { type: String },
+      pin: { type: String },
+      labelUrl: { type: String },
+      labelDataBase64: { type: String },
+      generatedAt: { type: Date },
+      generatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      lastError: { type: String },
     },
     shippingMethod: { type: Schema.Types.ObjectId, ref: "ShippingMethod", required: true },
     paymentMethod: { type: Schema.Types.ObjectId, ref: "PaymentMethod", required: true },

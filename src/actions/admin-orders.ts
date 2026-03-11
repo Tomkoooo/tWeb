@@ -5,10 +5,13 @@ import dbConnect from "@/lib/db"
 import Order from "@/models/Order"
 import { auth } from "@/auth"
 import { MailerService } from "@/services/mailer"
+import { GlsService } from "@/services/gls"
+import mongoose from "mongoose"
+import { IOrder } from "@/models/Order"
 
 async function checkAdmin() {
   const session = await auth()
-  // @ts-ignore
+  // @ts-expect-error auth session typing does not include custom role field.
   if (!session || session.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
@@ -61,6 +64,50 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
   
+  return { success: true }
+}
+
+export async function generateOrderGlsLabel(orderId: string) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+  if (!order.glsParcelPoint?.id) {
+    throw new Error("Ehhez a rendeléshez nincs GLS csomagpont mentve.")
+  }
+
+  const session = await auth()
+
+  try {
+    const result = await GlsService.createLabelForOrder(order as unknown as IOrder)
+    order.glsLabel = {
+      ...(order.glsLabel || {}),
+      parcelId: result.parcelId,
+      parcelNumber: result.parcelNumber,
+      parcelNumberWithCheckdigit: result.parcelNumberWithCheckdigit,
+      pin: result.pin,
+      labelDataBase64: result.labelDataBase64,
+      labelUrl: `/api/admin/orders/${order._id.toString()}/gls-label`,
+      generatedAt: new Date(),
+      generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
+      lastError: undefined,
+    }
+    await order.save()
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "A GLS címke létrehozása sikertelen."
+    order.glsLabel = {
+      ...(order.glsLabel || {}),
+      lastError: message,
+    }
+    await order.save()
+    revalidatePath("/admin/orders")
+    revalidatePath(`/admin/orders/${orderId}`)
+    return { success: false, error: message }
+  }
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
   return { success: true }
 }
 

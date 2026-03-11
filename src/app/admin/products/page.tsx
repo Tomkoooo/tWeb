@@ -131,7 +131,7 @@ export default async function AdminProducts({
                           <p className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">/{product.slug}</p>
                           {hasVariants ? (
                             <p className="text-[10px] text-accent font-black tracking-widest uppercase mt-1">
-                              {variants.length} varians
+                              {variants.length} variáns
                             </p>
                           ) : null}
                         </div>
@@ -165,7 +165,7 @@ export default async function AdminProducts({
                     <td className="px-6 py-6">
                       <div>
                         <p className="font-black text-white text-lg tracking-tighter">
-                          {needsVariantSelection ? "Tol " : ""}
+                          {needsVariantSelection ? "Tól " : ""}
                           {minNetPrice.toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span>
                         </p>
                         {maxDiscount > 0 && (
