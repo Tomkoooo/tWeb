@@ -11,7 +11,6 @@ import { IOrder } from "@/models/Order"
 
 async function checkAdmin() {
   const session = await auth()
-  // @ts-expect-error auth session typing does not include custom role field.
   if (!session || session.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
