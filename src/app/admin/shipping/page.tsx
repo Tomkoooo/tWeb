@@ -19,7 +19,7 @@ export default async function AdminShippingPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            SZÁLLÍTÁSI <span className="text-[#FF5500] underline decoration-[#FF5500]/10 underline-offset-8">MÓDOK</span>
+            SZÁLLÍTÁSI <span className="text-primary underline decoration-primary/10 underline-offset-8">MÓDOK</span>
           </h1>
           <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px]">Pénztárban választható szállítási lehetőségek kezelése</p>
         </div>
@@ -40,7 +40,7 @@ export default async function AdminShippingPage() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-heading font-black text-white uppercase italic truncate max-w-[200px]">{method.name}</h3>
-                <p className="text-[#FF5500] font-black text-2xl mt-2">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
+                <p className="text-primary font-black text-2xl mt-2">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
               </div>
               <div className={cn(
                 "px-3 py-1 text-[8px] font-black tracking-widest uppercase",

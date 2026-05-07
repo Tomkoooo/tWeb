@@ -63,7 +63,7 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
 
   return (
     <div className="space-y-4">
-      <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-accent/40">
+      <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-primary/40">
         {preview ? (
           <>
             <img 
@@ -90,7 +90,7 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
 
         {uploading && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-accent animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         )}
       </div>

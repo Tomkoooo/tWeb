@@ -25,16 +25,32 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCartStore } from "@/store/useCartStore"
 import { useRouter } from "next/navigation"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { EditableLinkInline } from "@/features/homepage-cms/components/primitives/EditableLinkInline"
 
 interface ShopProps {
   categories?: any[]
   products?: any[]
+  title?: string
+  description?: string
+  viewAllLabel?: string
+  viewAllHref?: string
+  categoriesTitle?: string
+  categoriesDescription?: string
 }
 
 export function Shop({ 
   categories = [], 
-  products = [] 
+  products = [],
+  title,
+  description,
+  viewAllLabel,
+  viewAllHref,
+  categoriesTitle,
+  categoriesDescription,
 }: ShopProps) {
+  const cms = useCmsEdit()
   const addItem = useCartStore((state: any) => state.addItem)
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
 
@@ -56,7 +72,7 @@ export function Shop({
   }, [])
 
   return (
-    <section id="shop" className="py-32 bg-black px-4 overflow-hidden">
+    <section id="shop" className="py-32 bg-background-dark px-4 overflow-hidden">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <motion.div
@@ -64,13 +80,21 @@ export function Shop({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-7xl font-heading font-black mb-6 text-white text-left uppercase">
-              PROFESSZIONÁLIS <br />
-              <span className="text-[#FF5500]">SZERSZÁM TÁRHÁZ</span>
-            </h2>
-            <p className="text-neutral-400 text-xl max-w-2xl leading-relaxed">
-              Az ipari szintű elektromos berendezésektől a precíziós kéziszerszámokig. Nálunk minden szerszám a tartósság és az erő jelképe.
-            </p>
+            {cms.enabled ? (
+              <div className="space-y-2">
+                <EditableTextInline blockType="productGrid" field="title" value={title ?? "LOREM IPSUM PRODUCT COLLECTION"} className="text-4xl md:text-7xl font-heading font-black text-foreground text-left uppercase" />
+                <EditableTextInline blockType="productGrid" field="description" value={description ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."} multiline className="text-neutral-400 text-xl max-w-2xl leading-relaxed" />
+              </div>
+            ) : (
+              <>
+                <h2 className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground text-left uppercase">
+                  {title ?? "LOREM IPSUM PRODUCT COLLECTION"}
+                </h2>
+                <p className="text-neutral-400 text-xl max-w-2xl leading-relaxed">
+                  {description ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
+                </p>
+              </>
+            )}
           </motion.div>
  
           <motion.div
@@ -78,11 +102,23 @@ export function Shop({
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <Link href="/shop">
-              <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black h-14 px-8 text-lg btn-krausz font-black">
-                ÖSSZES TERMÉK <ChevronRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
+            {cms.enabled ? (
+              <EditableLinkInline
+                blockType="productGrid"
+                labelField="viewAllLabel"
+                hrefField="viewAllHref"
+                label={viewAllLabel || "VIEW ALL PRODUCTS"}
+                href={viewAllHref || "/shop"}
+                className="bg-transparent border-2 border-foreground text-foreground hover:bg-foreground hover:text-background h-14 px-8 text-lg btn-krausz font-black"
+                buttonVariant="outline"
+              />
+            ) : (
+              <Link href={viewAllHref || "/shop"}>
+                <Button className="bg-transparent border-2 border-foreground text-foreground hover:bg-foreground hover:text-background h-14 px-8 text-lg btn-krausz font-black">
+                  {viewAllLabel || "VIEW ALL PRODUCTS"} <ChevronRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+            )}
           </motion.div>
         </div>
  
@@ -104,15 +140,15 @@ export function Shop({
                 unoptimized
                 className="object-cover transition-transform duration-1000 group-hover:scale-110 opacity-60 group-hover:opacity-100"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent" />
               <div className="absolute inset-0 p-10 flex flex-col justify-end items-start text-left">
-                <h3 className="text-3xl font-heading font-black text-white mb-3 tracking-tighter uppercase">{category.name}</h3>
+                <h3 className="text-3xl font-heading font-black text-foreground mb-3 tracking-tighter uppercase">{category.name}</h3>
                 <p className="text-neutral-300 text-sm mb-6 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 line-clamp-2">
                   {category.description}
                 </p>
-                <Link href={`/shop?category=${category.id}`}>
-                  <Button size="sm" className="bg-[#FF5500] hover:bg-[#FF7722] text-white opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 btn-krausz px-6 h-10 font-black">
-                    FELFEDEZÉS <ArrowRight className="ml-2 w-4 h-4" />
+                <Link href={cms.enabled ? "#" : `/shop?category=${category.id}`} onClick={(event) => { if (cms.enabled) event.preventDefault() }}>
+                  <Button size="sm" className="bg-primary hover:bg-primary text-white opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 btn-krausz px-6 h-10 font-black">
+                    EXPLORE <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
               </div>
@@ -123,9 +159,16 @@ export function Shop({
         {/* Featured Products Carousel */}
         <div className="space-y-16 py-10 border-t border-white/5">
           <div className="flex items-center gap-6">
-            <h3 className="text-3xl font-heading font-black text-white uppercase tracking-tighter">Kiemelt Mestermunkák</h3>
-            <div className="h-[2px] flex-grow bg-white/5" />
+            {cms.enabled ? (
+              <EditableTextInline blockType="productGrid" field="categoriesTitle" value={categoriesTitle ?? "Featured Selection"} className="text-3xl font-heading font-black text-foreground uppercase tracking-tighter" />
+            ) : (
+              <h3 className="text-3xl font-heading font-black text-foreground uppercase tracking-tighter">{categoriesTitle ?? "Featured Selection"}</h3>
+            )}
+            <div className="h-[2px] grow bg-white/5" />
           </div>
+          {cms.enabled ? (
+            <EditableTextInline blockType="productGrid" field="categoriesDescription" value={categoriesDescription ?? ""} className="text-neutral-500 -mt-10" />
+          ) : categoriesDescription ? <p className="text-neutral-500 -mt-10">{categoriesDescription}</p> : null}
  
           <Carousel
             opts={{
@@ -137,13 +180,13 @@ export function Shop({
             <CarouselContent className="-ml-6">
               {products.map((product) => (
                 <CarouselItem key={product.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <ShopProductCard product={product} addItem={addItem} shopEnabled={shopEnabled} />
+                  <ShopProductCard product={product} addItem={addItem} shopEnabled={shopEnabled} cmsMode={cms.enabled} />
                 </CarouselItem>
               ))}
             </CarouselContent>
             <div className="hidden lg:flex justify-end gap-3 mt-10">
-              <CarouselPrevious className="relative left-0 translate-y-0 h-14 w-14 bg-white/5 border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500] rounded-none" />
-              <CarouselNext className="relative right-0 translate-y-0 h-14 w-14 bg-white/5 border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500] rounded-none" />
+              <CarouselPrevious className="relative left-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
+              <CarouselNext className="relative right-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
             </div>
           </Carousel>
         </div>
@@ -172,12 +215,13 @@ function ProductImage({ src, name }: { src: string; name: string }) {
   )
 }
 
-function ShopProductCard({ product, addItem, shopEnabled }: { product: any; addItem: any; shopEnabled: boolean | null }) {
+function ShopProductCard({ product, addItem, shopEnabled, cmsMode }: { product: any; addItem: any; shopEnabled: boolean | null; cmsMode: boolean }) {
   const [isAdded, setIsAdded] = React.useState(false)
   const router = useRouter()
   const requiresVariantSelection = Boolean(product.requireVariantSelection) && Boolean(product.hasVariants)
 
   const handleAddToCart = () => {
+    if (cmsMode) return
     if (shopEnabled === false) return
     if (requiresVariantSelection) {
       router.push(`/products/${product.slug}`)
@@ -203,12 +247,12 @@ function ShopProductCard({ product, addItem, shopEnabled }: { product: any; addI
     <div className="glass-card rounded-none overflow-hidden group border-white/5 h-full">
       <div className="relative h-[320px] bg-neutral-900 overflow-hidden">
         <ProductImage src={product.image} name={product.name} />
-        <Badge className="absolute top-6 left-6 bg-[#FF5500] text-white border-none rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
+        <Badge className="absolute top-6 left-6 bg-primary text-primary-foreground border-none rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
           {product.category}
         </Badge>
         {requiresVariantSelection ? (
-          <Badge className="absolute top-6 right-6 bg-white/10 border border-white/20 text-white rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
-            VARIÁNSOS
+          <Badge className="absolute top-6 right-6 bg-muted/40 border border-border text-foreground rounded-none py-1.5 px-3 font-black text-[10px] tracking-[0.2em] shadow-xl">
+            VARIABLE
           </Badge>
         ) : null}
         <div className="absolute bottom-6 right-6 flex gap-1.5">
@@ -217,31 +261,31 @@ function ShopProductCard({ product, addItem, shopEnabled }: { product: any; addI
               key={i}
               className={cn(
                 "w-4 h-4",
-                i < Math.floor(product.rating) ? "fill-[#FFD700] text-[#FFD700]" : "text-white/10"
+                i < Math.floor(product.rating) ? "fill-highlight text-highlight" : "text-white/10"
               )}
             />
           ))}
         </div>
       </div>
       <div className="p-8">
-        <Link href={`/products/${product.slug}`}>
-          <h4 className="text-white text-xl font-heading font-black mb-4 tracking-tighter group-hover:text-[#FF5500] transition-colors line-clamp-1">
+        <Link href={cmsMode ? "#" : `/products/${product.slug}`} onClick={(event) => { if (cmsMode) event.preventDefault() }}>
+          <h4 className="text-foreground text-xl font-heading font-black mb-4 tracking-tighter group-hover:text-primary transition-colors line-clamp-1">
             {product.name}
           </h4>
         </Link>
-        <div className="text-3xl font-black text-white mb-8">
-          {product.price.toLocaleString("hu-HU")} <span className="text-sm font-black text-[#FF5500]">Ft{requiresVariantSelection ? "-tól" : ""}</span>
+        <div className="text-3xl font-black text-foreground mb-8">
+          {product.price.toLocaleString("en-US")} <span className="text-sm font-black text-primary">USD{requiresVariantSelection ? "+" : ""}</span>
         </div>
         <Button 
           onClick={handleAddToCart}
           disabled={shopEnabled === false || isAdded}
           className={cn(
             "w-full border-2 font-black h-14 btn-krausz transition-all flex gap-3",
-            isAdded ? "bg-green-600 border-green-600 text-white hover:bg-green-600 hover:border-green-600" : "bg-transparent border-white/10 text-white hover:bg-[#FF5500] hover:border-[#FF5500]"
+            isAdded ? "bg-green-600 border-green-600 text-white hover:bg-green-600 hover:border-green-600" : "bg-transparent border-border text-foreground hover:bg-primary hover:border-primary"
           )}
         >
-          {isAdded ? <Check className="w-5 h-5 text-white" /> : <ShoppingCart className="w-5 h-5 text-[#FF5500] group-hover:text-white" />}
-          {isAdded ? "KOSÁRBA TÉVE" : requiresVariantSelection ? "VARIÁNS VÁLASZTÁSA" : "KOSÁRBA TESZEM"}
+          {isAdded ? <Check className="w-5 h-5 text-white" /> : <ShoppingCart className="w-5 h-5 text-primary group-hover:text-white" />}
+          {isAdded ? "ADDED" : requiresVariantSelection ? "CHOOSE OPTION" : "ADD TO CART"}
         </Button>
       </div>
     </div>

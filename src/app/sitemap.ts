@@ -1,12 +1,17 @@
 import type { MetadataRoute } from "next";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
+import { SeoSettingsService } from "@/services/seo-settings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://krauszbarkacs.hu";
+  const settings = await SeoSettingsService.get();
+  const baseUrl =
+    settings.canonicalBaseUrl ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, changeFrequency: "daily", priority: 1 },

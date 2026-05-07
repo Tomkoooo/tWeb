@@ -315,7 +315,7 @@ export default function CheckoutPage() {
             </p>
             <Button
               onClick={() => router.push("/")}
-              className="bg-[#FF5500] hover:bg-[#FF7722] text-white h-14 px-10 font-black uppercase tracking-widest text-xs"
+              className="bg-primary hover:bg-primary/80 text-white h-14 px-10 font-black uppercase tracking-widest text-xs"
             >
               Vissza a főoldalra
             </Button>
@@ -336,7 +336,7 @@ export default function CheckoutPage() {
                 <div 
                   className={cn(
                     "w-12 h-12 rounded-none flex items-center justify-center border-2 transition-all duration-500 font-black",
-                    isActive ? "bg-[#FF5500] border-[#FF5500] text-white scale-110 shadow-[0_0_20px_rgba(255,85,0,0.3)]" : 
+                    isActive ? "bg-primary border-primary text-white scale-110 shadow-[0_0_20px_color-mix(in_oklab,var(--primary)_30%,transparent)]" : 
                     isCompleted ? "bg-white text-black border-white" : "bg-black border-white/10 text-neutral-500"
                   )}
                 >
@@ -365,7 +365,7 @@ export default function CheckoutPage() {
                 className="glass-card p-10 border-white/5"
               >
                 <div className="flex items-center gap-4 mb-10">
-                  <div className="w-1.5 h-8 bg-[#FF5500]" />
+                  <div className="w-1.5 h-8 bg-primary" />
                   <h2 className="text-3xl font-heading font-black text-white uppercase italic">
                     {STEPS[currentStep].title}
                   </h2>
@@ -389,7 +389,7 @@ export default function CheckoutPage() {
                     <Button 
                       onClick={handleSubmitOrder}
                       disabled={isSubmitting}
-                      className="bg-[#FF5500] text-white hover:bg-[#FF7722] rounded-none h-16 px-12 font-black uppercase tracking-widest text-sm shadow-[0_10px_30px_rgba(255,85,0,0.2)]"
+                      className="bg-primary text-white hover:bg-primary/80 rounded-none h-16 px-12 font-black uppercase tracking-widest text-sm shadow-[0_10px_30px_color-mix(in_oklab,var(--primary)_20%,transparent)]"
                     >
                       {isSubmitting ? "FELDOLGOZÁS..." : "MEGRENDELÉS LEADÁSA"} <Check className="w-5 h-5 ml-2" />
                     </Button>
@@ -410,7 +410,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-4">
             <div className="glass-card p-8 border-white/5 sticky top-40">
               <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-                <Package className="w-5 h-5 text-[#FF5500]" />
+                <Package className="w-5 h-5 text-primary" />
                 <h3 className="font-heading font-black text-white uppercase tracking-tighter">MEGRENDELÉS</h3>
               </div>
               
@@ -423,7 +423,7 @@ export default function CheckoutPage() {
                     <div className="flex-grow min-w-0">
                       <p className="text-[10px] font-black text-white uppercase truncate">{item.name}</p>
                       {item.variantLabel ? (
-                        <p className="text-[10px] text-accent font-black uppercase tracking-widest mt-1">
+                        <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
                           {item.variantLabel}
                         </p>
                       ) : null}
@@ -440,7 +440,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                   <span>Szállítás</span>
-                  <span className={cn(selectedShipping ? "text-white" : "text-[#FF5500]")}>
+                  <span className={cn(selectedShipping ? "text-white" : "text-primary")}>
                     {selectedShipping ? `${totals.shippingFee.toLocaleString("hu-HU")} FT` : "VÁLASZTÁS ALATT"}
                   </span>
                 </div>
@@ -451,7 +451,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 {totals.discount > 0 && (
-                  <div className="flex justify-between text-[10px] font-black text-[#FF5500] uppercase tracking-widest">
+                  <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
                     <span>Kedvezmény</span>
                     <span>-{totals.discount.toLocaleString("hu-HU")} FT</span>
                   </div>
@@ -459,7 +459,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-end pt-4">
                   <div className="flex flex-col">
                     <p className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-1">Összesen</p>
-                    <p className="text-3xl font-black text-[#FF5500] tracking-tighter leading-none">{totals.total.toLocaleString("hu-HU")} FT</p>
+                    <p className="text-3xl font-black text-primary tracking-tighter leading-none">{totals.total.toLocaleString("hu-HU")} FT</p>
                   </div>
                 </div>
               </div>

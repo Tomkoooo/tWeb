@@ -7,6 +7,11 @@ export interface MailOptions {
   to: string;
   templateType: string;
   data: Record<string, any>;
+  attachments?: {
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }[];
 }
 
 export const MailerService = {
@@ -26,7 +31,7 @@ export const MailerService = {
     });
   },
 
-  async sendEmail({ to, templateType, data }: MailOptions) {
+  async sendEmail({ to, templateType, data, attachments }: MailOptions) {
     await dbConnect();
     
     const template = await EmailTemplate.findOne({ type: templateType }).lean();
@@ -45,6 +50,7 @@ export const MailerService = {
       to,
       subject: compiledSubject,
       html: compiledBody,
+      attachments,
     });
 
     return info;

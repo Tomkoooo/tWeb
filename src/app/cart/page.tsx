@@ -58,7 +58,7 @@ export default function CartPage() {
               JELENLEG A RENDELÉS LEADÁS SZÜNETEL
             </h1>
             <Link href="/">
-              <Button className="bg-[#FF5500] hover:bg-[#FF7722] text-white h-16 px-12 text-lg btn-krausz font-black">
+              <Button className="bg-primary hover:bg-primary/80 text-white h-16 px-12 text-lg btn-krausz font-black">
                 VISSZA A FŐOLDALRA <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
@@ -105,7 +105,7 @@ export default function CartPage() {
               Még nem adtál hozzá semmit a kosaradhoz. Fedezd fel professzionális szerszám kínálatunkat!
             </p>
             <Link href="/shop">
-              <Button className="bg-[#FF5500] hover:bg-[#FF7722] text-white h-16 px-12 text-lg btn-krausz font-black">
+              <Button className="bg-primary hover:bg-primary/80 text-white h-16 px-12 text-lg btn-krausz font-black">
                 IRÁNY A BOLT <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
@@ -124,7 +124,7 @@ export default function CartPage() {
           <div className="lg:flex-grow">
             <div className="flex items-center justify-between mb-10">
               <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tighter">
-                KOSÁR <span className="text-[#FF5500]">({totalItems})</span>
+                KOSÁR <span className="text-primary">({totalItems})</span>
               </h1>
             </div>
 
@@ -151,18 +151,18 @@ export default function CartPage() {
                     {/* Item Details */}
                     <div className="flex-grow text-center sm:text-left">
                       <Link href={`/products/${item.slug}`}>
-                        <h3 className="text-xl font-heading font-black text-white hover:text-[#FF5500] transition-colors uppercase mb-2">
+                        <h3 className="text-xl font-heading font-black text-white hover:text-primary transition-colors uppercase mb-2">
                           {item.name}
                         </h3>
                       </Link>
                       {item.variantLabel ? (
-                        <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest">
+                        <p className="text-[10px] text-primary font-black uppercase tracking-widest">
                           {item.variantLabel}
                         </p>
                       ) : null}
                       <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm font-bold mt-2">
                         {item.discount > 0 && (
-                          <span className="text-[#FF5500]">-{item.discount}% KEDVEZMÉNY</span>
+                          <span className="text-primary">-{item.discount}% KEDVEZMÉNY</span>
                         )}
                       </div>
                     </div>
@@ -222,7 +222,7 @@ export default function CartPage() {
                     variant={currentPage === i + 1 ? "default" : "outline"}
                     className={cn(
                       "w-12 h-12 rounded-none font-black transition-all",
-                      currentPage === i + 1 ? "bg-[#FF5500] border-[#FF5500] text-white" : "border-white/10 text-neutral-400 hover:border-white/20"
+                      currentPage === i + 1 ? "bg-primary border-primary text-white" : "border-white/10 text-neutral-400 hover:border-white/20"
                     )}
                     onClick={() => setCurrentPage(i + 1)}
                   >
@@ -253,7 +253,7 @@ export default function CartPage() {
                 <div className="flex justify-between items-end">
                   <div className="flex flex-col">
                     <span className="text-neutral-400 font-black text-[10px] tracking-[0.3em] uppercase mb-1">Fizetendő összesen</span>
-                    <span className="text-4xl font-black text-[#FF5500] tracking-tighter leading-none">
+                    <span className="text-4xl font-black text-primary tracking-tighter leading-none">
                       {totalPrice.toLocaleString("hu-HU")} FT
                     </span>
                   </div>
@@ -261,7 +261,7 @@ export default function CartPage() {
               </div>
 
               <Link href="/checkout">
-                <Button className="w-full bg-[#FF5500] hover:bg-[#FF7722] text-white h-20 text-xl btn-krausz font-black tracking-widest uppercase group overflow-hidden">
+                <Button className="w-full bg-primary hover:bg-primary/80 text-white h-20 text-xl btn-krausz font-black tracking-widest uppercase group overflow-hidden">
                   <span className="relative z-10 flex items-center justify-center gap-4">
                     PÉNZTÁRHOZ
                     <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
@@ -270,16 +270,16 @@ export default function CartPage() {
               </Link>
 
               <div className="mt-10 space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-[#FF5500]/30 transition-colors">
-                  <Truck className="w-5 h-5 text-[#FF5500]" />
+                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-primary/30 transition-colors">
+                  <Truck className="w-5 h-5 text-primary" />
                   <span className="text-[10px] font-black tracking-widest text-neutral-300 uppercase">Gyors és biztos házhozszállítás</span>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-[#FF5500]/30 transition-colors">
-                  <ShieldCheck className="w-5 h-5 text-[#FF5500]" />
+                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-primary/30 transition-colors">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
                   <span className="text-[10px] font-black tracking-widest text-neutral-300 uppercase">Hivatalos garancia minden termékre</span>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-[#FF5500]/30 transition-colors">
-                  <CreditCard className="w-5 h-5 text-[#FF5500]" />
+                <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-none group hover:border-primary/30 transition-colors">
+                  <CreditCard className="w-5 h-5 text-primary" />
                   <span className="text-[10px] font-black tracking-widest text-neutral-300 uppercase">Biztonságos online fizetési lehetőségek</span>
                 </div>
               </div>

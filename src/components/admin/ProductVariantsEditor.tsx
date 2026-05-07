@@ -189,7 +189,7 @@ export function ProductVariantsEditor({
           onClick={() => setEnabled((prev) => !prev)}
           className={cn(
             "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-            enabled ? "bg-accent" : "bg-neutral-800"
+            enabled ? "bg-primary" : "bg-neutral-800"
           )}
         >
           <div
@@ -226,7 +226,7 @@ export function ProductVariantsEditor({
               onClick={() => setRequireVariantSelection((prev) => !prev)}
               className={cn(
                 "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                requireVariantSelection ? "bg-accent" : "bg-neutral-800"
+                requireVariantSelection ? "bg-primary" : "bg-neutral-800"
               )}
             >
               <div
@@ -288,7 +288,7 @@ export function ProductVariantsEditor({
                 type="button"
                 onClick={generateCombinations}
                 variant="outline"
-                className="h-10 rounded-none border-accent/40 text-accent hover:bg-accent/10"
+                className="h-10 rounded-none border-primary/40 text-primary hover:bg-primary/10"
               >
                 <WandSparkles className="w-4 h-4 mr-2" />
                 Variánsok generálása
@@ -333,7 +333,7 @@ export function ProductVariantsEditor({
                       placeholder="Készlet"
                     />
                   </div>
-                  <Button type="button" onClick={applyBulkValues} className="h-11 rounded-none bg-accent text-white">
+                  <Button type="button" onClick={applyBulkValues} className="h-11 rounded-none bg-primary text-white">
                     Alkalmazás
                   </Button>
                 </div>
@@ -349,8 +349,8 @@ export function ProductVariantsEditor({
                       className={cn(
                         "w-full text-left px-3 py-2 border text-[10px] font-black uppercase tracking-widest transition-colors",
                         activeVariant?.id === variant.id
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-white/10 text-neutral-300 hover:border-accent/40"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-white/10 text-neutral-300 hover:border-primary/40"
                       )}
                     >
                       {attributesToLabel(variant.attributes)}
@@ -372,7 +372,7 @@ export function ProductVariantsEditor({
                           variant={activeVariant.isDefault ? "default" : "outline"}
                           className={cn(
                             "h-9 rounded-none text-[10px] font-black uppercase tracking-widest",
-                            activeVariant.isDefault ? "bg-accent text-white" : "border-white/10 text-white hover:bg-white/5"
+                            activeVariant.isDefault ? "bg-primary text-white" : "border-white/10 text-white hover:bg-white/5"
                           )}
                           onClick={() =>
                             setVariants((prev) =>

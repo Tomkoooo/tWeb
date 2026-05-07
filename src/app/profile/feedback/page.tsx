@@ -56,7 +56,7 @@ export default function ShopFeedbackPage() {
   if (status === "loading") {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-[#FF5500] border-solid rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export default function ShopFeedbackPage() {
 
       <div className="bg-white/5 border border-white/10 p-8 space-y-8">
         <div>
-          <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-widest mb-4">
+          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4">
             Mennyire voltál elégedett a vásárlásoddal?
           </h3>
           <p className="text-sm text-neutral-400 mb-6 font-medium">
@@ -84,7 +84,7 @@ export default function ShopFeedbackPage() {
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
                 className={`w-12 h-12 cursor-pointer transition-colors ${
-                  star <= (hoveredRating || rating) ? "fill-[#FF5500] text-[#FF5500]" : "text-neutral-700"
+                  star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-neutral-700"
                 }`}
               />
             ))}
@@ -97,14 +97,14 @@ export default function ShopFeedbackPage() {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Írd meg nekünk a véleményed, észrevételed..."
-                className="w-full bg-black border border-white/5 p-4 text-white placeholder-neutral-700 focus:outline-none focus:border-[#FF5500] focus:ring-1 focus:ring-[#FF5500] transition-colors resize-none h-32"
+                className="w-full bg-black border border-white/5 p-4 text-white placeholder-neutral-700 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none h-32"
               />
             </div>
 
             <Button 
               type="submit"
               disabled={loading}
-              className="w-full bg-[#FF5500] hover:bg-[#FF5500]/80 text-white rounded-none h-14 font-black uppercase tracking-widest text-xs"
+              className="w-full bg-primary hover:bg-primary/80 text-white rounded-none h-14 font-black uppercase tracking-widest text-xs"
             >
               {loading ? "Küldés folyamatban..." : "Értékelés beküldése"}
             </Button>

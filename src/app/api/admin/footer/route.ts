@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { revalidatePath } from "next/cache"
+import { requireAdmin } from "@/lib/admin-auth"
+import { FooterSettingsService } from "@/services/footer-settings"
+
+const schema = z.object({
+  tagline: z.string().optional(),
+  quickLinksTitle: z.string().optional(),
+  quickLinks: z.array(z.object({ label: z.string(), href: z.string() })).optional(),
+  categoriesTitle: z.string().optional(),
+  browseProductsLabel: z.string().optional(),
+  contactTitle: z.string().optional(),
+  newsletterLabel: z.string().optional(),
+  newsletterPlaceholder: z.string().optional(),
+  copyrightText: z.string().optional(),
+  socialLinks: z
+    .array(
+      z.object({
+        platform: z.enum(["facebook", "instagram", "twitter", "youtube"]),
+        enabled: z.boolean(),
+        url: z.string(),
+      })
+    )
+    .optional(),
+})
+
+export async function GET() {
+  await requireAdmin()
+  return NextResponse.json(await FooterSettingsService.get())
+}
+
+export async function PUT(request: Request) {
+  await requireAdmin()
+  const payload = schema.parse(await request.json())
+  const updated = await FooterSettingsService.update(payload)
+  revalidatePath("/")
+  revalidatePath("/products/[slug]", "page")
+  return NextResponse.json(updated)
+}

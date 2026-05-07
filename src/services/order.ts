@@ -5,6 +5,7 @@ import Cart from "@/models/Cart";
 import mongoose from "mongoose";
 import { MailerService } from "./mailer";
 import { FeatureFlagService } from "./feature-flags";
+import { InvoicingSzamlazzService } from "./invoicing-szamlazz";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
@@ -125,13 +126,83 @@ export class OrderService {
   }
 
   private static async tryIssueInvoice(_order: any) {
-    // Placeholder hook for future invoice providers (e.g. Szamlazz.hu).
-    // Keeping this in one place avoids coupling route handlers to invoicing.
+    const order = _order as any;
     try {
       const invoicingEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false);
       if (!invoicingEnabled) return;
-    } catch (error) {
+
+      order.invoiceMode = "automatic";
+      order.invoiceStatus = "pending";
+      await order.save();
+
+      const result = await InvoicingSzamlazzService.issueInvoice(order);
+      order.invoiceId = result.invoiceId;
+      order.invoiceStatus = "issued";
+      order.invoiceIssuedAt = new Date();
+      order.invoiceLastError = undefined;
+      if (result.pdfFileName) {
+        order.invoicePdfFileName = result.pdfFileName;
+      }
+      await order.save();
+
+      await this.sendInvoiceEmail(order, "invoice_sent", "A számla csatolmányban elérhető.");
+    } catch (error: any) {
+      order.invoiceStatus = "failed";
+      order.invoiceLastError = error?.message || "Ismeretlen számlázási hiba";
+      await order.save();
+      await this.sendInvoiceEmail(order, "invoice_issue", "A számla automatikus kiállítása nem sikerült.");
       console.error("Invoice hook check failed:", error);
+    }
+  }
+
+  static async sendInvoiceEmail(orderInput: any, templateType: "invoice_sent" | "invoice_issue", message: string) {
+    try {
+      const order = await Order.findById(orderInput._id).populate("user");
+      if (!order) return;
+      const orderIdRaw = order._id || orderInput._id;
+      if (!orderIdRaw) return;
+      const orderId = String(orderIdRaw);
+
+      const customerEmail = (order as any).user?.email || order.billingInfo?.email;
+      const customerName = (order as any).user?.name || order.shippingAddress?.name;
+      if (!customerEmail) return;
+
+      let attachments: { filename: string; content: Buffer; contentType?: string }[] | undefined;
+      if (templateType === "invoice_sent") {
+        const invoicePdf = await InvoicingSzamlazzService.downloadInvoicePdf({
+          invoiceId: order.invoiceId,
+          orderNumber: orderId,
+          fallbackFileName: order.invoicePdfFileName,
+        });
+        if (invoicePdf) {
+          attachments = [
+            {
+              filename: `${order.invoiceId || `invoice-${orderId.slice(-6)}`}.pdf`,
+              content: invoicePdf,
+              contentType: "application/pdf",
+            },
+          ];
+        }
+      }
+
+      await MailerService.sendEmail({
+        to: customerEmail,
+        templateType,
+        data: {
+          customerName,
+          orderNumber: orderId.slice(-6).toUpperCase(),
+          invoiceId: order.invoiceId || "",
+          invoiceMessage: message,
+        },
+        attachments,
+      });
+
+      order.invoiceEmailSentAt = new Date();
+      if (typeof (order as any).save === "function") {
+        await order.save();
+      }
+    } catch (error) {
+      console.error("Failed to send invoice email:", error);
     }
   }
 }

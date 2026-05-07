@@ -34,7 +34,7 @@ export default function OrdersPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-[#FF5500] border-solid rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -45,7 +45,7 @@ export default function OrdersPage() {
 
   const OrderCard = ({ order }: { order: any }) => (
     <Link href={`/profile/orders/${order._id}`}>
-      <div className="border border-white/10 p-6 hover:border-[#FF5500] hover:bg-white/5 transition-all group group cursor-pointer h-full flex flex-col justify-between">
+      <div className="border border-white/10 p-6 hover:border-primary hover:bg-white/5 transition-all group group cursor-pointer h-full flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-start mb-4">
             <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
@@ -63,12 +63,12 @@ export default function OrdersPage() {
             {order.items.map((item: any, i: number) => (
               <p key={i} className="text-sm font-medium text-white truncate">
                 {item.quantity}x {item.name}
-                {item.variantLabel ? <span className="text-[#FF5500]"> ({item.variantLabel})</span> : null}
+                {item.variantLabel ? <span className="text-primary"> ({item.variantLabel})</span> : null}
               </p>
             ))}
           </div>
         </div>
-        <div className="pt-4 border-t border-white/10 flex justify-between items-center group-hover:border-[#FF5500]/50 transition-colors">
+        <div className="pt-4 border-t border-white/10 flex justify-between items-center group-hover:border-primary/50 transition-colors">
           <span className="text-xs font-black text-neutral-400 uppercase tracking-widest">Összesen</span>
           <span className="font-black text-white text-lg">{order.total.toLocaleString("hu-HU")} FT</span>
         </div>
@@ -90,7 +90,7 @@ export default function OrdersPage() {
         <>
           {ongoingOrders.length > 0 && (
             <div className="space-y-6">
-              <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-[0.2em]">Folyamatban lévő</h3>
+              <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Folyamatban lévő</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {ongoingOrders.map(order => (
                   <OrderCard key={order._id} order={order} />

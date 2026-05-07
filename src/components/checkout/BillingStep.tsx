@@ -22,7 +22,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
           onClick={() => handleChange("type", "personal")}
           className={cn(
             "px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-            data.type === "personal" ? "bg-[#FF5500] text-white" : "text-neutral-500 hover:text-white"
+            data.type === "personal" ? "bg-primary text-white" : "text-neutral-500 hover:text-white"
           )}
         >
           Magánszemély
@@ -31,7 +31,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
           onClick={() => handleChange("type", "company")}
           className={cn(
             "px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-            data.type === "company" ? "bg-[#FF5500] text-white" : "text-neutral-500 hover:text-white"
+            data.type === "company" ? "bg-primary text-white" : "text-neutral-500 hover:text-white"
           )}
         >
           Cég
@@ -45,7 +45,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.name}
             onChange={(e) => handleChange("name", e.target.value)}
             placeholder="TELJES NÉV VAGY CÉGNÉV"
-            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
 
@@ -56,7 +56,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
               value={data.taxNumber}
               onChange={(e) => handleChange("taxNumber", e.target.value)}
               placeholder="12345678-1-12"
-              className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+              className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
             />
           </div>
         )}
@@ -67,7 +67,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.zip}
             onChange={(e) => handleChange("zip", e.target.value)}
             placeholder="1234"
-            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
 
@@ -77,7 +77,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.city}
             onChange={(e) => handleChange("city", e.target.value)}
             placeholder="BUDAPEST"
-            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
 
@@ -87,7 +87,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.street}
             onChange={(e) => handleChange("street", e.target.value)}
             placeholder="VALAMI UTCA 12. 3/4"
-            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
 
@@ -98,7 +98,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
             placeholder="name@example.com"
-            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
 
@@ -108,7 +108,7 @@ export function BillingStep({ data, onChange }: BillingStepProps) {
             value={data.phone || ""}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="+36701234567"
-            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+            className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
           />
         </div>
       </div>

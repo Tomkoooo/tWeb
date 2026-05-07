@@ -30,7 +30,7 @@ export default async function AdminInfoPage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Beállítások <span className="text-accent underline decoration-accent/10 underline-offset-8">Feature Flag-ek</span>
+          Beállítások <span className="text-primary underline decoration-primary/10 underline-offset-8">Feature Flag-ek</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Az új funkciók fokozatos aktiválása környezetenként.
@@ -42,7 +42,7 @@ export default async function AdminInfoPage() {
           <div key={flag._id} className="bg-white/5 border border-white/10 p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-accent" />
+                <Settings2 className="w-4 h-4 text-primary" />
                 <h2 className="text-lg font-black uppercase tracking-wider text-white">{flag.label}</h2>
                 <span
                   className={cn(
@@ -97,7 +97,7 @@ export default async function AdminInfoPage() {
                     <p>
                       Feltöltve: {existing.uploadedAt ? new Date(existing.uploadedAt).toLocaleString("hu-HU") : "-"}
                     </p>
-                    <Link href={`/api/media/${existing.fileName}`} className="text-accent hover:underline" target="_blank">
+                    <Link href={`/api/media/${existing.fileName}`} className="text-primary hover:underline" target="_blank">
                       Jelenlegi dokumentum megnyitása
                     </Link>
                   </div>
@@ -114,7 +114,7 @@ export default async function AdminInfoPage() {
                   className="text-xs text-neutral-300"
                   required
                 />
-                <Button className="rounded-none bg-accent hover:bg-accent/85 text-white uppercase tracking-widest text-[10px] h-11">
+                <Button className="rounded-none bg-primary hover:bg-primary/85 text-white uppercase tracking-widest text-[10px] h-11">
                   Feltöltés
                 </Button>
               </form>

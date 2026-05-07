@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Vásárlók <span className="text-accent underline decoration-accent/10 underline-offset-8">Kezelése</span>
+          Vásárlók <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Felhasználók, szerepkörök és vásárlási összefoglaló.
@@ -53,7 +53,7 @@ export default async function AdminUsersPage() {
                   <td className="px-5 py-5">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-accent" />
+                        <User className="w-4 h-4 text-primary" />
                         <span className="text-white font-black uppercase tracking-wider">
                           {item.name || "Névtelen felhasználó"}
                         </span>
@@ -98,7 +98,7 @@ export default async function AdminUsersPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="rounded-none text-neutral-400 hover:text-accent hover:bg-white/5"
+                          className="rounded-none text-neutral-400 hover:text-primary hover:bg-white/5"
                           title="Részletek"
                         >
                           <Eye className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default async function AdminUsersPage() {
                       <form action={updateUserRole.bind(null, item._id.toString(), "ADMIN")}>
                         <Button
                           size="sm"
-                          className="rounded-none bg-accent hover:bg-accent/85 text-white"
+                          className="rounded-none bg-primary hover:bg-primary/85 text-white"
                           disabled={item.role === "ADMIN"}
                         >
                           ADMIN

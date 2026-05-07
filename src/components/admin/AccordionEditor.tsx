@@ -71,7 +71,7 @@ export function AccordionEditor({ initialData, name }: AccordionEditorProps) {
                     value={item.title}
                     onChange={(e) => updateItem(index, "title", e.target.value)}
                     placeholder="ELEM CÍME..."
-                    className="bg-black border-white/5 h-10 text-white font-bold uppercase tracking-widest rounded-none focus-visible:ring-accent"
+                    className="bg-black border-white/5 h-10 text-white font-bold uppercase tracking-widest rounded-none focus-visible:ring-primary"
                   />
                 </div>
                 <div className="space-y-2">
@@ -81,7 +81,7 @@ export function AccordionEditor({ initialData, name }: AccordionEditorProps) {
                     onChange={(e) => updateItem(index, "content", e.target.value)}
                     placeholder="ELEM TARTALMA..."
                     rows={3}
-                    className="w-full bg-black border border-white/5 rounded-none p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none leading-relaxed"
+                    className="w-full bg-black border border-white/5 rounded-none p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none leading-relaxed"
                   />
                 </div>
               </div>

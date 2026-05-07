@@ -13,12 +13,27 @@ export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
+  const [newsletterEnabled, setNewsletterEnabled] = React.useState(false)
 
   const [formData, setFormData] = React.useState({
     billing: { type: "personal", name: "", taxNumber: "", zip: "", city: "", street: "" },
     shipping: { isSameAsBilling: true, name: "", zip: "", city: "", street: "", comment: "" },
     newsletterSubscribed: false
   })
+
+  React.useEffect(() => {
+    const loadNewsletterFeature = async () => {
+      try {
+        const response = await fetch("/api/feature-flags/newsletter")
+        if (!response.ok) return
+        const data = await response.json()
+        setNewsletterEnabled(Boolean(data.enabled))
+      } catch {
+        setNewsletterEnabled(false)
+      }
+    }
+    loadNewsletterFeature()
+  }, [])
 
   React.useEffect(() => {
     if (status === "unauthenticated") {
@@ -45,14 +60,22 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const payload: {
+        billingInfo: typeof formData.billing
+        shippingAddress: typeof formData.shipping
+        newsletterSubscribed?: boolean
+      } = {
+        billingInfo: formData.billing,
+        shippingAddress: formData.shipping,
+      }
+      if (newsletterEnabled) {
+        payload.newsletterSubscribed = formData.newsletterSubscribed
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          billingInfo: formData.billing,
-          shippingAddress: formData.shipping,
-          newsletterSubscribed: formData.newsletterSubscribed
-        })
+        body: JSON.stringify(payload)
       })
 
       if (res.ok) {
@@ -87,7 +110,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-[#FF5500] border-solid rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -101,7 +124,7 @@ export default function ProfilePage() {
         
         <div className="space-y-12">
           <div className="space-y-6">
-            <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-[0.2em]">Számlázási Adatok</h3>
+            <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Számlázási Adatok</h3>
             <BillingStep 
               data={formData.billing} 
               onChange={(data) => setFormData(p => ({ ...p, billing: data }))} 
@@ -109,7 +132,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-[0.2em]">Szállítási Adatok</h3>
+            <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Szállítási Adatok</h3>
             <ShippingStep 
               data={formData.shipping} 
               billingData={formData.billing}
@@ -120,33 +143,35 @@ export default function ProfilePage() {
           <Button 
             onClick={handleSave}
             disabled={saving}
-            className="w-full md:w-auto bg-white !text-black hover:bg-neutral-200 rounded-none h-14 px-10 font-black uppercase tracking-widest text-xs"
+            className="w-full md:w-auto bg-white text-black! hover:bg-neutral-200 rounded-none h-14 px-10 font-black uppercase tracking-widest text-xs"
           >
             {saving ? "Mentés folyamatban..." : "Adatok Mentése"}
           </Button>
 
-          <div className="border border-white/10 p-5 bg-white/5 space-y-3">
-            <h4 className="text-xs font-black text-white uppercase tracking-widest">Hírlevél</h4>
-            <p className="text-sm text-neutral-400">
-              Itt tudsz feliratkozni vagy leiratkozni a hírlevelekről.
-            </p>
-            <label className="inline-flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.newsletterSubscribed}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    newsletterSubscribed: e.target.checked,
-                  }))
-                }
-                className="w-4 h-4 accent-[#FF5500]"
-              />
-              <span className="text-sm text-white">
-                Feliratkozva a hírlevélre
-              </span>
-            </label>
-          </div>
+          {newsletterEnabled ? (
+            <div className="border border-white/10 p-5 bg-white/5 space-y-3">
+              <h4 className="text-xs font-black text-white uppercase tracking-widest">Hírlevél</h4>
+              <p className="text-sm text-neutral-400">
+                Itt tudsz feliratkozni vagy leiratkozni a hírlevelekről.
+              </p>
+              <label className="inline-flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.newsletterSubscribed}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      newsletterSubscribed: e.target.checked,
+                    }))
+                  }
+                  className="w-4 h-4 accent-accent"
+                />
+                <span className="text-sm text-white">
+                  Feliratkozva a hírlevélre
+                </span>
+              </label>
+            </div>
+          ) : null}
         </div>
       </div>
 

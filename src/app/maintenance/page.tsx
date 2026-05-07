@@ -17,7 +17,7 @@ export default async function MaintenancePage() {
       <div className="w-full max-w-2xl border border-white/10 bg-white/5 p-10 md:p-14 text-center space-y-7">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-            <Wrench className="w-8 h-8 text-accent" />
+            <Wrench className="w-8 h-8 text-primary" />
           </div>
         </div>
 
@@ -39,7 +39,7 @@ export default async function MaintenancePage() {
           </p>
           <Link
             href="/api/auth/signin?callbackUrl=/admin"
-            className="inline-flex h-12 px-6 items-center justify-center bg-accent text-black font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+            className="inline-flex h-12 px-6 items-center justify-center bg-primary text-black font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
           >
             Admin bejelentkezes
           </Link>

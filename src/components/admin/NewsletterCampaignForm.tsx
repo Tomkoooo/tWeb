@@ -16,7 +16,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
   return (
     <div className="bg-white/5 border border-white/10 p-6 space-y-6">
       <div className="flex items-center gap-2 text-white">
-        <Sparkles className="w-4 h-4 text-accent" />
+        <Sparkles className="w-4 h-4 text-primary" />
         <h2 className="font-black uppercase tracking-wider">Új kampány</h2>
       </div>
 
@@ -25,7 +25,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
           <input
             name="title"
             placeholder="Kampány cím"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
             required
           />
           <input
@@ -33,13 +33,13 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Email tárgy"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
             required
           />
           <select
             name="topic"
             defaultValue="general"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
           >
             <option value="general">Általános</option>
             <option value="discounts">Kedvezmények</option>
@@ -49,7 +49,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
           <select
             name="audience"
             defaultValue="all_users"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
           >
             <option value="all_users">Feliratkozott felhasználók</option>
             <option value="customers">Feliratkozott vásárló ügyfelek (rendeléssel)</option>
@@ -89,7 +89,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
             <p className="text-xs text-neutral-600">
               Ezt az üzenetet azért kaptad, mert feliratkoztál a hírlevelünkre.
               <br />
-              <a href="https://krauszbarkacs.hu/profile" className="text-[#FF5500] underline">
+              <a href="https://krauszbarkacs.hu/profile" className="text-primary underline">
                 Leiratkozás
               </a>
             </p>
@@ -97,7 +97,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
         </div>
 
         <div className="lg:col-span-2">
-          <Button type="submit" className="h-12 rounded-none bg-accent hover:bg-accent/85 text-white font-black uppercase tracking-widest text-[10px]">
+          <Button type="submit" className="h-12 rounded-none bg-primary hover:bg-primary/85 text-white font-black uppercase tracking-widest text-[10px]">
             <Mail className="w-4 h-4 mr-2" />
             Kampány mentése
           </Button>

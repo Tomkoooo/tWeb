@@ -84,20 +84,20 @@ export default function CheckoutSuccessPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="glass-card p-16 border-white/5"
         >
-          <div className="w-24 h-24 bg-[#FF5500]/20 rounded-full flex items-center justify-center mx-auto mb-10">
+          <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-10">
             {status === "processing" ? (
-              <Loader2 className="w-12 h-12 text-[#FF5500] animate-spin" />
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
             ) : status === "error" ? (
-              <AlertTriangle className="w-12 h-12 text-[#FF5500]" />
+              <AlertTriangle className="w-12 h-12 text-primary" />
             ) : (
-              <CheckCircle className="w-12 h-12 text-[#FF5500]" />
+              <CheckCircle className="w-12 h-12 text-primary" />
             )}
           </div>
           <h1 className="text-4xl md:text-5xl font-heading font-black text-white mb-6 uppercase tracking-tighter italic">
             {status === "error"
               ? "FIZETÉSI "
               : "KÖSZÖNJÜK A "}
-            <span className="text-[#FF5500]">
+            <span className="text-primary">
               {status === "error" ? "HIBA" : "RENDELÉST!"}
             </span>
           </h1>

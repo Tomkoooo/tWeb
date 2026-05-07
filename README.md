@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) webshop engine designed for fork-and-deploy reuse.
+
+## Fork-Ready Engine
+
+- Runtime shop settings are managed from `/admin/info` (branding, theme, SEO).
+- First-run defaults are generic placeholder assets and lorem ipsum content.
+- CI publishes Docker images with branch + SHA tags for safer promotion.
+
+Deployment/fork workflow documentation: `docs/FORK_DEPLOYMENT_ENGINE.md`  
+Vercel + custom domain guide: `docs/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md`
 
 ## Getting Started
 

@@ -122,7 +122,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
               )}
             />
             {discountAmount > 0 && (
-              <div className="absolute top-6 left-6 bg-accent text-white px-4 py-2 font-black uppercase tracking-widest text-xs z-10">
+              <div className="absolute top-6 left-6 bg-primary text-white px-4 py-2 font-black uppercase tracking-widest text-xs z-10">
                 Akció
               </div>
             )}
@@ -136,7 +136,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                   onClick={() => setActiveImage(img)}
                   className={cn(
                     "relative aspect-square bg-neutral-900 border overflow-hidden cursor-pointer transition-colors",
-                    activeImage === img ? "border-accent" : "border-white/5 hover:border-accent/40"
+                    activeImage === img ? "border-primary" : "border-white/5 hover:border-primary/40"
                   )}
                 >
                   <Image
@@ -167,7 +167,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                     key={i}
                     className={cn(
                       "w-5 h-5",
-                      i < roundedRating ? "fill-accent text-accent" : "text-white/10"
+                      i < roundedRating ? "fill-accent text-primary" : "text-white/10"
                     )}
                   />
                 ))}
@@ -183,7 +183,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
               <>
                 <div className="flex items-baseline gap-4 mb-2">
                   <span className="text-5xl font-black text-white">
-                    {Math.round(finalPrice).toLocaleString("hu-HU")} <span className="text-xl text-accent font-black">Ft</span>
+                    {Math.round(finalPrice).toLocaleString("hu-HU")} <span className="text-xl text-primary font-black">Ft</span>
                   </span>
                   {discountAmount > 0 && (
                     <span className="text-2xl text-neutral-600 line-through">
@@ -215,7 +215,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
             <div className="flex flex-wrap gap-2 mb-12">
               {view.seo.keywords.map((tag: string, i: number) => (
                 <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-default">
-                  <Tag className="w-3 h-3 text-accent" />
+                  <Tag className="w-3 h-3 text-primary" />
                   {tag}
                 </div>
               ))}
@@ -238,8 +238,8 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                       className={cn(
                         "px-4 h-11 border text-xs font-black uppercase tracking-widest transition-colors",
                         isSelected
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-white/10 text-white hover:border-accent/40"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-white/10 text-white hover:border-primary/40"
                       )}
                     >
                       {getVariantLabel(variant)}
@@ -271,7 +271,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
               disabled={shopEnabled === false || isAdded || (variantRequired && !selectedVariant)}
               className={cn(
                 "w-full h-16 font-black text-lg uppercase tracking-widest btn-krausz flex gap-4 transition-all duration-300",
-                isAdded ? "bg-green-600 hover:bg-green-600 text-white" : "bg-accent hover:bg-accent/90 text-white",
+                isAdded ? "bg-green-600 hover:bg-green-600 text-white" : "bg-primary hover:bg-primary/90 text-white",
                 variantRequired && !selectedVariant ? "opacity-60 cursor-not-allowed" : ""
               )}
             >
@@ -283,15 +283,15 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
           {/* Benefits */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 border-t border-white/5">
             <div className="flex flex-col items-center text-center gap-3">
-              <ShieldCheck className="w-8 h-8 text-accent" />
+              <ShieldCheck className="w-8 h-8 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">2 év garancia</span>
             </div>
             <div className="flex flex-col items-center text-center gap-3">
-              <Truck className="w-8 h-8 text-accent" />
+              <Truck className="w-8 h-8 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">Express szállítás</span>
             </div>
             <div className="flex flex-col items-center text-center gap-3">
-              <RotateCcw className="w-8 h-8 text-accent" />
+              <RotateCcw className="w-8 h-8 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">30 napos csere</span>
             </div>
           </div>
@@ -325,7 +325,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                         key={i}
                         className={cn(
                           "w-4 h-4",
-                          i < review.rating ? "fill-accent text-accent" : "text-white/10"
+                          i < review.rating ? "fill-accent text-primary" : "text-white/10"
                         )}
                       />
                     ))}

@@ -28,7 +28,7 @@ export const categories = [
 export const products = [
   {
     id: 1,
-    name: "Mester Kovácskalapács",
+    name: "Lorem Ipsum Product One",
     category: "Kalapács",
     price: 12990,
     rating: 4.8,
@@ -36,7 +36,7 @@ export const products = [
   },
   {
     id: 2,
-    name: "Precíziós Állítható Csavarkulcs",
+    name: "Lorem Ipsum Product Two",
     category: "Csavarkulcs",
     price: 6990,
     rating: 4.7,
@@ -44,7 +44,7 @@ export const products = [
   },
   {
     id: 3,
-    name: "Vasmarok Nagyteljesítményű Fúró",
+    name: "Lorem Ipsum Product Three",
     category: "Elektromos",
     price: 54990,
     rating: 4.9,
@@ -52,7 +52,7 @@ export const products = [
   },
   {
     id: 4,
-    name: "Acélorrú Mester Bakancs",
+    name: "Lorem Ipsum Product Four",
     category: "Védőfelszerelés",
     price: 34990,
     rating: 4.6,
@@ -60,7 +60,7 @@ export const products = [
   },
   {
     id: 5,
-    name: "Profi Csavarkulcs Készlet",
+    name: "Lorem Ipsum Product Five",
     category: "Csavarkulcs",
     price: 24990,
     rating: 4.8,

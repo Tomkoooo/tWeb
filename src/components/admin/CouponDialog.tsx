@@ -62,7 +62,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 name="code" 
                 required 
                 placeholder="PL. SUMMER2024"
-                className="bg-black border-white/5 h-12 text-white font-black uppercase tracking-[0.3em] focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-12 text-white font-black uppercase tracking-[0.3em] focus-visible:ring-primary rounded-none"
               />
             </div>
 
@@ -76,7 +76,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                     onClick={() => setType(t)}
                     className={cn(
                       "flex-grow py-3 text-[8px] font-black uppercase tracking-widest transition-all",
-                      type === t ? "bg-[#FF5500] text-white" : "text-neutral-500 hover:text-white"
+                      type === t ? "bg-primary text-white" : "text-neutral-500 hover:text-white"
                     )}
                   >
                     {t === "percentage" ? "%" : t === "fixed" ? "FT" : "SZÁLLÍTÁS"}
@@ -93,7 +93,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                   type="number"
                   required 
                   placeholder="0"
-                  className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
             )}
@@ -104,7 +104,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 name="minCartValue" 
                 type="number"
                 placeholder="0"
-                className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
               />
             </div>
 
@@ -114,7 +114,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 name="startDate" 
                 type="date"
                 required
-                className="bg-black border-white/5 h-12 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-12 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
               />
             </div>
 
@@ -124,7 +124,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 name="endDate" 
                 type="date"
                 required
-                className="bg-black border-white/5 h-12 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-12 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
               />
             </div>
 
@@ -134,7 +134,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 name="maxUses" 
                 type="number"
                 placeholder="Üres = Végtelen"
-                className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
               />
             </div>
 
@@ -145,7 +145,7 @@ export function CouponDialog({ children, title, action }: CouponDialogProps) {
                 onClick={() => setIsActive(!isActive)}
                 className={cn(
                   "w-12 h-6 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                  isActive ? "bg-[#FF5500]" : "bg-neutral-800"
+                  isActive ? "bg-primary" : "bg-neutral-800"
                 )}
               >
                 <div className={cn(

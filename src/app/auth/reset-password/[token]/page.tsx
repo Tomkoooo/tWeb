@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-accent"
+            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-12 rounded-none bg-accent hover:bg-accent/85 text-white uppercase tracking-widest text-xs font-black"
+          className="w-full h-12 rounded-none bg-primary hover:bg-primary/85 text-white uppercase tracking-widest text-xs font-black"
         >
           {isSubmitting ? "Mentés..." : "Jelszó mentése"}
         </Button>

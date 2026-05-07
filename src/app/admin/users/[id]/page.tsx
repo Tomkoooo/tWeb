@@ -84,7 +84,7 @@ export default async function AdminUserDetailsPage({
             vissza a felhasználókhoz
           </Link>
           <h1 className="text-4xl font-heading font-black tracking-tight mt-3 uppercase italic text-white">
-            <span className="text-accent">Felhasználó</span> adatlap
+            <span className="text-primary">Felhasználó</span> adatlap
           </h1>
           <p className="text-neutral-400 mt-2">
             {user.name || "Névtelen felhasználó"} · {user.email || "Nincs email"}
@@ -92,7 +92,7 @@ export default async function AdminUserDetailsPage({
         </div>
 
         <form action={sendAdminPasswordReset.bind(null, user._id)}>
-          <Button className="h-12 rounded-none bg-accent hover:bg-accent/85 text-white uppercase tracking-widest text-[10px] font-black">
+          <Button className="h-12 rounded-none bg-primary hover:bg-primary/85 text-white uppercase tracking-widest text-[10px] font-black">
             <KeyRound className="w-4 h-4 mr-2" />
             Jelszó reset email küldése
           </Button>
@@ -121,7 +121,7 @@ export default async function AdminUserDetailsPage({
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white/5 border border-white/10 p-6 space-y-4">
           <h2 className="text-lg font-black uppercase tracking-widest text-white inline-flex items-center gap-2">
-            <ReceiptText className="w-5 h-5 text-accent" />
+            <ReceiptText className="w-5 h-5 text-primary" />
             Számlázási adatok
           </h2>
           <div className="text-sm text-neutral-300 space-y-1">
@@ -138,7 +138,7 @@ export default async function AdminUserDetailsPage({
 
         <div className="bg-white/5 border border-white/10 p-6 space-y-4">
           <h2 className="text-lg font-black uppercase tracking-widest text-white inline-flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-accent" />
+            <MapPin className="w-5 h-5 text-primary" />
             Szállítási adatok
           </h2>
           <div className="text-sm text-neutral-300 space-y-1">
@@ -155,7 +155,7 @@ export default async function AdminUserDetailsPage({
 
       <section className="bg-white/5 border border-white/10 p-6 space-y-4">
         <h2 className="text-lg font-black uppercase tracking-widest text-white inline-flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-accent" />
+          <ShoppingBag className="w-5 h-5 text-primary" />
           Rendelések
         </h2>
 

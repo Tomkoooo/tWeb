@@ -101,7 +101,7 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((img, index) => (
-          <div key={img} className="relative group aspect-square bg-black border border-white/10 rounded-2xl overflow-hidden transition-all hover:border-accent/40">
+          <div key={img} className="relative group aspect-square bg-black border border-white/10 rounded-2xl overflow-hidden transition-all hover:border-primary/40">
             <img 
               src={`/api/media/${img}`} 
               alt={`Preview ${index}`} 
@@ -140,7 +140,7 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
                   onClick={() => setAsMain(index)}
                   className={cn(
                     "p-1.5 rounded-lg transition-colors",
-                    index === 0 ? "bg-accent text-white" : "bg-black/60 text-white hover:text-accent"
+                    index === 0 ? "bg-primary text-white" : "bg-black/60 text-white hover:text-primary"
                   )}
                   title={index === 0 ? "Elsődleges kép" : "Legyen elsődleges"}
                 >
@@ -150,7 +150,7 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
             </div>
 
             {index === 0 && (
-              <div className="absolute top-2 left-2 px-2 py-0.5 bg-accent text-white text-[10px] font-black uppercase tracking-widest rounded-md">
+              <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-md">
                 Fő kép
               </div>
             )}
@@ -159,9 +159,9 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
           </div>
         ))}
 
-        <label className="relative aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-accent/40 transition-all">
+        <label className="relative aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-primary/40 transition-all">
           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2">
-            {uploading ? <Loader2 className="w-5 h-5 text-accent animate-spin" /> : <Upload className="w-5 h-5 text-neutral-600" />}
+            {uploading ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-neutral-600" />}
           </div>
           <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Képek hozzáadása</span>
           <input type="file" className="hidden" onChange={handleUpload} accept="image/*" multiple />

@@ -8,21 +8,36 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Card, CardContent } from "@/components/ui/card"
-import { Shield, Hammer, Users, Lightbulb } from "lucide-react"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { EditableListInline } from "@/features/homepage-cms/components/primitives/EditableListInline"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
 
 interface StoryProps {
   title?: string
   content?: string
-  accordions?: string // JSON string
+  accordions?: string | Array<{ title: string; content: string }>
+  cards?: Array<{ title: string; description: string; icon?: string }>
 }
 
-export function Story({ title, content, accordions }: StoryProps) {
-  const displayTitle = title || "A KRAUSZ LEGENDÁJA"
-  const displayContent = content || "Magyarország szívében alapítva, a Krausz Barkácsmester egyetlen vízióval indult: olyan szerszámokat készíteni, amelyek ugyanolyan keményen dolgoznak, mint az emberek, akik használják őket."
+export function Story({ title, content, accordions, cards }: StoryProps) {
+  const displayCards = cards?.length
+    ? cards
+    : [
+        { icon: "Shield", title: "LOREM", description: "Lorem ipsum dolor sit amet." },
+        { icon: "Hammer", title: "IPSUM", description: "Consectetur adipiscing elit." },
+        { icon: "Users", title: "DOLOR", description: "Sed do eiusmod tempor incididunt." },
+        { icon: "Lightbulb", title: "AMET", description: "Ut labore et dolore magna aliqua." },
+      ]
+  const cms = useCmsEdit()
+  const displayTitle = title ?? "LOREM IPSUM STORY"
+  const displayContent = content ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
   const parsedAccordions = React.useMemo(() => {
     if (!accordions) return null
+    if (Array.isArray(accordions)) return accordions.length > 0 ? accordions : null
     try {
       const parsed = JSON.parse(accordions)
       return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
@@ -33,23 +48,23 @@ export function Story({ title, content, accordions }: StoryProps) {
 
   const defaultAccordions = [
     {
-      title: "KÜLDETÉSÜNK: ERŐ ÉS PRECIZITÁS",
-      content: "Nem csak szerszámokat adunk el; eszközöket biztosítunk az építéshez és az alkotáshoz. Minden darabot úgy tesztelünk, hogy kibírja a legextrémebb ipari igénybevételt is."
+      title: "LOREM IPSUM MISSION",
+      content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     },
     {
-      title: "KRAUSZ MINŐSÉGI ÍGÉRET",
-      content: "Szerszámaink magas széntartalmú acélból készülnek, ergonomikus markolattal. Ha Krausz szerszámot fogsz a kezedben, azonnal érzed a különbséget a tömegtermék és a mestermunka között."
+      title: "DOLOR SIT AMET",
+      content: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
     },
     {
-      title: "INNOVATÍV FEJLESZTÉSEK",
-      content: "Folyamatosan keressük az új technológiákat, legyen szó rezgéscsillapításról vagy intelligens akkumulátor kezelésről, hogy munkád hatékonyabb legyen."
+      title: "CONSECTETUR ELIT",
+      content: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum."
     }
   ]
 
   const displayAccordions = parsedAccordions || defaultAccordions
 
   return (
-    <section id="about" className="py-32 bg-[#0A0A0A] overflow-hidden">
+    <section id="about" className="py-32 bg-background-dark overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           <motion.div
@@ -58,41 +73,85 @@ export function Story({ title, content, accordions }: StoryProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-7xl font-heading font-black mb-10 text-white uppercase tracking-tighter">
-              {displayTitle.includes("LEGENDÁJA") ? (
-                <>
-                  A KRAUSZ <span className="text-[#FF5500]">LEGENDÁJA</span>
-                </>
-              ) : (
-                displayTitle
-              )}
-            </h2>
-            <p className="text-neutral-400 text-xl mb-12 leading-relaxed max-w-xl">
-              {displayContent}
-            </p>
+            {cms.enabled ? (
+              <div className="space-y-3">
+                <EditableTextInline blockType="about" field="title" value={displayTitle} className="text-4xl md:text-7xl font-heading font-black text-foreground uppercase tracking-tighter" />
+                <EditableTextInline blockType="about" field="paragraph" value={displayContent} multiline className="text-neutral-400 text-xl leading-relaxed max-w-xl" />
+              </div>
+            ) : (
+              <>
+                <h2 className="text-4xl md:text-7xl font-heading font-black mb-10 text-foreground uppercase tracking-tighter">
+                  {displayTitle.includes("STORY") ? (
+                    <>
+                      LOREM <span className="text-primary">IPSUM STORY</span>
+                    </>
+                  ) : (
+                    displayTitle
+                  )}
+                </h2>
+                <p className="text-neutral-400 text-xl mb-12 leading-relaxed max-w-xl">{displayContent}</p>
+              </>
+            )}
 
             <Accordion type="single" collapsible className="w-full space-y-4">
-              {displayAccordions.map((item: any, index: number) => (
-                <AccordionItem key={index} value={`item-${index}`} className="border-white/5 bg-white/5 px-6 rounded-none">
-                  <AccordionTrigger className="text-white hover:text-[#FF5500] font-heading font-black uppercase tracking-widest text-left no-underline py-6">
-                    {item.title}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6 whitespace-pre-wrap">
-                    {item.content}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+              <EditableListInline
+                blockType="about"
+                field="accordions"
+                items={displayAccordions}
+                onCreateItem={() => ({ title: "Új lenyíló", content: "Új tartalom" })}
+                onRenderItem={(item: any, index, helpers) => (
+                  <AccordionItem key={index} value={`item-${index}`} className="border-border/40 bg-surface/40 px-6 rounded-none">
+                    <AccordionTrigger className="text-foreground hover:text-primary font-heading font-black uppercase tracking-widest text-left no-underline py-6">
+                      {cms.enabled ? (
+                        <input
+                          value={item.title}
+                          onChange={(event) =>
+                            cms.updateField(
+                              "about",
+                              "accordions",
+                              displayAccordions.map((row: any, idx: number) =>
+                                idx === index ? { ...row, title: event.target.value } : row
+                              )
+                            )
+                          }
+                            className="h-8 w-full bg-surface border border-border px-2 text-foreground text-sm"
+                        />
+                      ) : item.title}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6 whitespace-pre-wrap">
+                      {cms.enabled ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={item.content}
+                            onChange={(event) =>
+                              cms.updateField(
+                                "about",
+                                "accordions",
+                                displayAccordions.map((row: any, idx: number) =>
+                                  idx === index ? { ...row, content: event.target.value } : row
+                                )
+                              )
+                            }
+                            className="w-full bg-surface border border-border px-2 py-1 text-sm text-foreground"
+                          />
+                          <Button type="button" size="xs" variant="destructive" onClick={helpers.remove}>
+                            Törlés
+                          </Button>
+                        </div>
+                      ) : (
+                        item.content
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              />
             </Accordion>
           </motion.div>
 
           {/* Cards with high-contrast blurs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {[
-              { icon: <Shield className="w-10 h-10" />, title: "BIZTONSÁG", desc: "Maximális védelem a legveszélyesebb munkák során is." },
-              { icon: <Hammer className="w-10 h-10" />, title: "MESTERSÉG", desc: "Minden kalapácsütésnél érezhető szakértelem." },
-              { icon: <Users className="w-10 h-10" />, title: "KÖZÖSSÉG", desc: "Több ezer elégedett magyar mesterember bizalma." },
-              { icon: <Lightbulb className="w-10 h-10" />, title: "OKOS TERVEZÉS", desc: "Ergonómia, ami kíméli az ízületeket hosszú távon." },
-            ].map((item, i) => (
+            {displayCards.map((item, i) => {
+              return (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
@@ -101,21 +160,83 @@ export function Story({ title, content, accordions }: StoryProps) {
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
                 <div className={cn(
-                  "glass-card p-10 h-full flex flex-col items-center text-center group hover:border-[#FF5500]/50 transition-all",
+                  "glass-card p-10 h-full flex flex-col items-center text-center group hover:border-primary/50 transition-all",
                   i % 2 === 1 ? "lg:mt-12" : ""
                 )}>
-                  <div className="w-20 h-20 bg-[#FF5500]/5 rounded-full flex items-center justify-center mb-8 border border-white/5 group-hover:bg-[#FF5500]/20 transition-all">
-                    <div className="text-[#FF5500]">{item.icon}</div>
+                  <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-8 border border-border/40 group-hover:bg-primary/20 transition-all">
+                    <div className="text-primary"><DynamicLucideIcon name={item.icon || "Shield"} className="w-10 h-10" /></div>
                   </div>
-                  <h3 className="text-white font-heading font-black mb-4 tracking-widest uppercase">{item.title}</h3>
-                  <p className="text-neutral-500 text-sm leading-relaxed">{item.desc}</p>
+                  {cms.enabled ? (
+                    <div className="space-y-2 w-full">
+                      <IconPicker
+                        value={item.icon || "Shield"}
+                        triggerLabel="Ikon választás"
+                        onChange={(iconName) =>
+                          cms.updateField(
+                            "about",
+                            "cards",
+                            displayCards.map((row, idx) => (idx === i ? { ...row, icon: iconName } : row))
+                          )
+                        }
+                      />
+                      <input
+                        value={item.title}
+                        onChange={(event) =>
+                          cms.updateField(
+                            "about",
+                            "cards",
+                            displayCards.map((row, idx) => (idx === i ? { ...row, title: event.target.value } : row))
+                          )
+                        }
+                        className="h-8 w-full bg-surface border border-border px-2 text-foreground text-sm font-black uppercase"
+                      />
+                      <textarea
+                        value={item.description}
+                        onChange={(event) =>
+                          cms.updateField(
+                            "about",
+                            "cards",
+                            displayCards.map((row, idx) => (idx === i ? { ...row, description: event.target.value } : row))
+                          )
+                        }
+                        className="w-full bg-surface border border-border px-2 py-1 text-sm text-foreground"
+                      />
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="destructive"
+                        onClick={() => cms.updateField("about", "cards", displayCards.filter((_, idx) => idx !== i))}
+                      >
+                        Kártya törlése
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-foreground font-heading font-black mb-4 tracking-widest uppercase">{item.title}</h3>
+                      <p className="text-neutral-500 text-sm leading-relaxed">{item.description}</p>
+                    </>
+                  )}
                 </div>
               </motion.div>
-            ))}
+            )})}
           </div>
+          {cms.enabled ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                cms.updateField("about", "cards", [
+                  ...displayCards,
+                  { icon: "Shield", title: "Új kártya", description: "Új leírás" },
+                ])
+              }
+            >
+              Kártya hozzáadása
+            </Button>
+          ) : null}
         </div>
       </div>
     </section>
   )
 }
-import { cn } from "@/lib/utils"

@@ -36,7 +36,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
       >
         <div className={cn(
           "w-6 h-6 border-2 flex items-center justify-center transition-all duration-300",
-          data.isSameAsBilling ? "bg-[#FF5500] border-[#FF5500]" : "border-white/20 bg-transparent group-hover:border-white/40"
+          data.isSameAsBilling ? "bg-primary border-primary" : "border-white/20 bg-transparent group-hover:border-white/40"
         )}>
           {data.isSameAsBilling && (
             <Check className="w-4 h-4 text-white scale-in-center" />
@@ -62,7 +62,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                   placeholder="TELJES NÉV"
-                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -72,7 +72,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.zip}
                   onChange={(e) => handleChange("zip", e.target.value)}
                   placeholder="1234"
-                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -82,7 +82,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.city}
                   onChange={(e) => handleChange("city", e.target.value)}
                   placeholder="BUDAPEST"
-                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -92,7 +92,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.street}
                   onChange={(e) => handleChange("street", e.target.value)}
                   placeholder="VALAMI UTCA 12."
-                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -103,7 +103,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
                   placeholder="name@example.com"
-                  className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -113,7 +113,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
                   value={data.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   placeholder="+36701234567"
-                  className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                  className="bg-black border-white/5 h-14 text-white font-bold tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
             </div>
@@ -128,7 +128,7 @@ export function ShippingStep({ data, onChange, billingData }: ShippingStepProps)
           onChange={(e) => handleChange("comment", e.target.value)}
           rows={3}
           placeholder="RÉSZLETEK A SZÁLLÍTÁSHOZ..."
-          className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#FF5500] transition-all resize-none"
+          className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
         />
       </div>
     </div>

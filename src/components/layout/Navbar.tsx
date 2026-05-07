@@ -22,8 +22,18 @@ const navLinks = [
   { name: "Kapcsolat", href: "/#contact" },
 ]
 
-export function Navbar() {
+interface NavbarProps {
+  brandName?: string
+  logoSrc?: string
+}
+
+export function Navbar({ brandName = "Generic Webshop", logoSrc = "/generic-logo.svg" }: NavbarProps) {
   const [isScrolled, setIsScrolled] = React.useState(false)
+  const [resolvedBrand, setResolvedBrand] = React.useState({ brandName, logoSrc })
+
+  React.useEffect(() => {
+    setResolvedBrand({ brandName, logoSrc })
+  }, [brandName, logoSrc])
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -33,6 +43,25 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  React.useEffect(() => {
+    let cancelled = false
+    fetch("/api/site/branding")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setResolvedBrand({
+          brandName: data.brandName || brandName,
+          logoSrc: data.logoNav || logoSrc,
+        })
+      })
+      .catch(() => {
+        // keep prop/default fallback
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [brandName, logoSrc])
+
   return (
     <motion.header
       initial={{ y: -100 }}
@@ -40,7 +69,7 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
         isScrolled
-          ? "bg-black/95 backdrop-blur-2xl border-b border-white/5 py-4"
+          ? "bg-background-dark/95 backdrop-blur-2xl py-4"
           : "bg-transparent py-10"
       )}
     >
@@ -50,8 +79,8 @@ export function Navbar() {
           <Link href="/" className="flex items-center group">
             <div className="relative w-40 h-10 sm:w-48 sm:h-12 lg:w-56 lg:h-14">
               <Image
-                src="/navbar.png"
-                alt="Krausz Barkácsmester"
+                src={resolvedBrand.logoSrc}
+                alt={resolvedBrand.brandName}
                 fill
                 className="object-contain"
                 priority
@@ -66,10 +95,10 @@ export function Navbar() {
             <Link
               key={link.name}
               href={link.href}
-              className="text-[11px] font-black text-neutral-400 hover:text-white transition-colors relative group uppercase tracking-[0.25em] whitespace-nowrap"
+              className="text-[11px] font-black text-muted-foreground hover:text-foreground transition-colors relative group uppercase tracking-[0.25em] whitespace-nowrap"
             >
               {link.name}
-              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-[#FF5500] transition-all duration-300 group-hover:w-full" />
+              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
           ))}
         </nav>
@@ -82,7 +111,7 @@ export function Navbar() {
 
           <Button asChild variant="ghost" size="icon" className="relative group p-0 w-10 h-10 hover:bg-transparent">
             <Link href="/cart">
-              <ShoppingCart className="w-6 h-6 text-white group-hover:text-[#FF5500] transition-colors" />
+              <ShoppingCart className="w-6 h-6 text-foreground group-hover:text-primary transition-colors" />
               <CartCountBadge />
             </Link>
           </Button>
@@ -94,16 +123,16 @@ export function Navbar() {
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden lg:hidden p-0 w-10 h-10 ml-2">
-                <Menu className="w-8 h-8 text-white" />
+                <Menu className="w-8 h-8 text-foreground" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-black border-white/10 w-full sm:max-w-md">
+            <SheetContent side="right" className="bg-background-dark border-border w-full sm:max-w-md">
               <div className="flex flex-col gap-10 mt-20 px-6">
                 {navLinks.map((link) => (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className="text-3xl font-heading font-black text-white hover:text-[#FF5500] transition-colors uppercase tracking-widest"
+                    className="text-3xl font-heading font-black text-foreground hover:text-primary transition-colors uppercase tracking-widest"
                   >
                     {link.name}
                   </Link>
@@ -111,7 +140,7 @@ export function Navbar() {
                 
                 <div className="mt-10">
                    <LiveSearch 
-                    placeholder="KERESÉS..." 
+                    placeholder="SEARCH..." 
                     inputClassName="h-16 text-lg"
                    />
                 </div>
@@ -136,7 +165,7 @@ function CartCountBadge() {
   if (totalItems === 0) return null
 
   return (
-    <Badge className="absolute -top-1 -right-1 bg-[#FF5500] text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
+    <Badge className="absolute -top-1 -right-1 bg-primary text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
       {totalItems}
     </Badge>
   )

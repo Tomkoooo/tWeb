@@ -52,15 +52,15 @@ export function SummaryStep({ data, onChange, cartItems, totalPrice }: SummarySt
       {/* Coupon Entry */}
       <div className="space-y-6">
         <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-          <Tag className="w-5 h-5 text-[#FF5500]" />
+          <Tag className="w-5 h-5 text-primary" />
           Kuponkód felhasználása
         </h3>
         
         {data.coupon ? (
-          <div className="p-6 bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-between">
+          <div className="p-6 bg-primary/10 border border-primary/30 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-white uppercase tracking-widest">Alkalmazott kupon</p>
-              <p className="text-lg font-black text-[#FF5500] uppercase tracking-tighter mt-1">{data.coupon.code}</p>
+              <p className="text-lg font-black text-primary uppercase tracking-tighter mt-1">{data.coupon.code}</p>
             </div>
             <Button 
               variant="krausz" 
@@ -78,7 +78,7 @@ export function SummaryStep({ data, onChange, cartItems, totalPrice }: SummarySt
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 placeholder="KUPONKÓD"
-                className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+                className="bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
               />
               {error && (
                 <div className="flex items-center gap-2 mt-2 text-rose-500 text-[10px] font-black uppercase tracking-widest leading-none">

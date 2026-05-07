@@ -41,7 +41,7 @@ function StatCard({ title, value, subtitle, icon: Icon }: StatCardProps) {
     <div className="bg-white/5 border border-white/10 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">{title}</p>
-        <Icon className="w-5 h-5 text-accent" />
+        <Icon className="w-5 h-5 text-primary" />
       </div>
       <div>
         <p className="text-3xl font-black text-white">{value}</p>
@@ -59,7 +59,7 @@ export default async function AdminStatsPage() {
     <div className="space-y-10 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Statisztikák <span className="text-accent underline decoration-accent/10 underline-offset-8">Áttekintés</span>
+          Statisztikák <span className="text-primary underline decoration-primary/10 underline-offset-8">Áttekintés</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Valós idejű üzleti mutatók, forgalom és top termékek.
@@ -117,7 +117,7 @@ export default async function AdminStatsPage() {
                   <p className="font-black text-white uppercase tracking-wide">{item.productName}</p>
                   <p className="text-[11px] text-neutral-500 font-bold">{item.soldQuantity} db eladva</p>
                 </div>
-                <p className="font-black text-accent">{Math.round(item.revenue).toLocaleString("hu-HU")} Ft</p>
+                <p className="font-black text-primary">{Math.round(item.revenue).toLocaleString("hu-HU")} Ft</p>
               </div>
             ))
           )}

@@ -35,7 +35,7 @@ export default async function AdminOrders() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Rendelések <span className="text-accent underline decoration-accent/10 underline-offset-8">Kezelése</span>
+          Rendelések <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">Kísérje figyelemmel a beérkező rendeléseket és frissítse az állapotukat.</p>
       </div>
@@ -49,6 +49,7 @@ export default async function AdminOrders() {
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Vásárló</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Termékek</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Állapot</th>
+                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Számla</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Összeg</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500 text-right">Műveletek</th>
               </tr>
@@ -56,7 +57,7 @@ export default async function AdminOrders() {
             <tbody className="divide-y divide-white/5">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-white/20 italic">
+                  <td colSpan={7} className="px-6 py-20 text-center text-white/20 italic">
                     <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-5" />
                     Még nem érkezett rendelés.
                   </td>
@@ -78,7 +79,7 @@ export default async function AdminOrders() {
                     <td className="px-6 py-6">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                          <User className="w-3 h-3 text-accent" />
+                          <User className="w-3 h-3 text-primary" />
                           <span className="font-bold text-white uppercase tracking-tight italic">{order.billingInfo.name}</span>
                         </div>
                         <span className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">{order.shippingAddress.city}</span>
@@ -100,9 +101,18 @@ export default async function AdminOrders() {
                       </span>
                     </td>
                     <td className="px-6 py-6">
+                      <div className="text-[10px] font-black uppercase tracking-widest space-y-1">
+                        <p className={order.invoiceId ? "text-emerald-400" : "text-neutral-500"}>
+                          {order.invoiceId ? "VAN SZÁMLA" : "NINCS SZÁMLA"}
+                        </p>
+                        <p className="text-neutral-400">{order.invoiceId || "-"}</p>
+                        <p className="text-neutral-600">{order.invoiceStatus || "pending"}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6">
                       <div className="flex flex-col">
                         <span className="font-black text-white text-lg tracking-tighter">
-                          {order.total.toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span>
+                          {order.total.toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span>
                         </span>
                         {order.discount > 0 && (
                           <div className="flex items-center gap-1 mt-1 text-[#FFD700]">
@@ -114,7 +124,7 @@ export default async function AdminOrders() {
                     </td>
                     <td className="px-6 py-6 text-right">
                       <Link href={`/admin/orders/${order._id}`}>
-                        <Button variant="ghost" size="icon" className="w-12 h-12 hover:bg-accent/20 text-neutral-500 hover:text-accent rounded-none border border-transparent hover:border-accent/30 transition-all shadow-lg" title="Megtekintés">
+                        <Button variant="ghost" size="icon" className="w-12 h-12 hover:bg-primary/20 text-neutral-500 hover:text-primary rounded-none border border-transparent hover:border-primary/30 transition-all shadow-lg" title="Megtekintés">
                           <Eye className="w-5 h-5" />
                         </Button>
                       </Link>
