@@ -22,19 +22,19 @@ export default function ProfileLayout({
             <nav className="flex flex-col space-y-2">
               <a 
                 href="/profile" 
-                className="px-4 py-3 border border-white/10 hover:border-[#FF5500] hover:bg-[#FF5500]/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
+                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
               >
                 Adataim
               </a>
               <a 
                 href="/profile/orders" 
-                className="px-4 py-3 border border-white/10 hover:border-[#FF5500] hover:bg-[#FF5500]/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
+                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
               >
                 Rendeléseim
               </a>
               <a 
                 href="/profile/feedback" 
-                className="px-4 py-3 border border-white/10 hover:border-[#FF5500] hover:bg-[#FF5500]/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
+                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
               >
                 Bolt értékelése
               </a>

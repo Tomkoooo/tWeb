@@ -23,7 +23,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Rendelés nem található" }, { status: 404 });
     }
 
-    return NextResponse.json(order);
+    const safeOrder = {
+      ...(order as any),
+      invoiceDownloadUrl: `/api/user/orders/${id}/invoice`,
+    };
+
+    return NextResponse.json(safeOrder);
   } catch (error: any) {
     console.error("Error fetching order detail:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });

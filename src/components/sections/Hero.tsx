@@ -3,33 +3,150 @@
 import * as React from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { ArrowRight, Star, Shield, Zap } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { EditableLinkInline } from "@/features/homepage-cms/components/primitives/EditableLinkInline"
+import { EditableImageInline } from "@/features/homepage-cms/components/primitives/EditableImageInline"
+import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+
+type HeroSlide = {
+  title: string
+  description: string
+  primaryCtaLabel: string
+  primaryCtaHref: string
+  secondaryCtaLabel: string
+  secondaryCtaHref: string
+  badges: string[]
+  images: string[]
+  imageDurationSeconds: number
+  durationSeconds: number
+}
+
+function parseBadge(value: string): { icon: string; text: string } {
+  const [rawIcon, ...rest] = value.split(":")
+  const text = rest.length ? rest.join(":") : value
+  if (rest.length) return { icon: rawIcon || "Star", text }
+  return { icon: "Star", text: value }
+}
+
+function formatBadge(icon: string, text: string) {
+  return `${icon}:${text}`
+}
 
 interface HeroProps {
   title?: string
   description?: string
+  primaryCtaLabel?: string
+  primaryCtaHref?: string
+  secondaryCtaLabel?: string
+  secondaryCtaHref?: string
+  heroImage?: string
+  badges?: string[]
+  slides?: HeroSlide[]
 }
 
-export function Hero({ title, description }: HeroProps) {
-  const displayTitle = title || "KRAUSZ BARKÁCSMESTER"
-  const displayDescription = description || "Mestermunka a kezedben. Precíziós szerszámok a modern mesterembernek, aki nem ismer kompromisszumot."
+export function Hero({
+  title,
+  description,
+  primaryCtaLabel,
+  primaryCtaHref,
+  secondaryCtaLabel,
+  secondaryCtaHref,
+  heroImage,
+  badges,
+  slides,
+}: HeroProps) {
+  const cms = useCmsEdit()
+  const normalizedSlides = React.useMemo<HeroSlide[]>(() => {
+    if (slides?.length) {
+      return slides.map((slide) => ({
+        ...slide,
+        images: slide.images?.length ? slide.images : ["/generic-hero.svg"],
+        imageDurationSeconds: Math.max(1, slide.imageDurationSeconds || 4),
+        durationSeconds: Math.max(1, slide.durationSeconds || 6),
+      }))
+    }
+    return [
+      {
+        title: title ?? "LOREM IPSUM DOLOR",
+        description:
+          description ??
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        primaryCtaLabel: primaryCtaLabel ?? "VIEW PRODUCTS",
+        primaryCtaHref: primaryCtaHref ?? "/shop",
+        secondaryCtaLabel: secondaryCtaLabel ?? "ABOUT",
+        secondaryCtaHref: secondaryCtaHref ?? "/#about",
+        badges: badges?.length ? badges : ["LOREM IPSUM", "DOLOR SIT", "AMET ELIT"],
+        images: [heroImage ?? "/generic-hero.svg"],
+        imageDurationSeconds: 4,
+        durationSeconds: 6,
+      },
+    ]
+  }, [badges, description, heroImage, primaryCtaHref, primaryCtaLabel, secondaryCtaHref, secondaryCtaLabel, slides, title])
+
+  const [activeSlideIndex, setActiveSlideIndex] = React.useState(0)
+  const [activeImageIndex, setActiveImageIndex] = React.useState(0)
+  const [openBadgeEditor, setOpenBadgeEditor] = React.useState<number | null>(null)
+  const [openBadgeIconPicker, setOpenBadgeIconPicker] = React.useState<number | null>(null)
+
+  const activeSlide = normalizedSlides[activeSlideIndex] ?? normalizedSlides[0]
+  const activeImages = activeSlide?.images?.length ? activeSlide.images : ["/generic-hero.svg"]
+  const displayHeroImage = activeImages[activeImageIndex % activeImages.length] || "/generic-hero.svg"
+  const displayTitle = activeSlide?.title ?? "LOREM IPSUM DOLOR"
+  const displayDescription = activeSlide?.description ?? ""
+  const primaryLabel = activeSlide?.primaryCtaLabel ?? "VIEW PRODUCTS"
+  const primaryHref = activeSlide?.primaryCtaHref ?? "/shop"
+  const secondaryLabel = activeSlide?.secondaryCtaLabel ?? "ABOUT"
+  const secondaryHref = activeSlide?.secondaryCtaHref ?? "/#about"
+  const displayBadges = activeSlide?.badges?.length ? activeSlide.badges : ["star:LOREM IPSUM", "shield:DOLOR SIT", "zap:AMET ELIT"]
+
+  const patchActiveSlide = (patch: Partial<HeroSlide>) => {
+    if (!cms.enabled) return
+    const nextSlides = normalizedSlides.map((slide, idx) => (idx === activeSlideIndex ? { ...slide, ...patch } : slide))
+    cms.updateField("hero", "heroSlides", nextSlides)
+  }
+
+  React.useEffect(() => {
+    setActiveImageIndex(0)
+  }, [activeSlideIndex])
+
+  React.useEffect(() => {
+    if (cms.enabled) return
+    if (activeImages.length <= 1) return
+    const timer = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % activeImages.length)
+    }, (activeSlide?.imageDurationSeconds || 4) * 1000)
+    return () => clearInterval(timer)
+  }, [activeImages.length, activeSlide?.imageDurationSeconds, cms.enabled])
+
+  React.useEffect(() => {
+    if (cms.enabled) return
+    if (normalizedSlides.length <= 1) return
+    const timer = setInterval(() => {
+      setActiveSlideIndex((prev) => (prev + 1) % normalizedSlides.length)
+    }, (activeSlide?.durationSeconds || 6) * 1000)
+    return () => clearInterval(timer)
+  }, [activeSlide?.durationSeconds, normalizedSlides.length, cms.enabled])
 
   // To maintain the "Krausz Barkácsmester" structure even with dynamic text, 
   // we check if the title is the default one and then split it.
   // If it's a new title, we just display it.
-  const isDefaultTitle = !title || title === "KRAUSZ BARKÁCSMESTER"
+  const isDefaultTitle = !title || title === "LOREM IPSUM DOLOR"
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Dynamic Industrial Background Layers */}
-      <div className="absolute inset-0 bg-[#0A0A0A] z-0" />
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-[1]" />
+      <div className="absolute inset-0 bg-background-dark z-0" />
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-1" />
       
       {/* Radical Glow Effects */}
-      <div className="absolute top-[10%] left-[10%] w-[600px] h-[600px] bg-[#FF5500]/10 rounded-full blur-[180px] opacity-40" />
-      <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-white/5 rounded-full blur-[150px] opacity-20" />
+      <div className="absolute top-[10%] left-[10%] w-[600px] h-[600px] bg-primary/15 rounded-full blur-[180px] opacity-40" />
+      <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-secondary/15 rounded-full blur-[150px] opacity-20" />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-16 min-h-[calc(100vh-80px)]">
@@ -51,14 +168,35 @@ export function Hero({ title, description }: HeroProps) {
               }}
               className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] xl:w-[550px] xl:h-[550px]"
             >
-              <div className="absolute inset-0 bg-[#FF5500]/10 blur-[100px] rounded-full scale-110 animate-pulse" />
-              <Image
-                src="/logo.png"
-                alt="Krausz Barkácsmester"
-                fill
-                className="object-contain relative z-10"
-                priority
-              />
+              <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-110 animate-pulse" />
+              <motion.div
+                key={`${activeSlideIndex}-${activeImageIndex}-${displayHeroImage}`}
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="absolute inset-0 z-10"
+              >
+                {cms.enabled ? (
+                  <div className="absolute inset-0">
+                    <EditableImageInline
+                      blockType="hero"
+                      field="heroImage"
+                      src={displayHeroImage}
+                      alt={displayTitle}
+                      className="object-contain w-full h-full"
+                      usageLabel="Hero kép"
+                    />
+                  </div>
+                ) : (
+                  <Image
+                    src={displayHeroImage}
+                    alt="Placeholder hero image"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                )}
+              </motion.div>
             </motion.div>
           </motion.div>
 
@@ -70,38 +208,52 @@ export function Hero({ title, description }: HeroProps) {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="w-full"
             >
-              <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-6xl xl:text-7xl font-heading font-black mb-6 tracking-tighter text-white leading-[0.9] uppercase selection:bg-[#FF5500]">
-                {isDefaultTitle ? (
-                  <>
-                    KRAUSZ
-                    <span className="block text-[#FF5500]">BARKÁCSMESTER</span>
-                  </>
-                ) : (
-                  <span className="block">
-                    {(() => {
-                      const words = displayTitle.split(' ');
-                      if (words.length <= 1) return displayTitle;
-                      
-                      // Match the "Mestermunka a Kezedben" style from the screenshot
-                      // We'll highlight the last word/segment
-                      const firstPart = words.slice(0, -1).join(' ');
-                      const lastWord = words[words.length - 1];
-                      
-                      return (
-                        <>
-                          <span className="block">{firstPart}</span>
-                          <span className="inline-block bg-[#FF5500] text-white px-4 mt-2">
-                            {lastWord}
-                          </span>
-                        </>
-                      );
-                    })()}
-                  </span>
-                )}
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-neutral-400 mb-10 font-medium tracking-tight max-w-xl mx-auto lg:mx-0">
-                {displayDescription}
-              </p>
+              {cms.enabled ? (
+                <div className="space-y-3">
+                  <EditableTextInline
+                    blockType="hero"
+                    field="title"
+                    value={displayTitle}
+                    className="text-3xl sm:text-4xl md:text-6xl lg:text-6xl xl:text-7xl font-heading font-black tracking-tighter text-foreground leading-[0.9] uppercase"
+                  />
+                  <EditableTextInline
+                    blockType="hero"
+                    field="description"
+                    value={displayDescription}
+                    multiline
+                    className="text-base sm:text-lg md:text-xl text-neutral-400 font-medium tracking-tight max-w-xl mx-auto lg:mx-0"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-6xl xl:text-7xl font-heading font-black mb-6 tracking-tighter text-foreground leading-[0.9] uppercase selection:bg-primary">
+                    {isDefaultTitle ? (
+                      <>
+                        LOREM
+                        <span className="block text-primary">IPSUM DOLOR</span>
+                      </>
+                    ) : (
+                      <span className="block">
+                        {(() => {
+                          const words = displayTitle.split(" ")
+                          if (words.length <= 1) return displayTitle
+                          const firstPart = words.slice(0, -1).join(" ")
+                          const lastWord = words[words.length - 1]
+                          return (
+                            <>
+                              <span className="block">{firstPart}</span>
+                              <span className="inline-block bg-primary text-primary-foreground px-4 mt-2">{lastWord}</span>
+                            </>
+                          )
+                        })()}
+                      </span>
+                    )}
+                  </h1>
+                  <p className="text-base sm:text-lg md:text-xl text-neutral-400 mb-10 font-medium tracking-tight max-w-xl mx-auto lg:mx-0">
+                    {displayDescription}
+                  </p>
+                </>
+              )}
             </motion.div>
 
             {/* Buttons */}
@@ -111,22 +263,48 @@ export function Hero({ title, description }: HeroProps) {
               transition={{ delay: 0.6, duration: 0.8 }}
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
-              <Link href="/shop" className="w-full sm:w-auto">
-                <Button 
-                  size="lg" 
-                  className="btn-krausz w-full sm:w-auto bg-[#FF5500] hover:bg-white hover:text-black text-white h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
-                >
-                  IRÁNY A BOLT
-                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="btn-krausz border-white/20 text-white hover:bg-white hover:text-black h-14 sm:h-16 px-8 sm:px-10 text-lg group transition-all duration-300 bg-white/5 backdrop-blur-sm"
-              >
-                RÓLUNK
-              </Button>
+              {cms.enabled ? (
+                <>
+                  <EditableLinkInline
+                    blockType="hero"
+                    labelField="primaryCtaLabel"
+                    hrefField="primaryCtaHref"
+                    label={primaryLabel}
+                    href={primaryHref}
+                    className="btn-krausz w-full sm:w-auto bg-primary hover:bg-foreground hover:text-background text-primary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
+                  />
+                  <EditableLinkInline
+                    blockType="hero"
+                    labelField="secondaryCtaLabel"
+                    hrefField="secondaryCtaHref"
+                    label={secondaryLabel}
+                    href={secondaryHref}
+                    className="btn-krausz w-full sm:w-auto border-border text-foreground hover:bg-secondary hover:text-secondary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg group transition-all duration-300 bg-muted/40 backdrop-blur-sm"
+                    buttonVariant="outline"
+                  />
+                </>
+              ) : (
+                <>
+                  <Link href={primaryHref} className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="btn-krausz w-full sm:w-auto bg-primary hover:bg-foreground hover:text-background text-primary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
+                    >
+                      {primaryLabel}
+                      <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                  <Link href={secondaryHref} className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="btn-krausz w-full sm:w-auto border-border text-foreground hover:bg-secondary hover:text-secondary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg group transition-all duration-300 bg-muted/40 backdrop-blur-sm"
+                    >
+                      {secondaryLabel}
+                    </Button>
+                  </Link>
+                </>
+              )}
             </motion.div>
 
             {/* Micro-Features */}
@@ -136,23 +314,137 @@ export function Hero({ title, description }: HeroProps) {
               transition={{ delay: 1, duration: 1 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-12 w-full lg:max-w-xl"
             >
-              {[
-                { icon: Star, text: "PRÉMIUM", sub: "MINŐSÉG" },
-                { icon: Shield, text: "GARI", sub: "VÁLLALÁS" },
-                { icon: Zap, text: "GYORS", sub: "SZÁLLÍTÁS" },
-              ].map((item, i) => (
-                <div key={i} className="flex flex-row sm:flex-col items-center lg:items-start justify-center sm:justify-start gap-3 sm:gap-1 p-3 border border-white/5 rounded-xl bg-white/5 hover:border-[#FF5500]/30 transition-all duration-300">
-                  <item.icon className="w-4 h-4 text-[#FF5500]" />
+              {displayBadges.map((badge, i) => {
+                const parsed = parseBadge(badge)
+                return (
+                <div key={i} className="flex flex-row sm:flex-col items-center lg:items-start justify-center sm:justify-start gap-3 sm:gap-1 p-3 border border-border/40 rounded-xl bg-muted/40 hover:border-primary/30 transition-all duration-300">
+                  <DynamicLucideIcon name={parsed.icon} className="w-4 h-4 text-primary" />
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black tracking-widest text-white leading-none">{item.text}</span>
-                    <span className="text-[8px] font-bold tracking-wider text-neutral-500">{item.sub}</span>
+                    {cms.enabled ? (
+                      <DropdownMenu
+                        open={openBadgeEditor === i}
+                        onOpenChange={(open) => setOpenBadgeEditor(open ? i : null)}
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" variant="outline" size="xs">Szerkesztés</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-80 p-3 bg-surface border-border text-foreground shadow-xl opacity-100" align="start">
+                          <div className="space-y-2">
+                            <Input
+                              value={parsed.text}
+                              onChange={(event) => {
+                                const nextBadges = displayBadges.map((item, idx) =>
+                                  idx === i ? formatBadge(parsed.icon, event.target.value) : item
+                                )
+                                patchActiveSlide({ badges: nextBadges })
+                              }}
+                              className="h-8"
+                            />
+                            <IconPicker
+                              value={parsed.icon}
+                              triggerLabel="Ikon választás"
+                              open={openBadgeIconPicker === i}
+                              onOpenChange={(open) => setOpenBadgeIconPicker(open ? i : null)}
+                              onChange={(iconName) => {
+                                const nextBadges = displayBadges.map((item, idx) =>
+                                  idx === i ? formatBadge(iconName, parsed.text) : item
+                                )
+                                patchActiveSlide({ badges: nextBadges })
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="xs"
+                              onClick={() => {
+                                const nextBadges = displayBadges.filter((_, idx) => idx !== i)
+                                patchActiveSlide({ badges: nextBadges.length ? nextBadges : ["Star:Uj jelveny"] })
+                                setOpenBadgeEditor(null)
+                              }}
+                            >
+                              Badge törlése
+                            </Button>
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <span className="text-[10px] font-black tracking-widest text-foreground leading-none">{parsed.text}</span>
+                    )}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </motion.div>
+            {cms.enabled ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => patchActiveSlide({ badges: [...displayBadges, "Star:Uj jelveny"] })}
+                >
+                  Jelvény hozzáadása
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    cms.updateField("hero", "heroSlides", [
+                      ...normalizedSlides,
+                      {
+                        ...activeSlide,
+                        title: "Új hero",
+                        badges: ["Star:Uj jelveny"],
+                        images: ["/generic-hero.svg"],
+                      },
+                    ])
+                  }
+                >
+                  Hero hozzáadása
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
+
+      {(normalizedSlides.length > 1 || activeImages.length > 1) ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Previous"
+            onClick={() => {
+              if (normalizedSlides.length > 1) {
+                setActiveSlideIndex((prev) => (prev - 1 + normalizedSlides.length) % normalizedSlides.length)
+                return
+              }
+              setActiveImageIndex((prev) => (prev - 1 + activeImages.length) % activeImages.length)
+            }}
+            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 rounded-full bg-background-dark/70 border-border text-foreground hover:bg-primary hover:text-primary-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Next"
+            onClick={() => {
+              if (normalizedSlides.length > 1) {
+                setActiveSlideIndex((prev) => (prev + 1) % normalizedSlides.length)
+                return
+              }
+              setActiveImageIndex((prev) => (prev + 1) % activeImages.length)
+            }}
+            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 rounded-full bg-background-dark/70 border-border text-foreground hover:bg-primary hover:text-primary-foreground"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </>
+      ) : null}
 
 
 
@@ -162,7 +454,7 @@ export function Hero({ title, description }: HeroProps) {
         transition={{ duration: 2, repeat: Infinity }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 hidden md:block"
       >
-        <div className="w-[1px] h-12 bg-gradient-to-b from-[#FF5500] to-transparent" />
+        <div className="w-px h-12 bg-linear-to-b from-primary to-transparent" />
       </motion.div>
     </section>
   )

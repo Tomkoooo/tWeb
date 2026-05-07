@@ -101,7 +101,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-t-2 border-[#FF5500] animate-spin rounded-full" />
+        <div className="w-8 h-8 border-t-2 border-primary animate-spin rounded-full" />
       </div>
     )
   }
@@ -111,7 +111,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
       {/* Shipping Methods */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Truck className="w-5 h-5 text-[#FF5500]" />
+          <Truck className="w-5 h-5 text-primary" />
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Szállítási mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
@@ -121,7 +121,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
               onClick={() => handleMethodChange("shippingMethod", method._id)}
               className={cn(
                 "p-6 border-2 text-left transition-all duration-300 flex items-center justify-between group",
-                data.shippingMethod === method._id ? "bg-white/5 border-[#FF5500]" : "bg-black border-white/5 hover:border-white/10"
+                data.shippingMethod === method._id ? "bg-white/5 border-primary" : "bg-black border-white/5 hover:border-white/10"
               )}
             >
               <div>
@@ -132,7 +132,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
               </div>
               <div className="text-right">
                 <p className="font-black text-white text-lg">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
-                {data.shippingMethod === method._id && <Check className="w-4 h-4 text-[#FF5500] ml-auto mt-1" />}
+                {data.shippingMethod === method._id && <Check className="w-4 h-4 text-primary ml-auto mt-1" />}
               </div>
             </button>
           ))}
@@ -150,7 +150,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
               })}
             </div>
             {data.glsParcelPoint?.id ? (
-              <div className="p-3 bg-white/5 border border-[#FF5500]/40">
+              <div className="p-3 bg-white/5 border border-primary/40">
                 <p className="text-xs font-black text-white uppercase tracking-wider">
                   Kiválasztott pont: {data.glsParcelPoint.name}
                 </p>
@@ -159,7 +159,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
                 </p>
               </div>
             ) : (
-              <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest">
+              <p className="text-[10px] text-primary font-black uppercase tracking-widest">
                 Még nem választottál GLS csomagpontot.
               </p>
             )}
@@ -170,7 +170,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
       {/* Payment Methods */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <CreditCard className="w-5 h-5 text-[#FF5500]" />
+          <CreditCard className="w-5 h-5 text-primary" />
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Fizetési mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
@@ -180,7 +180,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
               onClick={() => handleMethodChange("paymentMethod", method._id)}
               className={cn(
                 "p-6 border-2 text-left transition-all duration-300 flex items-center justify-between group",
-                data.paymentMethod === method._id ? "bg-white/5 border-[#FF5500]" : "bg-black border-white/5 hover:border-white/10"
+                data.paymentMethod === method._id ? "bg-white/5 border-primary" : "bg-black border-white/5 hover:border-white/10"
               )}
             >
               <div>
@@ -191,7 +191,7 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
               </div>
               <div className="text-right">
                 <p className="font-black text-white text-lg">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
-                {data.paymentMethod === method._id && <Check className="w-4 h-4 text-[#FF5500] ml-auto mt-1" />}
+                {data.paymentMethod === method._id && <Check className="w-4 h-4 text-primary ml-auto mt-1" />}
               </div>
             </button>
           ))}

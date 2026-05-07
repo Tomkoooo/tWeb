@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/db";
 import Product, { IProduct } from "@/models/Product";
+import "@/models/Category";
 import { revalidatePath } from "next/cache";
 import { MediaService } from "./media";
 import Review from "@/models/Review"; // Ensure Review is registered

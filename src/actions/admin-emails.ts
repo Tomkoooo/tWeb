@@ -80,6 +80,37 @@ export async function seedEmailTemplates() {
       `,
       description: "Vásárló kapja meg, ha a rendelés állapota változik (pl. csomagolva, kiszállítva).",
       variables: ["orderNumber", "customerName", "oldStatus", "newStatus"]
+    },
+    {
+      type: "invoice_sent",
+      subject: "Számla elkészült - #{{orderNumber}} / {{invoiceId}}",
+      body: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h1 style="color: #FF5500; text-transform: uppercase;">Számla elkészült</h1>
+          <p>Kedves {{customerName}},</p>
+          <p>A #{{orderNumber}} rendeléshez tartozó számla elkészült.</p>
+          <p>Számla azonosító: <strong>{{invoiceId}}</strong></p>
+          <p>{{invoiceMessage}}</p>
+          <p>A számlát csatolmányként küldjük, illetve fiókodban is bármikor letöltheted.</p>
+        </div>
+      `,
+      description: "Automatikus vagy manuális számla küldésekor.",
+      variables: ["orderNumber", "customerName", "invoiceId", "invoiceMessage"]
+    },
+    {
+      type: "invoice_issue",
+      subject: "Számlázási értesítés - #{{orderNumber}}",
+      body: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h1 style="color: #FF5500; text-transform: uppercase;">Számlázási értesítés</h1>
+          <p>Kedves {{customerName}},</p>
+          <p>A #{{orderNumber}} rendelés számlázása manuális ellenőrzést igényel.</p>
+          <p>{{invoiceMessage}}</p>
+          <p>Amint a számla elérhető, új értesítést küldünk.</p>
+        </div>
+      `,
+      description: "Számlázási hiba vagy manuális beavatkozás esetén.",
+      variables: ["orderNumber", "customerName", "invoiceMessage"]
     }
   ]
 

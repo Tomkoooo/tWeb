@@ -1,14 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #000000;
-  --color-accent: #FF5500;
-  --color-secondary: #222222;
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-primary-foreground);
+  --color-accent: var(--theme-accent);
+  --color-accent-foreground: var(--theme-accent-foreground);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-foreground: var(--theme-secondary-foreground);
+  --color-foreground: var(--theme-foreground);
+  --color-background: var(--theme-background);
+  --color-surface: var(--theme-surface);
+  --color-surface-foreground: var(--theme-surface-foreground);
+  --color-border: var(--theme-border);
+  --color-muted: var(--theme-muted);
+  --color-muted-foreground: var(--theme-muted-foreground);
+  --color-popover: var(--theme-surface);
+  --color-popover-foreground: var(--theme-surface-foreground);
   --color-neutral: #999999;
   --color-highlight: #FFD700;
-  --color-background-dark: #0A0A0A;
-  --color-text-main: #FFFFFF;
-  --color-text-secondary: #BBBBBB;
+  --color-background-dark: var(--theme-background);
+  --color-text-main: var(--theme-foreground);
+  --color-text-secondary: var(--theme-muted-foreground);
 
   --font-sans: "Inter", "Roboto", ui-sans-serif, system-ui;
   --font-heading: "Oswald", "Roboto Condensed", sans-serif;
@@ -86,23 +98,43 @@
 }
 
 :root {
-  --background: #0A0A0A;
-  --foreground: #FFFFFF;
-  --primary: #000000;
-  --primary-foreground: #FFFFFF;
-  --accent: #FF5500;
-  --accent-foreground: #FFFFFF;
-  --secondary: #1A1A1A;
-  --secondary-foreground: #FFFFFF;
-  --muted: #222222;
-  --muted-foreground: #999999;
-  --card: #151515;
-  --card-foreground: #FFFFFF;
+  --theme-background: #0A0A0A;
+  --theme-foreground: #FFFFFF;
+  --theme-primary: #111827;
+  --theme-primary-foreground: #FFFFFF;
+  --theme-accent: #2563EB;
+  --theme-accent-foreground: #FFFFFF;
+  --theme-secondary: #1F2937;
+  --theme-secondary-foreground: #FFFFFF;
+  --theme-muted: #222222;
+  --theme-muted-foreground: #999999;
+  --theme-surface: #151515;
+  --theme-surface-foreground: #FFFFFF;
+  --theme-border: #333333;
+  --theme-success: #16A34A;
+  --theme-success-foreground: #FFFFFF;
+  --theme-warning: #D97706;
+  --theme-warning-foreground: #FFFFFF;
+  --theme-error: #DC2626;
+  --theme-error-foreground: #FFFFFF;
+
+  --background: var(--theme-background);
+  --foreground: var(--theme-foreground);
+  --primary: var(--theme-primary);
+  --primary-foreground: var(--theme-primary-foreground);
+  --accent: var(--theme-accent);
+  --accent-foreground: var(--theme-accent-foreground);
+  --secondary: var(--theme-secondary);
+  --secondary-foreground: var(--theme-secondary-foreground);
+  --muted: var(--theme-muted);
+  --muted-foreground: var(--theme-muted-foreground);
+  --card: var(--theme-surface);
+  --card-foreground: var(--theme-surface-foreground);
   --popover: #0A0A0A;
   --popover-foreground: #FFFFFF;
-  --border: #333333;
+  --border: var(--theme-border);
   --input: #1A1A1A;
-  --ring: #FF5500;
+  --ring: var(--accent);
   scroll-behavior: smooth;
 }
 
@@ -135,7 +167,7 @@ h6 {
   background: rgba(26, 26, 26, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in oklab, var(--theme-border) 70%, transparent);
 }
 
 /* Explicit button style with border radius transition */

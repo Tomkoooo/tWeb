@@ -1,0 +1,179 @@
+"use client"
+
+import { Hero } from "@/components/sections/Hero"
+import { Story } from "@/components/sections/Story"
+import { Shop } from "@/components/sections/Shop"
+import { Features } from "@/components/sections/Features"
+import { Reviews } from "@/components/sections/Reviews"
+import { Contact } from "@/components/sections/Contact"
+import type { HomepageSnapshot, HomepageBlockType } from "@/features/homepage-cms/types/block-types"
+
+type Dependencies = {
+  reviews: Array<{ id: string; name: string; role: string; content: string; rating: number; avatar: string }>
+  products: Array<{
+    id: string
+    name: string
+    slug: string
+    price: number
+    image: string
+    category: string
+    rating: number
+    hasVariants: boolean
+    requireVariantSelection: boolean
+  }>
+  categories: Array<{ id: string; name: string; description: string; image: string; slug: string }>
+  company: { name: string; address: string; phone: string; email: string }
+}
+
+function getBlockData(snapshot: HomepageSnapshot, type: HomepageBlockType) {
+  const block = snapshot.blocks.find((item) => item.type === type && item.enabled !== false)
+  return block?.data
+}
+
+function isVisible(data: unknown, key: string) {
+  const visibility = (data as { visibility?: Record<string, boolean> } | undefined)?.visibility
+  if (!visibility) return true
+  return visibility[key] !== false
+}
+
+export function RealHomepageSections({ snapshot, dependencies }: { snapshot: HomepageSnapshot; dependencies: Dependencies }) {
+  const hero = getBlockData(snapshot, "hero") as
+    | {
+        title?: string
+        description?: string
+        primaryCtaLabel?: string
+        primaryCtaHref?: string
+        secondaryCtaLabel?: string
+        secondaryCtaHref?: string
+        heroImage?: string
+        heroImages?: string[]
+        imageDurationSeconds?: number
+        heroDurationSeconds?: number
+        heroSlides?: Array<{
+          title: string
+          description: string
+          primaryCtaLabel: string
+          primaryCtaHref: string
+          secondaryCtaLabel: string
+          secondaryCtaHref: string
+          badges: string[]
+          images: string[]
+          imageDurationSeconds: number
+          durationSeconds: number
+        }>
+        badges?: string[]
+      }
+    | undefined
+  const about = getBlockData(snapshot, "about") as
+    | {
+        title?: string
+        paragraph?: string
+        accordions?: Array<{ title: string; content: string }>
+        cards?: Array<{ title: string; description: string; icon?: string }>
+      }
+    | undefined
+  const productGrid = getBlockData(snapshot, "productGrid") as
+    | {
+        title?: string
+        description?: string
+        viewAllLabel?: string
+        viewAllHref?: string
+        categoriesTitle?: string
+        categoriesDescription?: string
+      }
+    | undefined
+  const features = getBlockData(snapshot, "features") as
+    | {
+        title?: string
+        subtitle?: string
+        cards?: Array<{ title: string; description: string; icon?: string }>
+      }
+    | undefined
+  const testimonials = getBlockData(snapshot, "testimonials") as
+    | {
+        title?: string
+        subtitle?: string
+        items?: Array<{ quote: string; name: string; role: string; rating: number }>
+      }
+    | undefined
+  const contact = getBlockData(snapshot, "contact") as
+    | {
+        title?: string
+        description?: string
+        address?: string
+        phone?: string
+        email?: string
+        sendButtonLabel?: string
+        nameLabel?: string
+        emailLabel?: string
+        messageLabel?: string
+      }
+    | undefined
+
+  const testimonialReviews =
+    testimonials?.items?.map((item, index) => ({
+      id: `cms-review-${index}`,
+      name: item.name,
+      role: item.role,
+      content: item.quote,
+      rating: item.rating,
+      avatar: "/generic-logo.svg",
+    })) ?? []
+
+  return (
+    <>
+      {hero ? (
+        <Hero
+          title={isVisible(hero, "title") ? hero.title : ""}
+          description={isVisible(hero, "description") ? hero.description : ""}
+          primaryCtaLabel={isVisible(hero, "primaryCta") ? hero.primaryCtaLabel : ""}
+          primaryCtaHref={hero.primaryCtaHref}
+          secondaryCtaLabel={isVisible(hero, "secondaryCta") ? hero.secondaryCtaLabel : ""}
+          secondaryCtaHref={hero.secondaryCtaHref}
+          heroImage={isVisible(hero, "heroImage") ? hero.heroImage : ""}
+          slides={isVisible(hero, "heroSlides") ? hero.heroSlides : []}
+          badges={isVisible(hero, "badges") ? hero.badges : []}
+        />
+      ) : null}
+      {about ? (
+        <Story
+          title={isVisible(about, "title") ? about.title : ""}
+          content={isVisible(about, "paragraph") ? about.paragraph : ""}
+          accordions={isVisible(about, "accordions") ? about.accordions : []}
+          cards={about.cards}
+        />
+      ) : null}
+      {productGrid ? (
+        <Shop
+          categories={dependencies.categories}
+          products={dependencies.products}
+          title={isVisible(productGrid, "title") ? productGrid.title : ""}
+          description={isVisible(productGrid, "description") ? productGrid.description : ""}
+          viewAllLabel={productGrid.viewAllLabel}
+          viewAllHref={productGrid.viewAllHref}
+          categoriesTitle={isVisible(productGrid, "categoriesTitle") ? productGrid.categoriesTitle : ""}
+          categoriesDescription={isVisible(productGrid, "categoriesDescription") ? productGrid.categoriesDescription : ""}
+        />
+      ) : null}
+      {features ? <Features title={isVisible(features, "title") ? features.title : ""} subtitle={isVisible(features, "subtitle") ? features.subtitle : ""} cards={isVisible(features, "cards") ? features.cards : []} /> : null}
+      <Reviews
+        reviews={testimonialReviews.length ? testimonialReviews : dependencies.reviews}
+        title={isVisible(testimonials, "title") ? testimonials?.title : ""}
+        subtitle={isVisible(testimonials, "subtitle") ? testimonials?.subtitle : ""}
+      />
+      {contact ? (
+        <Contact
+          email={isVisible(contact, "email") ? (contact.email ?? dependencies.company.email) : ""}
+          phone={isVisible(contact, "phone") ? (contact.phone ?? dependencies.company.phone) : ""}
+          address={isVisible(contact, "address") ? (contact.address ?? dependencies.company.address) : ""}
+          title={isVisible(contact, "title") ? contact.title : ""}
+          description={isVisible(contact, "description") ? contact.description : ""}
+          sendButtonLabel={contact.sendButtonLabel}
+          nameLabel={contact.nameLabel}
+          emailLabel={contact.emailLabel}
+          messageLabel={contact.messageLabel}
+        />
+      ) : null}
+    </>
+  )
+}

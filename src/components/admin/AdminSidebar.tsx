@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import type { ComponentType } from "react"
 import { 
   BarChart3, 
   LayoutDashboard, 
@@ -21,16 +22,23 @@ import {
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
 
-const menuItems = [
+type FeatureKey = "newsletter" | "glsParcelPicker" | "stripePayments"
+
+const menuItems: Array<{
+  icon: ComponentType<{ className?: string }>
+  label: string
+  href: string
+  featureKey?: FeatureKey
+}> = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
   { icon: FileEdit, label: "CMS", href: "/admin/cms" },
   { icon: Mail, label: "Emailek", href: "/admin/emails" },
-  { icon: Send, label: "Hírlevelek", href: "/admin/newsletters" },
+  { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
   { icon: Package, label: "Kategóriák", href: "/admin/categories" },
   { icon: Package, label: "Termékek", href: "/admin/products" },
-  { icon: Truck, label: "Szállítás", href: "/admin/shipping" },
-  { icon: CreditCard, label: "Fizetés", href: "/admin/payment" },
+  { icon: Truck, label: "Szállítás", href: "/admin/shipping", featureKey: "glsParcelPicker" },
+  { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments" },
   { icon: Tag, label: "Kuponok", href: "/admin/coupons" },
   { icon: BarChart3, label: "Statisztikák", href: "/admin/stats" },
   { icon: Settings, label: "Beállítások", href: "/admin/info" },
@@ -38,19 +46,35 @@ const menuItems = [
   { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews" },
 ]
 
-export function AdminSidebar({ className, onAction }: { className?: string, onAction?: () => void }) {
+export function AdminSidebar({
+  className,
+  onAction,
+  brandName = "Generic",
+  enabledFeatures,
+}: {
+  className?: string
+  onAction?: () => void
+  brandName?: string
+  enabledFeatures?: Partial<Record<FeatureKey, boolean>>
+}) {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const sidebarName = brandName.trim() || "Generic"
+  const sidebarInitial = sidebarName.charAt(0).toUpperCase()
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (!item.featureKey) return true
+    return Boolean(enabledFeatures?.[item.featureKey])
+  })
 
   return (
     <div className={cn("h-full flex flex-col bg-[#0A0A0B]", className)}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-3 group" onClick={onAction}>
-          <div className="w-10 h-10 rounded-none bg-accent flex items-center justify-center font-black text-white italic shadow-lg shadow-accent/20 transition-all duration-300 group-hover:rounded-full">
-            K
+          <div className="w-10 h-10 rounded-none bg-primary flex items-center justify-center font-black text-white italic shadow-lg shadow-accent/20 transition-all duration-300 group-hover:rounded-full">
+            {sidebarInitial}
           </div>
           <span className="text-2xl font-heading font-black tracking-tight text-white uppercase italic">
-            Krausz <span className="text-accent underline decoration-accent/20 underline-offset-4">Admin</span>
+            {sidebarName} <span className="text-primary underline decoration-primary/20 underline-offset-4">Admin</span>
           </span>
         </Link>
         
@@ -63,7 +87,7 @@ export function AdminSidebar({ className, onAction }: { className?: string, onAc
       </div>
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link
@@ -73,7 +97,7 @@ export function AdminSidebar({ className, onAction }: { className?: string, onAc
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
                 isActive 
-                  ? "bg-accent text-white shadow-lg shadow-accent/10" 
+                  ? "bg-primary text-white shadow-lg shadow-accent/10" 
                   : "text-neutral-500 hover:text-white hover:bg-white/5"
               )}
             >

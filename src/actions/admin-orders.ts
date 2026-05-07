@@ -8,6 +8,8 @@ import { MailerService } from "@/services/mailer"
 import { GlsService } from "@/services/gls"
 import mongoose from "mongoose"
 import { IOrder } from "@/models/Order"
+import { MediaService } from "@/services/media"
+import { OrderService } from "@/services/order"
 
 async function checkAdmin() {
   const session = await auth()
@@ -108,6 +110,86 @@ export async function generateOrderGlsLabel(orderId: string) {
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
   return { success: true }
+}
+
+export async function updateOrderInvoiceData(orderId: string, formData: FormData) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+
+  const invoiceId = String(formData.get("invoiceId") || "").trim()
+  const invoiceExternalId = String(formData.get("invoiceExternalId") || "").trim()
+  const invoiceStatus = String(formData.get("invoiceStatus") || "").trim()
+  const invoiceIssuedAtRaw = String(formData.get("invoiceIssuedAt") || "").trim()
+
+  order.invoiceMode = invoiceId ? "manual" : "none"
+  order.invoiceId = invoiceId || undefined
+  order.invoiceExternalId = invoiceExternalId || undefined
+  order.invoiceStatus = (invoiceStatus || (invoiceId ? "manual" : "pending")) as any
+  order.invoiceIssuedAt = invoiceIssuedAtRaw ? new Date(invoiceIssuedAtRaw) : undefined
+  if (invoiceId && !order.invoicePdfFileName) {
+    order.invoiceLastError = "Nincs feltöltött manuális számla PDF."
+  } else if (invoiceId) {
+    order.invoiceLastError = undefined
+  }
+  await order.save()
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath(`/profile/orders/${orderId}`)
+}
+
+export async function uploadManualInvoicePdf(orderId: string, formData: FormData) {
+  await checkAdmin()
+  await dbConnect()
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+
+  const file = formData.get("file")
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Kérlek válassz PDF fájlt.")
+  }
+
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
+  const filename = await MediaService.processUpload(buffer, file.name, file.type || "application/pdf")
+  await MediaService.incrementUsage(filename)
+
+  if (order.invoicePdfFileName && order.invoicePdfFileName !== filename) {
+    await MediaService.decrementUsage(order.invoicePdfFileName)
+  }
+
+  order.invoicePdfFileName = filename
+  order.invoiceMode = "manual"
+  order.invoiceStatus = order.invoiceId ? "manual" : "pending"
+  await order.save()
+
+  if (order.invoiceId) {
+    await OrderService.sendInvoiceEmail(order, "invoice_sent", "Manuális számla feltöltve.");
+  } else {
+    await OrderService.sendInvoiceEmail(order, "invoice_issue", "A számla PDF feltöltve, de számlaszám még nincs mentve.");
+  }
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath(`/profile/orders/${orderId}`)
+}
+
+export async function resendOrderInvoiceEmail(orderId: string) {
+  await checkAdmin()
+  await dbConnect()
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+
+  if (order.invoiceId) {
+    await OrderService.sendInvoiceEmail(order, "invoice_sent", "Számla újraküldve kérésre.");
+  } else {
+    await OrderService.sendInvoiceEmail(order, "invoice_issue", "A számla adatai hiányosak, manuális beavatkozás szükséges.");
+  }
+
+  revalidatePath(`/admin/orders/${orderId}`)
 }
 
 function getStatusLabel(status: string) {

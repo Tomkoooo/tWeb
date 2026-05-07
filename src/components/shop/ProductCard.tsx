@@ -107,7 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </Badge>
           ) : null}
           {maxDiscount > 0 && (
-            <Badge className="bg-[#FF5500] text-white border-none rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
+            <Badge className="bg-primary text-white border-none rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
               -{maxDiscount}%
             </Badge>
           )}
@@ -120,7 +120,7 @@ export function ProductCard({ product }: ProductCardProps) {
               key={i}
               className={cn(
                 "w-3 h-3",
-                i < Math.round(ratingValue) ? "fill-[#FFD700] text-[#FFD700]" : "text-white/20"
+                i < Math.round(ratingValue) ? "fill-accent text-primary" : "text-white/20"
               )}
             />
           ))}
@@ -128,9 +128,9 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Content Section */}
-      <div className="p-6 flex flex-col flex-grow">
+      <div className="p-6 flex flex-col grow">
         <Link href={`/products/${product.slug}`} className="block mb-2">
-          <h4 className="text-white text-lg font-heading font-black tracking-tighter group-hover:text-[#FF5500] transition-colors line-clamp-2 uppercase">
+          <h4 className="text-white text-lg font-heading font-black tracking-tighter group-hover:text-primary transition-colors line-clamp-2 uppercase">
             {product.name}
           </h4>
         </Link>
@@ -138,7 +138,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto pt-4 flex flex-col gap-4">
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-black text-white">
-              {finalPrice.toLocaleString("hu-HU")} <span className="text-xs font-black text-[#FF5500]">FT{requiresVariantSelection ? "-tól" : ""}</span>
+              {finalPrice.toLocaleString("hu-HU")} <span className="text-xs font-black text-primary">FT{requiresVariantSelection ? "-tól" : ""}</span>
             </span>
             {maxDiscount > 0 && (
               <span className="text-sm font-bold text-neutral-500 line-through">
@@ -151,7 +151,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Button 
               onClick={handleAddToCart}
               disabled={shopEnabled === false}
-              className="w-full bg-[#FF5500] border border-[#FF5500] text-white hover:bg-[#FF7722] hover:border-[#FF7722] font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
+              className="w-full bg-primary border border-primary text-white hover:bg-primary/90 hover:border-primary/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               <ShoppingCart className="w-4 h-4" />
               {requiresVariantSelection ? "Variáns választása" : "Kosárba"}
@@ -159,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">
                 Megtekintés
-                <ArrowRight className="w-3 h-3 text-[#FF5500]" />
+                <ArrowRight className="w-3 h-3 text-primary" />
               </Button>
             </Link>
           </div>

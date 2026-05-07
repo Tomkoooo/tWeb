@@ -2,46 +2,59 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Truck, ShieldCheck, Headphones, Wrench, Zap, Award } from "lucide-react"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { Button } from "@/components/ui/button"
+import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
 
-const features = [
+type FeatureCard = {
+  title: string
+  description: string
+  icon?: string
+}
+
+const defaultFeatures: FeatureCard[] = [
   {
-    icon: <Zap className="w-10 h-10" />,
-    title: "Maximális Teljesítmény",
-    description: "Nagy teljesítményű és nehéz feladatokra tervezett ipari eszközök."
+    title: "Lorem Ipsum",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
   },
   {
-    icon: <ShieldCheck className="w-10 h-10" />,
-    title: "Vaskezű Garancia",
-    description: "Élettartam garanciát vállalunk minden mester-szériás szerszámunkra."
+    title: "Dolor Sit",
+    description: "Sed do eiusmod tempor incididunt ut labore et dolore magna."
   },
   {
-    icon: <Truck className="w-10 h-10" />,
-    title: "Villámgyors Szállítás",
-    description: "Szerszámaid 24 órán belül útnak indulnak a budapesti központunkból."
+    title: "Amet Consectetur",
+    description: "Ut enim ad minim veniam, quis nostrud exercitation ullamco."
   },
   {
-    icon: <Headphones className="w-10 h-10" />,
-    title: "Mester Szaktanács",
-    description: "Beszélj profi szakembereinkkel, ha nem tudod melyik szerszám a legjobb neked."
+    title: "Adipiscing Elit",
+    description: "Duis aute irure dolor in reprehenderit in voluptate velit."
   },
   {
-    icon: <Wrench className="w-10 h-10" />,
-    title: "Mérnöki Precizitás",
-    description: "Minden darab tizedmilliméter pontosan illeszkedik a feladathoz."
+    title: "Tempor Incididunt",
+    description: "Excepteur sint occaecat cupidatat non proident."
   },
   {
-    icon: <Award className="w-10 h-10" />,
-    title: "Ipari Minősítés",
-    description: "Szigorú teszteknek vetjük alá minden termékünket, hogy bírhassák a gyűrődést."
+    title: "Labore Magna",
+    description: "Sunt in culpa qui officia deserunt mollit anim id est."
   }
 ]
 
-export function Features() {
+export function Features({
+  title,
+  subtitle,
+  cards,
+}: {
+  title?: string
+  subtitle?: string
+  cards?: FeatureCard[]
+}) {
+  const cms = useCmsEdit()
+  const displayFeatures: FeatureCard[] = cards?.length ? cards : defaultFeatures
   return (
-    <section className="py-32 bg-black relative overflow-hidden border-t border-white/5">
+    <section className="py-32 bg-background-dark relative overflow-hidden border-t border-border/40">
       {/* Accent blurs */}
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#FF5500]/5 blur-[150px] rounded-full -mr-64 -mb-64 pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full -mr-64 -mb-64 pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-24">
@@ -49,35 +62,99 @@ export function Features() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-7xl font-heading font-black mb-6 text-white uppercase tracking-tighter"
+            className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
           >
-            A KRAUSZ <span className="text-[#FF5500]">ELŐNY</span>
+            {cms.enabled ? (
+              <EditableTextInline blockType="features" field="title" value={title ?? "LOREM ADVANTAGE"} className="text-4xl md:text-7xl font-heading font-black text-white uppercase tracking-tighter text-center" />
+            ) : (
+              title ?? "LOREM ADVANTAGE"
+            )}
           </motion.h2>
-          <div className="w-24 h-2 bg-[#FF5500] mx-auto" />
+          {cms.enabled ? (
+            <EditableTextInline blockType="features" field="subtitle" value={subtitle ?? ""} className="text-neutral-400 text-lg max-w-2xl mx-auto text-center" />
+          ) : subtitle ? <p className="text-neutral-400 text-lg max-w-2xl mx-auto">{subtitle}</p> : null}
+          <div className="w-24 h-2 bg-primary mx-auto" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, idx) => (
+          {displayFeatures.map((feature, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.6 }}
-              className="glass-card p-10 group hover:border-[#FF5500]/40 transition-all duration-500"
+              className="glass-card p-10 group hover:border-primary/40 transition-all duration-500"
             >
-              <div className="text-[#FF5500] mb-8 group-hover:scale-110 transition-transform duration-500 origin-left">
-                {feature.icon}
+              <div className="text-primary mb-8 group-hover:scale-110 transition-transform duration-500 origin-left">
+                <DynamicLucideIcon name={feature.icon || "Zap"} className="w-10 h-10" />
               </div>
-              <h3 className="text-white text-2xl font-heading font-black mb-4 tracking-tight uppercase group-hover:text-[#FF5500] transition-colors">
-                {feature.title}
+              <h3 className="text-foreground text-2xl font-heading font-black mb-4 tracking-tight uppercase group-hover:text-primary transition-colors">
+                {cms.enabled ? (
+                  <input
+                    value={feature.title}
+                    onChange={(event) =>
+                      cms.updateField(
+                        "features",
+                        "cards",
+                        displayFeatures.map((row, index) => (index === idx ? { ...row, title: event.target.value } : row))
+                      )
+                    }
+                    className="h-8 w-full bg-black border border-white/20 px-2 text-white text-sm"
+                  />
+                ) : (
+                  feature.title
+                )}
               </h3>
-              <p className="text-neutral-400 leading-relaxed text-lg">
-                {feature.description}
-              </p>
+              {cms.enabled ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={feature.description}
+                    onChange={(event) =>
+                      cms.updateField(
+                        "features",
+                        "cards",
+                        displayFeatures.map((row, index) => (index === idx ? { ...row, description: event.target.value } : row))
+                      )
+                    }
+                    className="w-full bg-black border border-white/20 px-2 py-1 text-sm text-white"
+                  />
+                  <IconPicker
+                    value={feature.icon || "Zap"}
+                    triggerLabel="Ikon választás"
+                    onChange={(iconName) =>
+                      cms.updateField(
+                        "features",
+                        "cards",
+                        displayFeatures.map((row, index) => (index === idx ? { ...row, icon: iconName } : row))
+                      )
+                    }
+                  />
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="destructive"
+                    onClick={() => cms.updateField("features", "cards", displayFeatures.filter((_, index) => index !== idx))}
+                  >
+                    Törlés
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-neutral-400 leading-relaxed text-lg">{feature.description}</p>
+              )}
             </motion.div>
           ))}
         </div>
+        {cms.enabled ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => cms.updateField("features", "cards", [...displayFeatures, { title: "Új kártya", description: "Új leírás" }])}
+          >
+            Kártya hozzáadása
+          </Button>
+        ) : null}
       </div>
     </section>
   )

@@ -31,7 +31,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
         </Link>
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            {isEdit ? "TERMÉK" : "ÚJ"} <span className="text-accent underline decoration-accent/10 underline-offset-8">{isEdit ? "SZERKESZTÉSE" : "TERMÉK"}</span>
+            {isEdit ? "TERMÉK" : "ÚJ"} <span className="text-primary underline decoration-primary/10 underline-offset-8">{isEdit ? "SZERKESZTÉSE" : "TERMÉK"}</span>
           </h1>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           {/* Main Info */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <div className="flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-accent" />
+              <div className="w-1.5 h-6 bg-primary" />
               <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">ALAPADATOK</h2>
             </div>
             
@@ -54,7 +54,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     required 
                     defaultValue={initialData?.name}
                     placeholder="TERMÉK NEVE" 
-                    className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                    className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                   />
                 </div>
 
@@ -64,7 +64,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     name="category"
                     required
                     defaultValue={initialData?.category?._id?.toString() || initialData?.category?.toString() || ""}
-                    className="w-full bg-black border border-white/5 rounded-none h-12 px-3 text-white font-bold uppercase tracking-widest text-xs focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+                    className="w-full bg-black border border-white/5 rounded-none h-12 px-3 text-white font-bold uppercase tracking-widest text-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   >
                     <option value="">VÁLASSZON KATEGÓRIÁT...</option>
                     {categories.map((cat) => (
@@ -93,7 +93,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                 required
                 defaultValue={initialData?.description}
                 placeholder="RÉSZLETES LEÍRÁS..." 
-                className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all leading-relaxed resize-none"
+                className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all leading-relaxed resize-none"
               />
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           {/* Pricing & Stock */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <div className="flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-accent" />
+              <div className="w-1.5 h-6 bg-primary" />
               <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">ÁRAZÁS ÉS KÉSZLET</h2>
             </div>
             
@@ -122,7 +122,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     required
                     defaultValue={initialData?.netPrice}
                     placeholder="0" 
-                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-accent rounded-none"
+                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                   />
                   <div className="absolute left-4 top-3.5 text-neutral-600 font-black text-xs">FT</div>
                 </div>
@@ -136,7 +136,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     name="discount" 
                     defaultValue={initialData?.discount}
                     placeholder="0" 
-                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-accent rounded-none"
+                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                   />
                   <div className="absolute left-4 top-3.5 text-neutral-600 font-black text-xs">%</div>
                 </div>
@@ -151,7 +151,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     required
                     defaultValue={initialData?.stock}
                     placeholder="0" 
-                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-accent rounded-none"
+                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                   />
                   <div className="absolute left-4 top-3.5 text-neutral-600 font-black text-xs">DB</div>
                 </div>
@@ -162,7 +162,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           {/* SEO Section */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <div className="flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-accent" />
+              <div className="w-1.5 h-6 bg-primary" />
               <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">SEO BEÁLLÍTÁSOK</h2>
             </div>
             
@@ -176,7 +176,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   name="seo_title" 
                   defaultValue={initialData?.seo?.title}
                   placeholder="KERESŐKNEK..." 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -187,7 +187,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   rows={3}
                   defaultValue={initialData?.seo?.description}
                   placeholder="RÖVID LEÍRÁS..." 
-                  className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none"
+                  className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
                 />
               </div>
 
@@ -197,7 +197,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   name="seo_keywords" 
                   defaultValue={initialData?.seo?.keywords?.join(", ")}
                   placeholder="KULCSSZAVAK..." 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           {isEdit && initialData?.ratings && initialData.ratings.length > 0 && (
             <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
               <div className="flex items-center gap-3 text-white">
-                <div className="w-1.5 h-6 bg-accent" />
+                <div className="w-1.5 h-6 bg-primary" />
                 <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">VÁSÁRLÓI VÉLEMÉNYEK</h2>
               </div>
               
@@ -221,7 +221,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                             key={i} 
                             className={cn(
                               "w-4 h-4",
-                              i < rating.rating ? "text-accent fill-accent" : "text-white/10"
+                              i < rating.rating ? "text-primary fill-accent" : "text-white/10"
                             )} 
                           />
                         ))}
@@ -258,7 +258,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     onClick={() => setIsActive(!isActive)}
                     className={cn(
                       "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                      isActive ? "bg-accent" : "bg-neutral-800"
+                      isActive ? "bg-primary" : "bg-neutral-800"
                     )}
                   >
                     <div className={cn(
@@ -279,7 +279,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     onClick={() => setIsVisible(!isVisible)}
                     className={cn(
                       "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                      isVisible ? "bg-accent" : "bg-neutral-800"
+                      isVisible ? "bg-primary" : "bg-neutral-800"
                     )}
                   >
                     <div className={cn(
@@ -321,9 +321,9 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               </div>
             </div>
             
-            <div className="p-5 bg-accent/5 border border-accent/10">
+            <div className="p-5 bg-primary/5 border border-primary/10">
               <div className="flex items-start gap-4">
-                <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest leading-relaxed">
                   A MENTÉS UTÁN A VÁLTOZTATÁSOK AZONNAL ÉLETBE LÉPNEK A BOLTBAN.
                 </p>

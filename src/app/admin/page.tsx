@@ -31,10 +31,10 @@ type RecentOrder = {
 
 async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-accent/40 transition-colors group">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-primary/40 transition-colors group">
       <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-accent/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-6 h-6 text-accent" />
+        <div className="p-3 bg-primary/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+          <Icon className="w-6 h-6 text-primary" />
         </div>
         <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-emerald-400' : 'text-rose-400'}`}>
           {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
@@ -64,7 +64,7 @@ export default async function AdminDashboard() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
-          Vezérlőpult <span className="text-accent underline decoration-accent/10 underline-offset-8">Áttekintés</span>
+          Vezérlőpult <span className="text-primary underline decoration-primary/10 underline-offset-8">Áttekintés</span>
         </h1>
         <p className="text-white/40 font-medium italic">Üdvözöljük az adminisztrációs felületen. Itt láthatja a bolt jelenlegi állapotát.</p>
       </div>
@@ -79,10 +79,10 @@ export default async function AdminDashboard() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[400px]">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
+              <div className="w-1.5 h-6 bg-primary rounded-full" />
               Legutóbbi Rendelések
             </h2>
-            <Link href="/admin/orders" className="text-[10px] font-black uppercase tracking-widest text-accent hover:underline">Összes megtekintése</Link>
+            <Link href="/admin/orders" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Összes megtekintése</Link>
           </div>
           <div className="space-y-4">
             {recentOrders.length === 0 ? (
@@ -92,7 +92,7 @@ export default async function AdminDashboard() {
               </div>
             ) : (
               recentOrders.map((order) => (
-                <div key={order._id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-accent/30 transition-colors group">
+                <div key={order._id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-primary/30 transition-colors group">
                   <div className="flex flex-col">
                     <span className="font-heading font-black text-white uppercase tracking-wider text-sm">#{order._id.toString().slice(-6).toUpperCase()}</span>
                     <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">{format(new Date(order.createdAt), "MM. dd. HH:mm", { locale: hu })}</span>
@@ -100,7 +100,7 @@ export default async function AdminDashboard() {
                   <div className="flex items-center gap-4">
                     <span className="font-black text-white text-sm">{order.total.toLocaleString("hu-HU")} FT</span>
                     <Link href={`/admin/orders/${order._id}`}>
-                      <Eye className="w-4 h-4 text-neutral-600 group-hover:text-accent transition-colors" />
+                      <Eye className="w-4 h-4 text-neutral-600 group-hover:text-primary transition-colors" />
                     </Link>
                   </div>
                 </div>
@@ -110,7 +110,7 @@ export default async function AdminDashboard() {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[400px]">
           <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1.5 h-6 bg-accent rounded-full" />
+            <div className="w-1.5 h-6 bg-primary rounded-full" />
             Aktivitási Napló
           </h2>
           <div className="flex flex-col items-center justify-center h-full text-white/20">

@@ -1,4 +1,11 @@
-import { generateOrderGlsLabel, getOrderById, updateOrderStatus } from "@/actions/admin-orders"
+import {
+  generateOrderGlsLabel,
+  getOrderById,
+  resendOrderInvoiceEmail,
+  updateOrderInvoiceData,
+  updateOrderStatus,
+  uploadManualInvoicePdf,
+} from "@/actions/admin-orders"
 import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, CheckCircle2, Printer } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -49,10 +56,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Vissza a rendelésekhez</span>
           </Link>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Rendelés <span className="text-accent underline decoration-accent/10 underline-offset-8">Részletei</span>
+            Rendelés <span className="text-primary underline decoration-primary/10 underline-offset-8">Részletei</span>
           </h1>
           <div className="flex items-center gap-4 text-white/40 italic">
-            <span className="text-lg font-bold uppercase tracking-tight text-accent">#{order._id.toString().slice(-6).toUpperCase()}</span>
+            <span className="text-lg font-bold uppercase tracking-tight text-primary">#{order._id.toString().slice(-6).toUpperCase()}</span>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -74,9 +81,9 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-2 space-y-8">
           {/* Status Update Card */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-none relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 -rotate-45 translate-x-16 -translate-y-16 pointer-events-none group-hover:bg-accent/10 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -rotate-45 translate-x-16 -translate-y-16 pointer-events-none group-hover:bg-primary/10 transition-colors" />
             <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
+              <div className="w-1.5 h-6 bg-primary rounded-full" />
               Állapot Frissítése
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -110,7 +117,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               >
                 <Button
                   variant="outline"
-                  className="h-12 border-accent/40 text-accent hover:bg-accent/10 rounded-none uppercase tracking-widest text-[10px] font-black"
+                  className="h-12 border-primary/40 text-primary hover:bg-primary/10 rounded-none uppercase tracking-widest text-[10px] font-black"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   GLS CÍMKE GENERÁLÁSA
@@ -132,7 +139,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                       href={order.glsLabel.labelUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex text-accent hover:text-accent/80"
+                      className="inline-flex text-primary hover:text-primary/80"
                     >
                       CÍMKE MEGNYITÁSA
                     </a>
@@ -145,31 +152,76 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </p>
               ) : null}
             </div>
+
+            <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">Számla kezelés</h3>
+              <div className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-300 space-y-1">
+                <p>Invoice ID: <span className="text-white">{order.invoiceId || "-"}</span></p>
+                <p>Invoice mód: <span className="text-white">{order.invoiceMode || "none"}</span></p>
+                <p>Invoice státusz: <span className="text-white">{order.invoiceStatus || "pending"}</span></p>
+                {order.invoiceLastError ? <p className="text-rose-400">HIBA: {order.invoiceLastError}</p> : null}
+              </div>
+
+              <form action={updateOrderInvoiceData.bind(null, order._id.toString())} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input name="invoiceId" defaultValue={order.invoiceId || ""} placeholder="Számlaszám" className="h-11 bg-black border border-white/10 px-3 text-white text-xs uppercase tracking-widest" />
+                <input name="invoiceExternalId" defaultValue={order.invoiceExternalId || ""} placeholder="Külső invoice azonosító (opcionális)" className="h-11 bg-black border border-white/10 px-3 text-white text-xs" />
+                <input name="invoiceIssuedAt" defaultValue={order.invoiceIssuedAt ? new Date(order.invoiceIssuedAt).toISOString().slice(0, 10) : ""} type="date" className="h-11 bg-black border border-white/10 px-3 text-white text-xs" />
+                <select name="invoiceStatus" defaultValue={order.invoiceStatus || "manual"} className="h-11 bg-black border border-white/10 px-3 text-white text-xs uppercase tracking-widest">
+                  <option value="pending">pending</option>
+                  <option value="issued">issued</option>
+                  <option value="failed">failed</option>
+                  <option value="manual">manual</option>
+                </select>
+                <Button className="h-11 rounded-none bg-primary hover:bg-primary/80 text-white text-[10px] font-black uppercase tracking-widest md:col-span-2">
+                  Számla adatok mentése
+                </Button>
+              </form>
+
+              <form action={uploadManualInvoicePdf.bind(null, order._id.toString())} className="flex flex-col md:flex-row gap-3 md:items-center">
+                <input type="file" name="file" accept=".pdf,application/pdf" required className="text-xs text-neutral-300" />
+                <Button className="h-11 rounded-none border border-primary/40 bg-transparent hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                  Manuális számla PDF feltöltése
+                </Button>
+              </form>
+
+              <div className="flex flex-wrap gap-3">
+                <form action={resendOrderInvoiceEmail.bind(null, order._id.toString())}>
+                  <Button className="h-11 rounded-none border border-white/15 bg-transparent hover:bg-white/5 text-white text-[10px] font-black uppercase tracking-widest">
+                    Számla email újraküldése
+                  </Button>
+                </form>
+                <a href={`/api/admin/orders/${order._id.toString()}/invoice`} target="_blank" rel="noreferrer">
+                  <Button className="h-11 rounded-none border border-primary/40 bg-transparent hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                    Számla PDF letöltése
+                  </Button>
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Items Card */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-none">
             <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
+              <div className="w-1.5 h-6 bg-primary rounded-full" />
               Rendelt Tételek
             </h2>
             <div className="space-y-4">
               {order.items.map((item: { name: string; quantity: number; variantLabel?: string; price: number }, index: number) => (
-                <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-accent/30 transition-all">
-                  <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-accent/20 transition-colors overflow-hidden shrink-0">
+                <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all">
+                  <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-colors overflow-hidden shrink-0">
                     <Package className="w-8 h-8 text-neutral-800" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-heading font-black text-white uppercase tracking-wider text-base">{item.name}</h3>
                     <p className="text-[10px] text-neutral-600 font-black tracking-[0.2em] uppercase mt-0.5">Mennység: {item.quantity} DB</p>
                     {item.variantLabel ? (
-                      <p className="text-[10px] text-accent font-black tracking-[0.2em] uppercase mt-1">
+                      <p className="text-[10px] text-primary font-black tracking-[0.2em] uppercase mt-1">
                         Varians: {item.variantLabel}
                       </p>
                     ) : null}
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-white text-lg tracking-tighter">{(item.price * item.quantity).toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span></p>
+                    <p className="font-black text-white text-lg tracking-tighter">{(item.price * item.quantity).toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span></p>
                     <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">{item.price.toLocaleString("hu-HU")} FT / DB</p>
                   </div>
                 </div>
@@ -193,10 +245,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               )}
               <div className="flex justify-between text-white text-2xl font-black uppercase italic pt-2">
                 <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                   Végösszeg:
                 </span>
-                <span className="text-accent underline decoration-accent/20 underline-offset-8">
+                <span className="text-primary underline decoration-primary/20 underline-offset-8">
                   {order.total.toLocaleString("hu-HU")} FT
                 </span>
               </div>
@@ -210,20 +262,20 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
           <div className="bg-white/5 border border-white/10 p-8 rounded-none relative overflow-hidden">
             <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-accent/20 to-transparent" />
             <h2 className="text-xl font-bold mb-8 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
+              <div className="w-1.5 h-6 bg-primary rounded-full" />
               Vásárló adatai
             </h2>
             
             <div className="space-y-8">
               <div className="flex gap-4">
-                <div className="p-3 bg-accent/10 rounded-none border border-accent/20 grow-0 h-fit">
-                  <User className="w-5 h-5 text-accent" />
+                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
+                  <User className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Számlázási Név</p>
                   <p className="text-lg font-bold text-white uppercase italic leading-none">{order.billingInfo.name}</p>
                   {order.billingInfo.type === "company" && (
-                    <div className="mt-2 text-[10px] font-black text-accent uppercase tracking-[0.2em] bg-accent/5 border border-accent/20 px-2 py-1 inline-block">
+                    <div className="mt-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 border border-primary/20 px-2 py-1 inline-block">
                       ADÓSZÁM: {order.billingInfo.taxNumber}
                     </div>
                   )}
@@ -231,8 +283,8 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="flex gap-4">
-                <div className="p-3 bg-accent/10 rounded-none border border-accent/20 grow-0 h-fit">
-                  <MapPin className="w-5 h-5 text-accent" />
+                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
+                  <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Szállítási Cím</p>
@@ -240,7 +292,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <p className="text-neutral-400 text-sm mt-1">{order.shippingAddress.zip} {order.shippingAddress.city}</p>
                   <p className="text-neutral-400 text-sm">{order.shippingAddress.street}</p>
                   {order.shippingAddress.comment && (
-                    <div className="mt-4 p-3 bg-black/40 border-l-2 border-accent text-neutral-400 text-xs italic">
+                    <div className="mt-4 p-3 bg-black/40 border-l-2 border-primary text-neutral-400 text-xs italic">
                       &quot;{order.shippingAddress.comment}&quot;
                     </div>
                   )}
@@ -248,8 +300,8 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="flex gap-4">
-                <div className="p-3 bg-accent/10 rounded-none border border-accent/20 grow-0 h-fit">
-                  <Truck className="w-5 h-5 text-accent" />
+                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
+                  <Truck className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Módszerek</p>

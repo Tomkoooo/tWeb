@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { BrandingSettingsService } from "@/services/branding-settings"
+import { FeatureFlagService } from "@/services/feature-flags"
 
 export default async function AdminLayout({
   children,
@@ -12,6 +14,18 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  const [branding, newsletterEnabled, glsParcelPickerEnabled, stripePaymentsEnabled] = await Promise.all([
+    BrandingSettingsService.get(),
+    FeatureFlagService.isEnabled("newsletter", false),
+    FeatureFlagService.isEnabled("glsParcelPicker", false),
+    FeatureFlagService.isEnabled("stripePayments", false),
+  ])
+  const adminBrandName = branding.brandName || "Generic"
+  const enabledFeatures = {
+    newsletter: newsletterEnabled,
+    glsParcelPicker: glsParcelPickerEnabled,
+    stripePayments: stripePaymentsEnabled,
+  }
 
   if (!session?.user) {
     redirect("/api/auth/signin")
@@ -31,7 +45,7 @@ export default async function AdminLayout({
         </Link>
         
         <span className="text-sm font-heading font-black tracking-tight uppercase italic">
-          Krausz <span className="text-accent underline decoration-accent/20 underline-offset-4">Admin</span>
+          {adminBrandName} <span className="text-primary underline decoration-primary/20 underline-offset-4">Admin</span>
         </span>
 
         <Sheet>
@@ -41,14 +55,14 @@ export default async function AdminLayout({
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 border-r border-white/10 w-72">
-            <AdminSidebar />
+            <AdminSidebar brandName={adminBrandName} enabledFeatures={enabledFeatures} />
           </SheetContent>
         </Sheet>
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-72 border-r border-white/5 flex-col z-50">
-        <AdminSidebar />
+        <AdminSidebar brandName={adminBrandName} enabledFeatures={enabledFeatures} />
       </aside>
 
       <main className="lg:ml-72 min-h-screen">

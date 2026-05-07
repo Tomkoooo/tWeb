@@ -32,7 +32,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
         </Link>
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            {isEdit ? "KATEGÓRIA" : "ÚJ"} <span className="text-accent underline decoration-accent/10 underline-offset-8">{isEdit ? "SZERKESZTÉSE" : "KATEGÓRIA"}</span>
+            {isEdit ? "KATEGÓRIA" : "ÚJ"} <span className="text-primary underline decoration-primary/10 underline-offset-8">{isEdit ? "SZERKESZTÉSE" : "KATEGÓRIA"}</span>
           </h1>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
           {/* Main Info */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-accent" />
+              <div className="w-1.5 h-6 bg-primary" />
               ALAPADATOK
             </h2>
             
@@ -54,7 +54,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   required 
                   defaultValue={initialData?.name}
                   placeholder="KÉZI SZERSZÁMOK" 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -64,7 +64,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   <select 
                     name="parent"
                     defaultValue={initialData?.parent?._id?.toString() || initialData?.parent?.toString() || ""}
-                    className="w-full bg-black border border-white/5 rounded-none h-12 px-3 text-white font-bold uppercase tracking-widest text-xs focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+                    className="w-full bg-black border border-white/5 rounded-none h-12 px-3 text-white font-bold uppercase tracking-widest text-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   >
                     <option value="">NINCS (FŐKATEGÓRIA)</option>
                     {possibleParents.map((cat: any) => (
@@ -84,7 +84,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
           {/* SEO Section */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-accent" />
+              <div className="w-1.5 h-6 bg-primary" />
               SEO BEÁLLÍTÁSOK
             </h2>
             
@@ -95,7 +95,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   name="seo_title" 
                   defaultValue={initialData?.seo?.title}
                   placeholder="OLDAL CÍME" 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
 
@@ -106,7 +106,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   rows={3}
                   defaultValue={initialData?.seo?.description}
                   placeholder="RÖVID LEÍRÁS..." 
-                  className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none"
+                  className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
                 />
               </div>
 
@@ -116,7 +116,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   name="seo_keywords" 
                   defaultValue={initialData?.seo?.keywords?.join(", ")}
                   placeholder="SZERSZÁM, MINŐSÉG..." 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-accent rounded-none"
+                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
               </div>
             </div>

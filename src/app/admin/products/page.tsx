@@ -27,7 +27,7 @@ export default async function AdminProducts({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Termékek <span className="text-accent underline decoration-accent/10 underline-offset-8">Készlete</span>
+            Termékek <span className="text-primary underline decoration-primary/10 underline-offset-8">Készlete</span>
           </h1>
           <p className="text-white/40 font-medium italic">Kezelje a bolt árukészletét, árait és kategóriáit.</p>
         </div>
@@ -47,24 +47,24 @@ export default async function AdminProducts({
               name="q"
               defaultValue={q}
               placeholder="KERESÉS..." 
-              className="bg-black border-white/5 pl-12 h-12 text-white font-black uppercase tracking-widest text-xs focus-visible:ring-accent w-full rounded-none"
+              className="bg-black border-white/5 pl-12 h-12 text-white font-black uppercase tracking-widest text-xs focus-visible:ring-primary w-full rounded-none"
             />
           </form>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, active: active === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", active === 'true' ? "bg-accent/10 border-accent text-accent" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", active === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
               Aktív
             </Button>
           </Link>
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, visible: visible === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", visible === 'true' ? "bg-accent/10 border-accent text-accent" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", visible === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
               Látható
             </Button>
           </Link>
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, discounted: discounted === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", discounted === 'true' ? "bg-accent/10 border-accent text-accent" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", discounted === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
               Akciós
             </Button>
           </Link>
@@ -119,7 +119,7 @@ export default async function AdminProducts({
                   <tr key={product._id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-accent/30 transition-colors">
+                        <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary/30 transition-colors">
                           {product.images?.[0] ? (
                             <img src={`/api/media/${product.images[0]}`} alt={product.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                           ) : (
@@ -130,7 +130,7 @@ export default async function AdminProducts({
                           <p className="font-heading font-black text-white uppercase tracking-wider text-base">{product.name}</p>
                           <p className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">/{product.slug}</p>
                           {hasVariants ? (
-                            <p className="text-[10px] text-accent font-black tracking-widest uppercase mt-1">
+                            <p className="text-[10px] text-primary font-black tracking-widest uppercase mt-1">
                               {variants.length} variáns
                             </p>
                           ) : null}
@@ -141,7 +141,7 @@ export default async function AdminProducts({
                       <div className="flex flex-col gap-1.5">
                         <span className={cn(
                           "w-fit px-2 py-1 border transition-colors",
-                          product.isActive ? "bg-accent/5 border-accent/20 text-accent" : "bg-white/5 border-white/10 text-neutral-500"
+                          product.isActive ? "bg-primary/5 border-primary/20 text-primary" : "bg-white/5 border-white/10 text-neutral-500"
                         )}>
                           {product.isActive ? "AKTÍV" : "INAKTÍV"}
                         </span>
@@ -166,7 +166,7 @@ export default async function AdminProducts({
                       <div>
                         <p className="font-black text-white text-lg tracking-tighter">
                           {needsVariantSelection ? "Tól " : ""}
-                          {minNetPrice.toLocaleString("hu-HU")} <span className="text-xs text-accent">FT</span>
+                          {minNetPrice.toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span>
                         </p>
                         {maxDiscount > 0 && (
                           <p className="text-[10px] text-[#FFD700] font-black uppercase tracking-widest mt-1">-{maxDiscount}% KEDVEZMÉNY</p>
@@ -176,7 +176,7 @@ export default async function AdminProducts({
                     <td className="px-6 py-6 text-right">
                       <div className="flex justify-end gap-3">
                         <Link href={`/products/${product.slug}`} target="_blank">
-                          <Button variant="ghost" size="icon" className="hover:bg-accent/20 text-neutral-500 hover:text-accent rounded-none border border-transparent hover:border-accent/30 transition-all" title="Megtekintés">
+                          <Button variant="ghost" size="icon" className="hover:bg-primary/20 text-neutral-500 hover:text-primary rounded-none border border-transparent hover:border-primary/30 transition-all" title="Megtekintés">
                             <ExternalLink className="w-4 h-4" />
                           </Button>
                         </Link>
@@ -206,7 +206,7 @@ export default async function AdminProducts({
             <Link key={p} href={`/admin/products?page=${p}${q ? `&q=${q}` : ''}`}>
               <Button 
                 variant={p === currentPage ? "default" : "ghost"}
-                className={p === currentPage ? "bg-accent text-white" : "text-white/40"}
+                className={p === currentPage ? "bg-primary text-white" : "text-white/40"}
               >
                 {p}
               </Button>

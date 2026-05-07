@@ -62,6 +62,14 @@ export interface IOrder extends Document {
   discount: number;
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  invoiceMode?: "automatic" | "manual" | "none";
+  invoiceId?: string;
+  invoiceExternalId?: string;
+  invoiceIssuedAt?: Date;
+  invoiceStatus?: "pending" | "issued" | "failed" | "manual";
+  invoicePdfFileName?: string;
+  invoiceLastError?: string;
+  invoiceEmailSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -135,6 +143,22 @@ const OrderSchema = new Schema<IOrder>(
       enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    invoiceMode: {
+      type: String,
+      enum: ["automatic", "manual", "none"],
+      default: "none",
+    },
+    invoiceId: { type: String },
+    invoiceExternalId: { type: String },
+    invoiceIssuedAt: { type: Date },
+    invoiceStatus: {
+      type: String,
+      enum: ["pending", "issued", "failed", "manual"],
+      default: "pending",
+    },
+    invoicePdfFileName: { type: String },
+    invoiceLastError: { type: String },
+    invoiceEmailSentAt: { type: Date },
   },
   { timestamps: true }
 );

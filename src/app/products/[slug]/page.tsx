@@ -9,6 +9,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Metadata } from "next";
 import { resolveProductView } from "@/lib/product-variants";
+import { FooterSettingsService } from "@/services/footer-settings";
+import { ShopContentService } from "@/services/shop-content";
 
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -49,16 +51,25 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const query = await searchParams;
   const selectedVariantId = typeof query.variant === "string" ? query.variant : undefined;
   const product = await ProductService.getBySlug(slug);
+  const [footerSettings, content] = await Promise.all([
+    FooterSettingsService.get(),
+    ShopContentService.getAll(),
+  ]);
 
   if (!product) {
     notFound();
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-background-dark text-white">
       <Navbar />
       <ProductDetail product={product} initialVariantId={selectedVariantId} />
-      <Footer />
+      <Footer
+        settings={footerSettings}
+        email={content.contact_email}
+        phone={content.contact_phone}
+        address={content.contact_address}
+      />
     </main>
   );
 }

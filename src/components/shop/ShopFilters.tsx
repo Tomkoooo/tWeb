@@ -47,7 +47,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
       {/* Search Filter */}
       <div className="space-y-4">
         <h3 className="text-xs font-black tracking-[0.3em] uppercase text-white/40 flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-[#FF5500]" />
+          <div className="w-1.5 h-1.5 bg-primary" />
           Keresés
         </h3>
         <form onSubmit={handleSearchSubmit} className="relative">
@@ -56,7 +56,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="MIT KERESEL?"
-            className="bg-white/5 border-white/5 pl-12 h-14 rounded-none text-[10px] font-bold tracking-[0.2em] text-white placeholder:text-neutral-700 focus-visible:ring-[#FF5500]"
+            className="bg-white/5 border-white/5 pl-12 h-14 rounded-none text-[10px] font-bold tracking-[0.2em] text-white placeholder:text-neutral-700 focus-visible:ring-primary"
           />
         </form>
       </div>
@@ -64,7 +64,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
       {/* Category Filter */}
       <div className="space-y-4">
         <h3 className="text-xs font-black tracking-[0.3em] uppercase text-white/40 flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-[#FF5500]" />
+          <div className="w-1.5 h-1.5 bg-primary" />
           Kategóriák
         </h3>
         <div className="flex flex-col gap-1">
@@ -72,7 +72,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
             onClick={() => handleFilterChange("category", null)}
             className={cn(
               "flex items-center justify-between px-4 py-3 text-[11px] font-black uppercase tracking-widest transition-all",
-              !currentCategory ? "bg-[#FF5500] text-white" : "text-neutral-400 hover:text-white hover:bg-white/5"
+              !currentCategory ? "bg-primary text-white" : "text-neutral-400 hover:text-white hover:bg-white/5"
             )}
           >
             Összes Termék
@@ -90,7 +90,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
       {/* Quick Filters */}
       <div className="space-y-4">
         <h3 className="text-xs font-black tracking-[0.3em] uppercase text-white/40 flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-[#FF5500]" />
+          <div className="w-1.5 h-1.5 bg-primary" />
           Gyors Szűrők
         </h3>
         <button
@@ -98,14 +98,14 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
           className={cn(
             "w-full flex items-center justify-between px-4 py-3 text-[11px] font-black uppercase tracking-widest transition-all border-2",
             isDiscounted 
-              ? "bg-[#FF5500]/10 border-[#FF5500] text-[#FF5500]" 
+              ? "bg-primary/10 border-primary text-primary" 
               : "border-white/5 text-neutral-400 hover:text-white hover:border-white/20"
           )}
         >
           Csak Akciós
           <div className={cn(
             "w-4 h-4 border-2 flex items-center justify-center",
-            isDiscounted ? "border-[#FF5500] bg-[#FF5500]" : "border-white/20"
+            isDiscounted ? "border-primary bg-primary" : "border-white/20"
           )}>
             {isDiscounted && <Check className="w-3 h-3 text-white" />}
           </div>
@@ -146,12 +146,12 @@ function CategoryTree({
             onClick={() => onSelect(cat._id)}
             className={cn(
               "flex items-center justify-between py-3 text-[11px] font-black uppercase tracking-widest transition-all pr-4",
-              currentCategory === cat._id ? "bg-[#FF5500] text-white pl-4" : "text-neutral-400 hover:text-white hover:bg-white/5 ml-4"
+              currentCategory === cat._id ? "bg-primary text-white pl-4" : "text-neutral-400 hover:text-white hover:bg-white/5 ml-4"
             )}
             style={{ paddingLeft: currentCategory === cat._id ? undefined : `${depth * 12}px`, marginLeft: currentCategory === cat._id ? '0' : undefined }}
           >
             <div className="flex items-center gap-2">
-              {depth > 0 && <div className="w-2 h-[1px] bg-white/20" />}
+              {depth > 0 && <div className="w-2 h-px bg-white/20" />}
               {cat.name}
             </div>
             {currentCategory === cat._id && <Check className="w-4 h-4" />}

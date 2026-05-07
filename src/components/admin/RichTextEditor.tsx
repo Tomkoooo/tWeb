@@ -141,8 +141,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
               item.action?.()
             }}
             className={cn(
-              "w-8 h-8 rounded-none hover:bg-accent/20 hover:text-accent transition-colors",
-              item.isActive?.() ? "bg-accent/20 text-accent" : "text-neutral-400"
+              "w-8 h-8 rounded-none hover:bg-primary/20 hover:text-primary transition-colors",
+              item.isActive?.() ? "bg-primary/20 text-primary" : "text-neutral-400"
             )}
             title={item.title}
           >
@@ -164,7 +164,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-accent underline cursor-pointer",
+          class: "text-primary underline cursor-pointer",
         },
       }),
     ],
@@ -188,7 +188,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   }, [value, editor])
 
   return (
-    <div className="bg-white border border-white/5 rounded-none overflow-hidden transition-all focus-within:ring-2 focus-within:ring-accent">
+    <div className="bg-white border border-white/5 rounded-none overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary">
       <MenuBar editor={editor} />
       <EditorContent editor={editor} />
       

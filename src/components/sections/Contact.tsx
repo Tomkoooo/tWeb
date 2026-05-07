@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
@@ -25,7 +27,7 @@ const Textarea = React.forwardRef<
   return (
     <textarea
       className={cn(
-        "flex min-h-[80px] w-full rounded-none border border-neutral-800 bg-neutral-900/50 px-3 py-4 text-sm text-white outline-none focus:border-[#FF5500] placeholder:text-neutral-600 transition-colors",
+        "flex min-h-[80px] w-full rounded-none border border-border bg-surface px-3 py-4 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground transition-colors",
         className
       )}
       ref={ref}
@@ -36,21 +38,28 @@ const Textarea = React.forwardRef<
 Textarea.displayName = "Textarea"
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "A név legalább 2 karakter hosszú legyen." }),
-  email: z.string().email({ message: "Érvénytelen e-mail cím." }),
-  message: z.string().min(10, { message: "Az üzenet legalább 10 karakter hosszú legyen." }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Invalid email address." }),
+  message: z.string().min(10, { message: "Message must be at least 10 characters." }),
 })
 
 interface ContactProps {
   email?: string
   phone?: string
   address?: string
+  title?: string
+  description?: string
+  sendButtonLabel?: string
+  nameLabel?: string
+  emailLabel?: string
+  messageLabel?: string
 }
 
-export function Contact({ email, phone, address }: ContactProps) {
-  const displayEmail = email || "iroda@krausz-mester.hu"
-  const displayPhone = phone || "+36 1 234 5678"
-  const displayAddress = address || "123 Ipari Út, Mesterváros, Magyarország"
+export function Contact({ email, phone, address, title, description, sendButtonLabel, nameLabel, emailLabel, messageLabel }: ContactProps) {
+  const cms = useCmsEdit()
+  const displayEmail = email ?? "hello@example.com"
+  const displayPhone = phone ?? "+1 (555) 010-2030"
+  const displayAddress = address ?? "123 Placeholder Avenue, Lorem City"
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,13 +71,14 @@ export function Contact({ email, phone, address }: ContactProps) {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (cms.enabled) return
     console.log(values)
-    alert("Üzenet elküldve! Munkatársunk hamarosan keresni fog.")
+    alert("Message sent. We will get back to you soon.")
     form.reset()
   }
 
   return (
-    <section id="contact" className="py-32 bg-[#0A0A0A] relative overflow-hidden">
+    <section id="contact" className="py-32 bg-background-dark relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
           <motion.div
@@ -77,42 +87,54 @@ export function Contact({ email, phone, address }: ContactProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-5xl md:text-7xl font-heading font-black mb-10 text-white">
-              LÉPJ VELÜNK <br />
-              <span className="text-[#FF5500]">KAPCSOLATBA</span>
-            </h2>
-            <p className="text-neutral-400 text-xl mb-16 max-w-xl leading-relaxed">
-              Kérdésed van a szerszámokkal kapcsolatban? Egyedi projekthez keresel megoldást? Szakértő csapatunk készen áll a segítségre.
-            </p>
+            {cms.enabled ? (
+              <div className="space-y-3">
+                <EditableTextInline blockType="contact" field="title" value={title ?? "LOREM IPSUM CONTACT"} className="text-5xl md:text-7xl font-heading font-black text-foreground" />
+                <EditableTextInline
+                  blockType="contact"
+                  field="description"
+                  value={description ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
+                  multiline
+                  className="text-neutral-400 text-xl max-w-xl leading-relaxed"
+                />
+              </div>
+            ) : (
+              <>
+                <h2 className="text-5xl md:text-7xl font-heading font-black mb-10 text-foreground">{title ?? "LOREM IPSUM CONTACT"}</h2>
+                <p className="text-neutral-400 text-xl mb-16 max-w-xl leading-relaxed">
+                  {description ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
+                </p>
+              </>
+            )}
 
             <div className="space-y-10">
               <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-[#FF5500]/50 transition-all">
-                  <Phone className="w-6 h-6 text-[#FF5500]" />
+                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
+                  <Phone className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Telefonszám</h4>
-                  <p className="text-neutral-300 text-lg">{displayPhone}</p>
+                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Phone</h4>
+                  {cms.enabled ? <EditableTextInline blockType="contact" field="phone" value={displayPhone} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayPhone}</p>}
                 </div>
               </div>
 
               <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-[#FF5500]/50 transition-all">
-                  <Mail className="w-6 h-6 text-[#FF5500]" />
+                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
+                  <Mail className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">E-mail</h4>
-                  <p className="text-neutral-300 text-lg">{displayEmail}</p>
+                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Email</h4>
+                  {cms.enabled ? <EditableTextInline blockType="contact" field="email" value={displayEmail} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayEmail}</p>}
                 </div>
               </div>
 
               <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-[#FF5500]/50 transition-all">
-                  <MapPin className="w-6 h-6 text-[#FF5500]" />
+                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
+                  <MapPin className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Helyszín</h4>
-                  <p className="text-neutral-300 text-lg">{displayAddress}</p>
+                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Address</h4>
+                  {cms.enabled ? <EditableTextInline blockType="contact" field="address" value={displayAddress} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayAddress}</p>}
                 </div>
               </div>
             </div>
@@ -124,10 +146,10 @@ export function Contact({ email, phone, address }: ContactProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <div className="glass-card p-10 md:p-14 relative border-white/5">
+            <div className="glass-card p-10 md:p-14 relative border-border/40">
               {/* Corner Accents */}
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#FF5500]" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#FF5500]" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary" />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -136,15 +158,19 @@ export function Contact({ email, phone, address }: ContactProps) {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white uppercase tracking-[0.2em] text-xs font-black">Teljes Név</FormLabel>
+                        {cms.enabled ? (
+                          <EditableTextInline blockType="contact" field="nameLabel" value={nameLabel ?? "Full Name"} className="text-foreground uppercase tracking-[0.2em] text-xs font-black" />
+                        ) : (
+                          <FormLabel className="text-foreground uppercase tracking-[0.2em] text-xs font-black">{nameLabel ?? "Full Name"}</FormLabel>
+                        )}
                         <FormControl>
                           <Input 
-                            placeholder="Mester Gábor" 
+                            placeholder="Lorem Ipsum" 
                             {...field} 
-                            className="h-14 bg-white/5 border-neutral-800 rounded-none focus-visible:ring-[#FF5500] text-white placeholder:text-neutral-600" 
+                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary text-foreground placeholder:text-muted-foreground" 
                           />
                         </FormControl>
-                        <FormMessage className="text-[#FF5500] text-xs" />
+                        <FormMessage className="text-primary text-xs" />
                       </FormItem>
                     )}
                   />
@@ -153,15 +179,19 @@ export function Contact({ email, phone, address }: ContactProps) {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white uppercase tracking-[0.2em] text-xs font-black">E-mail Cím</FormLabel>
+                        {cms.enabled ? (
+                          <EditableTextInline blockType="contact" field="emailLabel" value={emailLabel ?? "Email Address"} className="text-foreground uppercase tracking-[0.2em] text-xs font-black" />
+                        ) : (
+                          <FormLabel className="text-foreground uppercase tracking-[0.2em] text-xs font-black">{emailLabel ?? "Email Address"}</FormLabel>
+                        )}
                         <FormControl>
                           <Input 
-                            placeholder="gabor@mester.hu" 
+                            placeholder="name@example.com" 
                             {...field} 
-                            className="h-14 bg-white/5 border-neutral-800 rounded-none focus-visible:ring-[#FF5500] text-white placeholder:text-neutral-600" 
+                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary text-foreground placeholder:text-muted-foreground" 
                           />
                         </FormControl>
-                        <FormMessage className="text-[#FF5500] text-xs" />
+                        <FormMessage className="text-primary text-xs" />
                       </FormItem>
                     )}
                   />
@@ -170,25 +200,33 @@ export function Contact({ email, phone, address }: ContactProps) {
                     name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white uppercase tracking-[0.2em] text-xs font-black">Üzenet</FormLabel>
+                        {cms.enabled ? (
+                          <EditableTextInline blockType="contact" field="messageLabel" value={messageLabel ?? "Message"} className="text-foreground uppercase tracking-[0.2em] text-xs font-black" />
+                        ) : (
+                          <FormLabel className="text-foreground uppercase tracking-[0.2em] text-xs font-black">{messageLabel ?? "Message"}</FormLabel>
+                        )}
                         <FormControl>
                           <Textarea 
-                            placeholder="Írd meg, miben segíthetünk..." 
+                            placeholder="Lorem ipsum dolor sit amet..." 
                             {...field} 
-                            className="min-h-[160px] bg-white/5 border-neutral-800 rounded-none focus-visible:ring-[#FF5500]" 
+                            className="min-h-[160px] bg-surface border-border rounded-none focus-visible:ring-primary" 
                           />
                         </FormControl>
-                        <FormMessage className="text-[#FF5500] text-xs" />
+                        <FormMessage className="text-primary text-xs" />
                       </FormItem>
                     )}
                   />
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-[#FF5500] hover:bg-[#FF7722] text-white h-16 px-12 text-xl btn-krausz border-none"
-                  >
-                    <Send className="w-5 h-5 mr-3" />
-                    ÜZENET KÜLDÉSE
-                  </Button>
+                  {cms.enabled ? (
+                    <Button type="button" className="w-full bg-primary hover:bg-primary text-white h-16 px-12 text-xl btn-krausz border-none">
+                      <Send className="w-5 h-5 mr-3" />
+                      <EditableTextInline blockType="contact" field="sendButtonLabel" value={sendButtonLabel ?? "SEND MESSAGE"} className="text-white text-center" />
+                    </Button>
+                  ) : (
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary text-white h-16 px-12 text-xl btn-krausz border-none">
+                      <Send className="w-5 h-5 mr-3" />
+                      {sendButtonLabel ?? "SEND MESSAGE"}
+                    </Button>
+                  )}
                 </form>
               </Form>
             </div>

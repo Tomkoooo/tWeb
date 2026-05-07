@@ -46,7 +46,7 @@ export function MethodDialog({ children, title, action, initialData }: MethodDia
               defaultValue={initialData?.name}
               required 
               placeholder="PL. HÁZHOZSZÁLLÍTÁS"
-              className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+              className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
             />
           </div>
           <div className="space-y-2">
@@ -57,7 +57,7 @@ export function MethodDialog({ children, title, action, initialData }: MethodDia
               defaultValue={initialData?.grossPrice}
               required 
               placeholder="0"
-              className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-[#FF5500] rounded-none"
+              className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
             />
           </div>
 
@@ -71,7 +71,7 @@ export function MethodDialog({ children, title, action, initialData }: MethodDia
               onClick={() => setIsActive(!isActive)}
               className={cn(
                 "w-12 h-6 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                isActive ? "bg-[#FF5500]" : "bg-neutral-800"
+                isActive ? "bg-primary" : "bg-neutral-800"
               )}
             >
               <div className={cn(

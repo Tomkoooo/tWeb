@@ -60,7 +60,7 @@ export default async function ShopPage({
 
   if (!isShopPageEnabled) {
     return (
-      <main className="min-h-screen bg-black pt-32 pb-20 px-6">
+      <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
         <Navbar />
         <div className="container mx-auto">
           <div className="max-w-2xl mx-auto border border-white/10 bg-white/5 p-10 text-center space-y-6">
@@ -68,7 +68,7 @@ export default async function ShopPage({
               jelenleg nem elérhető vissza a főoldalra
             </p>
             <Link href="/">
-              <Button className="rounded-none bg-accent hover:bg-accent/85 text-white font-black uppercase tracking-widest text-xs h-12 px-8">
+              <Button className="rounded-none bg-primary hover:bg-primary/85 text-white font-black uppercase tracking-widest text-xs h-12 px-8">
                 Vissza a főoldalra
               </Button>
             </Link>
@@ -103,7 +103,7 @@ export default async function ShopPage({
   const categories = JSON.parse(JSON.stringify(categoriesResult))
 
   return (
-    <main className="min-h-screen bg-black pt-32 pb-20 px-6">
+    <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
       <Navbar/>
       <div className="container mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
@@ -116,7 +116,7 @@ export default async function ShopPage({
                   Szűrők megjelenítése
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-black border-r border-white/10 w-full sm:max-w-md overflow-y-auto">
+              <SheetContent side="left" className="bg-background-dark border-r border-white/10 w-full sm:max-w-md overflow-y-auto">
                 <div className="mt-12">
                   <ShopFilters categories={categories} />
                 </div>
@@ -166,8 +166,8 @@ export default async function ShopPage({
                             className={cn(
                               "w-12 h-12 rounded-none font-black tracking-widest text-xs",
                               p === currentPage 
-                                ? "bg-[#FF5500] border-[#FF5500] text-white" 
-                                : "bg-black border-white/10 text-neutral-500 hover:text-white"
+                                ? "bg-primary border-primary text-white" 
+                                : "bg-background-dark border-white/10 text-neutral-500 hover:text-white"
                             )}
                           >
                             {p}

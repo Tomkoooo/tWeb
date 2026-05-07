@@ -38,7 +38,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-[#FF5500] border-solid rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -49,7 +49,7 @@ export default function OrderDetailPage() {
         <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] mb-4">
           A rendelés nem található
         </h2>
-        <Link href="/profile/orders" className="text-[#FF5500] font-black uppercase tracking-widest text-xs hover:underline">
+        <Link href="/profile/orders" className="text-primary font-black uppercase tracking-widest text-xs hover:underline">
           <ArrowLeft className="w-4 h-4 inline mr-2" /> Vissza a rendelésekhez
         </Link>
       </div>
@@ -60,7 +60,7 @@ export default function OrderDetailPage() {
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
-          <Link href="/profile/orders" className="text-neutral-500 font-bold uppercase tracking-widest text-[10px] hover:text-[#FF5500] flex items-center mb-4 transition-colors">
+          <Link href="/profile/orders" className="text-neutral-500 font-bold uppercase tracking-widest text-[10px] hover:text-primary flex items-center mb-4 transition-colors">
             <ArrowLeft className="w-3 h-3 mr-2" /> Vissza
           </Link>
           <h2 className="text-xl font-black text-white uppercase tracking-[0.2em]">
@@ -77,7 +77,7 @@ export default function OrderDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-[0.2em]">Státusz</h3>
+          <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Státusz</h3>
           <p className="font-bold text-white uppercase tracking-widest text-sm p-4 border border-white/10 bg-white/5 inline-block">
             {order.status === "pending" && "Függőben"}
             {order.status === "processing" && "Feldolgozás alatt"}
@@ -93,7 +93,7 @@ export default function OrderDetailPage() {
             <p className="text-xs font-bold text-white">{order.shippingAddress.name}</p>
             <p className="text-xs text-neutral-400">{order.shippingAddress.zip} {order.shippingAddress.city}</p>
             <p className="text-xs text-neutral-400">{order.shippingAddress.street}</p>
-            {order.shippingMethod && <p className="text-[#FF5500] text-xs font-black uppercase tracking-widest mt-2">{order.shippingMethod.name}</p>}
+            {order.shippingMethod && <p className="text-primary text-xs font-black uppercase tracking-widest mt-2">{order.shippingMethod.name}</p>}
           </div>
           <div className="space-y-2">
             <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Számlázás</p>
@@ -101,13 +101,31 @@ export default function OrderDetailPage() {
             <p className="text-xs text-neutral-400">{order.billingInfo.zip} {order.billingInfo.city}</p>
             <p className="text-xs text-neutral-400">{order.billingInfo.street}</p>
             {order.billingInfo.type === "company" && <p className="text-xs text-neutral-400">Adószám: {order.billingInfo.taxNumber}</p>}
-            {order.paymentMethod && <p className="text-[#FF5500] text-xs font-black uppercase tracking-widest mt-2">{order.paymentMethod.name}</p>}
+            {order.paymentMethod && <p className="text-primary text-xs font-black uppercase tracking-widest mt-2">{order.paymentMethod.name}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Számla</h3>
+          <div className="font-bold text-white uppercase tracking-widest text-sm p-4 border border-white/10 bg-white/5 space-y-2">
+            <p>Állapot: {order.invoiceStatus || "pending"}</p>
+            <p>Számlaszám: {order.invoiceId || "-"}</p>
+            {order.invoiceIssuedAt ? (
+              <p>Kiadva: {format(new Date(order.invoiceIssuedAt), "yyyy. MM. dd.", { locale: hu })}</p>
+            ) : null}
+            <div className="pt-2">
+              <a href={order.invoiceDownloadUrl || `/api/user/orders/${order._id}/invoice`} target="_blank" rel="noreferrer">
+                <Button className="h-10 rounded-none border border-primary bg-transparent text-primary hover:bg-primary/10 uppercase tracking-widest text-[10px] font-black">
+                  Számla letöltése
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-6">
-        <h3 className="text-sm font-black text-[#FF5500] uppercase tracking-[0.2em]">Termékek</h3>
+        <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Termékek</h3>
         <div className="border border-white/10 divide-y divide-white/10">
           {order.items.map((item: any, i: number) => (
             <div key={i} className="p-6 flex flex-col md:flex-row justify-between md:items-center gap-6">
@@ -120,7 +138,7 @@ export default function OrderDetailPage() {
                 <div>
                   <h4 className="font-black text-white tracking-widest uppercase text-sm mb-1">
                     {item.product ? (
-                      <Link href={`/products/${item.product.slug}`} className="hover:text-[#FF5500] transition-colors">
+                      <Link href={`/products/${item.product.slug}`} className="hover:text-primary transition-colors">
                         {item.name}
                       </Link>
                     ) : (
@@ -129,7 +147,7 @@ export default function OrderDetailPage() {
                   </h4>
                   <p className="text-xs text-neutral-500 font-bold tracking-widest">{item.quantity} db x {item.price.toLocaleString("hu-HU")} FT</p>
                   {item.variantLabel ? (
-                    <p className="text-[10px] text-[#FF5500] font-black uppercase tracking-widest mt-1">
+                    <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
                       {item.variantLabel}
                     </p>
                   ) : null}
@@ -162,7 +180,7 @@ export default function OrderDetailPage() {
           <span>{order.paymentFee.toLocaleString("hu-HU")} FT</span>
         </div>
         {order.discount > 0 && (
-          <div className="flex justify-between items-center text-sm font-bold text-[#FF5500]">
+          <div className="flex justify-between items-center text-sm font-bold text-primary">
             <span>Kedvezmény (-{order.discount.toLocaleString("hu-HU")} FT)</span>
           </div>
         )}
@@ -216,7 +234,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
       <div className="text-right">
         <div className="flex items-center gap-1 mb-1 justify-end">
           {[1, 2, 3, 4, 5].map((star) => (
-            <Star key={star} className={`w-3 h-3 ${star <= existingReview.rating ? "fill-[#FF5500] text-[#FF5500]" : "text-neutral-700"}`} />
+            <Star key={star} className={`w-3 h-3 ${star <= existingReview.rating ? "fill-primary text-primary" : "text-neutral-700"}`} />
           ))}
         </div>
         <button onClick={() => setIsOpen(true)} className="text-[10px] text-neutral-500 hover:text-white uppercase tracking-widest font-black transition-colors underline">
@@ -230,7 +248,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
     return (
       <Button 
         onClick={() => setIsOpen(true)}
-        className="bg-transparent border border-[#FF5500] text-[#FF5500] hover:bg-[#FF5500] hover:text-white rounded-none h-10 px-6 font-black uppercase tracking-widest text-[10px] transition-colors"
+        className="bg-transparent border border-primary text-primary hover:bg-primary hover:text-white rounded-none h-10 px-6 font-black uppercase tracking-widest text-[10px] transition-colors"
       >
         Értékelem
       </Button>
@@ -249,7 +267,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
               onMouseEnter={() => setHoveredRating(star)}
               onMouseLeave={() => setHoveredRating(0)}
               className={`w-5 h-5 transition-colors ${
-                star <= (hoveredRating || rating) ? "fill-[#FF5500] text-[#FF5500]" : "text-neutral-700"
+                star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-neutral-700"
               }`}
             />
           ))}
@@ -259,7 +277,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Néhány szó a termékről (opcionális)..."
-        className="w-full bg-black border border-white/10 rounded-none p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#FF5500] resize-none h-20"
+        className="w-full bg-black border border-white/10 rounded-none p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary resize-none h-20"
       />
       <div className="flex gap-2">
         <Button 
@@ -271,7 +289,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
         <Button 
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="flex-1 bg-[#FF5500] hover:bg-[#FF5500]/80 text-white rounded-none h-10 font-black uppercase tracking-widest text-[10px]"
+          className="flex-1 bg-primary hover:bg-primary/80 text-white rounded-none h-10 font-black uppercase tracking-widest text-[10px]"
         >
           {isSubmitting ? "..." : "Küldés"}
         </Button>

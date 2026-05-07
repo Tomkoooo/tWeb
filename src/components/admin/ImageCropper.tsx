@@ -82,7 +82,7 @@ export function ImageCropper({ image, aspect = 1, onCropComplete, onCancel }: Im
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
                 <span>Nagyítás</span>
-                <span className="text-accent">{Math.round(zoom * 100)}%</span>
+                <span className="text-primary">{Math.round(zoom * 100)}%</span>
               </div>
               <div className="flex items-center gap-4">
                 <ZoomOut className="w-4 h-4 text-neutral-600" />
@@ -104,7 +104,7 @@ export function ImageCropper({ image, aspect = 1, onCropComplete, onCancel }: Im
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
                 <span>Forgatás</span>
-                <span className="text-accent">{rotation}°</span>
+                <span className="text-primary">{rotation}°</span>
               </div>
               <div className="flex items-center gap-4">
                 <RotateCcw className="w-4 h-4 text-neutral-600" />
@@ -132,7 +132,7 @@ export function ImageCropper({ image, aspect = 1, onCropComplete, onCancel }: Im
             </Button>
             <Button 
               onClick={handleCrop}
-              className="h-12 px-8 bg-accent hover:bg-accent/90 text-white font-black uppercase tracking-widest text-sm rounded-xl flex items-center gap-2 shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
+              className="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-sm rounded-xl flex items-center gap-2 shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
             >
               <Check className="w-5 h-5" />
               Alkalmaz
