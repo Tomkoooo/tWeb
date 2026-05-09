@@ -65,6 +65,17 @@ export default auth(async (req) => {
     return NextResponse.redirect(new URL("/api/auth/signin", req.nextUrl))
   }
 
+  // Defense in depth: clear the template-preview cookie when the request is
+  // not authenticated as ADMIN. The activate/preview API only sets it for
+  // admins, but if the session changes the cookie should not leak preview
+  // chrome to a regular visitor.
+  const previewCookie = req.cookies.get("wse_template_preview")
+  if (previewCookie && !isAdminUser) {
+    const response = NextResponse.next()
+    response.cookies.delete("wse_template_preview")
+    return response
+  }
+
   return NextResponse.next()
 })
 

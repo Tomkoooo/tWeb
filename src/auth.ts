@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import clientPromise from "@/lib/mongodb"
 import { authConfig } from "./auth.config"
+import { maybeBootstrapAdmin } from "@/lib/bootstrap-admin"
 
 const trustHost = process.env.AUTH_TRUST_HOST
   ? process.env.AUTH_TRUST_HOST === "true"
@@ -79,6 +80,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!lookupEmail) {
           return session
         }
+
+        await maybeBootstrapAdmin(lookupEmail)
 
         try {
           const client = await clientPromise;

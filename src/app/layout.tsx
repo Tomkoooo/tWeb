@@ -5,6 +5,7 @@ import "./globals.css";
 import { SeoSettingsService } from "@/services/seo-settings";
 import { BrandingSettingsService } from "@/services/branding-settings";
 import { ThemeService } from "@/services/theme";
+import { TemplateService } from "@/services/template";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,7 +73,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [seo, theme] = await Promise.all([SeoSettingsService.get(), ThemeService.get()]);
+  const [seo, themeOverrides, template] = await Promise.all([
+    SeoSettingsService.get(),
+    ThemeService.get(),
+    TemplateService.getActive(),
+  ]);
+  // Active template provides default tokens; admin overrides win.
+  const theme = { ...template.defaultTheme, ...themeOverrides };
   const themeVars = {
     "--theme-primary": theme.primary,
     "--theme-primary-foreground": theme.primaryForeground,

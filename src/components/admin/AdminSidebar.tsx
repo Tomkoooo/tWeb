@@ -20,7 +20,8 @@ import {
   Tag,
   ChevronDown,
   FolderTree,
-  Store
+  Store,
+  Layout as LayoutIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -63,6 +64,7 @@ const menuGroups: Array<{
     label: "Webshop beállítások",
     icon: Store,
     items: [
+      { icon: LayoutIcon, label: "Sablonok", href: "/admin/templates" },
       { icon: FileEdit, label: "CMS", href: "/admin/cms" },
       { icon: Mail, label: "Emailek", href: "/admin/emails" },
       { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
