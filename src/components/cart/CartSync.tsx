@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { useCartStore } from "@/store/useCartStore"
+import { mediaImageSrc } from "@/lib/images"
 
 export function CartSync() {
   const { data: session, status } = useSession()
@@ -37,7 +38,7 @@ export function CartSync() {
                 name: dbItem.product.name,
                 slug: dbItem.product.slug,
                 price: dbItem.product.netPrice * 1.27, // Simple formula for now
-                image: dbItem.product.images?.[0] ? `/api/media/${dbItem.product.images[0]}` : "/placeholder.jpg",
+                image: mediaImageSrc(dbItem.product.images?.[0]),
                 quantity: dbItem.quantity,
                 stock: dbItem.product.stock,
                 netPrice: dbItem.product.netPrice,

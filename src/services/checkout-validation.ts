@@ -9,6 +9,7 @@ import {
 } from "@/services/gls-shipping";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
+import { grossFromNetWithDiscount } from "@/lib/pricing";
 
 export const STRIPE_FIXED_PAYMENT_METHOD_ID = "stripe_fixed";
 
@@ -93,10 +94,8 @@ function resolveItemPrice(product: any, variantId?: string): { unitPrice: number
     if (variant.isActive === false) {
       throw new Error(`A kiválasztott variáns nem aktív: ${product.name}`);
     }
-    const grossPrice = Number(variant.netPrice || 0) * 1.27;
-    const discounted = grossPrice * (1 - (Number(variant.discount || 0) / 100));
     return {
-      unitPrice: roundCurrency(discounted),
+      unitPrice: grossFromNetWithDiscount(Number(variant.netPrice || 0), Number(variant.discount || 0)),
       variantLabel: Object.entries(variant.attributes || {})
         .map(([key, value]) => `${key}: ${value}`)
         .join(" / "),
@@ -107,9 +106,7 @@ function resolveItemPrice(product: any, variantId?: string): { unitPrice: number
     throw new Error(`Válassz variánst a termékhez: ${product.name}`);
   }
 
-  const grossPrice = Number(product.netPrice || 0) * 1.27;
-  const discounted = grossPrice * (1 - (Number(product.discount || 0) / 100));
-  return { unitPrice: roundCurrency(discounted) };
+  return { unitPrice: grossFromNetWithDiscount(Number(product.netPrice || 0), Number(product.discount || 0)) };
 }
 
 async function validateCoupon(

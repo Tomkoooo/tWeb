@@ -1,7 +1,9 @@
 import { CategoryService } from "@/services/category";
-import { Plus, FolderTree, Edit2, Trash2, CornerDownRight } from "lucide-react";
+import { Plus, Edit2, Trash2, CornerDownRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FallbackImage } from "@/components/common/FallbackImage";
+import { mediaImageSrc } from "@/lib/images";
 
 export default async function AdminCategories() {
   const categoryTree = await CategoryService.getTree();
@@ -69,11 +71,7 @@ export default async function AdminCategories() {
                         )}
                         
                         <div className="w-12 h-12 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary/30 transition-colors shrink-0">
-                          {category.image ? (
-                            <img src={`/api/media/${category.image}`} alt={category.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                          ) : (
-                            <FolderTree className="w-6 h-6 text-neutral-700" />
-                          )}
+                          <FallbackImage src={mediaImageSrc(category.image)} alt={category.name} width={48} height={48} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div>
                           <p className="font-heading font-black text-white uppercase tracking-wider text-sm">{category.name}</p>

@@ -5,9 +5,20 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import { formatOrderNumberLabel } from "@/lib/order-number"
+import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 
-export default async function AdminOrders() {
-  const orders = await getOrders()
+type AdminOrdersSearchParams = Promise<{
+  q?: string
+  status?: string
+  invoiceStatus?: string
+  dateFrom?: string
+  dateTo?: string
+}>
+
+export default async function AdminOrders({ searchParams }: { searchParams: AdminOrdersSearchParams }) {
+  const filters = await searchParams
+  const orders = await getOrders(filters)
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -40,6 +51,55 @@ export default async function AdminOrders() {
         <p className="text-white/40 font-medium italic">Kísérje figyelemmel a beérkező rendeléseket és frissítse az állapotukat.</p>
       </div>
 
+      <form className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white/5 border border-white/10 p-4">
+        <input
+          name="q"
+          defaultValue={filters.q || ""}
+          placeholder="Keresés: azonosító, név, email, város..."
+          className="md:col-span-2 h-12 bg-black border border-white/10 px-4 text-sm text-white placeholder:text-neutral-600 rounded-none"
+        />
+        <select
+          name="status"
+          defaultValue={filters.status || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden státusz</option>
+          <option value="pending">Függőben</option>
+          <option value="processing">Feldolgozás alatt</option>
+          <option value="shipped">Szállítva</option>
+          <option value="delivered">Kézbesítve</option>
+          <option value="cancelled">Törölve</option>
+        </select>
+        <select
+          name="invoiceStatus"
+          defaultValue={filters.invoiceStatus || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden számla</option>
+          <option value="pending">Pending</option>
+          <option value="issued">Issued</option>
+          <option value="failed">Failed</option>
+          <option value="manual">Manual</option>
+        </select>
+        <input
+          type="date"
+          name="dateFrom"
+          defaultValue={filters.dateFrom || ""}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
+        />
+        <div className="flex gap-2">
+          <input
+            type="date"
+            name="dateTo"
+            defaultValue={filters.dateTo || ""}
+            className="min-w-0 flex-1 h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
+          />
+          <Button className="h-12 rounded-none bg-primary hover:bg-primary/80 text-white font-black uppercase tracking-widest text-[10px]">
+            Szűrés
+          </Button>
+        </div>
+      </form>
+
       <div className="bg-white/5 border border-white/10 rounded-none overflow-hidden text-white shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[900px]">
@@ -63,11 +123,13 @@ export default async function AdminOrders() {
                   </td>
                 </tr>
               ) : (
-                orders.map((order: any) => (
+                orders.map((order: any) => {
+                  const breakdown = totalsBreakdownFromGross(order.total)
+                  return (
                   <tr key={order._id} className="hover:bg-white/5 transition-all duration-300 group">
                     <td className="px-6 py-6">
                       <div className="flex flex-col">
-                        <span className="font-heading font-black text-white uppercase tracking-wider text-base">#{order._id.toString().slice(-6).toUpperCase()}</span>
+                        <span className="font-heading font-black text-white uppercase tracking-wider text-base">{formatOrderNumberLabel(order._id)}</span>
                         <div className="flex items-center gap-1.5 mt-1 text-neutral-500">
                           <Calendar className="w-3 h-3" />
                           <span className="text-[10px] font-black uppercase tracking-widest">
@@ -112,10 +174,13 @@ export default async function AdminOrders() {
                     <td className="px-6 py-6">
                       <div className="flex flex-col">
                         <span className="font-black text-white text-lg tracking-tighter">
-                          {order.total.toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span>
+                          {formatHuf(breakdown.gross)}
+                        </span>
+                        <span className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
+                          Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
                         </span>
                         {order.discount > 0 && (
-                          <div className="flex items-center gap-1 mt-1 text-[#FFD700]">
+                          <div className="flex items-center gap-1 mt-1 text-highlight">
                             <Tag className="w-3 h-3" />
                             <span className="text-[8px] font-black uppercase tracking-[0.2em]">KEDVEZMÉNYES</span>
                           </div>
@@ -130,7 +195,8 @@ export default async function AdminOrders() {
                       </Link>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

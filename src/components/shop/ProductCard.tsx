@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Star, ShoppingCart, ArrowRight } from "lucide-react"
@@ -11,6 +10,9 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { getActiveVariants, hasVariants } from "@/lib/product-variants"
+import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 
 import { useCartStore } from "@/store/useCartStore"
 
@@ -35,7 +37,8 @@ export function ProductCard({ product }: ProductCardProps) {
       ? Math.max(...activeVariants.map((variant: any) => variant.discount || 0))
       : product.discount || 0
 
-  const finalPrice = minNetPrice * (1 - maxDiscount / 100)
+  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount)
+  const breakdown = priceBreakdownFromGross(finalPrice)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
   React.useEffect(() => {
@@ -67,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       slug: product.slug,
       price: finalPrice,
-      image: product.images?.[0] ? `/api/media/${product.images[0]}` : "/placeholder.jpg",
+      image: mediaImageSrc(product.images?.[0]),
       quantity: 1,
       stock: product.stock,
       netPrice: product.netPrice,
@@ -85,8 +88,8 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Image Section */}
       <div className="relative aspect-square bg-neutral-900 overflow-hidden">
         {!isLoaded && <Skeleton className="absolute inset-0 z-10" />}
-        <Image
-          src={product.images?.[0] ? `/api/media/${product.images[0]}` : "/placeholder.jpg"}
+        <FallbackImage
+          src={mediaImageSrc(product.images?.[0])}
           alt={product.name}
           fill
           onLoad={() => setIsLoaded(true)}
@@ -138,14 +141,17 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto pt-4 flex flex-col gap-4">
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-black text-white">
-              {finalPrice.toLocaleString("hu-HU")} <span className="text-xs font-black text-primary">FT{requiresVariantSelection ? "-tól" : ""}</span>
+              {formatHuf(finalPrice)}<span className="text-xs font-black text-primary">{requiresVariantSelection ? "-tól" : ""}</span>
             </span>
             {maxDiscount > 0 && (
               <span className="text-sm font-bold text-neutral-500 line-through">
-                {minNetPrice.toLocaleString("hu-HU")} FT
+                {formatHuf(netToGross(minNetPrice))}
               </span>
             )}
           </div>
+          <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+            Nettó {formatHuf(breakdown.unitNet)} · ÁFA {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)
+          </p>
 
           <div className="flex flex-col gap-2">
             <Button 

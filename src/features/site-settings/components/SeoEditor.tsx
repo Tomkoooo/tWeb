@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import type { SeoSettings } from "@/services/seo-settings"
 import { UploadSheet } from "@/features/site-settings/components/UploadSheet"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?: (settings: SeoSettings) => void }) {
   const [state, setState] = useState(initial)
@@ -20,7 +21,7 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
             <span className="text-xs uppercase tracking-widest text-neutral-400">{key}</span>
             {key === "favicon" ? (
               <div className="space-y-2">
-                <img src={String(state.favicon || "/generic-favicon.svg")} alt="favicon preview" className="w-10 h-10 border border-white/20 bg-white" />
+                <FallbackImage src={String(state.favicon || "")} alt="favicon preview" width={40} height={40} className="w-10 h-10 border border-white/20 bg-white" />
                 <UploadSheet
                   onUploaded={(url) => setState((prev) => ({ ...prev, favicon: url }))}
                   label="Upload favicon"

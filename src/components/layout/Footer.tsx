@@ -2,13 +2,13 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSession, signIn } from "next-auth/react"
 import { toast } from "sonner"
 import type { FooterSettings } from "@/services/footer-settings"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 type LegalLink = {
   key: "impresszum" | "terms" | "gdpr"
@@ -211,7 +211,7 @@ export function Footer({
           <div className="space-y-10">
             <Link href="/" className="flex items-center gap-4 group">
               <div className="relative w-12 h-12">
-                <Image
+                <FallbackImage
                   src={resolvedBrand.logoSrc}
                   alt={resolvedBrand.brandName}
                   fill

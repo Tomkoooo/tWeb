@@ -1,8 +1,9 @@
-import Link from "next/link";
-import { Shield, User, ShoppingBag, Coins, CalendarDays, Eye } from "lucide-react";
+import { Shield, User, ShoppingBag, Coins, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAdminUsers, updateUserRole } from "@/actions/admin-users";
+import { getAdminUsers } from "@/actions/admin-users";
 import { cn } from "@/lib/utils";
+import { UserManagementSheet } from "@/components/admin/UserManagementSheet";
+import { formatHuf } from "@/lib/pricing";
 
 type AdminUserRow = {
   _id: string;
@@ -12,10 +13,23 @@ type AdminUserRow = {
   ordersCount?: number;
   totalSpent?: number;
   lastOrderAt?: string | Date | null;
+  recentOrders?: Array<{
+    _id: string;
+    total: number;
+    status: string;
+    createdAt: string | Date;
+  }>;
 };
 
-export default async function AdminUsersPage() {
-  const users = await getAdminUsers() as AdminUserRow[];
+type AdminUsersSearchParams = Promise<{
+  q?: string;
+  role?: string;
+  hasOrders?: string;
+}>;
+
+export default async function AdminUsersPage({ searchParams }: { searchParams: AdminUsersSearchParams }) {
+  const filters = await searchParams;
+  const users = await getAdminUsers(filters) as AdminUserRow[];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -27,6 +41,36 @@ export default async function AdminUsersPage() {
           Felhasználók, szerepkörök és vásárlási összefoglaló.
         </p>
       </div>
+
+      <form className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white/5 border border-white/10 p-4">
+        <input
+          name="q"
+          defaultValue={filters.q || ""}
+          placeholder="Keresés név vagy email alapján..."
+          className="md:col-span-2 h-12 bg-black border border-white/10 px-4 text-sm text-white placeholder:text-neutral-600 rounded-none"
+        />
+        <select
+          name="role"
+          defaultValue={filters.role || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden szerepkör</option>
+          <option value="USER">USER</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+        <select
+          name="hasOrders"
+          defaultValue={filters.hasOrders || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden vásárló</option>
+          <option value="yes">Van rendelése</option>
+          <option value="no">Nincs rendelése</option>
+        </select>
+        <Button className="h-12 rounded-none bg-primary hover:bg-primary/80 text-white font-black uppercase tracking-widest text-[10px]">
+          Szűrés
+        </Button>
+      </form>
 
       <div className="bg-white/5 border border-white/10 overflow-x-auto">
         <table className="w-full min-w-[900px]">
@@ -83,7 +127,7 @@ export default async function AdminUsersPage() {
                   <td className="px-5 py-5 text-white font-black">
                     <span className="inline-flex items-center gap-2">
                       <Coins className="w-4 h-4 text-neutral-500" />
-                      {(item.totalSpent || 0).toLocaleString("hu-HU")} Ft
+                      {formatHuf(item.totalSpent || 0)}
                     </span>
                   </td>
                   <td className="px-5 py-5 text-neutral-400 font-bold text-sm">
@@ -94,35 +138,20 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="px-5 py-5">
                     <div className="flex justify-end gap-2">
-                      <Link href={`/admin/users/${item._id}`}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-none text-neutral-400 hover:text-primary hover:bg-white/5"
-                          title="Részletek"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <form action={updateUserRole.bind(null, item._id.toString(), "USER")}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-none border-white/20 text-white hover:bg-white/5"
-                          disabled={item.role === "USER"}
-                        >
-                          USER
-                        </Button>
-                      </form>
-                      <form action={updateUserRole.bind(null, item._id.toString(), "ADMIN")}>
-                        <Button
-                          size="sm"
-                          className="rounded-none bg-primary hover:bg-primary/85 text-white"
-                          disabled={item.role === "ADMIN"}
-                        >
-                          ADMIN
-                        </Button>
-                      </form>
+                      <UserManagementSheet
+                        user={{
+                          _id: item._id.toString(),
+                          name: item.name,
+                          email: item.email,
+                          role: item.role,
+                        }}
+                        recentOrders={(item.recentOrders || []).map((order) => ({
+                          _id: order._id.toString(),
+                          total: order.total,
+                          status: order.status,
+                          createdAt: order.createdAt,
+                        }))}
+                      />
                     </div>
                   </td>
                 </tr>

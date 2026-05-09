@@ -3,6 +3,8 @@ import { Upload, X, Loader2, GripVertical, Star, StarOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ImageCropper } from "./ImageCropper"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 
 interface MultiImageUploadProps {
   onUpload: (filenames: string[]) => void
@@ -102,9 +104,11 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((img, index) => (
           <div key={img} className="relative group aspect-square bg-black border border-white/10 rounded-2xl overflow-hidden transition-all hover:border-primary/40">
-            <img 
-              src={`/api/media/${img}`} 
+            <FallbackImage
+              src={mediaImageSrc(img)}
               alt={`Preview ${index}`} 
+              width={240}
+              height={240}
               className="w-full h-full object-cover" 
             />
             

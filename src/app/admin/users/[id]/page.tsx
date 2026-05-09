@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, KeyRound, MapPin, ReceiptText, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminUserDetails, sendAdminPasswordReset } from "@/actions/admin-users";
+import { formatOrderNumberLabel } from "@/lib/order-number";
 
 type UserDetailsResponse = {
   user: {
@@ -166,7 +167,7 @@ export default async function AdminUserDetailsPage({
             {orders.map((order) => (
               <div key={order._id} className="border border-white/10 p-4 space-y-2">
                 <div className="flex flex-wrap justify-between gap-2">
-                  <p className="font-black text-white uppercase tracking-wider">#{order._id.slice(-6)}</p>
+                  <p className="font-black text-white uppercase tracking-wider">{formatOrderNumberLabel(order._id)}</p>
                   <p className="text-sm text-neutral-400">
                     {new Date(order.createdAt).toLocaleString("hu-HU")}
                   </p>

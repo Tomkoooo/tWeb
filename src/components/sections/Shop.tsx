@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import {
   ChevronRight,
@@ -28,6 +27,8 @@ import { useRouter } from "next/navigation"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { EditableLinkInline } from "@/features/homepage-cms/components/primitives/EditableLinkInline"
+import { formatHuf, priceBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 interface ShopProps {
   categories?: any[]
@@ -133,7 +134,7 @@ export function Shop({
               transition={{ delay: idx * 0.1 }}
               className="relative group h-[400px] overflow-hidden border border-white/5"
             >
-              <Image
+              <FallbackImage
                 src={category.image}
                 alt={category.name}
                 fill
@@ -201,7 +202,7 @@ function ProductImage({ src, name }: { src: string; name: string }) {
   return (
     <>
       {!isLoaded && <Skeleton className="absolute inset-0 z-10" />}
-      <Image
+      <FallbackImage
         src={src}
         alt={name}
         fill
@@ -219,6 +220,7 @@ function ShopProductCard({ product, addItem, shopEnabled, cmsMode }: { product: 
   const [isAdded, setIsAdded] = React.useState(false)
   const router = useRouter()
   const requiresVariantSelection = Boolean(product.requireVariantSelection) && Boolean(product.hasVariants)
+  const breakdown = priceBreakdownFromGross(product.price)
 
   const handleAddToCart = () => {
     if (cmsMode) return
@@ -274,7 +276,10 @@ function ShopProductCard({ product, addItem, shopEnabled, cmsMode }: { product: 
           </h4>
         </Link>
         <div className="text-3xl font-black text-foreground mb-8">
-          {product.price.toLocaleString("en-US")} <span className="text-sm font-black text-primary">USD{requiresVariantSelection ? "+" : ""}</span>
+          {formatHuf(product.price)}<span className="text-sm font-black text-primary">{requiresVariantSelection ? "-tól" : ""}</span>
+          <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-2">
+            Nettó {formatHuf(breakdown.unitNet)} · ÁFA {formatHuf(breakdown.unitVat)}
+          </p>
         </div>
         <Button 
           onClick={handleAddToCart}

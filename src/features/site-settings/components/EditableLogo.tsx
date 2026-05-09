@@ -1,7 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import { UploadSheet } from "@/features/site-settings/components/UploadSheet"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 export function EditableLogo({
   src,
@@ -20,7 +20,7 @@ export function EditableLogo({
 }) {
   return (
     <div className="space-y-2">
-      <Image src={src || "/generic-logo.svg"} alt={alt} width={180} height={60} className="object-contain h-10 w-auto" />
+      <FallbackImage src={src} alt={alt} width={180} height={60} className="object-contain h-10 w-auto" />
       {editMode ? (
         <UploadSheet
           onUploaded={onChange}

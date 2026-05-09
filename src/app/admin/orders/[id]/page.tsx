@@ -12,10 +12,15 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import { formatOrderNumberLabel } from "@/lib/order-number"
+import { FeatureFlagService } from "@/services/feature-flags"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const order = await getOrderById(id)
+  const glsEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false)
+  const totalBreakdown = order ? totalsBreakdownFromGross(order.total) : null
 
   if (!order) {
     return (
@@ -59,7 +64,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
             Rendelés <span className="text-primary underline decoration-primary/10 underline-offset-8">Részletei</span>
           </h1>
           <div className="flex items-center gap-4 text-white/40 italic">
-            <span className="text-lg font-bold uppercase tracking-tight text-primary">#{order._id.toString().slice(-6).toUpperCase()}</span>
+            <span className="text-lg font-bold uppercase tracking-tight text-primary">{formatOrderNumberLabel(order._id)}</span>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -107,22 +112,33 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </form>
               ))}
             </div>
+            {(glsEnabled || order.glsParcelPoint?.id || order.glsLabel?.parcelNumber || order.glsLabel?.lastError) && (
             <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">GLS Címke</h3>
-              <form
-                action={async () => {
-                  "use server"
-                  await generateOrderGlsLabel(order._id.toString())
-                }}
-              >
-                <Button
-                  variant="outline"
-                  className="h-12 border-primary/40 text-primary hover:bg-primary/10 rounded-none uppercase tracking-widest text-[10px] font-black"
+              {glsEnabled && order.glsParcelPoint?.id ? (
+                <form
+                  action={async () => {
+                    "use server"
+                    await generateOrderGlsLabel(order._id.toString())
+                  }}
                 >
-                  <Printer className="w-4 h-4 mr-2" />
-                  GLS CÍMKE GENERÁLÁSA
-                </Button>
-              </form>
+                  <Button
+                    variant="outline"
+                    className="h-12 border-primary/40 text-primary hover:bg-primary/10 rounded-none uppercase tracking-widest text-[10px] font-black"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    GLS CÍMKE GENERÁLÁSA
+                  </Button>
+                </form>
+              ) : glsEnabled ? (
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                  Ehhez a rendeléshez nincs GLS csomagpont mentve.
+                </p>
+              ) : (
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                  A GLS funkció jelenleg ki van kapcsolva.
+                </p>
+              )}
               {order.glsLabel?.parcelNumber ? (
                 <div className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-300 space-y-2">
                   <p>Parcel Number: <span className="text-white">{order.glsLabel.parcelNumber}</span></p>
@@ -152,6 +168,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </p>
               ) : null}
             </div>
+            )}
 
             <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">Számla kezelés</h3>
@@ -206,7 +223,9 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               Rendelt Tételek
             </h2>
             <div className="space-y-4">
-              {order.items.map((item: { name: string; quantity: number; variantLabel?: string; price: number }, index: number) => (
+              {order.items.map((item: { name: string; quantity: number; variantLabel?: string; price: number }, index: number) => {
+                const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                return (
                 <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all">
                   <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-colors overflow-hidden shrink-0">
                     <Package className="w-8 h-8 text-neutral-800" />
@@ -221,26 +240,40 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     ) : null}
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-white text-lg tracking-tighter">{(item.price * item.quantity).toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span></p>
-                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">{item.price.toLocaleString("hu-HU")} FT / DB</p>
+                    <p className="font-black text-white text-lg tracking-tighter">{formatHuf(breakdown.lineGross)}</p>
+                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">{formatHuf(breakdown.unitGross)} / DB bruttó</p>
+                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">Nettó {formatHuf(breakdown.lineNet)} · ÁFA {formatHuf(breakdown.lineVat)}</p>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
             
             <div className="mt-8 pt-8 border-t border-white/5 space-y-3">
               <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
                 <span>Részösszeg:</span>
-                <span>{order.subtotal.toLocaleString("hu-HU")} FT</span>
+                <span>{formatHuf(order.subtotal)}</span>
               </div>
+              {totalBreakdown && (
+                <>
+                  <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
+                    <span>Nettó összesen:</span>
+                    <span>{formatHuf(totalBreakdown.net)}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
+                    <span>ÁFA összesen ({totalBreakdown.vatPercent}%):</span>
+                    <span>{formatHuf(totalBreakdown.vat)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
                 <span>Szállítás:</span>
-                <span>{order.shippingFee === 0 ? "INGYENES" : `${order.shippingFee.toLocaleString("hu-HU")} FT`}</span>
+                <span>{order.shippingFee === 0 ? "INGYENES" : formatHuf(order.shippingFee)}</span>
               </div>
               {order.discount > 0 && (
-                <div className="flex justify-between text-[#FFD700] text-sm font-bold uppercase italic">
+                <div className="flex justify-between text-highlight text-sm font-bold uppercase italic">
                   <span>Kedvezmény:</span>
-                  <span>-{order.discount.toLocaleString("hu-HU")} FT</span>
+                  <span>-{formatHuf(order.discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-white text-2xl font-black uppercase italic pt-2">
@@ -249,7 +282,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   Végösszeg:
                 </span>
                 <span className="text-primary underline decoration-primary/20 underline-offset-8">
-                  {order.total.toLocaleString("hu-HU")} FT
+                  {formatHuf(order.total)}
                 </span>
               </div>
             </div>
@@ -260,7 +293,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
         <div className="space-y-8">
           {/* Customer Info Card */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-none relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-accent/20 to-transparent" />
+            <div className="absolute top-0 right-0 w-px h-full bg-linear-to-b from-transparent via-accent/20 to-transparent" />
             <h2 className="text-xl font-bold mb-8 italic uppercase tracking-wider flex items-center gap-2">
               <div className="w-1.5 h-6 bg-primary rounded-full" />
               Vásárló adatai

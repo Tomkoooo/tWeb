@@ -9,6 +9,10 @@ import { hu } from "date-fns/locale"
 import { toast } from "sonner"
 import { ArrowLeft, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { formatOrderNumberLabel } from "@/lib/order-number"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 
 export default function OrderDetailPage() {
   const { status, data: session } = useSession()
@@ -55,6 +59,7 @@ export default function OrderDetailPage() {
       </div>
     )
   }
+  const totalBreakdown = totalsBreakdownFromGross(order.total)
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -64,7 +69,7 @@ export default function OrderDetailPage() {
             <ArrowLeft className="w-3 h-3 mr-2" /> Vissza
           </Link>
           <h2 className="text-xl font-black text-white uppercase tracking-[0.2em]">
-            Rendelés: <span className="text-neutral-500">{order._id.slice(-6)}</span>
+            Rendelés: <span className="text-neutral-500">{formatOrderNumberLabel(order._id)}</span>
           </h2>
         </div>
         <div className="text-right">
@@ -127,14 +132,12 @@ export default function OrderDetailPage() {
       <div className="space-y-6">
         <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Termékek</h3>
         <div className="border border-white/10 divide-y divide-white/10">
-          {order.items.map((item: any, i: number) => (
+          {order.items.map((item: any, i: number) => {
+            const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+            return (
             <div key={i} className="p-6 flex flex-col md:flex-row justify-between md:items-center gap-6">
               <div className="flex items-center gap-6 flex-1">
-                {item.product?.images?.[0] ? (
-                  <img src={item.product.images[0]} alt={item.name} className="w-16 h-16 object-cover" />
-                ) : (
-                  <div className="w-16 h-16 bg-white/5 border border-white/10" />
-                )}
+                <FallbackImage src={mediaImageSrc(item.product?.images?.[0])} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover" />
                 <div>
                   <h4 className="font-black text-white tracking-widest uppercase text-sm mb-1">
                     {item.product ? (
@@ -145,7 +148,10 @@ export default function OrderDetailPage() {
                       item.name
                     )}
                   </h4>
-                  <p className="text-xs text-neutral-500 font-bold tracking-widest">{item.quantity} db x {item.price.toLocaleString("hu-HU")} FT</p>
+                  <p className="text-xs text-neutral-500 font-bold tracking-widest">{item.quantity} db x {formatHuf(breakdown.unitGross)} bruttó</p>
+                  <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">
+                    Nettó {formatHuf(breakdown.lineNet)} · ÁFA {formatHuf(breakdown.lineVat)} ({breakdown.vatPercent}%)
+                  </p>
                   {item.variantLabel ? (
                     <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
                       {item.variantLabel}
@@ -161,7 +167,8 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -169,24 +176,32 @@ export default function OrderDetailPage() {
       <div className="border border-white/10 p-6 space-y-4">
         <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
           <span>Részösszeg</span>
-          <span>{order.subtotal.toLocaleString("hu-HU")} FT</span>
+          <span>{formatHuf(order.subtotal)}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
+          <span>Nettó összesen</span>
+          <span>{formatHuf(totalBreakdown.net)}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
+          <span>ÁFA összesen ({totalBreakdown.vatPercent}%)</span>
+          <span>{formatHuf(totalBreakdown.vat)}</span>
         </div>
         <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
           <span>Szállítási költség</span>
-          <span>{order.shippingFee.toLocaleString("hu-HU")} FT</span>
+          <span>{formatHuf(order.shippingFee)}</span>
         </div>
         <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
           <span>Kezelési költség</span>
-          <span>{order.paymentFee.toLocaleString("hu-HU")} FT</span>
+          <span>{formatHuf(order.paymentFee)}</span>
         </div>
         {order.discount > 0 && (
           <div className="flex justify-between items-center text-sm font-bold text-primary">
-            <span>Kedvezmény (-{order.discount.toLocaleString("hu-HU")} FT)</span>
+            <span>Kedvezmény (-{formatHuf(order.discount)})</span>
           </div>
         )}
         <div className="pt-4 border-t border-white/10 flex justify-between items-center">
           <span className="font-black text-white uppercase tracking-[0.2em]">Összesen</span>
-          <span className="text-2xl font-black text-white">{order.total.toLocaleString("hu-HU")} FT</span>
+          <span className="text-2xl font-black text-white">{formatHuf(order.total)}</span>
         </div>
       </div>
     </div>

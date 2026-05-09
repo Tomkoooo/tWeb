@@ -10,6 +10,10 @@ import { getAppBaseUrl, getStripeClient } from "@/services/stripe";
 
 export const runtime = "nodejs";
 
+function toStripeHufAmount(amount: number): number {
+  return Math.max(1, Math.round(Number(amount || 0) * 100));
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
 
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
       quantity: item.quantity,
       price_data: {
         currency: "huf",
-        unit_amount: Math.max(1, Math.round(Number(item.price || 0))),
+        unit_amount: toStripeHufAmount(Number(item.price || 0)),
         product_data: {
           name: item.name || "Termék",
           description: item.variantLabel || undefined,
@@ -70,7 +74,7 @@ export async function POST(req: NextRequest) {
         quantity: 1,
         price_data: {
           currency: "huf",
-          unit_amount: Math.round(validatedOrderData.shippingFee),
+          unit_amount: toStripeHufAmount(validatedOrderData.shippingFee),
           product_data: {
             name: "Szállítás",
             description: undefined,
@@ -83,7 +87,7 @@ export async function POST(req: NextRequest) {
         quantity: 1,
         price_data: {
           currency: "huf",
-          unit_amount: Math.round(validatedOrderData.paymentFee),
+          unit_amount: toStripeHufAmount(validatedOrderData.paymentFee),
           product_data: {
             name: "Fizetési kezelési díj",
             description: undefined,

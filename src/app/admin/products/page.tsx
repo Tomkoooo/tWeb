@@ -1,9 +1,12 @@
 import { ProductService } from "@/services/product";
-import { Plus, Package, Edit2, Trash2, Search as SearchIcon, AlertCircle, ExternalLink } from "lucide-react";
+import { Plus, Edit2, Trash2, Search as SearchIcon, AlertCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { formatHuf, grossFromNetWithDiscount, priceBreakdownFromGross } from "@/lib/pricing";
+import { FallbackImage } from "@/components/common/FallbackImage";
+import { mediaImageSrc } from "@/lib/images";
 
 export default async function AdminProducts({ 
   searchParams 
@@ -115,16 +118,14 @@ export default async function AdminProducts({
                     const maxDiscount = needsVariantSelection
                       ? Math.max(...variants.map((variant: any) => Number(variant.discount || 0) || 0))
                       : Number(product.discount || 0) || 0
+                    const grossPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount)
+                    const breakdown = priceBreakdownFromGross(grossPrice)
                     return (
                   <tr key={product._id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary/30 transition-colors">
-                          {product.images?.[0] ? (
-                            <img src={`/api/media/${product.images[0]}`} alt={product.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                          ) : (
-                            <Package className="w-6 h-6 text-neutral-700" />
-                          )}
+                          <FallbackImage src={mediaImageSrc(product.images?.[0])} alt={product.name} width={56} height={56} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div>
                           <p className="font-heading font-black text-white uppercase tracking-wider text-base">{product.name}</p>
@@ -154,7 +155,7 @@ export default async function AdminProducts({
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-black uppercase tracking-widest ${product.stock > 10 ? 'text-white' : product.stock > 0 ? 'text-[#FFD700]' : 'text-rose-500'}`}>
+                        <span className={`text-sm font-black uppercase tracking-widest ${product.stock > 10 ? 'text-white' : product.stock > 0 ? 'text-highlight' : 'text-rose-500'}`}>
                           {product.stock} DB
                         </span>
                         {product.stock <= 5 && (
@@ -166,10 +167,13 @@ export default async function AdminProducts({
                       <div>
                         <p className="font-black text-white text-lg tracking-tighter">
                           {needsVariantSelection ? "Tól " : ""}
-                          {minNetPrice.toLocaleString("hu-HU")} <span className="text-xs text-primary">FT</span>
+                          {formatHuf(grossPrice)}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+                          Nettó {formatHuf(breakdown.unitNet)} · ÁFA {formatHuf(breakdown.unitVat)}
                         </p>
                         {maxDiscount > 0 && (
-                          <p className="text-[10px] text-[#FFD700] font-black uppercase tracking-widest mt-1">-{maxDiscount}% KEDVEZMÉNY</p>
+                          <p className="text-[10px] text-highlight font-black uppercase tracking-widest mt-1">-{maxDiscount}% KEDVEZMÉNY</p>
                         )}
                       </div>
                     </td>

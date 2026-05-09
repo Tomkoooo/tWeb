@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import { ShoppingCart, Search, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -14,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { UserNav } from "./UserNav"
 import { LiveSearch } from "./LiveSearch"
 import { useCartStore } from "@/store/useCartStore"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 const navLinks = [
   { name: "Rólunk", href: "/#about" },
@@ -78,7 +78,7 @@ export function Navbar({ brandName = "Generic Webshop", logoSrc = "/generic-logo
         <div className="flex-none">
           <Link href="/" className="flex items-center group">
             <div className="relative w-40 h-10 sm:w-48 sm:h-12 lg:w-56 lg:h-14">
-              <Image
+              <FallbackImage
                 src={resolvedBrand.logoSrc}
                 alt={resolvedBrand.brandName}
                 fill

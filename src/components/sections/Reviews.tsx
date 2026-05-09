@@ -10,9 +10,9 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel"
-import Image from "next/image"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 type ReviewItem = {
   id: string
@@ -111,7 +111,7 @@ export function Reviews({
 
                     <div className="flex items-center gap-6 border-t border-border/40 pt-10">
                       <div className="relative w-16 h-16 rounded-none overflow-hidden border-2 border-primary/30">
-                        <Image
+                        <FallbackImage
                           src={review.avatar}
                           alt={review.name}
                           fill

@@ -5,6 +5,7 @@ import { Plus, Trash2, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, slugify } from "@/lib/utils";
+import { formatHuf, grossToNet, netToGross, priceBreakdownFromGross } from "@/lib/pricing";
 
 type VariantOption = { name: string; values: string[] };
 type VariantRow = {
@@ -302,7 +303,7 @@ export function ProductVariantsEditor({
                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
                   Bulk szerkesztés
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Nettó ár (Ft)</label>
                     <Input
@@ -311,6 +312,16 @@ export function ProductVariantsEditor({
                       onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: Number(event.target.value) }))}
                       className="bg-black border-white/5 h-11 text-white rounded-none"
                       placeholder="Nettó ár"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
+                    <Input
+                      type="number"
+                      value={netToGross(bulk.netPrice)}
+                      onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: grossToNet(Number(event.target.value) || 0) }))}
+                      className="bg-black border-white/5 h-11 text-white rounded-none"
+                      placeholder="Bruttó ár"
                     />
                   </div>
                   <div className="space-y-1">
@@ -399,7 +410,7 @@ export function ProductVariantsEditor({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Nettó ár (Ft)</label>
                         <Input
@@ -415,6 +426,25 @@ export function ProductVariantsEditor({
                           className="bg-black border-white/5 h-11 text-white rounded-none"
                           placeholder="Nettó ár"
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
+                        <Input
+                          type="number"
+                          value={netToGross(activeVariant.netPrice)}
+                          onChange={(event) =>
+                            setVariants((prev) =>
+                              prev.map((item) =>
+                                item.id === activeVariant.id ? { ...item, netPrice: grossToNet(Number(event.target.value) || 0) } : item
+                              )
+                            )
+                          }
+                          className="bg-black border-white/5 h-11 text-white rounded-none"
+                          placeholder="Bruttó ár"
+                        />
+                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                          ÁFA: {formatHuf(priceBreakdownFromGross(netToGross(activeVariant.netPrice)).unitVat)}
+                        </p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Kedvezmény (%)</label>

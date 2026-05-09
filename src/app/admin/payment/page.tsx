@@ -10,6 +10,7 @@ import {
   updatePaymentMethod 
 } from "@/actions/admin-checkout"
 import { MethodDialog } from "@/components/admin/MethodDialog"
+import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 
 export default async function AdminPaymentPage() {
   await dbConnect()
@@ -36,12 +37,17 @@ export default async function AdminPaymentPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {methods.map((method: any) => (
+        {methods.map((method: any) => {
+          const breakdown = totalsBreakdownFromGross(method.grossPrice)
+          return (
           <div key={method._id} className="glass-card p-8 border-white/5 space-y-6 group">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-heading font-black text-white uppercase italic truncate max-w-[200px]">{method.name}</h3>
-                <p className="text-primary font-black text-2xl mt-2">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
+                <p className="text-primary font-black text-2xl mt-2">{formatHuf(breakdown.gross)}</p>
+                <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">
+                  Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                </p>
               </div>
               <div className={cn(
                 "px-3 py-1 text-[8px] font-black tracking-widest uppercase",
@@ -57,7 +63,7 @@ export default async function AdminPaymentPage() {
                 action={updatePaymentMethod.bind(null, method._id.toString())}
                 initialData={method}
               >
-                <Button variant="outline" className="flex-grow h-12 border-white/10 text-white hover:bg-white/5 rounded-none uppercase tracking-widest text-[10px] font-black">
+                <Button variant="outline" className="grow h-12 border-white/10 text-white hover:bg-white/5 rounded-none uppercase tracking-widest text-[10px] font-black">
                   <Edit2 className="w-4 h-4 mr-2" /> SZERKESZTÉS
                 </Button>
               </MethodDialog>
@@ -68,7 +74,8 @@ export default async function AdminPaymentPage() {
               </form>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

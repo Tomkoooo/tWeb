@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
@@ -24,6 +25,8 @@ import { ShippingStep } from "@/components/checkout/ShippingStep"
 import { MethodsStep } from "@/components/checkout/MethodsStep"
 import { SummaryStep } from "@/components/checkout/SummaryStep"
 import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 const STEPS = [
   { id: "billing", title: "Számlázás", icon: FileText },
@@ -87,12 +90,6 @@ export default function CheckoutPage() {
     }
     fetchMethods()
   }, [])
-
-  React.useEffect(() => {
-    if (searchParams.get("stripeCancelled") === "1") {
-      toast.error("A Stripe fizetés megszakadt, a rendelés nem került létrehozásra.")
-    }
-  }, [searchParams])
 
   React.useEffect(() => {
     const loadAvailability = async () => {
@@ -189,6 +186,7 @@ export default function CheckoutPage() {
   }
 
   const totals = calculateTotal()
+  const totalBreakdown = totalsBreakdownFromGross(totals.total)
 
   const renderStep = () => {
     switch (STEPS[currentStep].id) {
@@ -307,6 +305,23 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-black pt-48 pb-20 px-6">
       <Navbar />
+      {searchParams.get("stripeCancelled") === "1" && (
+        <div className="container mx-auto max-w-4xl mb-10">
+          <div className="border border-amber-500/35 bg-amber-500/10 px-6 py-5 space-y-4">
+            <p className="text-white font-black uppercase tracking-widest text-xs">
+              A Stripe fizetés megszakadt — a rendelés nem jött létre.
+            </p>
+            <p className="text-neutral-400 text-sm leading-relaxed font-medium">
+              Ha technikai hibát tapasztaltál, írj nekünk üzenetben; segítünk egyeztetni a helyzetet (például dupla terhelés vagy sikertelen fizetés után is).
+            </p>
+            <Link href="/#contact">
+              <Button className="bg-primary hover:bg-primary/90 text-white rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">
+                Kapcsolatfelvételi űrlap megnyitása →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
       {shopEnabled === false ? (
         <div className="container mx-auto max-w-4xl">
           <div className="glass-card p-16 border-white/5 text-center space-y-6">
@@ -325,7 +340,7 @@ export default function CheckoutPage() {
       <div className="container mx-auto max-w-6xl">
         {/* Step Progress */}
         <div className="sticky top-[80px] lg:top-[90px] z-40 bg-black pt-6 pb-6 mb-10 flex justify-between items-center border-b border-white/10">
-          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/5 -translate-y-1/2 z-0" />
+          <div className="absolute top-1/2 left-0 w-full h-px bg-white/5 -translate-y-1/2 z-0" />
           {STEPS.map((step, index) => {
             const Icon = step.icon
             const isActive = index === currentStep
@@ -396,7 +411,7 @@ export default function CheckoutPage() {
                   ) : (
                     <Button 
                       onClick={nextStep}
-                      className="bg-white !text-black hover:bg-neutral-200 rounded-none h-14 px-10 font-black uppercase tracking-widest text-xs flex items-center"
+                      className="bg-white text-black! hover:bg-neutral-200 rounded-none h-14 px-10 font-black uppercase tracking-widest text-xs flex items-center"
                     >
                       Folytatás <ChevronRight className="w-4 h-4 ml-2" />
                     </Button>
@@ -415,51 +430,67 @@ export default function CheckoutPage() {
               </div>
               
               <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar mb-8">
-                {items.map((item: any) => (
+                {items.map((item: any) => {
+                  const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                  return (
                   <div key={item.id} className="flex gap-4">
                     <div className="relative w-16 h-16 bg-neutral-900 border border-white/5 flex-none overflow-hidden">
-                      <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
+                      <FallbackImage src={item.image} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
                     </div>
-                    <div className="flex-grow min-w-0">
+                    <div className="grow min-w-0">
                       <p className="text-[10px] font-black text-white uppercase truncate">{item.name}</p>
                       {item.variantLabel ? (
                         <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
                           {item.variantLabel}
                         </p>
                       ) : null}
-                      <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">{item.quantity} x {item.price.toLocaleString("hu-HU")} FT</p>
+                      <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
+                        {item.quantity} x {formatHuf(breakdown.unitGross)}
+                      </p>
+                      <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">
+                        Nettó {formatHuf(breakdown.lineNet)} · ÁFA {formatHuf(breakdown.lineVat)}
+                      </p>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/10">
                 <div className="flex justify-between text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                   <span>Részösszeg</span>
-                  <span>{totals.subtotal.toLocaleString("hu-HU")} FT</span>
+                  <span>{formatHuf(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                   <span>Szállítás</span>
                   <span className={cn(selectedShipping ? "text-white" : "text-primary")}>
-                    {selectedShipping ? `${totals.shippingFee.toLocaleString("hu-HU")} FT` : "VÁLASZTÁS ALATT"}
+                    {selectedShipping ? formatHuf(totals.shippingFee) : "VÁLASZTÁS ALATT"}
                   </span>
                 </div>
                 {selectedPayment && totals.paymentFee > 0 && (
                   <div className="flex justify-between text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                     <span>Fizetési kezelési díj</span>
-                    <span>{totals.paymentFee.toLocaleString("hu-HU")} FT</span>
+                    <span>{formatHuf(totals.paymentFee)}</span>
                   </div>
                 )}
                 {totals.discount > 0 && (
                   <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
                     <span>Kedvezmény</span>
-                    <span>-{totals.discount.toLocaleString("hu-HU")} FT</span>
+                    <span>-{formatHuf(totals.discount)}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-[10px] font-black text-neutral-500 uppercase tracking-widest">
+                  <span>Nettó összesen</span>
+                  <span>{formatHuf(totalBreakdown.net)}</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-black text-neutral-500 uppercase tracking-widest">
+                  <span>ÁFA összesen ({totalBreakdown.vatPercent}%)</span>
+                  <span>{formatHuf(totalBreakdown.vat)}</span>
+                </div>
                 <div className="flex justify-between items-end pt-4">
                   <div className="flex flex-col">
                     <p className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-1">Összesen</p>
-                    <p className="text-3xl font-black text-primary tracking-tighter leading-none">{totals.total.toLocaleString("hu-HU")} FT</p>
+                    <p className="text-3xl font-black text-primary tracking-tighter leading-none">{formatHuf(totalBreakdown.gross)}</p>
                   </div>
                 </div>
               </div>

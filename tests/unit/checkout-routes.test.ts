@@ -107,6 +107,21 @@ describe("checkout and payment routes", () => {
     expect(res.status).toBe(200);
     expect(body.checkoutUrl).toBe("https://stripe.local");
     expect(stripeSessionCreateMock).toHaveBeenCalled();
+    expect(stripeSessionCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        line_items: [
+          expect.objectContaining({
+            price_data: expect.objectContaining({ unit_amount: 100000 }),
+          }),
+          expect.objectContaining({
+            price_data: expect.objectContaining({ unit_amount: 10000 }),
+          }),
+          expect.objectContaining({
+            price_data: expect.objectContaining({ unit_amount: 5000 }),
+          }),
+        ],
+      })
+    );
     expect(tempOrderUpdateMock).toHaveBeenCalled();
   });
 

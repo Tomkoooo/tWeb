@@ -9,6 +9,7 @@ import {
   GLS_WIDGET_SCRIPT_URL,
   GlsParcelPoint,
 } from "@/lib/gls"
+import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 
 interface MethodsStepProps {
   data: MethodsStepData
@@ -115,7 +116,9 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Szállítási mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
-          {methods?.shippingMethods.map((method) => (
+          {methods?.shippingMethods.map((method) => {
+            const breakdown = totalsBreakdownFromGross(method.grossPrice)
+            return (
             <button
               key={method._id}
               onClick={() => handleMethodChange("shippingMethod", method._id)}
@@ -131,11 +134,15 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-black text-white text-lg">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
+                <p className="font-black text-white text-lg">{formatHuf(breakdown.gross)}</p>
+                <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+                  Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                </p>
                 {data.shippingMethod === method._id && <Check className="w-4 h-4 text-primary ml-auto mt-1" />}
               </div>
             </button>
-          ))}
+            )
+          })}
         </div>
         {isGlsSelected && (
           <div className="mt-6 border border-white/10 p-4 space-y-4">
@@ -174,7 +181,9 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
           <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Fizetési mód</h3>
         </div>
         <div className="grid grid-cols-1 gap-4">
-          {methods?.paymentMethods.map((method) => (
+          {methods?.paymentMethods.map((method) => {
+            const breakdown = totalsBreakdownFromGross(method.grossPrice)
+            return (
             <button
               key={method._id}
               onClick={() => handleMethodChange("paymentMethod", method._id)}
@@ -190,11 +199,15 @@ export function MethodsStep({ data, onChange, methods: initialMethods }: Methods
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-black text-white text-lg">{method.grossPrice.toLocaleString("hu-HU")} FT</p>
+                <p className="font-black text-white text-lg">{formatHuf(breakdown.gross)}</p>
+                <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+                  Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                </p>
                 {data.paymentMethod === method._id && <Check className="w-4 h-4 text-primary ml-auto mt-1" />}
               </div>
             </button>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

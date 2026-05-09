@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Trash2, 
@@ -19,6 +18,8 @@ import { cn } from "@/lib/utils"
 import { useCartStore, CartItem } from "@/store/useCartStore"
 import { Separator } from "@/components/ui/separator"
 import { Navbar } from "@/components/layout/Navbar"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 export default function CartPage() {
   const { 
@@ -26,10 +27,17 @@ export default function CartPage() {
     removeItem, 
     updateQuantity, 
     totalPrice, 
-    totalNetPrice,
     totalItems 
   } = useCartStore()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 5
+  const totalPages = Math.ceil(items.length / itemsPerPage)
+  const paginatedItems = items.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+  const totalBreakdown = totalsBreakdownFromGross(totalPrice)
 
   React.useEffect(() => {
     const loadAvailability = async () => {
@@ -76,16 +84,6 @@ export default function CartPage() {
     )
   }
 
-  // For pagination (as requested)
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const itemsPerPage = 5
-  const totalPages = Math.ceil(items.length / itemsPerPage)
-  
-  const paginatedItems = items.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-black pt-48 pb-20 px-6">
@@ -121,7 +119,7 @@ export default function CartPage() {
       <div className="container mx-auto">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column: Items List */}
-          <div className="lg:flex-grow">
+          <div className="lg:grow">
             <div className="flex items-center justify-between mb-10">
               <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tighter">
                 KOSÁR <span className="text-primary">({totalItems})</span>
@@ -130,7 +128,9 @@ export default function CartPage() {
 
             <div className="space-y-4">
               <AnimatePresence mode="popLayout">
-                {paginatedItems.map((item: CartItem) => (
+                {paginatedItems.map((item: CartItem) => {
+                  const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                  return (
                   <motion.div
                     key={item.id}
                     layout
@@ -141,15 +141,17 @@ export default function CartPage() {
                   >
                     {/* Item Image */}
                     <div className="relative w-32 h-32 bg-neutral-900 border border-white/5 overflow-hidden flex-none">
-                      <img
+                      <FallbackImage
                         src={item.image}
                         alt={item.name}
+                        width={128}
+                        height={128}
                         className="object-cover w-full h-full"
                       />
                     </div>
 
                     {/* Item Details */}
-                    <div className="flex-grow text-center sm:text-left">
+                    <div className="grow text-center sm:text-left">
                       <Link href={`/products/${item.slug}`}>
                         <h3 className="text-xl font-heading font-black text-white hover:text-primary transition-colors uppercase mb-2">
                           {item.name}
@@ -193,10 +195,12 @@ export default function CartPage() {
                     <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
                       <div className="text-right">
                         <div className="text-2xl font-black text-white">
-                          {(item.price * item.quantity).toLocaleString("hu-HU")} FT
+                          {formatHuf(breakdown.lineGross)}
                         </div>
-                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
-                          Bruttó ár
+                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1 space-y-0.5">
+                          <p>Egység nettó: {formatHuf(breakdown.unitNet)}</p>
+                          <p>Egység ÁFA: {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)</p>
+                          <p>Egység bruttó: {formatHuf(breakdown.unitGross)}</p>
                         </div>
                       </div>
                       <Button
@@ -209,7 +213,8 @@ export default function CartPage() {
                       </Button>
                     </div>
                   </motion.div>
-                ))}
+                  )
+                })}
               </AnimatePresence>
             </div>
 
@@ -243,18 +248,18 @@ export default function CartPage() {
               <div className="space-y-6 mb-10">
                 <div className="flex justify-between items-center text-neutral-400 font-bold text-sm tracking-widest uppercase">
                   <span>Részösszeg (Nettó)</span>
-                  <span>{totalNetPrice.toLocaleString("hu-HU")} FT</span>
+                  <span>{formatHuf(totalBreakdown.net)}</span>
                 </div>
                 <div className="flex justify-between items-center text-neutral-400 font-bold text-sm tracking-widest uppercase">
                   <span>ÁFA (27%)</span>
-                  <span>{(totalPrice - totalNetPrice).toLocaleString("hu-HU")} FT</span>
+                  <span>{formatHuf(totalBreakdown.vat)}</span>
                 </div>
                 <Separator className="bg-white/10" />
                 <div className="flex justify-between items-end">
                   <div className="flex flex-col">
                     <span className="text-neutral-400 font-black text-[10px] tracking-[0.3em] uppercase mb-1">Fizetendő összesen</span>
                     <span className="text-4xl font-black text-primary tracking-tighter leading-none">
-                      {totalPrice.toLocaleString("hu-HU")} FT
+                      {formatHuf(totalBreakdown.gross)}
                     </span>
                   </div>
                 </div>

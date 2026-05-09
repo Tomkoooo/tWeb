@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Tag, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,9 @@ import {
   hasVariants,
   resolveProductView,
 } from "@/lib/product-variants";
+import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross } from "@/lib/pricing";
+import { FallbackImage } from "@/components/common/FallbackImage";
+import { mediaImageSrc } from "@/lib/images";
 
 export function ProductDetail({ product, initialVariantId }: { product: any; initialVariantId?: string }) {
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
@@ -30,8 +32,9 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
   const activeVariants = useMemo(() => getActiveVariants(product), [product]);
   const view = useMemo(() => resolveProductView(product, selectedVariantId), [product, selectedVariantId]);
   const discountAmount = view.discount || 0;
-  const price = view.netPrice * 1.27;
-  const finalPrice = price * (1 - discountAmount / 100);
+  const price = netToGross(view.netPrice);
+  const finalPrice = grossFromNetWithDiscount(view.netPrice, discountAmount);
+  const priceBreakdown = priceBreakdownFromGross(finalPrice);
   const selectedVariant = view.selectedVariant;
   const hasVariantOptions = hasVariants(product);
   const variantRequired = Boolean(product.requireVariantSelection) && hasVariantOptions;
@@ -94,7 +97,7 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
       name: view.name,
       slug: product.slug,
       price: finalPrice,
-      image: view.images?.[0] ? `/api/media/${view.images[0]}` : "/placeholder-product.jpg",
+      image: mediaImageSrc(view.images?.[0]),
       quantity: 1,
       stock: view.stock,
       netPrice: view.netPrice,
@@ -111,8 +114,8 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
         <div className="space-y-6">
           <div className="relative aspect-square bg-neutral-900 border border-white/5 overflow-hidden group">
             {!mainImageLoaded && <Skeleton className="absolute inset-0 z-10" />}
-            <Image
-              src={activeImage ? `/api/media/${activeImage}` : "/placeholder-product.jpg"}
+            <FallbackImage
+              src={mediaImageSrc(activeImage)}
               alt={view.name}
               fill
               onLoad={() => setMainImageLoaded(true)}
@@ -139,8 +142,8 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
                     activeImage === img ? "border-primary" : "border-white/5 hover:border-primary/40"
                   )}
                 >
-                  <Image
-                    src={`/api/media/${img}`}
+                  <FallbackImage
+                    src={mediaImageSrc(img)}
                     alt={`${view.name} - ${idx + 1}`}
                     fill
                     className="object-cover"
@@ -183,15 +186,17 @@ export function ProductDetail({ product, initialVariantId }: { product: any; ini
               <>
                 <div className="flex items-baseline gap-4 mb-2">
                   <span className="text-5xl font-black text-white">
-                    {Math.round(finalPrice).toLocaleString("hu-HU")} <span className="text-xl text-primary font-black">Ft</span>
+                    {formatHuf(finalPrice)}
                   </span>
                   {discountAmount > 0 && (
                     <span className="text-2xl text-neutral-600 line-through">
-                      {Math.round(price).toLocaleString("hu-HU")} Ft
+                      {formatHuf(price)}
                     </span>
                   )}
                 </div>
-                <p className="text-neutral-500 text-sm italic font-medium">Bruttó ár (tartalmazza a 27% ÁFÁ-t)</p>
+                <p className="text-neutral-500 text-sm italic font-medium">
+                  Bruttó ár · Nettó {formatHuf(priceBreakdown.unitNet)} · ÁFA {formatHuf(priceBreakdown.unitVat)} ({priceBreakdown.vatPercent}%)
+                </p>
                 <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">
                   Készlet: {view.stock} db
                   {selectedVariant ? ` (variáns: ${getVariantLabel(selectedVariant)})` : ""}

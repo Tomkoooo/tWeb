@@ -3,6 +3,7 @@ import { ProductService } from "@/services/product"
 import { FeedbackService } from "@/services/feedback"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
+import { mediaImageSrc } from "@/lib/images"
 
 type ProductRating = { rating?: number }
 type ProductVariant = { isActive?: boolean; netPrice?: number; discount?: number }
@@ -76,7 +77,7 @@ export async function getHomepageRenderDependencies() {
         const gross = minNet * 1.27
         return gross * (1 - maxDiscount / 100)
       })(),
-      image: p.images?.[0] ? `/api/media/${p.images[0]}` : "/placeholder-product.jpg",
+      image: mediaImageSrc(p.images?.[0]),
       category: p.category?.name || "Kategória",
     }))
 
@@ -84,7 +85,7 @@ export async function getHomepageRenderDependencies() {
       id: c._id.toString(),
       name: c.name,
       description: c.seo?.description || "Minőségi válogatás",
-      image: c.image ? `/api/media/${c.image}` : "/placeholder-cat.jpg",
+      image: mediaImageSrc(c.image),
       slug: c.slug,
     }))
   }

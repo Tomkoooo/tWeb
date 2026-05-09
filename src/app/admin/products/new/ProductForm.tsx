@@ -9,6 +9,7 @@ import { MultiImageUpload } from "@/components/admin/MultiImageUpload"
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { createProduct, updateProduct, deleteProduct } from "@/actions/admin-products"
 import { cn } from "@/lib/utils"
+import { formatHuf, grossToNet, netToGross, priceBreakdownFromGross } from "@/lib/pricing"
 
 interface ProductFormProps {
   categories: any[]
@@ -20,6 +21,9 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
   const [images, setImages] = useState<string[]>(initialData?.images || [])
   const [isActive, setIsActive] = useState(initialData?.isActive ?? false)
   const [isVisible, setIsVisible] = useState(initialData?.isVisible ?? true)
+  const [netPrice, setNetPrice] = useState(Number(initialData?.netPrice || 0))
+  const grossPrice = netToGross(netPrice)
+  const priceBreakdown = priceBreakdownFromGross(grossPrice)
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -101,7 +105,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           <ProductVariantsEditor
             initialOptions={initialData?.variantOptions || []}
             initialVariants={initialData?.variants || []}
-            defaultNetPrice={initialData?.netPrice || 0}
+            defaultNetPrice={netPrice}
             initialRequireVariantSelection={initialData?.requireVariantSelection || false}
           />
 
@@ -112,7 +116,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">ÁRAZÁS ÉS KÉSZLET</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Nettó Ár (FT)</label>
                 <div className="relative">
@@ -120,12 +124,30 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                     type="number"
                     name="netPrice" 
                     required
-                    defaultValue={initialData?.netPrice}
+                    value={netPrice}
+                    onChange={(event) => setNetPrice(Number(event.target.value) || 0)}
                     placeholder="0" 
                     className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                   />
                   <div className="absolute left-4 top-3.5 text-neutral-600 font-black text-xs">FT</div>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Bruttó Ár (FT)</label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={grossPrice}
+                    onChange={(event) => setNetPrice(grossToNet(Number(event.target.value) || 0))}
+                    placeholder="0"
+                    className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+                  />
+                  <div className="absolute left-4 top-3.5 text-neutral-600 font-black text-xs">FT</div>
+                </div>
+                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                  ÁFA: {formatHuf(priceBreakdown.unitVat)} ({priceBreakdown.vatPercent}%)
+                </p>
               </div>
 
               <div className="space-y-2">

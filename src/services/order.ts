@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { MailerService } from "./mailer";
 import { FeatureFlagService } from "./feature-flags";
 import { InvoicingSzamlazzService } from "./invoicing-szamlazz";
+import { formatOrderNumber } from "@/lib/order-number";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
@@ -110,7 +111,7 @@ export class OrderService {
           to: customerEmail,
           templateType: "order_confirmation",
           data: {
-            orderNumber: order._id.toString().slice(-6).toUpperCase(),
+            orderNumber: formatOrderNumber(order._id),
             customerName,
             totalAmount: order.total.toLocaleString("hu-HU"),
             shippingAddress: `${order.shippingAddress.zip} ${order.shippingAddress.city}, ${order.shippingAddress.street}`,
@@ -177,7 +178,7 @@ export class OrderService {
         if (invoicePdf) {
           attachments = [
             {
-              filename: `${order.invoiceId || `invoice-${orderId.slice(-6)}`}.pdf`,
+              filename: `${order.invoiceId || `invoice-${formatOrderNumber(orderId)}`}.pdf`,
               content: invoicePdf,
               contentType: "application/pdf",
             },
@@ -190,7 +191,7 @@ export class OrderService {
         templateType,
         data: {
           customerName,
-          orderNumber: orderId.slice(-6).toUpperCase(),
+          orderNumber: formatOrderNumber(orderId),
           invoiceId: order.invoiceId || "",
           invoiceMessage: message,
         },

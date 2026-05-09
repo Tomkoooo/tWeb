@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,6 +12,7 @@ import { EditableImageInline } from "@/features/homepage-cms/components/primitiv
 import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 type HeroSlide = {
   title: string
@@ -188,7 +188,7 @@ export function Hero({
                     />
                   </div>
                 ) : (
-                  <Image
+                  <FallbackImage
                     src={displayHeroImage}
                     alt="Placeholder hero image"
                     fill

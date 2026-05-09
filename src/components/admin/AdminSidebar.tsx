@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { ComponentType } from "react"
+import { useState, type ComponentType } from "react"
 import { 
   BarChart3, 
   LayoutDashboard, 
@@ -17,33 +17,60 @@ import {
   Send,
   Truck,
   CreditCard,
-  Tag
+  Tag,
+  ChevronDown,
+  FolderTree,
+  Store
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
 
 type FeatureKey = "newsletter" | "glsParcelPicker" | "stripePayments"
 
-const menuItems: Array<{
+type MenuItem = {
   icon: ComponentType<{ className?: string }>
   label: string
   href: string
   featureKey?: FeatureKey
-}> = [
+}
+
+const topLevelMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
-  { icon: FileEdit, label: "CMS", href: "/admin/cms" },
-  { icon: Mail, label: "Emailek", href: "/admin/emails" },
-  { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
-  { icon: Package, label: "Kategóriák", href: "/admin/categories" },
-  { icon: Package, label: "Termékek", href: "/admin/products" },
-  { icon: Truck, label: "Szállítás", href: "/admin/shipping", featureKey: "glsParcelPicker" },
-  { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments" },
-  { icon: Tag, label: "Kuponok", href: "/admin/coupons" },
-  { icon: BarChart3, label: "Statisztikák", href: "/admin/stats" },
-  { icon: Settings, label: "Beállítások", href: "/admin/info" },
   { icon: Users, label: "Vásárlók", href: "/admin/users" },
+  { icon: BarChart3, label: "Statisztikák", href: "/admin/stats" },
   { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews" },
+  { icon: Settings, label: "Beállítások", href: "/admin/info" },
+]
+
+const menuGroups: Array<{
+  id: "productManager" | "webshopSettings"
+  label: string
+  icon: ComponentType<{ className?: string }>
+  items: MenuItem[]
+}> = [
+  {
+    id: "productManager",
+    label: "Termék kezelés",
+    icon: FolderTree,
+    items: [
+      { icon: Package, label: "Termékek", href: "/admin/products" },
+      { icon: Package, label: "Kategóriák", href: "/admin/categories" },
+    ],
+  },
+  {
+    id: "webshopSettings",
+    label: "Webshop beállítások",
+    icon: Store,
+    items: [
+      { icon: FileEdit, label: "CMS", href: "/admin/cms" },
+      { icon: Mail, label: "Emailek", href: "/admin/emails" },
+      { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
+      { icon: Truck, label: "Szállítás", href: "/admin/shipping" },
+      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments" },
+      { icon: Tag, label: "Kuponok", href: "/admin/coupons" },
+    ],
+  },
 ]
 
 export function AdminSidebar({
@@ -61,18 +88,27 @@ export function AdminSidebar({
   const { data: session } = useSession()
   const sidebarName = brandName.trim() || "Generic"
   const sidebarInitial = sidebarName.charAt(0).toUpperCase()
-  const visibleMenuItems = menuItems.filter((item) => {
+  const isVisibleByFeature = (item: MenuItem) => {
     if (!item.featureKey) return true
     return Boolean(enabledFeatures?.[item.featureKey])
+  }
+  const visibleTopLevelItems = topLevelMenuItems.filter(isVisibleByFeature)
+  const visibleMenuGroups = menuGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(isVisibleByFeature),
+    }))
+    .filter((group) => group.items.length > 0)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    productManager: true,
+    webshopSettings: true,
   })
 
   return (
     <div className={cn("h-full flex flex-col bg-[#0A0A0B]", className)}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-3 group" onClick={onAction}>
-          <div className="w-10 h-10 rounded-none bg-primary flex items-center justify-center font-black text-white italic shadow-lg shadow-accent/20 transition-all duration-300 group-hover:rounded-full">
-            {sidebarInitial}
-          </div>
+
           <span className="text-2xl font-heading font-black tracking-tight text-white uppercase italic">
             {sidebarName} <span className="text-primary underline decoration-primary/20 underline-offset-4">Admin</span>
           </span>
@@ -87,7 +123,7 @@ export function AdminSidebar({
       </div>
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        {visibleMenuItems.map((item) => {
+        {visibleTopLevelItems.slice(0, 2).map((item) => {
           const isActive = pathname === item.href
           return (
             <Link
@@ -98,6 +134,77 @@ export function AdminSidebar({
                 "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
                 isActive 
                   ? "bg-primary text-white shadow-lg shadow-accent/10" 
+                  : "text-neutral-500 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-600")} />
+              {item.label}
+            </Link>
+          )
+        })}
+
+        {visibleMenuGroups.map((group) => {
+          const isGroupActive = group.items.some((item) => pathname === item.href)
+          const isOpen = openGroups[group.id] ?? true
+
+          return (
+            <div key={group.id} className="space-y-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenGroups((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? true) }))
+                }
+                className={cn(
+                  "flex w-full items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
+                  isGroupActive
+                    ? "bg-primary/15 text-white"
+                    : "text-neutral-500 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <group.icon className={cn("w-5 h-5", isGroupActive ? "text-white" : "text-neutral-600")} />
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen ? "rotate-180" : "")} />
+              </button>
+
+              {isOpen && (
+                <div className="ml-5 space-y-1 border-l border-white/10 pl-4">
+                  {group.items.map((item) => {
+                    const isActive = pathname === item.href
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onAction}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-2.5 rounded-none text-xs font-black uppercase tracking-widest transition-all duration-300",
+                          isActive
+                            ? "bg-primary text-white shadow-lg shadow-accent/10"
+                            : "text-neutral-500 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-neutral-600")} />
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        {visibleTopLevelItems.slice(2).map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onAction}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
+                isActive
+                  ? "bg-primary text-white shadow-lg shadow-accent/10"
                   : "text-neutral-500 hover:text-white hover:bg-white/5"
               )}
             >

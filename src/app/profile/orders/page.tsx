@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import { formatOrderNumberLabel } from "@/lib/order-number"
+import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 
 export default function OrdersPage() {
   const { status } = useSession()
@@ -43,14 +45,21 @@ export default function OrdersPage() {
   const ongoingOrders = orders.filter(o => ongoingStatuses.includes(o.status))
   const completedOrders = orders.filter(o => !ongoingStatuses.includes(o.status))
 
-  const OrderCard = ({ order }: { order: any }) => (
+  const OrderCard = ({ order }: { order: any }) => {
+    const breakdown = totalsBreakdownFromGross(order.total)
+    return (
     <Link href={`/profile/orders/${order._id}`}>
       <div className="border border-white/10 p-6 hover:border-primary hover:bg-white/5 transition-all group group cursor-pointer h-full flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-start mb-4">
-            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-              {format(new Date(order.createdAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
-            </span>
+            <div className="space-y-1">
+              <span className="block text-sm text-white font-black uppercase tracking-widest">
+                {formatOrderNumberLabel(order._id)}
+              </span>
+              <span className="block text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                {format(new Date(order.createdAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
+              </span>
+            </div>
             <span className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-white/10">
               {order.status === "pending" && "Függőben"}
               {order.status === "processing" && "Feldolgozás alatt"}
@@ -70,11 +79,15 @@ export default function OrdersPage() {
         </div>
         <div className="pt-4 border-t border-white/10 flex justify-between items-center group-hover:border-primary/50 transition-colors">
           <span className="text-xs font-black text-neutral-400 uppercase tracking-widest">Összesen</span>
-          <span className="font-black text-white text-lg">{order.total.toLocaleString("hu-HU")} FT</span>
+          <div className="text-right">
+            <span className="block font-black text-white text-lg">{formatHuf(breakdown.gross)}</span>
+            <span className="block text-[10px] text-neutral-500 font-black uppercase tracking-widest">Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}</span>
+          </div>
         </div>
       </div>
     </Link>
-  )
+    )
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">

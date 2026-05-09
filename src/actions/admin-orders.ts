@@ -10,6 +10,7 @@ import mongoose from "mongoose"
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
+import { formatOrderNumber } from "@/lib/order-number"
 
 async function checkAdmin() {
   const session = await auth()
@@ -18,10 +19,53 @@ async function checkAdmin() {
   }
 }
 
-export async function getOrders() {
+type OrderFilters = {
+  q?: string
+  status?: string
+  invoiceStatus?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+export async function getOrders(filters: OrderFilters = {}) {
   await checkAdmin()
   await dbConnect()
-  return JSON.parse(JSON.stringify(await Order.find({}).sort({ createdAt: -1 })))
+  const query: Record<string, any> = {}
+  if (filters.status && filters.status !== "all") query.status = filters.status
+  if (filters.invoiceStatus && filters.invoiceStatus !== "all") query.invoiceStatus = filters.invoiceStatus
+  if (filters.dateFrom || filters.dateTo) {
+    query.createdAt = {}
+    if (filters.dateFrom) query.createdAt.$gte = new Date(filters.dateFrom)
+    if (filters.dateTo) {
+      const dateTo = new Date(filters.dateTo)
+      dateTo.setHours(23, 59, 59, 999)
+      query.createdAt.$lte = dateTo
+    }
+  }
+
+  const orders = JSON.parse(JSON.stringify(await Order.find(query).sort({ createdAt: -1 })))
+  const search = String(filters.q || "").trim().toLowerCase()
+  if (!search) return orders
+
+  return orders.filter((order: any) => {
+    const haystack = [
+      formatOrderNumber(order._id),
+      order._id,
+      order.billingInfo?.name,
+      order.billingInfo?.email,
+      order.billingInfo?.phone,
+      order.shippingAddress?.name,
+      order.shippingAddress?.email,
+      order.shippingAddress?.phone,
+      order.shippingAddress?.city,
+      order.invoiceId,
+      ...(order.items || []).map((item: any) => item.name),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+    return haystack.includes(search)
+  })
 }
 
 export async function getOrderById(id: string) {
@@ -51,7 +95,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
         to: customerEmail,
         templateType: "order_status_change",
         data: {
-          orderNumber: order._id.toString().slice(-6).toUpperCase(),
+          orderNumber: formatOrderNumber(order._id),
           customerName,
           oldStatus: getStatusLabel(oldStatus),
           newStatus: getStatusLabel(newStatus),

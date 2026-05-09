@@ -1,7 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import { UploadSheet } from "@/features/site-settings/components/UploadSheet"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 type Props = {
   src: string
@@ -26,7 +26,7 @@ export function EditableImage({
 }: Props) {
   return (
     <div className="space-y-2">
-      <Image src={src || "/generic-hero.svg"} alt={alt} width={width} height={height} className={className} />
+      <FallbackImage src={src} alt={alt} width={width} height={height} className={className} />
       {editMode ? (
         <div className="space-y-2">
           <UploadSheet

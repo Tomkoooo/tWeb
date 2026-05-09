@@ -2,12 +2,13 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Search, ArrowRight, Loader2, Package } from "lucide-react"
+import { Search, ArrowRight, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import { useClickAway } from "react-use"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 
 interface LiveSearchProps {
   className?: string
@@ -110,18 +111,14 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                     className="flex items-center gap-4 p-4 hover:bg-muted/40 transition-colors text-left border-b border-border last:border-0"
                   >
                     <div className="relative w-12 h-12 bg-surface border border-border flex-none">
-                      {product.images?.[0] ? (
-                        <Image
-                          src={`/api/media/${product.images[0]}`}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <Package className="w-6 h-6 absolute inset-0 m-auto text-neutral-700" />
-                      )}
+                      <FallbackImage
+                        src={mediaImageSrc(product.images?.[0])}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-                    <div className="flex-grow min-w-0">
+                    <div className="grow min-w-0">
                       <p className="text-xs font-black text-foreground uppercase truncate tracking-widest">{product.name}</p>
                       <p className="text-[10px] font-bold text-primary mt-1">
                         {needsVariantSelection ? "Tól " : ""}

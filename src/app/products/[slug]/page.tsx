@@ -1,16 +1,12 @@
 import { ProductService } from "@/services/product";
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Metadata } from "next";
 import { resolveProductView } from "@/lib/product-variants";
 import { FooterSettingsService } from "@/services/footer-settings";
 import { ShopContentService } from "@/services/shop-content";
+import { mediaImageSrc } from "@/lib/images";
 
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -31,7 +27,7 @@ export async function generateMetadata({ params, searchParams }: ProductPageProp
     openGraph: {
       title: view.name || product.name,
       description: view.seo.description || product.description.substring(0, 160),
-      images: openGraphImage ? [`/api/media/${openGraphImage}`] : [],
+      images: [mediaImageSrc(openGraphImage)],
     },
     alternates: {
       canonical: canonicalUrl,

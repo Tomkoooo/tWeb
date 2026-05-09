@@ -2,6 +2,8 @@ import { useState } from "react"
 import { Upload, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ImageCropper } from "./ImageCropper"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 
 interface ImageUploadProps {
   onUpload: (filename: string) => void
@@ -66,9 +68,11 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
       <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-primary/40">
         {preview ? (
           <>
-            <img 
-              src={preview.startsWith('data:') ? preview : `/api/media/${preview}`} 
+            <FallbackImage
+              src={mediaImageSrc(preview)}
               alt="Preview" 
+              width={240}
+              height={240}
               className="w-full h-full object-cover" 
             />
             <button 

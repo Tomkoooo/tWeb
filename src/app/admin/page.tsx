@@ -11,6 +11,7 @@ import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import { formatOrderNumberLabel } from "@/lib/order-number"
 import type { ComponentType } from "react"
 
 type Trend = "up" | "down"
@@ -94,7 +95,7 @@ export default async function AdminDashboard() {
               recentOrders.map((order) => (
                 <div key={order._id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-primary/30 transition-colors group">
                   <div className="flex flex-col">
-                    <span className="font-heading font-black text-white uppercase tracking-wider text-sm">#{order._id.toString().slice(-6).toUpperCase()}</span>
+                    <span className="font-heading font-black text-white uppercase tracking-wider text-sm">{formatOrderNumberLabel(order._id)}</span>
                     <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">{format(new Date(order.createdAt), "MM. dd. HH:mm", { locale: hu })}</span>
                   </div>
                   <div className="flex items-center gap-4">

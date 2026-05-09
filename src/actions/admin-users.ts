@@ -8,7 +8,7 @@ import User from "@/models/User";
 import Order from "@/models/Order";
 import PasswordResetToken from "@/models/PasswordResetToken";
 import { requireAdmin } from "@/lib/admin-auth";
-import { sha256Hex } from "@/lib/password";
+import { hashPassword, sha256Hex } from "@/lib/password";
 
 type UserRole = "ADMIN" | "USER";
 type UserOrderStats = {
@@ -23,6 +23,13 @@ type AdminUserRow = {
   name?: string;
   email?: string;
   role?: "ADMIN" | "USER";
+};
+
+type RecentUserOrder = {
+  _id: { toString: () => string };
+  total: number;
+  status: string;
+  createdAt: Date | string;
 };
 
 type UserOrderRow = {
@@ -48,8 +55,18 @@ type UserOrderRow = {
   };
 };
 
+type AdminUserFilters = {
+  q?: string;
+  role?: string;
+  hasOrders?: string;
+};
+
 function normalizeRole(role: string): UserRole {
   return role === "ADMIN" ? "ADMIN" : "USER";
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function getTransporter() {
@@ -66,12 +83,19 @@ async function getTransporter() {
   });
 }
 
-export async function getAdminUsers() {
+export async function getAdminUsers(filters: AdminUserFilters = {}) {
   await requireAdmin();
   await dbConnect();
+  const query: Record<string, any> = {};
+  const search = String(filters.q || "").trim();
+  if (filters.role && filters.role !== "all") query.role = normalizeRole(filters.role);
+  if (search) {
+    const regex = new RegExp(escapeRegExp(search), "i");
+    query.$or = [{ name: regex }, { email: regex }];
+  }
 
   const [usersRaw, spendingByUserRaw] = await Promise.all([
-    User.find({}).sort({ createdAt: -1 }).lean(),
+    User.find(query).sort({ createdAt: -1 }).lean(),
     Order.aggregate([
       { $match: { user: { $exists: true, $ne: null }, status: { $ne: "cancelled" } } },
       {
@@ -87,20 +111,44 @@ export async function getAdminUsers() {
 
   const users = usersRaw as AdminUserRow[];
   const spendingByUser = spendingByUserRaw as UserOrderStats[];
+  const userIds = users.map((user) => user._id);
+  const recentOrdersRaw = userIds.length
+    ? await Order.find({ user: { $in: userIds } })
+        .sort({ createdAt: -1 })
+        .select("_id user total status createdAt")
+        .lean()
+    : [];
+  const recentOrdersMap = new Map<string, RecentUserOrder[]>();
+  for (const order of recentOrdersRaw as Array<RecentUserOrder & { user?: { toString: () => string } }>) {
+    const userId = order.user?.toString();
+    if (!userId) continue;
+    const current = recentOrdersMap.get(userId) || [];
+    if (current.length < 5) {
+      current.push(order);
+      recentOrdersMap.set(userId, current);
+    }
+  }
 
   const spendingMap = new Map(
     spendingByUser.map((item) => [item._id.toString(), item])
   );
 
-  const enriched = users.map((user) => {
+  let enriched = users.map((user) => {
     const stats = spendingMap.get(user._id.toString());
     return {
       ...user,
       ordersCount: stats?.ordersCount || 0,
       totalSpent: stats?.totalSpent || 0,
       lastOrderAt: stats?.lastOrderAt || null,
+      recentOrders: recentOrdersMap.get(user._id.toString()) || [],
     };
   });
+
+  if (filters.hasOrders === "yes") {
+    enriched = enriched.filter((user) => user.ordersCount > 0);
+  } else if (filters.hasOrders === "no") {
+    enriched = enriched.filter((user) => user.ordersCount === 0);
+  }
 
   return JSON.parse(JSON.stringify(enriched));
 }
@@ -111,6 +159,42 @@ export async function updateUserRole(userId: string, role: string) {
 
   await User.findByIdAndUpdate(userId, { role: normalizeRole(role) });
   revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+}
+
+export async function updateAdminUserProfile(userId: string, formData: FormData) {
+  await requireAdmin();
+  await dbConnect();
+
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const role = normalizeRole(String(formData.get("role") || "USER"));
+
+  if (!email) throw new Error("Email megadása kötelező.");
+  const existing = await User.findOne({ email, _id: { $ne: userId } }).lean();
+  if (existing) throw new Error("Ez az email cím már használatban van.");
+
+  await User.findByIdAndUpdate(userId, {
+    name: name || undefined,
+    email,
+    role,
+  });
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+}
+
+export async function updateAdminUserPassword(userId: string, formData: FormData) {
+  await requireAdmin();
+  await dbConnect();
+
+  const password = String(formData.get("password") || "");
+  if (password.length < 8) {
+    throw new Error("A jelszónak legalább 8 karakter hosszúnak kell lennie.");
+  }
+
+  await User.findByIdAndUpdate(userId, { passwordHash: hashPassword(password) });
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
 }
 
 export async function getAdminUserDetails(userId: string) {

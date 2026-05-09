@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
+import { CheckoutFinalizationService } from "@/services/checkout-finalization";
+import { getStripeClient } from "@/services/stripe";
+
+export const runtime = "nodejs";
+
+function sessionBelongsToTempOrder(
+  tempOrderId: string,
+  stripeSessionId: string,
+  tempOrderStripeSessionId: string | undefined,
+  metadataTempId: string | null | undefined,
+  clientRef: string | null | undefined
+): boolean {
+  if (metadataTempId === tempOrderId || clientRef === tempOrderId) return true;
+  if (!metadataTempId && !clientRef && tempOrderStripeSessionId === stripeSessionId) return true;
+  return false;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,11 +38,82 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Session mismatch" }, { status: 400 });
     }
 
+    if (tempOrder.status === "finalized" && tempOrder.finalizedOrderId) {
+      return NextResponse.json({
+        status: tempOrder.status,
+        finalized: true,
+        orderId: tempOrder.finalizedOrderId.toString(),
+        lastError: null,
+      });
+    }
+
+    if (!sessionId) {
+      return NextResponse.json({
+        status: tempOrder.status,
+        finalized: false,
+        orderId: null,
+        lastError: tempOrder.lastError || null,
+      });
+    }
+
+    const stripe = getStripeClient();
+    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (
+      !sessionBelongsToTempOrder(
+        tempOrderId,
+        checkoutSession.id,
+        tempOrder.stripeSessionId,
+        checkoutSession.metadata?.tempOrderId ?? null,
+        checkoutSession.client_reference_id ?? null
+      )
+    ) {
+      return NextResponse.json({ error: "A fizetési munkamenet nem tartozik ehhez a rendeléshez." }, { status: 400 });
+    }
+
+    if (checkoutSession.payment_status !== "paid") {
+      return NextResponse.json({
+        status: tempOrder.status,
+        finalized: false,
+        orderId: null,
+        lastError: tempOrder.lastError || null,
+        paymentPending: true,
+      });
+    }
+
+    const paymentIntentRaw = checkoutSession.payment_intent;
+    const paymentIntentId =
+      typeof paymentIntentRaw === "string" ? paymentIntentRaw : paymentIntentRaw?.id;
+
+    await TempOrder.findOneAndUpdate(
+      {
+        _id: tempOrderId,
+        status: { $in: ["created", "checkout_started"] },
+      },
+      {
+        $set: {
+          status: "paid",
+          stripePaymentIntentId: paymentIntentId || tempOrder.stripePaymentIntentId,
+        },
+      }
+    );
+
+    try {
+      await CheckoutFinalizationService.finalizeFromTempOrder(tempOrderId);
+    } catch (finalizeErr) {
+      console.error("Stripe status GET finalize error:", finalizeErr);
+    }
+
+    const latest = await TempOrder.findById(tempOrderId).lean();
+    const finalized = latest?.status === "finalized";
+    const orderId =
+      finalized && latest?.finalizedOrderId ? latest.finalizedOrderId.toString() : null;
+
     return NextResponse.json({
-      status: tempOrder.status,
-      finalized: tempOrder.status === "finalized",
-      orderId: tempOrder.finalizedOrderId || null,
-      lastError: tempOrder.lastError || null,
+      status: latest?.status ?? tempOrder.status,
+      finalized,
+      orderId,
+      lastError: latest?.lastError ?? null,
     });
   } catch (error: any) {
     console.error("Stripe status GET error:", error);

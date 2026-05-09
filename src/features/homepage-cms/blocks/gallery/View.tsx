@@ -1,5 +1,5 @@
 import type { GalleryBlock } from "@/features/homepage-cms/types/block-types"
-import Image from "next/image"
+import { FallbackImage } from "@/components/common/FallbackImage"
 
 export function GalleryBlockView({ block }: { block: GalleryBlock }) {
   return (
@@ -9,7 +9,7 @@ export function GalleryBlockView({ block }: { block: GalleryBlock }) {
         <div className="grid md:grid-cols-3 gap-4">
           {block.data.items.map((item, idx) => (
             <figure key={idx} className="space-y-2">
-              <Image src={item.image || "/generic-hero.svg"} alt={item.caption} width={640} height={360} className="w-full h-56 object-cover border border-white/10" />
+              <FallbackImage src={item.image} alt={item.caption} width={640} height={360} className="w-full h-56 object-cover border border-white/10" />
               <figcaption className="text-sm text-neutral-400">{item.caption}</figcaption>
             </figure>
           ))}
