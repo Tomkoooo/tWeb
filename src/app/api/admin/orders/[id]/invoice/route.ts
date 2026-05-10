@@ -3,8 +3,11 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { InvoicingSzamlazzService } from "@/services/invoicing-szamlazz";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

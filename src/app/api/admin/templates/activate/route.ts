@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
+import { TEMPLATE_PREVIEW_COOKIE } from "@/services/template-preview"
 import { TemplateService } from "@/services/template"
 
 const activateBodySchema = z.object({
@@ -16,9 +17,13 @@ export async function POST(request: Request) {
 
   revalidatePath("/", "layout")
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     templateId: template.manifest.id,
     templateVersion: template.manifest.version,
   })
+  // Preview overrides `ActiveTemplate` for admins; clear it so the storefront
+  // matches the newly activated template without requiring "Előnézet törlése".
+  response.cookies.delete(TEMPLATE_PREVIEW_COOKIE)
+  return response
 }

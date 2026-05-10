@@ -6,6 +6,7 @@ import { SeoSettingsService } from "@/services/seo-settings";
 import { BrandingSettingsService } from "@/services/branding-settings";
 import { ThemeService } from "@/services/theme";
 import { TemplateService } from "@/services/template";
+import { themeTokensToCssVars } from "@/lib/theme-css-vars";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,34 +74,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [seo, themeOverrides, template] = await Promise.all([
+  const [seo, template] = await Promise.all([
     SeoSettingsService.get(),
-    ThemeService.get(),
     TemplateService.getActive(),
   ]);
-  // Active template provides default tokens; admin overrides win.
-  const theme = { ...template.defaultTheme, ...themeOverrides };
-  const themeVars = {
-    "--theme-primary": theme.primary,
-    "--theme-primary-foreground": theme.primaryForeground,
-    "--theme-secondary": theme.secondary,
-    "--theme-secondary-foreground": theme.secondaryForeground,
-    "--theme-accent": theme.accent,
-    "--theme-accent-foreground": theme.accentForeground,
-    "--theme-background": theme.background,
-    "--theme-foreground": theme.foreground,
-    "--theme-surface": theme.surface,
-    "--theme-surface-foreground": theme.surfaceForeground,
-    "--theme-border": theme.border,
-    "--theme-muted": theme.muted,
-    "--theme-muted-foreground": theme.mutedForeground,
-    "--theme-success": theme.success,
-    "--theme-success-foreground": theme.successForeground,
-    "--theme-warning": theme.warning,
-    "--theme-warning-foreground": theme.warningForeground,
-    "--theme-error": theme.error,
-    "--theme-error-foreground": theme.errorForeground,
-  } as Record<string, string>;
+  const theme = await ThemeService.getMergedForTemplate(template);
+  const themeVars = themeTokensToCssVars(theme);
 
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>

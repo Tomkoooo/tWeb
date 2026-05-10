@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Filter } from "lucide-react"
 import { ShopHeader } from "@/components/shop/ShopHeader"
@@ -6,6 +8,8 @@ import { ProductCard } from "@/components/shop/ProductCard"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { EditableDocText } from "@/features/template-cms/primitives/EditableDocText"
+import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 import type { RenderProps, ShopPageDeps } from "@/templates/types"
 import type { ShopContent } from "./schema"
 
@@ -19,7 +23,9 @@ export function ShopRender({
   content,
   deps,
 }: RenderProps<ShopContent, ShopPageDeps>) {
-  const { products, categories, total, pages, currentPage, query } = deps
+  const cms = useSurfaceDocEdit()
+  const { products, categories, total, pages, currentPage, query, shopRendering } = deps
+  const ProductCardCmp = shopRendering?.ProductCard ?? ProductCard
   const gridClasses = COLUMN_CLASSES[content.productGridColumns]
   const filtersOnTop = content.filtersPosition === "top"
 
@@ -36,15 +42,19 @@ export function ShopRender({
   return (
     <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
       <div className="container mx-auto">
-        {(content.heading || content.subheading) && (
+        {(content.heading ||
+          content.subheading ||
+          cms.enabled) && (
           <div className="mb-10 max-w-3xl">
-            {content.heading && (
+            {(content.heading || cms.enabled) && (
               <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white">
-                {content.heading}
+                <EditableDocText path="heading" value={content.heading} className="uppercase" />
               </h1>
             )}
-            {content.subheading && (
-              <p className="mt-4 text-neutral-400">{content.subheading}</p>
+            {(content.subheading || cms.enabled) && (
+              <p className="mt-4 text-neutral-400">
+                <EditableDocText path="subheading" value={content.subheading} multiline />
+              </p>
             )}
           </div>
         )}
@@ -97,7 +107,7 @@ export function ShopRender({
             {(products as Array<{ _id: { toString(): string } }>).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-32 border border-white/5 bg-white/5">
                 <p className="text-neutral-500 font-medium italic mb-6">
-                  {content.emptyStateMessage}
+                  <EditableDocText path="emptyStateMessage" value={content.emptyStateMessage} />
                 </p>
                 <Link href="/shop">
                   <Button
@@ -112,7 +122,7 @@ export function ShopRender({
               <>
                 <div className={cn("grid gap-6 mb-12", gridClasses)}>
                   {(products as Array<Record<string, unknown>>).map((product) => (
-                    <ProductCard
+                    <ProductCardCmp
                       key={String((product._id as { toString(): string }).toString())}
                       product={product as never}
                     />

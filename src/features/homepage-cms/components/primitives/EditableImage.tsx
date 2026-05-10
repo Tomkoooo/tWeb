@@ -26,7 +26,14 @@ export function EditableImage({
 }: Props) {
   return (
     <div className="space-y-2">
-      <FallbackImage src={src} alt={alt} width={width} height={height} className={className} />
+      <FallbackImage
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={className}
+        showFallbackOnError={editMode ? false : true}
+      />
       {editMode ? (
         <div className="space-y-2">
           <UploadSheet

@@ -4,14 +4,55 @@ A one-page brief for Cursor, Claude, or any code-generating agent that is asked 
 
 ## What you are building
 
-A `TemplateModule` (typed in [src/templates/types.ts](../src/templates/types.ts)) that controls the visual structure of every public page of the shop. The engine is **Next.js 16 App Router + React 19 + Tailwind v4 + shadcn/ui**. Templates are TypeScript modules under `src/templates/<id>/`, statically imported. There is no runtime template loading.
+A `TemplateModule` (typed in [src/templates/types.ts](../src/templates/types.ts)) that controls **`home` / `shop` / `pdp` / static** page shells and shared **chrome** (navbar/footer—including on **`/cart`**, **`/checkout`**, **`/profile`** via `StorefrontFlowShell`). The engine is **Next.js 16 App Router + React 19 + Tailwind v4 + shadcn/ui**. Templates are TypeScript modules under `src/templates/<id>/`, statically imported. There is no runtime template loading.
 
 Read [docs/CREATING_A_TEMPLATE.md](./CREATING_A_TEMPLATE.md) before generating code. This guide is the short brief for the LLM; that doc is the human-readable specification.
 
+For **homepage block CMS** internals (data model, `CmsEditProvider`, inline primitives, rendering caveats), read [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](./HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
+
+## Full-site branding (mandatory for new registry templates)
+
+A new template is **not** “chrome + one static page.” Operators expect a coherent **layout language** everywhere the engine delegates to the template. Work through this list in order; skipping restyled pages while only editing Navbar, Footer, and `/about` is a failed template.
+
+1. **`chrome/`** — `Navbar.tsx`, `Footer.tsx` (same world as the pages; respect `shopEnabled`, profile/admin affordances, neutral header — see *Registry realities* below).
+2. **`pages/home/`** — On **path 1** (`homepage-blocks`): keep **`homepageSnapshotSchema`**, **`cmsPageKind`**, and a real **`HomeRender`** — **do not replace the persisted JSON shape** — but **do** change wrappers, spacing, typography, section rhythm, and token-driven styling so the public home no longer looks like an unmodified copy of the base template’s layout shell. **`/admin/cms/home`** previews **`TEMPLATE_REGISTRY[id].chrome` + `pages.home.Render`** (same as production), not a hardcoded engine layout.
+3. **`pages/shop/`** and **`pages/pdp/`** — Implement a distinct **`Render`** (and matching CMS preview) for catalog and product shells; **`/shop`** is the storefront “search/catalog” surface (query + filters), not a separate engine route.
+4. **`static-pages/<slug>/`** — Every slug in `manifest.capabilities.staticPages` gets a real layout, not a token edit of one page only.
+5. **`flowPages`** — For **`manifest.deployment: "commerce"`**, ship **`Wrapper`** components for **`cart`**, **`checkout`**, and **`profile`** (same pattern as [`default-modern/template.config.ts`](../src/templates/default-modern/template.config.ts)). Optionally add **`shell`** per route for persisted headings/copy (`page:cart` / `page:checkout` / `page:profile`); there is **no** admin UI for those keys in this engine—only the homepage is editable under **`/admin/cms`**. Wrappers (and shells) only wrap the **engine** body. Document intentional passthrough in the template README if you omit wrappers.
+6. **`theme.ts` / `defaultTheme`** — Curate baseline tokens so resets and previews match the design (optional only when you consciously inherit engine defaults and say so in README).
+7. **`commerceSlots.ProductCard`** (optional) — Custom grid card skin on `/shop` for parity between CMS product grids and the catalog.
+
+**Engine limit (say it in the merchant README if relevant):** Cart line items, Stripe checkout steps, and profile forms are **App Router pages** under `src/app/cart`, `src/app/checkout`, `src/app/profile`. Templates **cannot** replace those trees from `src/templates/<id>/` without forking the engine. Branding there is **Navbar + Footer + `flowPages.Wrapper`** (+ optional **`flowPages.*.shell`** editorial band) + shared tokens — not a full commerce UI swap like `/shop`.
+
+## Mandatory: homepage block CMS (registry templates)
+
+When you add a **`TemplateModule`** to `src/templates/registry.ts`, **`pages.home`** **must** use the same **admin** contract as **`default-modern`**:
+
+- `pages.home.schema` **must** be [`homepageSnapshotSchema`](../src/features/homepage-cms/types/homepage-schema.ts) (re-export pattern: [`default-modern/pages/home/schema.ts`](../src/templates/default-modern/pages/home/schema.ts)).
+- `pages.home` **must** set **`cmsPageKind: "homepage-blocks"`**.
+- `HomeRender` **must** render that snapshot — typically [`RealHomepageSections`](../src/features/homepage-cms/render/RealHomepageSections.tsx) or [`HomepageRenderer`](../src/features/homepage-cms/render/HomepageRenderer.tsx) — and work inside **`VisualHomepageEditor`** (template chrome + [`CmsEditProvider`](../src/features/homepage-cms/components/editor/cms-edit-context.tsx)).
+- Keep a minimal **`EditorPanel`** for typing; operators use **`/admin/cms/home`** only.
+
+**Never** replace `home` with a bespoke JSON schema unless you fork the entire homepage CMS feature.
+
+### On-canvas copy (`HomepageRenderer` / section components)
+
+When `HomeRender` uses [`HomepageRenderer`](../src/features/homepage-cms/render/HomepageRenderer.tsx) or shared sections with inline editing, wire [`useCmsEdit`](../src/features/homepage-cms/components/editor/cms-edit-context.tsx) and [`EditableTextInline`](../src/features/homepage-cms/components/primitives/EditableTextInline.tsx) / [`EditableLinkInline`](../src/features/homepage-cms/components/primitives/EditableLinkInline.tsx) (see [`HeroBlockView`](../src/features/homepage-cms/blocks/hero/View.tsx)). `updateField` only supports **top-level keys on `block.data`**; nested structures use [`patchBlockData`](../src/features/homepage-cms/components/editor/cms-edit-context.tsx). The provider targets the **first enabled block of that `type`**.
+
+### Shop, PDP, static pages, flow shells
+
+There is **no** operator-facing CMS for these routes in this repo: [`listEditablePages`](../src/templates/cms-pages.ts) returns **only** the homepage. Templates still ship **`schema`**, **`defaultContent`**, **`Render`**, and **`EditorPanel`** for shop/PDP/static (and optional **`flowPages.*.shell`**) for **storefront rendering**, defaults, and future tooling — not for **`/admin/cms`**.
+
 ## Registry realities (read before copying `minimal-shop` / `vivid-storefront`)
 
-- **Navbar**: Ship a profile/account affordance consistent with [`src/components/layout/Navbar.tsx`](../src/components/layout/Navbar.tsx) so **`/profile`** and **`/admin`** (for authorized users) are reachable. Thin navbars that only link Shop/About omit this.
-- **Not restyled by templates**: **`/cart`** and **`/checkout`** stay on default layouts; only `home` / `shop` / `pdp` (+ static pages) are template-owned. PDP may still need design polish per template.
+- **ENABLE_SHOP**: When the deploy sets `ENABLE_SHOP=false`, `/shop`, `/products`, `/cart`, `/checkout`, `/profile`, shop commerce APIs, and shop admin routes are unavailable. Pages receive **`shopEnabled`** on chrome from [`getActiveChrome()`](../src/lib/active-chrome.ts). Template Navbars/Footers should respect `shopEnabled` (hide shop/cart/category links).
+- **`manifest.deployment`**: Required (**`landing`** vs **`commerce`**). **`commerce`** stacks may list **`home`/`shop`/`pdp`** in **`restyles`**. **`landing`** forbids **`shop`/`pdp`** there (validated); still document marketing intent (`/admin/templates` badges).
+- **`manifest.surfaces`**: Required. Almost always **`DEFAULT_TEMPLATE_SURFACES`** from [`src/templates/types.ts`](../src/templates/types.ts). Only the **home** surface has an admin CMS entry ([`listEditablePages`](../src/templates/cms-pages.ts)).
+- **`commerceSlots.ProductCard`**: Optional product grid styling — storefront passes **`resolveCommerceProductCard(template)`** as **`deps.shopRendering.ProductCard`** on `/shop`; when absent, the engine [`ProductCard`](../src/components/shop/ProductCard.tsx) is used.
+- **PDP shell**: **`ProductDetail`** is shared commerce UI; **`PdpRender`** can set **`introPlacement`** (`belowHero` vs `aboveGrid`). PDP footer aligns with **`resolveStorefrontFooterContact`** like **`/shop`**.
+- **`default-modern` home**: Uses the visual block editor; admins edit at **`/admin/cms/home`** with persistence via **`/api/admin/template-content`** (`pageKey: page:home`), not legacy draft keys.
+- **Navbar**: Ship a profile/account affordance consistent with [`src/components/layout/Navbar.tsx`](../src/components/layout/Navbar.tsx) so **`/profile`** and **`/admin`** (for authorized users) are reachable when the shop/profile surface is enabled. Thin navbars that only link Shop/About omit this.
+- **Flow routes (chrome is template, body is engine)**: **`/cart`**, **`/checkout`** (and **`/checkout/success`**), and **`/profile`** use **`getActiveChrome()`** for **`Navbar`/`Footer`** via [`StorefrontFlowShell`](../src/components/layout/StorefrontFlowShell.tsx). **`TemplateModule.flowPages`** supplies per-route **`Wrapper`** components ([`FlowPageTemplateBridge`](../src/components/layout/FlowPageTemplateBridge.tsx)) around the engine body — for **commerce** templates, treat **all three** wrappers as **expected** (match [`default-modern`](../src/templates/default-modern/template.config.ts)); landing-only or documented minimal templates may use a passthrough. **`manifest.capabilities.restyles`** still lists CMS-owned pages (`home`, `shop`, `pdp`) only.
 - **Shop filters**: Wire [`ShopFilters`](../src/components/shop/ShopFilters.tsx) and URL query params—or omit filters entirely. **`vivid-storefront`'s filter button is non-functional** today; **`minimal-shop`** skips filters altogether.
 - **Navbar color**: Prefer neutral header chrome (**`background`** / **`surface`** / **`border`**). **`bg-primary` across the whole bar** clashes with vivid brand palettes.
 - **Mail/contact homepage**: **`default-modern`** uses the homepage **block CMS** (includes **contact / mail-shaped blocks** via `homepageSnapshotSchema`). **`minimal-shop`** and **`vivid-storefront`** use bespoke home schemas **without** those blocks—not equivalent interchangeably.
@@ -22,10 +63,10 @@ Read [docs/CREATING_A_TEMPLATE.md](./CREATING_A_TEMPLATE.md) before generating c
 1. Run the scaffolder to generate a starting tree:
 
    ```bash
-   npm run create-template -- --id=<your-id> --base=default-modern
+   npm run create-template -- --id=<your-id> --base=default-modern [--deployment=commerce|landing]
    ```
 
-2. Modify the generated files. Do **not** add files outside `src/templates/<your-id>/` and `public/template-previews/<your-id>.svg` unless you have a strong architectural reason.
+2. Modify the generated files under `src/templates/<your-id>/` and add `public/template-previews/<your-id>.svg` for manifest screenshots.
 3. Verify with `npm run test:unit -- templates-contract` and `npx eslint src/templates`. Both must pass before declaring the template done.
 
 ## Hard rules (lint-enforced; failures fail CI)
@@ -41,6 +82,7 @@ Inside `src/templates/**`:
 ## Allowed imports
 
 - `@/templates/_shared/*` (block library, editor primitives)
+- `@/features/homepage-cms/*` when implementing **`homepage-blocks`** home (e.g. `homepageSnapshotSchema`, `RealHomepageSections`) — same pattern as `default-modern`
 - `@/templates/types`
 - `@/components/ui/*` (shadcn primitives — Button, Input, Label, Sheet, Card, etc.)
 - `@/components/common/*`, `@/components/sections/*`, `@/components/layout/*` (engine UI primitives)
@@ -49,12 +91,16 @@ Inside `src/templates/**`:
 
 ## Theme tokens you can use
 
+`defaultTheme` on the `TemplateModule` is **optional**: export a full `ThemeTokens` object from `theme.ts` when the design has a curated palette; omit `defaultTheme` entirely to fall back to engine defaults ([`ThemeService.defaults`](../src/services/theme.ts)). The storefront uses **baseline + admin overrides** from [`ThemeService.getMergedForTemplate`](../src/services/theme.ts). **Reset to default & save** on `/admin/theme` clears overrides and reapplies the baseline (template or engine).
+
+**Legacy theme rows:** If Mongo `ThemeSetting` was saved before **`overridesOnly: true`** (a full snapshot), it can mask a new template’s `defaultTheme`. **Activating a different template** clears legacy snapshots automatically; **`ThemeEditor` / `saveFullThemeForTemplate`** always writes **`overridesOnly: true`**. Merchants can still use **Reset** on `/admin/theme` after experiments.
+
 Use Tailwind utilities backed by these tokens (defined in `src/app/globals.css`):
 
 - Color: `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-secondary`, `text-secondary-foreground`, `bg-accent`, `text-accent-foreground`, `bg-surface`, `text-surface-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-success`, `bg-warning`, `bg-error`
 - Custom dark variant in default-modern: `bg-background-dark`
 
-Provide a `defaultTheme: ThemeTokens` covering all 19 tokens. Admins can override per-token at `/admin/theme`.
+If you ship `defaultTheme`, cover all token keys (validated by `defineTemplate`). Admins override per-token at `/admin/theme`; reset restores the template baseline when set.
 
 ## Required structure
 
@@ -74,8 +120,9 @@ Every template must export `TemplateModule` with:
       staticPages: [...],    // slugs you ship under staticPages
       restyles: ["home", "shop", "pdp"],
     },
+    surfaces: DEFAULT_TEMPLATE_SURFACES, // import from @/templates/types
   },
-  defaultTheme: { /* all 19 ThemeTokens */ },
+  defaultTheme: myThemeTokens, // optional — omit to use engine baseline only
   chrome: { Navbar, Footer },
   pages: {
     home: { schema, defaultContent, Render, EditorPanel },
@@ -136,9 +183,11 @@ This is the part LLMs typically get wrong. Imitate the rigor of [src/templates/m
 
 ## Anti-patterns to avoid
 
+- ❌ **Chrome-only (or chrome + one static page) “templates.”** Shipping a new registry template where only **`Navbar`/`Footer`** (and at most **one** static page like `/about`) differ from the scaffold while **`pages/home`**, **`pages/shop`**, and **`pages/pdp`** `Render` components still look like the **uncustomized base** — that is not acceptable; see *Full-site branding* above.
 - ❌ Generic "card grid" layouts that look like every Bootstrap site from 2019. If your template doesn't have a strong point of view, it doesn't belong in the registry.
 - ❌ Pulling product/category/review data from anywhere except `deps`.
-- ❌ Inventing new schema fields that the editor doesn't expose.
+- ❌ Removing or breaking **`cmsPageKind: "homepage-blocks"`** / **`homepageSnapshotSchema`** on **`pages.home`** for registry templates (that is the only admin CMS surface).
+- ❌ Treating **`EditorPanel`** on shop/PDP/static as an operator workflow — **`/admin/cms`** does not route there; those panels exist for typing and potential future tools only.
 - ❌ Hard-coding colors. Use theme tokens.
 - ❌ Multiple `<h1>` elements per page. One per route.
 - ❌ Omitting **`/profile`** / **`/admin`** entry from chrome when users expect accounts (mirror shared `Navbar`).
@@ -148,10 +197,12 @@ This is the part LLMs typically get wrong. Imitate the rigor of [src/templates/m
 
 ## Definition of done
 
-- [ ] `npm run test:unit -- templates-contract` passes (validates manifest, schemas, defaults, slugs).
+- [ ] **Home CMS:** **`cmsPageKind: "homepage-blocks"`**, **`homepageSnapshotSchema`**, and a real **`HomeRender`** (`RealHomepageSections` / `HomepageRenderer` — not an empty scaffold).
+- [ ] `npm run test:unit -- templates-contract` passes (validates manifest, schemas, defaults, slugs, homepage-blocks policy).
 - [ ] `npx eslint src/templates/<your-id>` passes (no restricted imports, no `any`).
 - [ ] `npx tsc --noEmit` passes.
 - [ ] You manually previewed the template at `/admin/templates/<your-id>` after adding it to the registry.
+- [ ] You manually opened **`/admin/cms/home`** and confirmed the **block editor** (device preview + inline fields + publish path).
 - [ ] A screenshot exists at `public/template-previews/<your-id>.svg`.
 - [ ] The README for the template documents its design intent in 3-5 lines.
 - [ ] Chrome exposes account/admin navigation like the canonical [`Navbar`](../src/components/layout/Navbar.tsx) (unless your fork README documents an intentional deviation).

@@ -4,9 +4,12 @@ import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import Order from "@/models/Order";
 import Review from "@/models/Review";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function POST(req: NextRequest) {
   try {
+    const blocked = shopCommerceBlockedResponse();
+    if (blocked) return blocked;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { resolveConfiguredGlsShippingMethod } from "@/services/gls-shipping";
 import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls";
@@ -15,6 +16,8 @@ type CheckoutMethodRow = {
 
 export async function GET(_req: NextRequest) {
   try {
+    const blocked = shopCommerceBlockedResponse();
+    if (blocked) return blocked;
     const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
     const stripeEnabled = await FeatureFlagService.isEnabled("stripePayments", false);
     const glsParcelPickerEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false);

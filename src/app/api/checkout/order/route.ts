@@ -6,11 +6,14 @@ import {
   STRIPE_FIXED_PAYMENT_METHOD_ID,
   validateAndNormalizeCheckoutInput,
 } from "@/services/checkout-validation";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
   
   try {
+    const commerceBlocked = shopCommerceBlockedResponse();
+    if (commerceBlocked) return commerceBlocked;
     const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
     if (!isShopEnabled) {
       return NextResponse.json(

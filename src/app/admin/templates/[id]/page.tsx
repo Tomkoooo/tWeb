@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { TemplateService } from "@/services/template"
+import { readPreviewTemplateId } from "@/services/template-preview"
 import { PageContentService } from "@/services/page-content"
 import { Badge } from "@/components/ui/badge"
 import { TemplatePreviewControls } from "../TemplatePreviewControls"
@@ -17,12 +18,14 @@ export default async function TemplateDetailPage({
   const template = TemplateService.getById(id)
   if (!template) notFound()
 
-  const [activeInfo, savedPages] = await Promise.all([
+  const [activeInfo, savedPages, previewTemplateId] = await Promise.all([
     TemplateService.getActiveInfo(),
     PageContentService.listForTemplate(template.manifest.id),
+    readPreviewTemplateId(),
   ])
 
   const isActive = template.manifest.id === activeInfo.templateId
+  const isPreviewTarget = previewTemplateId === template.manifest.id
   const savedPageKeys = new Set(savedPages.map((p) => p.pageKey))
 
   const pages = [
@@ -47,12 +50,20 @@ export default async function TemplateDetailPage({
       </div>
 
       <header className="space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-black uppercase tracking-tight">
             {template.manifest.name}
           </h1>
+          <Badge variant="outline" className="text-[10px] uppercase tracking-widest border-white/25 text-neutral-300">
+            {template.manifest.deployment === "commerce"
+              ? "Teljes bolt"
+              : "Landing / marketing"}
+          </Badge>
           {isActive ? (
             <Badge className="bg-green-600 text-white border-none">Aktív</Badge>
+          ) : null}
+          {isPreviewTarget ? (
+            <Badge className="bg-amber-600/95 text-white border-none">Előnézetben</Badge>
           ) : null}
         </div>
         <p className="text-sm text-neutral-400">{template.manifest.description}</p>
@@ -80,6 +91,12 @@ export default async function TemplateDetailPage({
               Sablon képességek
             </h2>
             <ul className="space-y-1 text-sm text-neutral-400">
+              <li>
+                Típus:{" "}
+                {template.manifest.deployment === "commerce"
+                  ? "commerce (marketing + bolt + termékoldal)"
+                  : "landing csak (marketing; ne listáz shop/pdp-et a sablon manifests)"}
+              </li>
               <li>
                 Restyleli:{" "}
                 {template.manifest.capabilities.restyles.join(", ") || "—"}
@@ -136,6 +153,7 @@ export default async function TemplateDetailPage({
           <TemplatePreviewControls
             templateId={template.manifest.id}
             isActive={isActive}
+            isPreviewTarget={isPreviewTarget}
           />
         </aside>
       </div>

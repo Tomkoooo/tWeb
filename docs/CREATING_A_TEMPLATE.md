@@ -5,12 +5,14 @@ A **Layout Template** controls the visual structure of every public page in the 
 - **Chrome** — Navbar and Footer
 - **Restyled pages** — `/` (home), `/shop`, `/products/[slug]`
 - **Static pages** — extra public routes like `/about` that the template introduces and that the admin can fill in
-- **Theme tokens** — default color palette
+- **Theme tokens** — optional packaged palette (`defaultTheme`) per template; admins can override any token
 - **Editor panels** — admin UI for editing the page content
 
 Templates live under [src/templates/](../src/templates) as TypeScript modules. Adding or modifying a template requires a redeploy. This is by design and is the security boundary: non-developers cannot run new code on the live site.
 
 If you've never built a template before, copy [src/templates/default-modern](../src/templates/default-modern) and modify it. The contract is in [src/templates/types.ts](../src/templates/types.ts).
+
+**Landing-only deployments:** Operators can set `ENABLE_SHOP=false` to hide the storefront and shop admin UI. Templates should honor optional **`ChromeProps.shopEnabled`** in Navbar/Footer (see [`src/lib/active-chrome.ts`](../src/lib/active-chrome.ts)).
 
 ---
 
@@ -18,14 +20,29 @@ If you've never built a template before, copy [src/templates/default-modern](../
 
 ```bash
 npm run create-template -- --id=my-template --base=default-modern
+
+# Landing-scoped scaffold (marketing-first; adjusts restyles via scaffolder)
+npm run create-template -- --id=my-landing --base=default-modern --deployment=landing
 ```
 
 The scaffolder copies the base template, renames manifest fields, and registers the new template in `src/templates/registry.ts`. After it finishes:
 
-1. Open `src/templates/my-template/template.config.ts` and update `manifest.name`, `manifest.description`, screenshots.
-2. Modify `chrome/Navbar.tsx`, `chrome/Footer.tsx`, and the page renderers under `pages/`.
-3. Run `npm run dev` and visit `/admin/templates` to preview the new template.
-4. Click **Activate** to flip the live site over.
+1. Open `src/templates/my-template/template.config.ts` and update `manifest.name`, `manifest.description`, screenshots, and `manifest.deployment` if needed.
+2. **Customize every delegated surface** (not only chrome):  
+   (a) `chrome/Navbar.tsx`, `chrome/Footer.tsx`  
+   (b) `pages/home/Render.tsx` (and home wiring — preserve **`homepage-blocks`** + `homepageSnapshotSchema` if you copied `default-modern`)  
+   (c) `pages/shop/Render.tsx` — this is the storefront catalog / query / filters surface  
+   (d) `pages/pdp/Render.tsx`  
+   (e) each `static-pages/<slug>/Render.tsx` you declare  
+   (f) `pages/flow/FlowWrappers.tsx` and `flowPages` in `template.config.ts` — **commerce** templates should wrap **`cart`**, **`checkout`**, and **`profile`** for the same rhythm as the rest of the site (see *Flow routes* below)  
+   (g) `theme.ts` / `defaultTheme` when the design has a curated palette  
+   (h) optional `commerceSlots.ProductCard` for `/shop` grid skin  
+3. **Home admin CMS** (mandatory for templates added to this repo): keep **`cmsPageKind: "homepage-blocks"`** + **`homepageSnapshotSchema`** on `pages.home` when you scaffold from `default-modern`. There is **no** `/admin/cms` editor for shop, PDP, static slugs, or flow shells — see [AI_AGENTS_TEMPLATE_GUIDE.md](./AI_AGENTS_TEMPLATE_GUIDE.md) § *Mandatory: homepage block CMS*.
+4. Run `npm run test:unit -- templates-contract`.
+5. Run `npm run dev` and visit `/admin/templates` to preview the new template; open **`/admin/cms/home`** for the block editor.
+6. Click **Activate** to flip the live site over.
+
+**Common agent mistake:** Polishing **only** the homepage CMS while **leaving shop, PDP, static `Render.tsx` files, and flow wrappers visually identical** to the scaffold. Delegated surfaces must each look intentional — not only Navbar, Footer, and `/`.
 
 ---
 
@@ -34,7 +51,7 @@ The scaffolder copies the base template, renames manifest fields, and registers 
 ```text
 src/templates/<template-id>/
 ├── template.config.ts          # exports the TemplateModule
-├── theme.ts                    # default ThemeTokens for this template
+├── theme.ts                    # optional ThemeTokens for this template (`defaultTheme`; omit file + field for engine-only baseline)
 ├── README.md                   # short summary of the design intent
 ├── chrome/
 │   ├── Navbar.tsx              # appears at the top of every public page
@@ -59,7 +76,8 @@ src/templates/<template-id>/
 A template is a value of type `TemplateModule` from [src/templates/types.ts](../src/templates/types.ts):
 
 ```ts
-import { defineTemplate } from "@/templates/types"
+import { DEFAULT_TEMPLATE_SURFACES, defineTemplate } from "@/templates/types"
+import { myPaletteFromThemeTs } from "./theme" // or omit both import and defaultTheme below
 
 export const myTemplate = defineTemplate({
   manifest: {
@@ -74,8 +92,11 @@ export const myTemplate = defineTemplate({
       staticPages: ["about"],         // slugs of pages this template ships
       restyles: ["home", "shop", "pdp"],
     },
+    surfaces: DEFAULT_TEMPLATE_SURFACES, // CMS + ENABLE_SHOP gating (landing vs shop surfaces)
+    deployment: "commerce",             // required: "commerce" | "landing" — see Deployment below
   },
-  defaultTheme: { /* ThemeTokens */ },
+  // defaultTheme imported from ./theme.ts — omit the property to inherit engine defaults
+  defaultTheme: myPaletteFromThemeTs,
   chrome: { Navbar, Footer },
   pages: {
     home: { schema, defaultContent, Render, EditorPanel },
@@ -89,6 +110,51 @@ export const myTemplate = defineTemplate({
 ```
 
 `defineTemplate()` validates the manifest, asserts that every declared static-page slug is safe and not reserved by the engine, and throws at module-import time on misconfiguration so bad templates fail at build, not at request time.
+
+### `deployment` (landing vs commerce)
+
+[`TemplateManifest.deployment`](../src/templates/types.ts) is **merchant intent**, not enforcement: `ENABLE_SHOP` still disables APIs and CMS shop entries regardless.
+
+- **`commerce`**: Full storefront positioning; `capabilities.restyles` may include **`home`**, **`shop`**, **`pdp`**.
+- **`landing`**: Brochure / marketing-first. **`defineTemplate`** forbids listing **`shop`** or **`pdp`** in **`restyles`** — keep shop/PDP `PageDefinition` modules in code for typings, but do not advertise them as restyled surfaces.
+
+Admin **Sablonok** lists a badge (**Teljes bolt** vs **Landing / marketing**).
+
+### Product detail page editorial placement
+
+The product route **[`products/[slug]/page.tsx`](../src/app/products/[slug]/page.tsx)** delegates to **`template.pages.pdp.Render`**, which typically feeds **[`ProductDetail`](../src/app/products/[slug]/ProductDetail.tsx)**. **`PdpRender`** may pass **`introPlacement`** to `ProductDetail`:
+
+- **`aboveGrid`** (default): eyebrow/title/body + highlight cards render **above** the gallery / buy-box grid (legacy).
+- **`belowHero`**: same content renders **below** the two-column hero grid so shoppers see gallery + commerce UI first — avoids text-only first paint before the hero image fades in.
+
+### `commerceSlots` (presentation slots)
+
+[`TemplateModule.commerceSlots`](../src/templates/types.ts) may set optional presentational components resolved by [`resolveCommerceSlots`](../src/templates/resolve-commerce-slots.ts) (or the shorthand `resolveCommerceProductCard` when you only need the card).
+
+- **`ProductCard`** — **`"use client"`** wrapper around the engine card (or fully custom UI that still honours cart rules). Used on **[`/shop`](../src/app/shop/page.tsx)** as **`deps.shopRendering.ProductCard`** and on the **homepage product carousel** inside [`Shop`](../src/components/sections/Shop.tsx) (resolved client-side using **`HomePageDeps.templateId`**).
+- **`NavbarSearch`** — optional replacement for engine [`LiveSearch`](../src/components/layout/LiveSearch.tsx). Public routes pass **`NavbarSearch`** from [`getActiveChrome()`](../src/lib/active-chrome.ts) into the template chrome `Navbar`.
+- **`CategoryPill`**, **`PdpChrome`** — reserved optional keys for shop/PDP chroming; wire call sites when you need them.
+
+### Template engine boundaries
+
+| Area | Template-driven today? | Notes |
+|------|------------------------|--------|
+| Shop catalogue grid card | Yes | `commerceSlots.ProductCard` via `shopRendering` on `/shop` |
+| Homepage featured product cards | Yes | Same **`ProductCard`** slot + homepage **`templateId`** |
+| Navbar search field | Optional | `commerceSlots.NavbarSearch`; otherwise engine `LiveSearch` |
+| PDP core layout (variants, checkout, pricing) | Mostly no | `PdpRender` composes engine UI; optional **`PdpChrome`** is for future adornment |
+| Cart / checkout / profile **inner** forms | No | `flowPages` **`Wrapper`**, optional **`shell`** band, optional **`Body`** slot — not a full route replacement |
+| Category filters | Partial | No dedicated slot; custom `ShopRender` or shared `ShopFilters` |
+
+**Template SDK:** Prefer [`useTemplateCartActions`](../src/templates/sdk/use-template-cart-actions.ts) from `@/templates/sdk` when template or slot components need cart mutations, instead of importing the Zustand store module directly.
+
+### CMS UX: homepage block editor only
+
+Operators edit **one** surface: **`/admin/cms/home`**, via **`cmsPageKind: "homepage-blocks"`** + **`homepageSnapshotSchema`** + [`VisualHomepageEditor`](../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx). See [AI Agents Guide](./AI_AGENTS_TEMPLATE_GUIDE.md) § *Mandatory: homepage block CMS* and [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](./HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
+
+Declare **`pages.home.allowedBlocks`** (ordered list of homepage block keys like `hero`, `about`, `productGrid`, …) when the storefront [`RealHomepageSections`](../src/features/homepage-cms/render/RealHomepageSections.tsx)-driven layout only uses a subset: the CMS then shows hide/show chips and the block inserter **only for those types**, and published/draft payloads are pruned/stripped so stray blocks (`cta`, `gallery`, …) from older saves disappear. Omit **`allowedBlocks`** to derive allowed types from whatever appears in **`defaultContent.blocks`** (full block library UX).
+
+---
 
 Register your template in [src/templates/registry.ts](../src/templates/registry.ts):
 
@@ -127,11 +193,17 @@ Chrome **must not** strand shoppers who need account settings or staff who need 
 
 Some registry templates ship a slimmer navbar without that menu—treat that as incomplete for production unless you add an equivalent pattern.
 
-### Routes the template does not restyle
+### Flow routes: chrome + `flowPages` wrappers
 
-`manifest.capabilities.restyles` only covers **`home`**, **`shop`**, and **`pdp`**. Other storefront routes—**`/cart`**, **`/checkout`**, search-only views if they differ from `/shop`, etc.—keep the **default app layouts**, not the active `TemplateModule`. PDP is in contract, but a template may still ship a bare-bones PDP until you flesh it out.
+`manifest.capabilities.restyles` still only lists **`home`**, **`shop`**, and **`pdp`** (the CMS-backed page surfaces). **`/cart`**, **`/checkout`** (including **`/checkout/success`**), and **`/profile`** are engine-managed **flow** routes: the App Router owns cart/checkout state and profile data, but **`getActiveChrome()`** supplies the active template’s **`Navbar`** and **`Footer`** with the same branding/footer settings as the rest of the storefront ([`StorefrontFlowShell`](../src/components/layout/StorefrontFlowShell.tsx)).
 
-When documenting a fork for merchants, say clearly that checkout and cart are **not** template-skin endpoints yet.
+Templates implement **`flowPages`** on [`TemplateModule`](../src/templates/types.ts): each route may define a **`Wrapper`** (layout around the engine body), an optional **`shell`** — a small **persisted** editorial band (schema + `Shell` + `EditorPanel` for typing only) stored as **`page:cart`**, **`page:checkout`**, or **`page:profile`** in `TemplateContent` — and an optional **`Body`** component that wraps the engine route UI **inside** the shell. [`FlowPageTemplateBridge`](../src/components/layout/FlowPageTemplateBridge.tsx) composes **`Wrapper` → `Shell` (if any) → `Body` (if any) → route `children`**. A **`Body`** implementation must render **`children`** or the flow page will be blank. There is **no** dedicated admin surface for shell copy beyond code defaults in this engine — change defaults in template code or extend the app if operators must edit it. Use shells for **titles, subtitles, trust copy** — not for replacing cart line items, Stripe, or account forms.
+
+For **`deployment: "commerce"`**, ship **`Wrapper`** components for **`cart`**, **`checkout`**, and **`profile`** so those URLs match the template’s layout language — same approach as [`default-modern/template.config.ts`](../src/templates/default-modern/template.config.ts). A passthrough (no `flowPages` or identity wrappers) is only for **landing**-first templates or **documented** minimal commerce shells where the README explains why cart/checkout/profile stay raw.
+
+Cart lines, Stripe hand-offs, fulfillment forms, profile orders — all live under **`src/app/cart/`**, **`src/app/checkout/`**, **`src/app/profile/`**. **`flowPages.Wrapper` + optional `shell`** do **not** replace those trees; they wrap them. Full replacement of engine commerce UI would require forking the app routes.
+
+The storefront **catalog and search-query UX** is **`/shop`**, restyled by **`pages.shop.Render`** — not a separate template “search page” unless you add new engine routes.
 
 ### Shop page: search query vs filters
 
@@ -174,7 +246,15 @@ Static pages can render any layout you want, but they receive only `{ branding }
 
 ## Theme tokens
 
-Your `defaultTheme` provides the starting color palette. Admins can override individual tokens at `/admin/theme`. The root layout merges your defaults with the admin's overrides and writes both as CSS variables on `<html>`. Use them via Tailwind utilities:
+`TemplateModule.defaultTheme` is **optional**. When set, it defines the **baseline** palette for that template: the root layout applies `getEffectiveThemeBase(activeTemplate)` merged with admin overrides from MongoDB (see [ThemeService](../src/services/theme.ts)). When omitted, the baseline is the engine’s built-in defaults (`ThemeService.defaults()`).
+
+Persistence model:
+
+- New saves store **only tokens that differ from the baseline** (`overridesOnly` in `ThemeSetting`).
+- **Reset to default & save** on `/admin/theme` clears overrides so the live site returns to the baseline (template tokens if present, otherwise engine defaults).
+
+Admins can preview the baseline locally with **Preview baseline** before committing a reset. Tokens are written as CSS variables on `<html>`; use them via Tailwind utilities:
+
 
 - `bg-background`, `text-foreground`, `bg-primary`, `text-accent`, `bg-surface`, `border-border`, `text-muted-foreground`, `bg-success`, `bg-warning`, `bg-error`.
 
@@ -184,13 +264,20 @@ See `src/app/globals.css` for the full mapping from tokens to Tailwind colors.
 
 ## Editor panels
 
-Each page ships an `EditorPanel` — a client component rendered at `/admin/cms/[pageKey]`. It receives:
+Non-home pages still ship an **`EditorPanel`** in the **`PageDefinition`** contract (for typing, tests, and possible future tools) but **are not mounted** from **`/admin/cms`** — only the homepage block editor is.
 
-- `content` — the current saved content (already validated by the schema)
-- `templateId`, `pageKey`
-- `onSave(next)` — call this with a new content object; the engine re-validates and persists it
+The homepage uses [`VisualHomepageEditor`](../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx) instead of the per-page `EditorPanel`. For block-based home, compose primitives from [`features/homepage-cms`](../src/features/homepage-cms/) and shared sections as in `default-modern`.
 
-A simple panel is just a form that calls `onSave`. For a richer experience compose primitives from [src/templates/_shared/editor/](../src/templates/_shared/editor/index.ts).
+### Homepage block CMS (policy for **new** registry templates)
+
+[AI_AGENTS_TEMPLATE_GUIDE.md](./AI_AGENTS_TEMPLATE_GUIDE.md) § *Mandatory: homepage block CMS* is the source of truth. Summary:
+
+| Surface | Admin editor |
+|---------|----------------|
+| **Home** | **`cmsPageKind: "homepage-blocks"`** + **`homepageSnapshotSchema`** + `HomeRender` using **`RealHomepageSections`** or **`HomepageRenderer`**. |
+| **Shop / PDP / static / flow shell** | **None** in this repo — content comes from **`defaultContent`**, seeding, or code changes. |
+
+`npm run test:unit -- templates-contract` enforces **`homepage-blocks`** on every registered template’s home.
 
 ---
 
@@ -309,6 +396,7 @@ For most fork operators, a Notion- or Substack-embedded "blog" link in the navba
 
 ## Checklist before shipping a template
 
+- [ ] **Homepage block CMS** satisfied (see [AI_AGENTS_TEMPLATE_GUIDE.md](./AI_AGENTS_TEMPLATE_GUIDE.md)): `cmsPageKind: "homepage-blocks"` + real `HomeRender`; `npm run test:unit -- templates-contract` passes.
 - [ ] `manifest.id` is unique and lowercase-with-hyphens.
 - [ ] `manifest.version` follows semver.
 - [ ] Screenshots exist at the URL declared in `manifest.screenshots`.

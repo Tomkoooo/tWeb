@@ -13,6 +13,8 @@ function parseArgs(argv) {
     else if (arg === "--base") out.base = argv[++i]
     else if (arg.startsWith("--name=")) out.name = arg.slice("--name=".length)
     else if (arg === "--name") out.name = argv[++i]
+    else if (arg.startsWith("--deployment=")) out.deployment = arg.slice("--deployment=".length)
+    else if (arg === "--deployment") out.deployment = argv[++i]
   }
   return out
 }
@@ -33,7 +35,7 @@ async function copyDir(src, dest) {
   }
 }
 
-async function rewriteManifest(filePath, id, name) {
+async function rewriteManifest(filePath, id, name, deployment) {
   const original = await fs.readFile(filePath, "utf8")
   let updated = original.replace(/id:\s*"[^"]+"/, `id: "${id}"`)
   updated = updated.replace(/name:\s*"[^"]+"/, `name: "${name}"`)
@@ -41,6 +43,17 @@ async function rewriteManifest(filePath, id, name) {
     /screenshots:\s*\[[^\]]*\]/,
     `screenshots: ["/template-previews/${id}.svg"]`
   )
+  if (!/deployment:\s*"[^"]+"/m.test(updated)) {
+    updated = updated.replace(
+      /(\s+surfaces:\s*DEFAULT_TEMPLATE_SURFACES,)/m,
+      `$1\n    deployment: "${deployment}",`
+    )
+  } else {
+    updated = updated.replace(/deployment:\s*"[^"]+"/m, `deployment: "${deployment}"`)
+  }
+  if (deployment === "landing") {
+    updated = updated.replace(/restyles:\s*\[[^\]]*\]/m, `restyles: ["home"]`)
+  }
   await fs.writeFile(filePath, updated, "utf8")
 }
 
@@ -76,6 +89,16 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const id = args.id?.trim()
   const baseId = (args.base ?? "default-modern").trim()
+  const deploymentRaw = args.deployment?.trim().toLowerCase()
+  if (
+    deploymentRaw &&
+    deploymentRaw !== "landing" &&
+    deploymentRaw !== "commerce"
+  ) {
+    console.error("--deployment must be 'landing' or 'commerce'.")
+    process.exit(1)
+  }
+  const deployment = deploymentRaw === "landing" ? "landing" : "commerce"
   const name =
     args.name?.trim() ||
     (id
@@ -87,7 +110,7 @@ async function main() {
 
   if (!id) {
     console.error(
-      'Missing --id. Usage: npm run create-template -- --id=my-template [--base=default-modern] [--name="My Template"]'
+      'Missing --id. Usage: npm run create-template -- --id=my-template [--base=default-modern] [--name="My Template"] [--deployment=commerce|landing]'
     )
     process.exit(1)
   }
@@ -118,16 +141,23 @@ async function main() {
   await copyDir(baseDir, newDir)
 
   const configPath = path.join(newDir, "template.config.ts")
-  await rewriteManifest(configPath, id, name)
+  await rewriteManifest(configPath, id, name, deployment)
 
   await registerInRegistry(id)
 
   console.log(`[create-template] Done.`)
   console.log(`[create-template] Next steps:`)
-  console.log(`  1. Edit ${path.relative(cwd, configPath)} (description, version, etc.).`)
-  console.log(`  2. Modify chrome and page renderers under src/templates/${id}/.`)
-  console.log(`  3. Add a screenshot at public/template-previews/${id}.svg.`)
-  console.log(`  4. Run npm run dev and visit /admin/templates.`)
+  console.log(`  1. Edit ${path.relative(cwd, configPath)} (description, version, deployment).`)
+  console.log(
+    `  2. Customize every surface — not only chrome: chrome/Navbar + Footer; pages/home, shop, pdp Render; each static-pages/*/Render; pages/flow/FlowWrappers + flowPages in template.config; theme.ts / defaultTheme; optional commerceSlots.ProductCard.`
+  )
+  console.log(
+    `  3. CMS: keep pages.home.cmsPageKind "homepage-blocks" + homepageSnapshotSchema when copying default-modern; /admin/cms lists only the homepage (shop/PDP/static/flow have no admin editor in this engine).`
+  )
+  console.log(`  4. Add public/template-previews/${id}.svg (manifest screenshots).`)
+  console.log(`  5. Run: npm run test:unit -- templates-contract`)
+  console.log(`  6. Run: npx eslint src/templates/${id}`)
+  console.log(`  7. Run npm run dev and visit /admin/templates — confirm /admin/cms/home block editor.`)
 }
 
 main().catch((err) => {

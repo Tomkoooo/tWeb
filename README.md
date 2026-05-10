@@ -160,6 +160,13 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | --- | --- | --- | --- |
 | `AUTH_URL` | Recommended | Explicit auth origin, useful behind reverse proxies. | `https://shop.example.com` |
 | `AUTH_TRUST_HOST` | Recommended | Trust forwarded host headers (`true` for proxy/Vercel setups). | `true` |
+| `ENABLE_SHOP` | Optional | Set to `false` to ship this codebase as landing/CMS-only (hides storefront, cart, checkout, profile, shop admin, related APIs). Omit or use any value other than `false` for full commerce. | `false` |
+
+### Admin bootstrap
+
+| Variable | Required | Purpose | Example |
+| --- | --- | --- | --- |
+| `BOOTSTRAP_ADMIN_EMAILS` | Optional | Comma-separated allowlist of emails promoted to ADMIN on first login when no ADMIN exists yet. Remove after onboard. | `you@company.com` |
 
 ### Email (for notifications and invoice emails)
 

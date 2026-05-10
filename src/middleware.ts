@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 import { NextResponse } from "next/server"
+import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
@@ -63,6 +64,15 @@ export default auth(async (req) => {
 
   if (isAdminPath && !isLoggedIn) {
     return NextResponse.redirect(new URL("/api/auth/signin", req.nextUrl))
+  }
+
+  if (!isShopEnabled()) {
+    if (isShopPublicPath(pathname)) {
+      return new NextResponse(null, { status: 404 })
+    }
+    if (isAdminUser && isShopAdminPath(pathname)) {
+      return new NextResponse(null, { status: 404 })
+    }
   }
 
   // Defense in depth: clear the template-preview cookie when the request is

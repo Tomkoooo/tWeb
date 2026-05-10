@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { requireAdmin } from "@/lib/admin-auth";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const blocked = shopCommerceBlockedResponse();
+    if (blocked) return blocked;
     await requireAdmin();
     await dbConnect();
 

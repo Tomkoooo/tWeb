@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Coupon, { DiscountType } from "@/models/Coupon";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function POST(req: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   
   try {

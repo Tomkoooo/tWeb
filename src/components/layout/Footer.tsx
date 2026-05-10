@@ -31,6 +31,7 @@ interface FooterProps {
   settings?: FooterSettings
   cmsEditable?: boolean
   onSettingsChange?: (next: FooterSettings) => void
+  shopEnabled?: boolean
 }
 
 export function Footer({
@@ -43,6 +44,7 @@ export function Footer({
   settings,
   cmsEditable = false,
   onSettingsChange,
+  shopEnabled = true,
 }: FooterProps) {
   const [resolvedBrand, setResolvedBrand] = React.useState({ brandName, logoSrc })
   React.useEffect(() => {
@@ -307,34 +309,44 @@ export function Footer({
           </div>
 
           {/* Categories */}
-          <div className="space-y-8">
-            {cmsEditable ? (
-              <input
-                value={settings?.categoriesTitle || ""}
-                onChange={(event) => patchSettings({ categoriesTitle: event.target.value })}
-                className="w-full h-9 bg-surface border border-border px-2 text-foreground text-sm"
-                placeholder="Categories title"
-              />
-            ) : (
-              <h3 className="text-foreground font-heading font-black text-xl uppercase tracking-widest">{settings?.categoriesTitle || "Categories"}</h3>
-            )}
-            <ul className="space-y-5">
-              {categories.slice(0, 8).map((item) => (
-                <li key={item.id}>
-                  <Link href={`/shop?category=${item.slug}`} className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest">
-                    {item.depth > 0 ? `${"— ".repeat(item.depth)}${item.name}` : item.name}
-                  </Link>
-                </li>
-              ))}
-              {categories.length === 0 ? (
-                <li>
-                  <Link href="/shop" className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest">
-                    {settings?.browseProductsLabel || "Browse Products"}
-                  </Link>
-                </li>
-              ) : null}
-            </ul>
-          </div>
+          {shopEnabled ? (
+            <div className="space-y-8">
+              {cmsEditable ? (
+                <input
+                  value={settings?.categoriesTitle || ""}
+                  onChange={(event) => patchSettings({ categoriesTitle: event.target.value })}
+                  className="w-full h-9 bg-surface border border-border px-2 text-foreground text-sm"
+                  placeholder="Categories title"
+                />
+              ) : (
+                <h3 className="text-foreground font-heading font-black text-xl uppercase tracking-widest">
+                  {settings?.categoriesTitle || "Categories"}
+                </h3>
+              )}
+              <ul className="space-y-5">
+                {categories.slice(0, 8).map((item) => (
+                  <li key={item.id}>
+                    <Link
+                      href={`/shop?category=${item.slug}`}
+                      className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest"
+                    >
+                      {item.depth > 0 ? `${"— ".repeat(item.depth)}${item.name}` : item.name}
+                    </Link>
+                  </li>
+                ))}
+                {categories.length === 0 ? (
+                  <li>
+                    <Link
+                      href="/shop"
+                      className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest"
+                    >
+                      {settings?.browseProductsLabel || "Browse Products"}
+                    </Link>
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
 
           {/* Contact Info */}
           <div className="space-y-8">

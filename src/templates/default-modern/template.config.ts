@@ -1,4 +1,8 @@
-import { defineTemplate, type TemplateModule } from "@/templates/types"
+import {
+  DEFAULT_TEMPLATE_SURFACES,
+  defineTemplate,
+  type TemplateModule,
+} from "@/templates/types"
 import { defaultModernTheme } from "./theme"
 import { Navbar } from "./chrome/Navbar"
 import { Footer } from "./chrome/Footer"
@@ -18,10 +22,13 @@ import { pdpDefaultContent } from "./pages/pdp/defaultContent"
 import { PdpRender } from "./pages/pdp/Render"
 import { PdpEditorPanel } from "./pages/pdp/EditorPanel"
 
-import { aboutSchema } from "./static-pages/about/schema"
-import { aboutDefaultContent } from "./static-pages/about/defaultContent"
-import { AboutRender } from "./static-pages/about/Render"
-import { AboutEditorPanel } from "./static-pages/about/EditorPanel"
+import {
+  DefaultModernCartFlowBody,
+  DefaultModernFlowPageShell,
+} from "./pages/flow/FlowWrappers"
+import { defaultModernFlowShellSchema } from "./pages/flow/flow-shell-schema"
+import { DefaultModernFlowBandShell } from "./pages/flow/FlowBandShell"
+import { DefaultModernFlowShellEditorPanel } from "./pages/flow/FlowShellEditorPanel"
 
 export const defaultModern: TemplateModule = defineTemplate({
   manifest: {
@@ -34,9 +41,12 @@ export const defaultModern: TemplateModule = defineTemplate({
     screenshots: ["/template-previews/default-modern.svg"],
     capabilities: {
       hasBlog: false,
-      staticPages: ["about"],
+      /** Add slugs here (with matching entries in `staticPages`) when your template owns extra routes — e.g. `about`. */
+      staticPages: [],
       restyles: ["home", "shop", "pdp"],
     },
+    surfaces: DEFAULT_TEMPLATE_SURFACES,
+    deployment: "commerce",
   },
   defaultTheme: defaultModernTheme,
   chrome: {
@@ -49,6 +59,8 @@ export const defaultModern: TemplateModule = defineTemplate({
       defaultContent: homeDefaultContent,
       Render: HomeRender,
       EditorPanel: HomeEditorPanel,
+      cmsPageKind: "homepage-blocks",
+      allowedBlocks: ["hero", "about", "features", "productGrid", "contact"],
     },
     shop: {
       schema: shopSchema,
@@ -63,12 +75,38 @@ export const defaultModern: TemplateModule = defineTemplate({
       EditorPanel: PdpEditorPanel,
     },
   },
-  staticPages: {
-    about: {
-      schema: aboutSchema,
-      defaultContent: aboutDefaultContent,
-      Render: AboutRender,
-      EditorPanel: AboutEditorPanel,
+  staticPages: {},
+  flowPages: {
+    cart: {
+      Wrapper: DefaultModernFlowPageShell,
+      Body: DefaultModernCartFlowBody,
+      shell: {
+        schema: defaultModernFlowShellSchema,
+        defaultContent: { headline: "Kosár", subhead: "Rendelésed összegzése és módosítása." },
+        Shell: DefaultModernFlowBandShell,
+        EditorPanel: DefaultModernFlowShellEditorPanel,
+      },
+    },
+    checkout: {
+      Wrapper: DefaultModernFlowPageShell,
+      shell: {
+        schema: defaultModernFlowShellSchema,
+        defaultContent: {
+          headline: "Pénztár",
+          subhead: "Biztonságos fizetés és szállítási adatok.",
+        },
+        Shell: DefaultModernFlowBandShell,
+        EditorPanel: DefaultModernFlowShellEditorPanel,
+      },
+    },
+    profile: {
+      Wrapper: DefaultModernFlowPageShell,
+      shell: {
+        schema: defaultModernFlowShellSchema,
+        defaultContent: { headline: "Fiókom", subhead: "Rendeléseid és beállításaid." },
+        Shell: DefaultModernFlowBandShell,
+        EditorPanel: DefaultModernFlowShellEditorPanel,
+      },
     },
   },
 })

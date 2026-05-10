@@ -9,6 +9,7 @@ import {
 } from "@/templates/registry"
 import type { TemplateModule } from "@/templates/types"
 import { readPreviewTemplateId } from "@/services/template-preview"
+import { ThemeService } from "@/services/theme"
 
 export type ActiveTemplateInfo = {
   templateId: string
@@ -75,6 +76,7 @@ export class TemplateService {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     )
+    await ThemeService.clearStoredIfLegacySnapshot()
     return template
   }
 }

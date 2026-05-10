@@ -1,10 +1,19 @@
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
+import { FALLBACK_TEMPLATE_ID } from "@/templates/registry"
 
-export async function saveHomepageDraft(snapshot: HomepageSnapshot) {
-  const response = await fetch("/api/admin/homepage/draft", {
+export async function saveHomepageDraft(
+  snapshot: HomepageSnapshot,
+  templateId: string = FALLBACK_TEMPLATE_ID
+) {
+  const response = await fetch("/api/admin/template-content", {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(snapshot),
+    body: JSON.stringify({
+      action: "save-draft",
+      templateId,
+      pageKey: "page:home",
+      value: snapshot,
+    }),
   })
 
   if (!response.ok) {

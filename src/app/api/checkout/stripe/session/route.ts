@@ -7,6 +7,7 @@ import TempOrder from "@/models/TempOrder";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { validateAndNormalizeCheckoutInput } from "@/services/checkout-validation";
 import { getAppBaseUrl, getStripeClient } from "@/services/stripe";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,8 @@ export async function POST(req: NextRequest) {
   const session = await auth();
 
   try {
+    const commerceBlocked = shopCommerceBlockedResponse();
+    if (commerceBlocked) return commerceBlocked;
     const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
     if (!isShopEnabled) {
       return NextResponse.json(

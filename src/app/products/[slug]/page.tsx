@@ -2,12 +2,10 @@ import { ProductService } from "@/services/product"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import { resolveProductView } from "@/lib/product-variants"
-import { ShopContentService } from "@/services/shop-content"
 import { mediaImageSrc } from "@/lib/images"
 import { getActiveChrome } from "@/lib/active-chrome"
 import { PageContentService } from "@/services/page-content"
-import type { PdpContent } from "@/templates/default-modern/pages/pdp/schema"
-
+import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params
   const query = await searchParams
@@ -44,12 +42,13 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const { slug } = await params
   const query = await searchParams
   const selectedVariantId = typeof query.variant === "string" ? query.variant : undefined
-  const { template, branding, footerSettings, Navbar, Footer } = await getActiveChrome()
+  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
+    await getActiveChrome()
 
-  const [product, content, pdpContent] = await Promise.all([
+  const [product, pdpContent, footerData] = await Promise.all([
     ProductService.getBySlug(slug),
-    ShopContentService.getAll(),
-    PageContentService.get<PdpContent>(template.manifest.id, "page:pdp"),
+    PageContentService.get(template.manifest.id, "page:pdp"),
+    resolveStorefrontFooterContact(template),
   ])
 
   if (!product) {
@@ -59,8 +58,13 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const PdpRender = template.pages.pdp.Render
 
   return (
-    <main className="min-h-screen bg-background-dark text-white">
-      <Navbar brandName={branding.brandName} logoSrc={branding.logoNav} />
+    <main className="min-h-screen bg-background text-foreground">
+      <Navbar
+        brandName={branding.brandName}
+        logoSrc={branding.logoNav}
+        shopEnabled={shopEnabled}
+        NavbarSearch={NavbarSearch}
+      />
       <PdpRender
         content={pdpContent}
         deps={{ product, selectedVariantId }}
@@ -68,10 +72,12 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       <Footer
         brandName={branding.brandName}
         logoSrc={branding.logoFooter}
+        shopEnabled={shopEnabled}
+        categories={footerData.categories}
         footerSettings={footerSettings}
-        email={content.contact_email}
-        phone={content.contact_phone}
-        address={content.contact_address}
+        email={footerData.email}
+        phone={footerData.phone}
+        address={footerData.address}
       />
     </main>
   )

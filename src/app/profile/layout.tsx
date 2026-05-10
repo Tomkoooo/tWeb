@@ -1,52 +1,50 @@
-import { Metadata } from "next"
-import { Navbar } from "@/components/layout/Navbar"
+import type { Metadata } from "next"
+import FlowPageTemplateBridge from "@/components/layout/FlowPageTemplateBridge"
+import StorefrontFlowShell from "@/components/layout/StorefrontFlowShell"
 
 export const metadata: Metadata = {
   title: "Profil | Krausz",
   description: "Krausz profiloldal és rendelések kezelése",
 }
 
-export default function ProfileLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function ProfileLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-black pt-48 pb-20 px-6">
-      <Navbar />
-      <div className="container mx-auto max-w-6xl">
-        <div className="flex flex-col md:flex-row gap-12">
-          {/* Sidebar */}
-          <aside className="w-full md:w-64 shrink-0 space-y-2">
-            <h1 className="text-3xl font-black text-white uppercase tracking-widest mb-8">Profil</h1>
-            <nav className="flex flex-col space-y-2">
-              <a 
-                href="/profile" 
-                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
-              >
-                Adataim
-              </a>
-              <a 
-                href="/profile/orders" 
-                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
-              >
-                Rendeléseim
-              </a>
-              <a 
-                href="/profile/feedback" 
-                className="px-4 py-3 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-black uppercase tracking-widest text-xs transition-all flex items-center justify-between group"
-              >
-                Bolt értékelése
-              </a>
-            </nav>
-          </aside>
+    <StorefrontFlowShell>
+      <FlowPageTemplateBridge route="profile">
+        <div className="min-h-0 px-6 pb-20 pt-12 md:pt-16">
+          <div className="container mx-auto max-w-6xl">
+            <div className="flex flex-col gap-12 md:flex-row">
+              <aside className="w-full shrink-0 space-y-2 md:w-64">
+                <h1 className="mb-8 text-3xl font-black uppercase tracking-widest text-foreground">
+                  Profil
+                </h1>
+                <nav className="flex flex-col space-y-2">
+                  <a
+                    href="/profile"
+                    className="group flex items-center justify-between border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:bg-primary/10"
+                  >
+                    Adataim
+                  </a>
+                  <a
+                    href="/profile/orders"
+                    className="group flex items-center justify-between border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:bg-primary/10"
+                  >
+                    Rendeléseim
+                  </a>
+                  <a
+                    href="/profile/feedback"
+                    className="group flex items-center justify-between border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:bg-primary/10"
+                  >
+                    Bolt értékelése
+                  </a>
+                </nav>
+              </aside>
 
-          {/* Main Content */}
-          <main className="flex-1">
-            {children}
-          </main>
+              <main className="flex-1">{children}</main>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </FlowPageTemplateBridge>
+    </StorefrontFlowShell>
   )
 }

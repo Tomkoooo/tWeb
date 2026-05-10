@@ -8,9 +8,15 @@ import { toast } from "sonner"
 type Props = {
   templateId: string
   isActive: boolean
+  /** This template matches the storefront preview cookie (admin-only). */
+  isPreviewTarget?: boolean
 }
 
-export function TemplatePreviewControls({ templateId, isActive }: Props) {
+export function TemplatePreviewControls({
+  templateId,
+  isActive,
+  isPreviewTarget = false,
+}: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [showActivateConfirm, setShowActivateConfirm] = useState(false)
@@ -26,7 +32,7 @@ export function TemplatePreviewControls({ templateId, isActive }: Props) {
       return
     }
     toast.success(
-      "Előnézet aktiválva — csak admin sessionökben látható, max 1 órán át."
+      "Előnézet beállítva — csak admin session; max 1 h. másik sablon előnézete felülírja."
     )
     startTransition(() => router.refresh())
   }
@@ -58,14 +64,26 @@ export function TemplatePreviewControls({ templateId, isActive }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 pt-2">
+    <div className="space-y-2 pt-2">
+      {isPreviewTarget ? (
+        <p className="text-[11px] text-amber-200/95">
+          Ez a sablon az admin előnézetben — lásd felül a részletes státuszsort és az „End preview”
+          gombot is.
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
       <Button
         size="sm"
-        variant="outline"
+        variant={isPreviewTarget ? "default" : "outline"}
+        className={
+          isPreviewTarget
+            ? "bg-amber-600 hover:bg-amber-600/90 text-white border-none"
+            : undefined
+        }
         onClick={setPreview}
         disabled={pending}
       >
-        Előnézet
+        {isPreviewTarget ? "Előnézet (aktuális)" : "Előnézet"}
       </Button>
       <Button
         size="sm"
@@ -103,6 +121,7 @@ export function TemplatePreviewControls({ templateId, isActive }: Props) {
           Aktiválás
         </Button>
       )}
+      </div>
     </div>
   )
 }

@@ -2,44 +2,10 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { getActiveChrome } from "@/lib/active-chrome"
 import { PageContentService } from "@/services/page-content"
-import { CategoryService } from "@/services/category"
-import { ShopContentService } from "@/services/shop-content"
+import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 
 type StaticPageProps = {
   params: Promise<{ slug: string[] }>
-}
-
-type FooterCategoryItem = {
-  id: string
-  name: string
-  slug: string
-  depth: number
-}
-
-function flattenCategoryTree(
-  nodes: Array<{ _id: unknown; name: string; slug: string; children?: unknown[] }>,
-  depth = 0
-): FooterCategoryItem[] {
-  return nodes.flatMap((node) => {
-    const current: FooterCategoryItem = {
-      id: String(node._id),
-      name: node.name,
-      slug: node.slug,
-      depth,
-    }
-    const children = Array.isArray(node.children)
-      ? flattenCategoryTree(
-          node.children as Array<{
-            _id: unknown
-            name: string
-            slug: string
-            children?: unknown[]
-          }>,
-          depth + 1
-        )
-      : []
-    return [current, ...children]
-  })
 }
 
 export async function generateMetadata({ params }: StaticPageProps): Promise<Metadata> {
@@ -64,36 +30,38 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
 export default async function StaticTemplatePage({ params }: StaticPageProps) {
   const { slug } = await params
   const slugStr = slug.join("/")
-  const { template, branding, footerSettings, Navbar, Footer } = await getActiveChrome()
+  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
+    await getActiveChrome()
 
   const def = template.staticPages[slugStr]
   if (!def) {
     notFound()
   }
 
-  const [content, categoryTree, shopContent] = await Promise.all([
+  const [content, footerData] = await Promise.all([
     PageContentService.get(template.manifest.id, `page:${slugStr}`),
-    CategoryService.getTree(),
-    ShopContentService.getAll(),
+    resolveStorefrontFooterContact(template),
   ])
   const Render = def.Render
 
-  const footerCategories = flattenCategoryTree(
-    categoryTree as Array<{ _id: unknown; name: string; slug: string; children?: unknown[] }>
-  )
-
   return (
     <>
-      <Navbar brandName={branding.brandName} logoSrc={branding.logoNav} />
+      <Navbar
+        brandName={branding.brandName}
+        logoSrc={branding.logoNav}
+        shopEnabled={shopEnabled}
+        NavbarSearch={NavbarSearch}
+      />
       <Render content={content} deps={{ branding }} />
       <Footer
         brandName={branding.brandName}
         logoSrc={branding.logoFooter}
-        categories={footerCategories}
+        shopEnabled={shopEnabled}
+        categories={footerData.categories}
         footerSettings={footerSettings}
-        email={shopContent.contact_email}
-        phone={shopContent.contact_phone}
-        address={shopContent.contact_address}
+        email={footerData.email}
+        phone={footerData.phone}
+        address={footerData.address}
       />
     </>
   )

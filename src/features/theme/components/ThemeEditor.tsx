@@ -2,32 +2,25 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { THEME_TOKEN_KEYS } from "@/lib/theme-token-keys"
 import type { ThemeTokens } from "@/services/theme"
-import { DEFAULT_THEME_TOKENS } from "@/features/theme/types"
 
-const tokenKeys: Array<keyof ThemeTokens> = [
-  "primary",
-  "primaryForeground",
-  "secondary",
-  "secondaryForeground",
-  "accent",
-  "accentForeground",
-  "background",
-  "foreground",
-  "surface",
-  "surfaceForeground",
-  "border",
-  "muted",
-  "mutedForeground",
-  "success",
-  "successForeground",
-  "warning",
-  "warningForeground",
-  "error",
-  "errorForeground",
-]
+type Props = {
+  initial: ThemeTokens
+  /** Baseline palette after clearing overrides (template.defaultTheme ?? engine defaults). */
+  resetBaseline: ThemeTokens
+  resetHelpText?: string
+  onSaved?: (theme: ThemeTokens) => void
+}
 
-export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSaved?: (theme: ThemeTokens) => void }) {
+export function ThemeEditor({
+  initial,
+  resetBaseline,
+  resetHelpText,
+  onSaved,
+}: Props) {
+  const router = useRouter()
   const [theme, setTheme] = useState<ThemeTokens>(initial)
   const [jsonOpen, setJsonOpen] = useState(false)
   const [jsonInput, setJsonInput] = useState("")
@@ -38,24 +31,39 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
 
   useEffect(() => {
     Object.entries(theme).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(`--theme-${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`, value)
+      document.documentElement.style.setProperty(
+        `--theme-${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`,
+        value
+      )
     })
   }, [theme])
 
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-3">
-        {tokenKeys.map((key) => (
+        {THEME_TOKEN_KEYS.map((key) => (
           <label key={key} className="space-y-1">
             <span className="text-xs uppercase tracking-widest text-neutral-400">{key}</span>
             <div className="flex gap-2">
-              <input type="color" value={theme[key]} onChange={(event) => setTheme((prev) => ({ ...prev, [key]: event.target.value }))} />
-              <input value={theme[key]} onChange={(event) => setTheme((prev) => ({ ...prev, [key]: event.target.value }))} className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+              <input
+                type="color"
+                value={theme[key as keyof ThemeTokens]}
+                onChange={(event) =>
+                  setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+                }
+              />
+              <input
+                value={theme[key as keyof ThemeTokens]}
+                onChange={(event) =>
+                  setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+                }
+                className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm"
+              />
             </div>
           </label>
         ))}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={async () => {
@@ -78,10 +86,34 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
         </button>
         <button
           type="button"
-          onClick={() => setTheme(DEFAULT_THEME_TOKENS)}
+          onClick={() => setTheme(resetBaseline)}
           className="px-3 h-10 border border-white/20 text-white text-xs uppercase"
+          title={resetHelpText}
         >
-          Reset defaults
+          Preview baseline
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const res = await fetch("/api/admin/theme", { method: "DELETE" })
+              if (!res.ok) {
+                toast.error("Could not reset theme on server")
+                return
+              }
+              const merged = (await res.json()) as ThemeTokens
+              setTheme(merged)
+              onSaved?.(merged)
+              router.refresh()
+              toast.success("Saved: theme reset to baseline (overrides cleared)")
+            } catch {
+              toast.error("Could not reset theme on server")
+            }
+          }}
+          className="px-3 h-10 border border-amber-500/40 text-amber-100 text-xs uppercase"
+          title="Writes to disk: storefront uses template or engine baseline until you customise again"
+        >
+          Reset to default & save
         </button>
         <button
           type="button"
@@ -98,6 +130,7 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
             const updated = (await res.json()) as ThemeTokens
             setTheme(updated)
             onSaved?.(updated)
+            router.refresh()
             toast.success("Theme saved")
           }}
           className="px-3 h-10 bg-primary text-white text-xs uppercase"
@@ -105,9 +138,12 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
           Save theme
         </button>
       </div>
+      {resetHelpText ? <p className="text-[11px] text-neutral-500 max-w-xl">{resetHelpText}</p> : null}
       {jsonOpen ? (
         <div className="border border-white/20 bg-black/70 p-3 space-y-2">
-          <p className="text-xs text-neutral-400">Paste full JSON object with all theme keys (primary, secondary, accent, background, etc.).</p>
+          <p className="text-xs text-neutral-400">
+            Paste full JSON object with all theme keys (primary, secondary, accent, background, etc.).
+          </p>
           <textarea
             value={jsonInput}
             onChange={(event) => setJsonInput(event.target.value)}
@@ -121,9 +157,9 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
                 try {
                   const parsed = JSON.parse(jsonInput) as Partial<ThemeTokens>
                   const next: ThemeTokens = { ...theme }
-                  tokenKeys.forEach((key) => {
-                    const value = parsed[key]
-                    if (typeof value === "string") next[key] = value
+                  THEME_TOKEN_KEYS.forEach((key) => {
+                    const value = parsed[key as keyof ThemeTokens]
+                    if (typeof value === "string") next[key as keyof ThemeTokens] = value
                   })
                   setTheme(next)
                   setJsonOpen(false)
@@ -136,7 +172,11 @@ export function ThemeEditor({ initial, onSaved }: { initial: ThemeTokens; onSave
             >
               Apply JSON
             </button>
-            <button type="button" onClick={() => setJsonOpen(false)} className="px-3 h-9 border border-white/20 text-white text-xs uppercase">
+            <button
+              type="button"
+              onClick={() => setJsonOpen(false)}
+              className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+            >
               Close
             </button>
           </div>

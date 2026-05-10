@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { EditableLinkInline } from "@/features/homepage-cms/components/primitives/EditableLinkInline"
-import { EditableImageInline } from "@/features/homepage-cms/components/primitives/EditableImageInline"
+import { EditableImage } from "@/features/homepage-cms/components/primitives/EditableImage"
 import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -177,14 +177,25 @@ export function Hero({
                 className="absolute inset-0 z-10"
               >
                 {cms.enabled ? (
-                  <div className="absolute inset-0">
-                    <EditableImageInline
-                      blockType="hero"
-                      field="heroImage"
+                  <div className="absolute inset-0 flex flex-col overflow-auto">
+                    <EditableImage
                       src={displayHeroImage}
                       alt={displayTitle}
-                      className="object-contain w-full h-full"
-                      usageLabel="Hero kép"
+                      editMode
+                      width={1200}
+                      height={1200}
+                      className="mx-auto max-h-[min(420px,55vh)] w-full object-contain"
+                      usageLabel="Hero kép (aktív dia)"
+                      onChange={(next) => {
+                        const idx =
+                          activeImages.length > 0
+                            ? activeImageIndex % activeImages.length
+                            : 0
+                        const nextImages = activeImages.map((img, i) =>
+                          i === idx ? next : img
+                        )
+                        patchActiveSlide({ images: nextImages })
+                      }}
                     />
                   </div>
                 ) : (
@@ -403,6 +414,38 @@ export function Hero({
                 >
                   Hero hozzáadása
                 </Button>
+                {normalizedSlides.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      const nextSlides = normalizedSlides.filter(
+                        (_, idx) => idx !== activeSlideIndex
+                      )
+                      const first = nextSlides[0]!
+                      cms.patchBlockData("hero", {
+                        heroSlides: nextSlides,
+                        title: first.title,
+                        description: first.description,
+                        primaryCtaLabel: first.primaryCtaLabel,
+                        primaryCtaHref: first.primaryCtaHref,
+                        secondaryCtaLabel: first.secondaryCtaLabel,
+                        secondaryCtaHref: first.secondaryCtaHref,
+                        badges: first.badges,
+                        heroImage: first.images[0] ?? "",
+                        heroImages: first.images,
+                        imageDurationSeconds: first.imageDurationSeconds,
+                        heroDurationSeconds: first.durationSeconds,
+                      })
+                      setActiveSlideIndex((prev) =>
+                        Math.min(prev, nextSlides.length - 1)
+                      )
+                    }}
+                  >
+                    Aktív hero törlése
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </div>

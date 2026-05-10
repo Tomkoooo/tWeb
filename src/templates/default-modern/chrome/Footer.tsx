@@ -13,21 +13,27 @@ type FooterChromeProps = ChromeProps & {
 export function Footer({
   brandName,
   logoSrc,
+  shopEnabled = true,
   email,
   phone,
   address,
   categories,
   footerSettings,
-}: FooterChromeProps) {
+  cmsEditable,
+  onSettingsChange,
+}: FooterChromeProps & { cmsEditable?: boolean; onSettingsChange?: (next: FooterSettings) => void | Promise<void> }) {
   return (
     <DefaultModernFooterImpl
       brandName={brandName}
       logoSrc={logoSrc}
+      shopEnabled={shopEnabled}
       email={email}
       phone={phone}
       address={address}
       categories={categories}
       settings={footerSettings}
+      cmsEditable={cmsEditable}
+      onSettingsChange={onSettingsChange}
     />
   )
 }

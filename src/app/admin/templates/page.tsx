@@ -1,15 +1,17 @@
 import Link from "next/link"
 import Image from "next/image"
 import { TemplateService } from "@/services/template"
+import { readPreviewTemplateId } from "@/services/template-preview"
 import { Badge } from "@/components/ui/badge"
 import { TemplatePreviewControls } from "./TemplatePreviewControls"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminTemplatesPage() {
-  const [templates, activeInfo] = await Promise.all([
+  const [templates, activeInfo, previewTemplateId] = await Promise.all([
     TemplateService.list(),
     TemplateService.getActiveInfo(),
+    readPreviewTemplateId(),
   ])
 
   return (
@@ -26,6 +28,7 @@ export default async function AdminTemplatesPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {templates.map((template) => {
           const isActive = template.manifest.id === activeInfo.templateId
+          const isPreviewTarget = previewTemplateId === template.manifest.id
           return (
             <article
               key={template.manifest.id}
@@ -50,14 +53,26 @@ export default async function AdminTemplatesPage() {
                     Aktív
                   </Badge>
                 ) : null}
+                {isPreviewTarget ? (
+                  <Badge className="absolute left-3 top-3 bg-amber-600/95 text-white border-none">
+                    Előnézet
+                  </Badge>
+                ) : null}
               </div>
 
               <div className="space-y-4 p-6">
                 <div className="flex items-baseline justify-between gap-4">
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight">
-                      {template.manifest.name}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-black uppercase tracking-tight">
+                        {template.manifest.name}
+                      </h2>
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-widest border-white/25 text-neutral-300">
+                        {template.manifest.deployment === "commerce"
+                          ? "Teljes bolt"
+                          : "Landing / marketing"}
+                      </Badge>
+                    </div>
                     <p className="text-xs text-neutral-500">
                       v{template.manifest.version} &middot; {template.manifest.author}
                     </p>
@@ -74,6 +89,7 @@ export default async function AdminTemplatesPage() {
                 <TemplatePreviewControls
                   templateId={template.manifest.id}
                   isActive={isActive}
+                  isPreviewTarget={isPreviewTarget}
                 />
               </div>
             </article>
