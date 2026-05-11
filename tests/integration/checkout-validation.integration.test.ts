@@ -84,6 +84,8 @@ describe("checkout validation integration", () => {
     expect(result.paymentMethod).toBe(paymentMethodId);
     expect(result.total).toBeGreaterThan(0);
     expect(result.items).toHaveLength(1);
+    expect(result.saveAddressToProfile).toBe(false);
+    expect(result.billingCountry).toBe("Magyarország");
   });
 
   it("rejects empty cart", async () => {

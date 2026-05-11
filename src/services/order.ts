@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Cart from "@/models/Cart";
+import User from "@/models/User";
 import mongoose from "mongoose";
 import { MailerService } from "./mailer";
 import { FeatureFlagService } from "./feature-flags";
@@ -12,6 +13,8 @@ import {
   InventoryReservationError,
   restoreCheckoutLineStock,
 } from "@/services/inventory-reservation";
+import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
+import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
@@ -23,35 +26,72 @@ export class OrderService {
     userId?: string,
     options?: { enforceShopEnabled?: boolean; skipStockDecrement?: boolean }
   ) {
-    if (options?.enforceShopEnabled !== false) {
-      const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
-      if (!isShopEnabled) {
-        throw new Error("Jelenleg a rendelés leadás szünetel");
+    let orderIdForAlert: string | undefined;
+    let orderPersisted = false;
+
+    try {
+      if (options?.enforceShopEnabled !== false) {
+        const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
+        if (!isShopEnabled) {
+          throw new Error("Jelenleg a rendelés leadás szünetel");
+        }
       }
+      await dbConnect();
+
+      if (options?.skipStockDecrement) {
+        await this.validateReservedStockStillCoversOrder(orderData);
+      } else {
+        await this.validateAndUpdateStockTransactional(orderData);
+      }
+
+      const {
+        saveAddressToProfile,
+        billingCountry: billingCountryRaw,
+        shippingCountry: shippingCountryRaw,
+        paymentProvider: _paymentProvider,
+        ...orderPayload
+      } = orderData;
+
+      // 2. Create the order
+      const order = new Order({
+        ...orderPayload,
+        user: userId ? new mongoose.Types.ObjectId(userId) : undefined,
+      });
+      if (order?._id) {
+        orderIdForAlert = String(order._id);
+      }
+      await order.save();
+      orderPersisted = true;
+
+      if (userId && saveAddressToProfile === true) {
+        await this.persistUserAddressesFromCheckout(userId, orderData, {
+          billingCountry: billingCountryRaw,
+          shippingCountry: shippingCountryRaw,
+        });
+      }
+
+      // 3. Clear the cart if user is logged in
+      await this.clearUserCart(userId);
+
+      // 4. Trigger side effects after successful persistence
+      await this.sendOrderConfirmation(order, orderData);
+      await this.tryIssueInvoice(order);
+
+      return order;
+    } catch (error) {
+      await sendOrderPlacementErrorShopAlert({
+        error,
+        orderData,
+        userId,
+        orderId: orderIdForAlert,
+        orderPersisted,
+        checkoutOptions: {
+          enforceShopEnabled: options?.enforceShopEnabled,
+          skipStockDecrement: options?.skipStockDecrement,
+        },
+      });
+      throw error;
     }
-    await dbConnect();
-
-    if (options?.skipStockDecrement) {
-      await this.validateReservedStockStillCoversOrder(orderData);
-    } else {
-      await this.validateAndUpdateStockTransactional(orderData);
-    }
-
-    // 2. Create the order
-    const order = new Order({
-      ...orderData,
-      user: userId ? new mongoose.Types.ObjectId(userId) : undefined,
-    });
-    await order.save();
-
-    // 3. Clear the cart if user is logged in
-    await this.clearUserCart(userId);
-
-    // 4. Trigger side effects after successful persistence
-    await this.sendOrderConfirmation(order, orderData);
-    await this.tryIssueInvoice(order);
-
-    return order;
   }
 
   /** After Stripe inventory hold: DB stock already lowered; verify lines still fit remaining stock. */
@@ -104,6 +144,45 @@ export class OrderService {
       }
       if (e instanceof InventoryReservationError) throw new Error(e.message);
       throw e instanceof Error ? e : new Error(String(e));
+    }
+  }
+
+  private static async persistUserAddressesFromCheckout(
+    userId: string,
+    orderData: any,
+    extras: { billingCountry?: string; shippingCountry?: string }
+  ) {
+    try {
+      const bi = orderData.billingInfo;
+      const ship = orderData.shippingAddress;
+      if (!bi?.name || !ship?.name) return;
+
+      const billingCountry = extras.billingCountry?.trim() || "Magyarország";
+      const shippingCountry = extras.shippingCountry?.trim() || billingCountry;
+
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          billingInfo: {
+            type: bi.type === "company" ? "company" : "personal",
+            name: bi.name,
+            taxNumber: bi.taxNumber,
+            country: billingCountry,
+            city: bi.city,
+            zip: bi.zip,
+            street: bi.street,
+          },
+          shippingAddress: {
+            name: ship.name,
+            country: shippingCountry,
+            city: ship.city,
+            zip: ship.zip,
+            street: ship.street,
+            comment: ship.comment,
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to persist checkout addresses to user profile:", err);
     }
   }
 
@@ -167,7 +246,12 @@ export class OrderService {
       order.invoiceStatus = "failed";
       order.invoiceLastError = error?.message || "Ismeretlen számlázási hiba";
       await order.save();
-      await this.sendInvoiceEmail(order, "invoice_issue", "A számla automatikus kiállítása nem sikerült.");
+      try {
+        await this.sendInvoiceEmail(order, "invoice_issue", "A számla automatikus kiállítása nem sikerült.");
+      } catch (customerMailErr) {
+        console.error("Failed to send invoice issue customer email:", customerMailErr);
+      }
+      await sendInvoiceErrorShopAlert(order._id, error);
       console.error("Invoice hook check failed:", error);
     }
   }

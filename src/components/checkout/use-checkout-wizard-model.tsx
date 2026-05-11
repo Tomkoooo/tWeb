@@ -52,6 +52,8 @@ const initialForm = () => ({
     glsParcelPoint: null as any,
   },
   coupon: null as any,
+  /** Logged-in users only; sent to API, default on */
+  saveAddressToProfile: true,
 })
 
 export type CheckoutWizardFormState = ReturnType<typeof initialForm>
@@ -235,6 +237,7 @@ export function useCheckoutWizardModel(
             zip: formData.billing.zip,
             city: formData.billing.city,
             street: formData.billing.street,
+            country: formData.billing.country,
             comment: formData.shipping.comment,
             email: formData.billing.email,
             phone: formData.billing.phone,
@@ -244,6 +247,7 @@ export function useCheckoutWizardModel(
             zip: formData.shipping.zip,
             city: formData.shipping.city,
             street: formData.shipping.street,
+            country: formData.shipping.country,
             comment: formData.shipping.comment,
             email: formData.shipping.email,
             phone: formData.shipping.phone,
@@ -257,6 +261,7 @@ export function useCheckoutWizardModel(
       paymentFee: t.paymentFee,
       discount: t.discount,
       total: t.total,
+      saveAddressToProfile: formData.saveAddressToProfile,
     }
   }, [calculateTotal, formData, items])
 
@@ -356,12 +361,13 @@ export function useCheckoutWizardModel(
             onChange={(val: any) => setFormData(val)}
             cartItems={items}
             totalPrice={totals.subtotal}
+            isAuthenticated={Boolean(session?.user)}
           />
         )
       default:
         return null
     }
-  }, [availableMethods, currentStep, formData, items, stepAppearance, totals.subtotal])
+  }, [availableMethods, currentStep, formData, items, session?.user, stepAppearance, totals.subtotal])
 
   return {
     currentStep,

@@ -21,9 +21,18 @@ interface SummaryStepProps {
   totalPrice: number
   /** @default "dark" */
   appearance?: CheckoutStepAppearance
+  /** When true, show opt-in to store billing/shipping on the user profile after order (default on in wizard). */
+  isAuthenticated?: boolean
 }
 
-export function SummaryStep({ data, onChange, cartItems, totalPrice, appearance = "dark" }: SummaryStepProps) {
+export function SummaryStep({
+  data,
+  onChange,
+  cartItems,
+  totalPrice,
+  appearance = "dark",
+  isAuthenticated = false,
+}: SummaryStepProps) {
   const a = appearance
   const [couponCode, setCouponCode] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -180,6 +189,33 @@ export function SummaryStep({ data, onChange, cartItems, totalPrice, appearance 
             </div>
           </div>
         </div>
+
+        {isAuthenticated ? (
+          <label
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-lg border p-4",
+              a === "light" ? "border-border bg-muted/30" : "border-white/10 bg-white/3"
+            )}
+          >
+            <input
+              type="checkbox"
+              className={cn(
+                "mt-0.5 size-4 shrink-0 rounded border accent-primary",
+                a === "light" ? "border-border" : "border-white/20 bg-black"
+              )}
+              checked={data.saveAddressToProfile !== false}
+              onChange={(e) => onChange({ ...data, saveAddressToProfile: e.target.checked })}
+            />
+            <span
+              className={cn(
+                "text-xs font-medium leading-snug",
+                a === "light" ? "text-foreground" : "text-neutral-300"
+              )}
+            >
+              Mentsük el a számlázási és szállítási adatokat a profilomba a következő vásárlásokhoz.
+            </span>
+          </label>
+        ) : null}
       </div>
     </div>
   )
