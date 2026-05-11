@@ -70,7 +70,7 @@ const menuGroups: Array<{
       { icon: Mail, label: "Emailek", href: "/admin/emails" },
       { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
       { icon: Truck, label: "Szállítás", href: "/admin/shipping", requiresShop: true },
-      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments", requiresShop: true },
+      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", requiresShop: true },
       { icon: Tag, label: "Kuponok", href: "/admin/coupons", requiresShop: true },
     ],
   },
