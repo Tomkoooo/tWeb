@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { useCheckoutWizardModel } from "@/components/checkout/use-checkout-wizard-model"
+import { ReservationCountdown } from "@/components/checkout/ReservationCountdown"
 import type { CartItem } from "@/store/useCartStore"
 import type { FlowRouteMainProps } from "@/templates/types"
 
@@ -35,7 +36,26 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
     renderStep,
     handleSubmitOrder,
     isSubmitting,
+    stripeRedirectHold,
+    goToStripeNow,
   } = wizard
+
+  React.useEffect(() => {
+    if (searchParams.get("stripeCancelled") !== "1") return
+    const id = typeof window !== "undefined" ? sessionStorage.getItem("stripeTempOrderId") : null
+    if (!id) return
+    void fetch("/api/checkout/stripe/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempOrderId: id }),
+    }).finally(() => {
+      try {
+        sessionStorage.removeItem("stripeTempOrderId")
+      } catch {
+        /* ignore */
+      }
+    })
+  }, [searchParams])
 
   const embedded = variant === "embedded"
   const shell = embedded
@@ -87,7 +107,32 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
   )
 
   return (
-    <main className={shell}>
+    <main className={cn(shell, "relative")}>
+      {stripeRedirectHold ? (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-background/95 px-5 py-12"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="atelier-stripe-redirect-title"
+        >
+          <div className="max-w-md w-full space-y-6 rounded-2xl border border-border bg-card p-8 shadow-xl">
+            <h2 id="atelier-stripe-redirect-title" className="font-serif text-2xl font-semibold tracking-tight">
+              Stripe fizetés
+            </h2>
+            <ReservationCountdown
+              reservationExpiresAtIso={stripeRedirectHold.reservationExpiresAt}
+              serverTimeIso={stripeRedirectHold.serverTime}
+              appearance="light"
+            />
+            <p className="text-sm text-muted-foreground font-serif leading-relaxed">
+              Hamarosan átirányítunk a Stripe oldalára. A készlet a visszaszámláló végéig marad lefoglalva.
+            </p>
+            <Button type="button" className="w-full rounded-full font-serif" onClick={goToStripeNow}>
+              Tovább a Stripe-hoz most
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {searchParams.get("stripeCancelled") === "1" && (
         <div className="mx-auto mb-8 max-w-2xl rounded-xl border border-amber-600/40 bg-amber-500/10 px-5 py-4 font-serif text-sm text-foreground">
           <p className="font-semibold">A Stripe fizetés megszakadt.</p>

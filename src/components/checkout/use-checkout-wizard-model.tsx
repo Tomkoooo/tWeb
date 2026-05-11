@@ -56,6 +56,12 @@ const initialForm = () => ({
 
 export type CheckoutWizardFormState = ReturnType<typeof initialForm>
 
+export type StripeRedirectHold = {
+  checkoutUrl: string
+  reservationExpiresAt: string
+  serverTime: string | null
+}
+
 /**
  * Shared checkout wizard state + validation + submit (Stripe vs COD).
  * Use from the engine `CheckoutPageView` or from a template `RouteMain` for full UI freedom.
@@ -74,7 +80,17 @@ export function useCheckoutWizardModel(
   const { data: session } = useSession()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [stripeRedirectHold, setStripeRedirectHold] = React.useState<StripeRedirectHold | null>(null)
   const router = useRouter()
+
+  React.useEffect(() => {
+    if (!stripeRedirectHold?.checkoutUrl) return
+    const delayMs = 6000
+    const id = window.setTimeout(() => {
+      window.location.href = stripeRedirectHold.checkoutUrl
+    }, delayMs)
+    return () => window.clearTimeout(id)
+  }, [stripeRedirectHold])
 
   React.useEffect(() => {
     const fetchMethods = async () => {
@@ -263,6 +279,21 @@ export function useCheckoutWizardModel(
         const payload = await res.json()
         if (isStripe) {
           if (payload?.checkoutUrl) {
+            if (payload.tempOrderId) {
+              try {
+                sessionStorage.setItem("stripeTempOrderId", String(payload.tempOrderId))
+              } catch {
+                /* ignore */
+              }
+            }
+            if (payload.reservationExpiresAt) {
+              setStripeRedirectHold({
+                checkoutUrl: payload.checkoutUrl,
+                reservationExpiresAt: String(payload.reservationExpiresAt),
+                serverTime: payload.serverTime != null ? String(payload.serverTime) : null,
+              })
+              return
+            }
             window.location.href = payload.checkoutUrl
             return
           }
@@ -281,6 +312,12 @@ export function useCheckoutWizardModel(
       setIsSubmitting(false)
     }
   }, [buildOrderPayload, clearCart, formData.methods.paymentMethod, router, shopEnabled])
+
+  const goToStripeNow = React.useCallback(() => {
+    if (stripeRedirectHold?.checkoutUrl) {
+      window.location.href = stripeRedirectHold.checkoutUrl
+    }
+  }, [stripeRedirectHold])
 
   const renderStep = React.useCallback(() => {
     const stepId = CHECKOUT_WIZARD_STEPS[currentStep]?.id
@@ -347,5 +384,7 @@ export function useCheckoutWizardModel(
     renderStep,
     handleSubmitOrder,
     isSubmitting,
+    stripeRedirectHold,
+    goToStripeNow,
   }
 }

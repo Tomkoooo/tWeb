@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbConnectMock = vi.fn();
 const productFindByIdMock = vi.fn();
+const { decrementCheckoutLineStockMock } = vi.hoisted(() => ({
+  decrementCheckoutLineStockMock: vi.fn(),
+}));
 const cartFindOneAndUpdateMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const sendEmailMock = vi.fn();
@@ -29,6 +32,17 @@ vi.mock("@/services/mailer", () => ({
 vi.mock("@/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: flagEnabledMock },
 }));
+vi.mock("@/services/inventory-reservation", () => ({
+  decrementCheckoutLineStock: (...args: unknown[]) => decrementCheckoutLineStockMock(...args),
+  InventoryReservationError: class InventoryReservationError extends Error {
+    code: string;
+    constructor(message: string, code = "INSUFFICIENT_STOCK") {
+      super(message);
+      this.name = "InventoryReservationError";
+      this.code = code;
+    }
+  },
+}));
 
 describe("OrderService", () => {
   beforeEach(() => {
@@ -50,6 +64,7 @@ describe("OrderService", () => {
     });
     orderSaveMock.mockResolvedValue(undefined);
     sendEmailMock.mockResolvedValue(undefined);
+    decrementCheckoutLineStockMock.mockResolvedValue(undefined);
   });
 
   it("creates order and executes side effects", async () => {
@@ -65,6 +80,7 @@ describe("OrderService", () => {
     );
     expect(order._id).toBe("order1");
     expect(orderConstructorMock).toHaveBeenCalled();
+    expect(decrementCheckoutLineStockMock).toHaveBeenCalled();
     expect(sendEmailMock).toHaveBeenCalled();
   });
 
@@ -77,7 +93,10 @@ describe("OrderService", () => {
   });
 
   it("throws when product is missing", async () => {
-    productFindByIdMock.mockResolvedValue(null);
+    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    decrementCheckoutLineStockMock.mockRejectedValueOnce(
+      new InventoryReservationError("A termék nem található", "TRANSACTION_FAILED")
+    );
     const { OrderService } = await import("@/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
@@ -85,20 +104,10 @@ describe("OrderService", () => {
         billingInfo: {},
         shippingAddress: {},
       })
-    ).rejects.toThrow("not found");
+    ).rejects.toThrow("A termék nem található");
   });
 
   it("handles variant stock deduction path", async () => {
-    productFindByIdMock.mockResolvedValueOnce({
-      _id: "p1",
-      name: "Product 1",
-      stock: 10,
-      isActive: true,
-      isVisible: true,
-      variants: [{ id: "v1", stock: 3, isActive: true }],
-      requireVariantSelection: true,
-      save: vi.fn(),
-    });
     const { OrderService } = await import("@/services/order");
     const order = await OrderService.createOrderFromCheckoutData({
       items: [{ product: "507f1f77bcf86cd799439011", variantId: "v1", quantity: 1 }],
@@ -107,18 +116,17 @@ describe("OrderService", () => {
       total: 1000,
     });
     expect(order._id).toBe("order1");
+    expect(decrementCheckoutLineStockMock).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ product: "507f1f77bcf86cd799439011", variantId: "v1", quantity: 1 })
+    );
   });
 
   it("throws for insufficient stock", async () => {
-    productFindByIdMock.mockResolvedValueOnce({
-      _id: "p1",
-      name: "Product 1",
-      stock: 0,
-      isActive: true,
-      isVisible: true,
-      variants: [],
-      save: vi.fn(),
-    });
+    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    decrementCheckoutLineStockMock.mockRejectedValueOnce(
+      new InventoryReservationError("Nincs elég készlet", "INSUFFICIENT_STOCK")
+    );
     const { OrderService } = await import("@/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
@@ -127,7 +135,7 @@ describe("OrderService", () => {
         shippingAddress: { name: "User", zip: "1111", city: "Bp", street: "Test 1" },
         total: 1000,
       })
-    ).rejects.toThrow("Insufficient stock");
+    ).rejects.toThrow("Nincs elég készlet");
   });
 });
 

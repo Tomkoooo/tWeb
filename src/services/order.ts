@@ -7,6 +7,11 @@ import { MailerService } from "./mailer";
 import { FeatureFlagService } from "./feature-flags";
 import { InvoicingSzamlazzService } from "./invoicing-szamlazz";
 import { formatOrderNumber } from "@/lib/order-number";
+import {
+  decrementCheckoutLineStock,
+  InventoryReservationError,
+  restoreCheckoutLineStock,
+} from "@/services/inventory-reservation";
 
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
@@ -16,7 +21,7 @@ export class OrderService {
   static async createOrderFromCheckoutData(
     orderData: any,
     userId?: string,
-    options?: { enforceShopEnabled?: boolean }
+    options?: { enforceShopEnabled?: boolean; skipStockDecrement?: boolean }
   ) {
     if (options?.enforceShopEnabled !== false) {
       const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
@@ -26,7 +31,11 @@ export class OrderService {
     }
     await dbConnect();
 
-    await this.validateAndUpdateStock(orderData);
+    if (options?.skipStockDecrement) {
+      await this.validateReservedStockStillCoversOrder(orderData);
+    } else {
+      await this.validateAndUpdateStockTransactional(orderData);
+    }
 
     // 2. Create the order
     const order = new Order({
@@ -45,49 +54,56 @@ export class OrderService {
     return order;
   }
 
-  private static async validateAndUpdateStock(orderData: any) {
+  /** After Stripe inventory hold: DB stock already lowered; verify lines still fit remaining stock. */
+  private static async validateReservedStockStillCoversOrder(orderData: any) {
     for (const item of orderData.items) {
-      const product = await Product.findById(item.product);
+      const product = await Product.findById(item.product).lean();
       if (!product) throw new Error(`Product ${item.product} not found`);
       if (!product.isActive || !product.isVisible) throw new Error(`${product.name} is no longer available`);
       const hasVariants = Array.isArray((product as any).variants) && (product as any).variants.length > 0;
       const requireVariantSelection = Boolean((product as any).requireVariantSelection) && hasVariants;
 
       if (item.variantId) {
-        if (!hasVariants) {
-          throw new Error(`Érvénytelen variáns a termékhez: ${product.name}`);
-        }
-        const variantIndex = (product as any).variants.findIndex(
-          (variant: any) => variant.id === item.variantId
-        );
-        if (variantIndex < 0) {
-          throw new Error(`Érvénytelen variáns: ${product.name}`);
-        }
-
-        const variant = (product as any).variants[variantIndex];
+        if (!hasVariants) throw new Error(`Érvénytelen variáns a termékhez: ${product.name}`);
+        const variant = (product as any).variants.find((v: any) => v.id === item.variantId);
+        if (!variant) throw new Error(`Érvénytelen variáns: ${product.name}`);
         if (variant.isActive === false) {
           throw new Error(`A kiválasztott variáns már nem elérhető: ${product.name}`);
         }
         if ((variant.stock || 0) < item.quantity) {
           throw new Error(`Nincs elég készlet a kiválasztott variánshoz: ${product.name}`);
         }
-
-        (product as any).variants[variantIndex].stock = (variant.stock || 0) - item.quantity;
       } else if (requireVariantSelection) {
-        if (!item.variantId) {
-          throw new Error(`Válassz variánst a termékhez: ${product.name}`);
-        }
+        if (!item.variantId) throw new Error(`Válassz variánst a termékhez: ${product.name}`);
       } else {
         if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
-        product.stock -= item.quantity;
       }
-      if (hasVariants) {
-        (product as any).stock = (product as any).variants.reduce(
-          (sum: number, current: any) => sum + (current.stock || 0),
-          0
-        );
+    }
+  }
+
+  /** Per-line atomic decrement for non-Stripe checkout (no reservation rows; standalone-Mongo safe). */
+  private static async validateAndUpdateStockTransactional(orderData: any) {
+    const applied: { product: string; variantId?: string; quantity: number }[] = [];
+    try {
+      for (const item of orderData.items) {
+        const line = {
+          product: String(item.product),
+          variantId: item.variantId,
+          quantity: item.quantity,
+        };
+        await decrementCheckoutLineStock(undefined, line);
+        applied.push(line);
       }
-      await product.save();
+    } catch (e: any) {
+      for (const line of applied.reverse()) {
+        try {
+          await restoreCheckoutLineStock(line);
+        } catch {
+          /* best-effort rollback */
+        }
+      }
+      if (e instanceof InventoryReservationError) throw new Error(e.message);
+      throw e instanceof Error ? e : new Error(String(e));
     }
   }
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { useCheckoutWizardModel } from "@/components/checkout/use-checkout-wizard-model"
+import { ReservationCountdown } from "@/components/checkout/ReservationCountdown"
 import type { CartItem } from "@/store/useCartStore"
 
 export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "embedded" }) {
@@ -30,17 +31,66 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
     renderStep,
     handleSubmitOrder,
     isSubmitting,
+    stripeRedirectHold,
+    goToStripeNow,
   } = wizard
 
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  React.useEffect(() => {
+    if (searchParams.get("stripeCancelled") !== "1") return
+    const id = typeof window !== "undefined" ? sessionStorage.getItem("stripeTempOrderId") : null
+    if (!id) return
+    void fetch("/api/checkout/stripe/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempOrderId: id }),
+    }).finally(() => {
+      try {
+        sessionStorage.removeItem("stripeTempOrderId")
+      } catch {
+        /* ignore */
+      }
+    })
+  }, [searchParams])
 
   const mainShell = embedded
     ? "min-h-0 bg-transparent py-2 pb-8 px-2 sm:px-3"
     : "min-h-screen bg-background pt-48 pb-20 px-6"
 
   return (
-    <main className={mainShell}>
+    <main className={cn(mainShell, "relative")}>
+      {stripeRedirectHold ? (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-background/95 px-6 py-10"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="stripe-redirect-title"
+        >
+          <div className="max-w-md w-full space-y-8 border border-border bg-card p-8 shadow-lg">
+            <h2 id="stripe-redirect-title" className="text-xl font-heading font-black uppercase tracking-tight">
+              Stripe fizetés
+            </h2>
+            <ReservationCountdown
+              reservationExpiresAtIso={stripeRedirectHold.reservationExpiresAt}
+              serverTimeIso={stripeRedirectHold.serverTime}
+              appearance="light"
+            />
+            <p className="text-sm text-muted-foreground">
+              Néhány másodperc múlva automatikusan átirányítunk a biztonságos fizetőoldalra. A készlet addig marad
+              lefoglalva, amíg a visszaszámláló le nem jár.
+            </p>
+            <Button
+              type="button"
+              className="w-full h-12 rounded-none font-black uppercase tracking-widest text-xs"
+              onClick={goToStripeNow}
+            >
+              Tovább a Stripe-hoz most
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {searchParams.get("stripeCancelled") === "1" && (
         <div className="container mx-auto max-w-4xl mb-10">
           <div className="border border-amber-500/35 bg-amber-500/10 px-6 py-5 space-y-4">
