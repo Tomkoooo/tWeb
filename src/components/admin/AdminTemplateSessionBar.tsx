@@ -77,7 +77,7 @@ export function AdminTemplateSessionBar({
         ) : null}
       </div>
       {clearError ? (
-        <p className="mt-2 text-xs text-red-400">Try again or open /admin/templates and use “Előnézet törlése”.</p>
+        <p className="mt-2 text-xs text-red-400">Try again or open /admin/templates and use “Előnézet kikapcsolása”.</p>
       ) : null}
     </div>
   )

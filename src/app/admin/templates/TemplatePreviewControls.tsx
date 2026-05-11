@@ -92,7 +92,7 @@ export function TemplatePreviewControls({
           onClick={clearPreview}
           disabled={pending}
         >
-          Előnézet törlése
+          Előnézet kikapcsolása
         </Button>
       ) : null}
       {isActive ? (

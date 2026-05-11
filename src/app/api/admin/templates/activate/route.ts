@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     templateVersion: template.manifest.version,
   })
   // Preview overrides `ActiveTemplate` for admins; clear it so the storefront
-  // matches the newly activated template without requiring "Előnézet törlése".
+  // matches the newly activated template without requiring "Előnézet kikapcsolása".
   response.cookies.delete(TEMPLATE_PREVIEW_COOKIE)
   return response
 }
