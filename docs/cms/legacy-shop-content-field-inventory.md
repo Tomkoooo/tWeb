@@ -1,12 +1,13 @@
-# Homepage CMS Field Inventory
+# Legacy `ShopContent` field inventory
 
-This inventory captures the current legacy homepage CMS contract so we can redesign the CMS safely.
+The storefront **homepage** is driven by **`PageContentService`** and the block snapshot (`HomepageSnapshot`); see [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](./HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
 
-## Source of Truth
+This note lists **flat `ShopContent` document keys** still defined in `ShopContentService` (`src/services/shop-content.ts`) for **legacy MongoDB rows** and any tooling that reads that collection. It is **not** the live homepage authoring contract.
 
-- `src/services/shop-content.ts`
-- `src/app/page.tsx`
-- `src/app/admin/cms/page.tsx`
+## Source of truth (keys and persistence)
+
+- `src/services/shop-content.ts` — `ShopContentKey` union and CRUD helpers
+- `src/models/ShopContent.ts` — Mongoose model
 
 ## Text Fields by Section
 

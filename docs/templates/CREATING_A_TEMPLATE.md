@@ -8,11 +8,11 @@ A **Layout Template** controls the visual structure of every public page in the 
 - **Theme tokens** — optional packaged palette (`defaultTheme`) per template; admins can override any token
 - **Editor panels** — admin UI for editing the page content
 
-Templates live under [src/templates/](../src/templates) as TypeScript modules. Adding or modifying a template requires a redeploy. This is by design and is the security boundary: non-developers cannot run new code on the live site.
+Templates live under [src/templates/](../../src/templates) as TypeScript modules. Adding or modifying a template requires a redeploy. This is by design and is the security boundary: non-developers cannot run new code on the live site.
 
-If you've never built a template before, copy [src/templates/default-modern](../src/templates/default-modern) and modify it. The contract is in [src/templates/types.ts](../src/templates/types.ts).
+If you've never built a template before, copy [src/templates/default-modern](../../src/templates/default-modern) and modify it. The contract is in [src/templates/types.ts](../../src/templates/types.ts).
 
-**Landing-only deployments:** Operators can set `ENABLE_SHOP=false` to hide the storefront and shop admin UI. Templates should honor optional **`ChromeProps.shopEnabled`** in Navbar/Footer (see [`src/lib/active-chrome.ts`](../src/lib/active-chrome.ts)).
+**Landing-only deployments:** Operators can set `ENABLE_SHOP=false` to hide the storefront and shop admin UI. Templates should honor optional **`ChromeProps.shopEnabled`** in Navbar/Footer (see [`src/lib/active-chrome.ts`](../../src/lib/active-chrome.ts)).
 
 ---
 
@@ -73,7 +73,7 @@ src/templates/<template-id>/
 
 ## The contract
 
-A template is a value of type `TemplateModule` from [src/templates/types.ts](../src/templates/types.ts):
+A template is a value of type `TemplateModule` from [src/templates/types.ts](../../src/templates/types.ts):
 
 ```ts
 import { DEFAULT_TEMPLATE_SURFACES, defineTemplate } from "@/templates/types"
@@ -113,7 +113,7 @@ export const myTemplate = defineTemplate({
 
 ### `deployment` (landing vs commerce)
 
-[`TemplateManifest.deployment`](../src/templates/types.ts) is **merchant intent**, not enforcement: `ENABLE_SHOP` still disables APIs and CMS shop entries regardless.
+[`TemplateManifest.deployment`](../../src/templates/types.ts) is **merchant intent**, not enforcement: `ENABLE_SHOP` still disables APIs and CMS shop entries regardless.
 
 - **`commerce`**: Full storefront positioning; `capabilities.restyles` may include **`home`**, **`shop`**, **`pdp`**.
 - **`landing`**: Brochure / marketing-first. **`defineTemplate`** forbids listing **`shop`** or **`pdp`** in **`restyles`** — keep shop/PDP `PageDefinition` modules in code for typings, but do not advertise them as restyled surfaces.
@@ -122,18 +122,18 @@ Admin **Sablonok** lists a badge (**Teljes bolt** vs **Landing / marketing**).
 
 ### Product detail page editorial placement
 
-The product route **[`products/[slug]/page.tsx`](../src/app/products/[slug]/page.tsx)** delegates to **`template.pages.pdp.Render`**, which typically feeds **[`ProductDetail`](../src/app/products/[slug]/ProductDetail.tsx)**. **`PdpRender`** may pass **`introPlacement`** to `ProductDetail`:
+The product route **[`products/[slug]/page.tsx`](../../src/app/products/[slug]/page.tsx)** delegates to **`template.pages.pdp.Render`**, which typically feeds **[`ProductDetail`](../../src/app/products/[slug]/ProductDetail.tsx)**. **`PdpRender`** may pass **`introPlacement`** to `ProductDetail`:
 
 - **`aboveGrid`** (default): eyebrow/title/body + highlight cards render **above** the gallery / buy-box grid (legacy).
 - **`belowHero`**: same content renders **below** the two-column hero grid so shoppers see gallery + commerce UI first — avoids text-only first paint before the hero image fades in.
 
 ### `commerceSlots` (presentation slots)
 
-[`TemplateModule.commerceSlots`](../src/templates/types.ts) may set optional presentational components resolved by [`resolveCommerceSlots`](../src/templates/resolve-commerce-slots.tsx) (or the shorthands `resolveCommerceProductCard` / **`resolveCommerceShopRendering`** from [`@/templates/sdk`](../src/templates/sdk/index.ts)).
+[`TemplateModule.commerceSlots`](../../src/templates/types.ts) may set optional presentational components resolved by [`resolveCommerceSlots`](../../src/templates/resolve-commerce-slots.tsx) (or the shorthands `resolveCommerceProductCard` / **`resolveCommerceShopRendering`** from [`@/templates/sdk`](../../src/templates/sdk/index.ts)).
 
-- **`ProductCard`** — fully custom or engine-style card. The storefront passes it as **`deps.shopRendering.ProductCard`** on **[`/shop`](../src/app/shop/page.tsx)** via **`resolveCommerceShopRendering(template)`** (also used in the **admin shop CMS preview**). The homepage carousel resolves the same slot client-side using **`HomePageDeps.templateId`** inside [`Shop`](../src/components/sections/Shop.tsx).
+- **`ProductCard`** — fully custom or engine-style card. The storefront passes it as **`deps.shopRendering.ProductCard`** on **[`/shop`](../../src/app/shop/page.tsx)** via **`resolveCommerceShopRendering(template)`** (also used in the **admin shop CMS preview**). The homepage carousel resolves the same slot client-side using **`HomePageDeps.templateId`** inside [`Shop`](../../src/components/sections/Shop.tsx).
 - **`CategoryPill`** — optional chip/row for category and filter links. When set, **`/shop`** includes it on **`deps.shopRendering.CategoryPill`** (same helper). Your **`pages.shop.Render`** should render pills (see **`atelier-showcase`** `AtelierShopFilters` + `AtelierCategoryPill`).
-- **`NavbarSearch`** — optional replacement for engine [`LiveSearch`](../src/components/layout/LiveSearch.tsx). Public routes pass **`NavbarSearch`** from [`getActiveChrome()`](../src/lib/active-chrome.ts) into the template chrome `Navbar`.
+- **`NavbarSearch`** — optional replacement for engine [`LiveSearch`](../../src/components/layout/LiveSearch.tsx). Public routes pass **`NavbarSearch`** from [`getActiveChrome()`](../../src/lib/active-chrome.ts) into the template chrome `Navbar`.
 - **`PdpChrome`** — optional adornment wrapper for PDP when your `PdpRender` adopts it.
 
 ### Template engine boundaries
@@ -145,11 +145,11 @@ The product route **[`products/[slug]/page.tsx`](../src/app/products/[slug]/page
 | Homepage featured product cards | Yes | Same **`ProductCard`** slot + homepage **`templateId`** |
 | Navbar search field | Optional | `commerceSlots.NavbarSearch`; otherwise engine `LiveSearch` |
 | PDP core layout (variants, add-to-cart) | Yes (swap body) | Optional **`commerceSlots.ProductDetail`** replaces the full PDP product body; else engine UI. |
-| Cart / checkout / profile **main body** | Yes | **`flowPages.*.RouteMain`** replaces the default **`CartPageView` / `CheckoutPageView` / `ProfilePageView`** (see [`FlowRoutePageClient`](../src/components/flow-routes/FlowRoutePageClient.tsx)). Compose from **`Default*PageView`** only when you want default UX inside custom chrome. |
+| Cart / checkout / profile **main body** | Yes | **`flowPages.*.RouteMain`** replaces the default **`CartPageView` / `CheckoutPageView` / `ProfilePageView`** (see [`FlowRoutePageClient`](../../src/components/flow-routes/FlowRoutePageClient.tsx)). Compose from **`Default*PageView`** only when you want default UX inside custom chrome. |
 | Profile chrome (sidebar + main) | Yes (profile only) | **`flowPages.profile.RouteChrome`** |
 | Category filters | Yes | No single engine component is required — **`atelier-showcase`** replaces **`ShopFilters`** entirely inside **`ShopRender`**. |
 
-**Template SDK:** Prefer [`useTemplateCartActions`](../src/templates/sdk/use-template-cart-actions.ts) from `@/templates/sdk` when template or slot components need cart mutations, instead of importing the Zustand store module directly. Use **`resolveCommerceShopRendering`** when building custom admin previews that must mirror **`/shop`** deps.
+**Template SDK:** Prefer [`useTemplateCartActions`](../../src/templates/sdk/use-template-cart-actions.ts) from `@/templates/sdk` when template or slot components need cart mutations, instead of importing the Zustand store module directly. Use **`resolveCommerceShopRendering`** when building custom admin previews that must mirror **`/shop`** deps.
 
 ### Fully custom cart / checkout / profile UX (checklist)
 
@@ -161,13 +161,13 @@ The product route **[`products/[slug]/page.tsx`](../src/app/products/[slug]/page
 
 ### CMS UX: homepage block editor only
 
-Operators edit **one** surface: **`/admin/cms/home`**, via **`cmsPageKind: "homepage-blocks"`** + **`homepageSnapshotSchema`** + [`VisualHomepageEditor`](../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx). See [AI Agents Guide](./AI_AGENTS_TEMPLATE_GUIDE.md) § *Mandatory: homepage block CMS* and [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](./HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
+Operators edit **one** surface: **`/admin/cms/home`**, via **`cmsPageKind: "homepage-blocks"`** + **`homepageSnapshotSchema`** + [`VisualHomepageEditor`](../../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx). See [AI Agents Guide](./AI_AGENTS_TEMPLATE_GUIDE.md) § *Mandatory: homepage block CMS* and [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](../cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
 
-Declare **`pages.home.allowedBlocks`** (ordered list of homepage block keys like `hero`, `about`, `productGrid`, …) when the storefront [`RealHomepageSections`](../src/features/homepage-cms/render/RealHomepageSections.tsx)-driven layout only uses a subset: the CMS then shows hide/show chips and the block inserter **only for those types**, and published/draft payloads are pruned/stripped so stray blocks (`cta`, `gallery`, …) from older saves disappear. Omit **`allowedBlocks`** to derive allowed types from whatever appears in **`defaultContent.blocks`** (full block library UX).
+Declare **`pages.home.allowedBlocks`** (ordered list of homepage block keys like `hero`, `about`, `productGrid`, …) when the storefront [`RealHomepageSections`](../../src/features/homepage-cms/render/RealHomepageSections.tsx)-driven layout only uses a subset: the CMS then shows hide/show chips and the block inserter **only for those types**, and published/draft payloads are pruned/stripped so stray blocks (`cta`, `gallery`, …) from older saves disappear. Omit **`allowedBlocks`** to derive allowed types from whatever appears in **`defaultContent.blocks`** (full block library UX).
 
 ---
 
-Register your template in [src/templates/registry.ts](../src/templates/registry.ts):
+Register your template in [src/templates/registry.ts](../../src/templates/registry.ts):
 
 ```ts
 import { myTemplate } from "./my-template/template.config"
@@ -188,7 +188,7 @@ These three pages already exist in the engine. The template's job is to layout t
 The route file (`src/app/page.tsx`, `src/app/shop/page.tsx`, `src/app/products/[slug]/page.tsx`) fetches data and passes it to your `Render` as `deps`. Your `Render` receives `{ content, deps }`:
 
 - `content` is the admin-edited content for this page (validated by your `schema`).
-- `deps` is the page's data (products, categories, reviews, the product, etc.) — see `HomePageDeps`, `ShopPageDeps`, `PdpPageDeps` in [src/templates/types.ts](../src/templates/types.ts).
+- `deps` is the page's data (products, categories, reviews, the product, etc.) — see `HomePageDeps`, `ShopPageDeps`, `PdpPageDeps` in [src/templates/types.ts](../../src/templates/types.ts).
 
 You **must not** fetch data inside a Render (no DB, no service imports). The route owns data; the template owns layout.
 
@@ -200,23 +200,23 @@ These points describe how the bundled templates behave today and what new templa
 
 ### Navbar: account menu and admin access
 
-Chrome **must not** strand shoppers who need account settings or staff who need the dashboard. Prefer the same UX as the engine navbar in [`src/components/layout/Navbar.tsx`](../src/components/layout/Navbar.tsx): a visible account/profile control (dropdown or equivalent) that links to **`/profile`** (and related account flows) and exposes **`/admin`** when the viewer is allowed to access it.
+Chrome **must not** strand shoppers who need account settings or staff who need the dashboard. Prefer the same UX as the engine navbar in [`src/components/layout/Navbar.tsx`](../../src/components/layout/Navbar.tsx): a visible account/profile control (dropdown or equivalent) that links to **`/profile`** (and related account flows) and exposes **`/admin`** when the viewer is allowed to access it.
 
 Some registry templates ship a slimmer navbar without that menu—treat that as incomplete for production unless you add an equivalent pattern.
 
 ### Flow routes: framed vs full-bleed (`routeOnly`)
 
-`manifest.capabilities.restyles` still only lists **`home`**, **`shop`**, and **`pdp`**. **`/cart`**, **`/checkout`**, and **`/profile`** use [`StorefrontFlowShell`](../src/components/layout/StorefrontFlowShell.tsx) for **`Navbar` / `Footer`**, then [`FlowPageTemplateBridge`](../src/components/layout/FlowPageTemplateBridge.tsx) for optional template composition.
+`manifest.capabilities.restyles` still only lists **`home`**, **`shop`**, and **`pdp`**. **`/cart`**, **`/checkout`**, and **`/profile`** use [`StorefrontFlowShell`](../../src/components/layout/StorefrontFlowShell.tsx) for **`Navbar` / `Footer`**, then [`FlowPageTemplateBridge`](../../src/components/layout/FlowPageTemplateBridge.tsx) for optional template composition.
 
 **Default (`flowPageCompose` omitted):** **`Wrapper` → `shell` (optional) → `Body` (optional) → route `children`**. Same as before: **`Wrapper`** is required; **`Body`** must render **`children`** when used.
 
 **Full-bleed (`flowPageCompose: 'routeOnly'`):** the bridge renders **only** the route’s `children` (no **`Wrapper`**, **`shell`**, or **`Body`**). Set **`RouteMain`** to the component that owns **100% of the viewport between navbar and footer** — same creative scope as **`pages.home.Render`**. You **must not** set **`Wrapper`**, **`shell`**, or **`Body`** with **`routeOnly`** (`defineTemplate` rejects it). **`profile`** may still use **`RouteChrome`** in **`profile/layout.tsx`** (aside + main around nested routes).
 
-**`RouteMain`** is resolved by [`FlowRoutePageClient`](../src/components/flow-routes/FlowRoutePageClient.tsx) and receives **`shopEnabled`** + **`variant`**.
+**`RouteMain`** is resolved by [`FlowRoutePageClient`](../../src/components/flow-routes/FlowRoutePageClient.tsx) and receives **`shopEnabled`** + **`variant`**.
 
 ### Template SDK: flow business logic without default UI
 
-From [`@/templates/sdk`](../src/templates/sdk/index.ts):
+From [`@/templates/sdk`](../../src/templates/sdk/index.ts):
 
 - **`useTemplateCartActions()`** — cart lines, totals, **`addItem` / `removeItem` / `updateQuantity` / `clearCart`** (Zustand façade).
 - **`useCheckoutWizardModel()`** — checkout steps, **`/api/checkout/methods`**, validation between steps, **`buildOrderPayload`**, Stripe vs COD **`POST`** (same behaviour as engine checkout). Build **your own** layout; you may still render engine step pieces (**`BillingStep`**, **`ShippingStep`**, etc.) from **`@/components/checkout/*`** as building blocks, or replace them with custom fields that produce the same payload shape.
@@ -224,15 +224,15 @@ From [`@/templates/sdk`](../src/templates/sdk/index.ts):
 
 Optional reuse of the **entire** default page component: **`DefaultCartPageView`**, **`DefaultCheckoutPageView`**, **`DefaultProfilePageView`**.
 
-**PDP:** optional **`commerceSlots.ProductDetail`** replaces the **full product detail body**; omit it to keep the engine [`ProductDetail`](../src/components/shop/ProductDetail.tsx).
+**PDP:** optional **`commerceSlots.ProductDetail`** replaces the **full product detail body**; omit it to keep the engine [`ProductDetail`](../../src/components/shop/ProductDetail.tsx).
 
-For **`deployment: "commerce"`**, either use **`flowPageCompose: 'routeOnly'`** + custom **`RouteMain`** (see [`atelier-showcase/template.config.ts`](../src/templates/atelier-showcase/template.config.ts)) or the framed **`Wrapper`** pattern like [`default-modern/template.config.ts`](../src/templates/default-modern/template.config.ts).
+For **`deployment: "commerce"`**, either use **`flowPageCompose: 'routeOnly'`** + custom **`RouteMain`** (see [`atelier-showcase/template.config.ts`](../../src/templates/atelier-showcase/template.config.ts)) or the framed **`Wrapper`** pattern like [`default-modern/template.config.ts`](../../src/templates/default-modern/template.config.ts).
 
 The storefront **catalog and search-query UX** is **`/shop`**, restyled by **`pages.shop.Render`** — not a separate template “search page” unless you add new engine routes.
 
 ### Shop page: search query vs filters
 
-`/shop` supports query-string filters (category, sale, sort, pagination) wired in the route. **`default-modern`** mounts the shared [`ShopFilters`](../src/components/shop/ShopFilters.tsx) component so filtering works.
+`/shop` supports query-string filters (category, sale, sort, pagination) wired in the route. **`default-modern`** mounts the shared [`ShopFilters`](../../src/components/shop/ShopFilters.tsx) component so filtering works.
 
 **`minimal-shop`** omits filter UI altogether. **`vivid-storefront`** shows filter affordances that are **not** wired to `ShopFilters` or URL state—purely cosmetic. New templates should either integrate **`ShopFilters`** (and preserve `buildPageHref` / query params) or intentionally omit filters, not imitate a dead control.
 
@@ -242,7 +242,7 @@ If the whole header uses `bg-primary`, a shop whose brand primary is red (or neo
 
 ### Contact / “mail” content on the homepage
 
-**`default-modern`** maps `pages.home` to the legacy homepage block CMS (`homepageSnapshotSchema` in [`src/features/homepage-cms/`](../features/homepage-cms/)), which includes a **contact** block (mail-oriented copy + structured contact fields rendered by the shared block registry).
+**`default-modern`** maps `pages.home` to the homepage block CMS (`homepageSnapshotSchema` in [`src/features/homepage-cms/`](../../src/features/homepage-cms/)), which includes a **contact** block (mail-oriented copy + structured contact fields rendered by the shared block registry).
 
 **`minimal-shop`** and **`vivid-storefront`** define their own home `schema.ts` / `EditorPanel.tsx` stacks and **do not** expose that contact block—they are not drop-in substitutes if you relied on configurable mail/contact sections like the default template.
 
@@ -271,7 +271,7 @@ Static pages can render any layout you want, but they receive only `{ branding }
 
 ## Theme tokens
 
-`TemplateModule.defaultTheme` is **optional**. When set, it defines the **baseline** palette for that template: the root layout applies `getEffectiveThemeBase(activeTemplate)` merged with admin overrides from MongoDB (see [ThemeService](../src/services/theme.ts)). When omitted, the baseline is the engine’s built-in defaults (`ThemeService.defaults()`).
+`TemplateModule.defaultTheme` is **optional**. When set, it defines the **baseline** palette for that template: the root layout applies `getEffectiveThemeBase(activeTemplate)` merged with admin overrides from MongoDB (see [ThemeService](../../src/services/theme.ts)). When omitted, the baseline is the engine’s built-in defaults (`ThemeService.defaults()`).
 
 Persistence model:
 
@@ -291,7 +291,7 @@ See `src/app/globals.css` for the full mapping from tokens to Tailwind colors.
 
 Non-home pages still ship an **`EditorPanel`** in the **`PageDefinition`** contract (for typing, tests, and possible future tools) but **are not mounted** from **`/admin/cms`** — only the homepage block editor is.
 
-The homepage uses [`VisualHomepageEditor`](../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx) instead of the per-page `EditorPanel`. For block-based home, compose primitives from [`features/homepage-cms`](../src/features/homepage-cms/) and shared sections as in `default-modern`.
+The homepage uses [`VisualHomepageEditor`](../../src/features/homepage-cms/components/editor/VisualHomepageEditor.tsx) instead of the per-page `EditorPanel`. For block-based home, compose primitives from [`features/homepage-cms`](../../src/features/homepage-cms/) and shared sections as in `default-modern`.
 
 ### Homepage block CMS (policy for **new** registry templates)
 
@@ -317,7 +317,7 @@ The homepage uses [`VisualHomepageEditor`](../src/features/homepage-cms/componen
 - `@/lib/utils`, `@/lib/images`
 - `framer-motion`, `lucide-react`, `react`, `react-dom`, `next/*`, `zod`, `clsx`, `tailwind-merge`
 
-**Forbidden** (lint-enforced; see [eslint.config.mjs](../eslint.config.mjs)):
+**Forbidden** (lint-enforced; see [eslint.config.mjs](../../eslint.config.mjs)):
 
 - `@/services/*` — templates do not fetch data.
 - `@/models/*` — templates do not touch MongoDB.
@@ -394,7 +394,7 @@ export class BlogService {
 
 ### Step 3: Add admin CRUD pages
 
-Create `src/app/admin/blog/page.tsx` (list), `src/app/admin/blog/new/page.tsx`, and `src/app/admin/blog/[id]/page.tsx`. Add a sidebar entry in [src/components/admin/AdminSidebar.tsx](../src/components/admin/AdminSidebar.tsx). Use `requireAdmin()` for protection. Pattern: copy the existing `src/app/admin/products/` flow.
+Create `src/app/admin/blog/page.tsx` (list), `src/app/admin/blog/new/page.tsx`, and `src/app/admin/blog/[id]/page.tsx`. Add a sidebar entry in [src/components/admin/AdminSidebar.tsx](../../src/components/admin/AdminSidebar.tsx). Use `requireAdmin()` for protection. Pattern: copy the existing `src/app/admin/products/` flow.
 
 ### Step 4: Add the public routes
 
@@ -429,7 +429,7 @@ For most fork operators, a Notion- or Substack-embedded "blog" link in the navba
 - [ ] Every page schema is `z.object({ ... })` and `defaultContent` parses cleanly via `schema.parse(defaultContent)`.
 - [ ] Tailwind colors used are defined as theme tokens (not hard-coded hex unless intentional).
 - [ ] Static pages use only the schemas your `EditorPanel` actually exposes.
-- [ ] Navbar includes account/profile entry to **`/profile`** and staff path to **`/admin`** where applicable (mirror [`Navbar`](../src/components/layout/Navbar.tsx) unless you consciously improve on it).
+- [ ] Navbar includes account/profile entry to **`/profile`** and staff path to **`/admin`** where applicable (mirror [`Navbar`](../../src/components/layout/Navbar.tsx) unless you consciously improve on it).
 - [ ] Navbar chrome is **not** a flat `bg-primary` slab; accents use primary, background stays readable.
 - [ ] Shop filtering either uses **`ShopFilters`** with correct query handling or omits filters—no decorative non-working filter buttons.
 - [ ] Newsletter signup UI is hidden when the **`newsletter`** feature flag is off (if your template exposes newsletter at all).
