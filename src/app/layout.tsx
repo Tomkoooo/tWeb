@@ -4,8 +4,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SeoSettingsService } from "@/services/seo-settings";
 import { BrandingSettingsService } from "@/services/branding-settings";
-import { ThemeService } from "@/services/theme";
+import { getEffectiveThemeBase, ThemeService } from "@/services/theme";
 import { TemplateService } from "@/services/template";
+import { readPreviewTemplateId } from "@/services/template-preview";
 import { themeTokensToCssVars } from "@/lib/theme-css-vars";
 
 const geistSans = Geist({
@@ -74,11 +75,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [seo, template] = await Promise.all([
+  const [seo, template, previewTemplateId] = await Promise.all([
     SeoSettingsService.get(),
     TemplateService.getActive(),
+    readPreviewTemplateId(),
   ]);
-  const theme = await ThemeService.getMergedForTemplate(template);
+  // In admin preview mode, show the preview template's own defaultTheme without
+  // applying stored overrides — those were tuned against the DB-active template's
+  // baseline (or are a legacy full snapshot) and would mask what the previewed
+  // template ships with. The active template still uses merged overrides.
+  const isPreviewing = previewTemplateId === template.manifest.id;
+  const theme = isPreviewing
+    ? getEffectiveThemeBase(template)
+    : await ThemeService.getMergedForTemplate(template);
   const themeVars = themeTokensToCssVars(theme);
 
   return (

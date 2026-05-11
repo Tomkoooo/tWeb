@@ -85,14 +85,16 @@ export function TemplatePreviewControls({
       >
         {isPreviewTarget ? "Előnézet (aktuális)" : "Előnézet"}
       </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={clearPreview}
-        disabled={pending}
-      >
-        Előnézet törlése
-      </Button>
+      {isPreviewTarget ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={clearPreview}
+          disabled={pending}
+        >
+          Előnézet törlése
+        </Button>
+      ) : null}
       {isActive ? (
         <span className="ml-auto text-xs font-semibold uppercase tracking-widest text-green-500">
           Aktív sablon
