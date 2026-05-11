@@ -51,6 +51,7 @@ export function ProductDetail({
   initialVariantId,
   editorial,
   introPlacement = "aboveGrid",
+  buyColumnFirst = false,
 }: {
   // Product document shape from Mongo varies; template shell only forwards server payload.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,6 +60,8 @@ export function ProductDetail({
   editorial?: ProductDetailEditorial
   /** Defaults to legacy order (intro above gallery). Story-style templates prefer `belowHero`. */
   introPlacement?: PdpEditorialPlacement
+  /** Editorial templates: lead with price / CTA column on desktop. */
+  buyColumnFirst?: boolean
 }) {
   const [mainImageLoaded, setMainImageLoaded] = useState(false)
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId || "")
@@ -259,7 +262,7 @@ export function ProductDetail({
     ) : null
 
   return (
-    <div className="container mx-auto px-4 py-24 animate-in fade-in duration-700 text-foreground md:py-32">
+    <div className="container mx-auto px-4 pb-24 pt-36 animate-in fade-in duration-700 text-foreground md:pb-32 md:pt-40">
       {introPlacement === "aboveGrid" && editorialIntroEl ? (
         <div className="mb-14">{editorialIntroEl}</div>
       ) : null}
@@ -269,7 +272,7 @@ export function ProductDetail({
       ) : null}
 
       <div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
-        <div className="space-y-6">
+        <div className={cn("space-y-6", buyColumnFirst && "lg:order-2")}>
           <div className="group relative aspect-square min-h-72 w-full overflow-hidden rounded-3xl border border-border bg-muted">
             {!mainImageLoaded && <Skeleton className="absolute inset-0 z-10" />}
             <FallbackImage
@@ -315,7 +318,7 @@ export function ProductDetail({
           ) : null}
         </div>
 
-        <div className="flex flex-col">
+        <div className={cn("flex flex-col", buyColumnFirst && "lg:order-1")}>
           <div className="mb-8">
             <Badge className="mb-6 rounded-full border-transparent bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {product.category?.name || "Category"}
@@ -466,7 +469,7 @@ export function ProductDetail({
                 (variantRequired && !selectedVariant)
               }
               className={cn(
-                "btn-krausz flex h-16 w-full gap-4 text-lg font-semibold uppercase tracking-widest transition-all duration-300",
+                "flex h-16 w-full gap-4 rounded-xl text-lg font-semibold uppercase tracking-widest transition-all duration-300",
                 isAdded
                   ? "bg-green-600 text-white hover:bg-green-600"
                   : "bg-primary text-primary-foreground hover:bg-primary/90",

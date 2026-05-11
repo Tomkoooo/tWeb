@@ -7,8 +7,11 @@ function FlowPassthrough({ children }: FlowPageWrapperProps) {
 }
 
 /**
- * Composes optional `flowPages[route]` pieces: **`Body`** (around engine `children`), then **`shell`** (persisted band),
- * then **`Wrapper`** — defaults are passthrough where omitted.
+ * Composes optional `flowPages[route]` pieces.
+ *
+ * - **`flowPageCompose: 'routeOnly'`** — renders **`children` only** (no `Wrapper`, `shell`, or `Body`).
+ *   Use with **`RouteMain`** for homepage‑grade full control between Navbar and Footer.
+ * - **Default** — `Wrapper` → `shell` (if any) → `Body` (if any) → `children`.
  */
 export default async function FlowPageTemplateBridge({
   route,
@@ -19,6 +22,11 @@ export default async function FlowPageTemplateBridge({
 }) {
   const { template, branding } = await getActiveChrome()
   const flowDef = template.flowPages?.[route]
+
+  if (flowDef?.flowPageCompose === "routeOnly") {
+    return <>{children}</>
+  }
+
   const Wrapper = flowDef?.Wrapper ?? FlowPassthrough
   const shellDef = flowDef?.shell
   const Body = flowDef?.Body

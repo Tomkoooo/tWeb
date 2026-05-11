@@ -1,22 +1,19 @@
 "use client"
 
 import type { FlowRouteKey } from "@/templates/types"
-import { CartPageView } from "@/app/cart/CartPageView"
-import { CheckoutPageView } from "@/app/checkout/CheckoutPageView"
-import { ProfilePageView } from "@/app/profile/ProfilePageView"
+import { FALLBACK_TEMPLATE_ID } from "@/templates/registry"
+import { FlowRoutePageClient } from "@/components/flow-routes/FlowRoutePageClient"
 
 /**
- * Mounts the same interactive engine UI as `/cart`, `/checkout`, `/profile` inside CMS / template shell previews.
+ * Mounts the same interactive flow UI as live routes inside CMS / template shell previews
+ * (respects `flowPages.*.RouteMain` when the template defines it).
  */
-export function FlowRouteInteractivePreview({ route }: { route: FlowRouteKey }) {
-  switch (route) {
-    case "cart":
-      return <CartPageView variant="embedded" />
-    case "checkout":
-      return <CheckoutPageView variant="embedded" />
-    case "profile":
-      return <ProfilePageView variant="embedded" />
-    default:
-      return null
-  }
+export function FlowRouteInteractivePreview({
+  route,
+  templateId = FALLBACK_TEMPLATE_ID,
+}: {
+  route: FlowRouteKey
+  templateId?: string
+}) {
+  return <FlowRoutePageClient templateId={templateId} flowRoute={route} variant="embedded" />
 }

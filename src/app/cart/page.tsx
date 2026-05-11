@@ -1,7 +1,7 @@
-"use client"
+import { TemplateService } from "@/services/template"
+import { FlowRoutePageClient } from "@/components/flow-routes/FlowRoutePageClient"
 
-import { CartPageView } from "./CartPageView"
-
-export default function CartPage() {
-  return <CartPageView variant="page" />
+export default async function CartPage() {
+  const template = await TemplateService.getActive()
+  return <FlowRoutePageClient templateId={template.manifest.id} flowRoute="cart" variant="page" />
 }

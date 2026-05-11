@@ -162,7 +162,7 @@ export default async function CmsPageEditor({
 
     case "page:pdp": {
       const product = await getPdpPreviewProduct()
-      const pdpDeps = { product, selectedVariantId: undefined }
+      const pdpDeps = { product, selectedVariantId: undefined, templateId: template.manifest.id }
       const initialDraft = initialDraftUnknown as PdpContent
       return (
         <SurfacePageLayout

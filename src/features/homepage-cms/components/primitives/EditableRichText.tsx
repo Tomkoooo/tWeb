@@ -14,6 +14,7 @@ type Props = {
 
 export function EditableRichText({ html, onChange, editMode }: Props) {
   const editor = useEditor({
+    immediatelyRender: false,
     editable: editMode,
     extensions: [StarterKit, Link, Underline],
     content: html,

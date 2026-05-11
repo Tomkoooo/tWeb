@@ -19,7 +19,7 @@ export function findPageDefinition(
   if (flowRoute) {
     const shell = template.flowPages?.[flowRoute]?.shell
     return shell
-      ? (flowShellDefinitionAsPageDefinition(shell, pageKey) as PageDefinition<unknown>)
+      ? (flowShellDefinitionAsPageDefinition(shell, pageKey, template.manifest.id) as PageDefinition<unknown>)
       : null
   }
 

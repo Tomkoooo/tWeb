@@ -3,6 +3,7 @@ import type { ZodType } from "zod"
 import { THEME_TOKEN_KEYS } from "@/lib/theme-token-keys"
 import type { ThemeTokens } from "@/services/theme"
 import type { FooterSettings } from "@/services/footer-settings"
+import type { ProductDetailEditorial } from "@/app/products/[slug]/ProductDetail"
 
 export type RestyledPage = "home" | "shop" | "pdp"
 
@@ -109,6 +110,8 @@ export type ShopPageDeps = {
    */
   shopRendering?: {
     ProductCard?: ComponentType<{ product: unknown }>
+    /** Optional category / filter chip from `commerceSlots.CategoryPill` (see `resolveCommerceShopRendering`). */
+    CategoryPill?: ComponentType<{ label: string; active?: boolean; href?: string }>
   }
 }
 
@@ -118,6 +121,8 @@ export type PdpEditorialPlacement = "aboveGrid" | "belowHero"
 export type PdpPageDeps = {
   product: unknown
   selectedVariantId?: string
+  /** Set by the product route for client-side `commerceSlots.ProductDetail` resolution. */
+  templateId: string
 }
 
 export type StaticPageDeps = {
@@ -134,6 +139,31 @@ export type FlowPageBodyProps = {
 
 export type FlowPageWrapperProps = {
   children: ReactNode
+}
+
+/** Props for optional `flowPages.*.RouteMain` (cart / checkout / profile page bodies). */
+export type FlowRouteMainProps = {
+  shopEnabled: boolean
+  variant?: "page" | "embedded"
+}
+
+/**
+ * Profile layout chrome (aside + main). Template `flowPages.profile.RouteChrome` replaces the default;
+ * must render `children` in the main column.
+ */
+export type FlowProfileRouteChromeProps = {
+  children: ReactNode
+  shopEnabled: boolean
+}
+
+/** Props for optional `commerceSlots.ProductDetail` (full PDP body). */
+export type ProductDetailSlotProps = {
+  product: unknown
+  initialVariantId?: string
+  editorial?: ProductDetailEditorial
+  introPlacement?: PdpEditorialPlacement
+  /** When true, buy box appears in the first column on large screens (gallery second). */
+  buyColumnFirst?: boolean
 }
 
 /** Branding-only deps for persisted flow shells (cart / checkout / profile editorial band). */
@@ -155,16 +185,36 @@ export type FlowPageShellDefinition<TContent = unknown> = {
   EditorPanel: ComponentType<EditorProps<TContent>>
 }
 
+/** How the engine composes flow routes under Navbar/Footer (see `FlowPageTemplateBridge`). */
+export type FlowPageComposeMode = "default" | "routeOnly"
+
 export type FlowPageDefinition = {
-  /** Optional layout wrapper around the route’s engine UI (spacing, backgrounds, sections). */
-  Wrapper: ComponentType<FlowPageWrapperProps>
-  /** Persisted as `page:cart` / `page:checkout` / `page:profile` when set. */
+  /**
+   * **`routeOnly`** — skip `Wrapper`, `shell`, and `Body`; render only the layout’s `children`
+   * (typically `FlowRoutePageClient` → `RouteMain`). Same creative scope as `pages.home.Render`:
+   * full width between chrome and footer. Requires **`RouteMain`**. Incompatible with **`shell`**, **`Body`**, and **`Wrapper`**.
+   */
+  flowPageCompose?: FlowPageComposeMode
+  /** Required unless `flowPageCompose === 'routeOnly'`. */
+  Wrapper?: ComponentType<FlowPageWrapperProps>
+  /** Persisted as `page:cart` / `page:checkout` / `page:profile` when set. Not used with `routeOnly`. */
   shell?: FlowPageShellDefinition
   /**
    * Optional composition slot around engine route UI (inside Wrapper + Shell if present).
-   * Must render `children` or checkout/cart flows will not appear.
+   * Must render `children` or checkout/cart flows will not appear. Not used with `routeOnly`.
    */
   Body?: ComponentType<FlowPageBodyProps>
+  /**
+   * When set, replaces the default engine page body (`CartPageView`, `CheckoutPageView`, `ProfilePageView`).
+   * With **`flowPageCompose: 'routeOnly'`**, this is the **entire** page surface (no extra engine wrappers).
+   * Compose default views from `@/templates/sdk` only when you intentionally reuse engine UI.
+   */
+  RouteMain?: ComponentType<FlowRouteMainProps>
+  /**
+   * **Profile only:** replaces default aside + main chrome around nested profile routes.
+   * Must render `children` inside the main content area.
+   */
+  RouteChrome?: ComponentType<FlowProfileRouteChromeProps>
 }
 
 export type AnyPageDeps =
@@ -294,6 +344,11 @@ export interface TemplateModule {
     /** Optional PDP adornment zone (wired when `pages.pdp.Render` adopts it — template-driven). */
     PdpChrome?: ComponentType<{ product: unknown; children?: ReactNode }>
     NavbarSearch?: ComponentType<NavbarSearchSlotProps>
+    /**
+     * Optional full PDP product UI (gallery, variants, add-to-cart). When omitted, the engine
+     * [`ProductDetail`](src/app/products/[slug]/ProductDetail.tsx) is used.
+     */
+    ProductDetail?: ComponentType<ProductDetailSlotProps>
   }
   editorPanels?: Record<string, ComponentType<EditorProps>>
 }
@@ -396,7 +451,7 @@ export function defineTemplate(template: TemplateModule): TemplateModule {
       `Template '${template.manifest.id}': commerceSlots.ProductCard must be a component`
     )
   }
-  for (const key of ["CategoryPill", "PdpChrome", "NavbarSearch"] as const) {
+  for (const key of ["CategoryPill", "PdpChrome", "NavbarSearch", "ProductDetail"] as const) {
     const slot = template.commerceSlots?.[key]
     if (slot != null && typeof slot !== "function") {
       throw new Error(`Template '${template.manifest.id}': commerceSlots.${key} must be a component`)
@@ -440,13 +495,53 @@ export function defineTemplate(template: TemplateModule): TemplateModule {
         )
       }
       const def = template.flowPages[key as FlowRouteKey]
-      if (!def || typeof def.Wrapper !== "function") {
-        throw new Error(
-          `Template '${template.manifest.id}': flowPages.${key} must define a Wrapper component`
-        )
+      if (!def) {
+        throw new Error(`Template '${template.manifest.id}': flowPages.${key} is empty`)
       }
-      if (def.Body && typeof def.Body !== "function") {
-        throw new Error(`Template '${template.manifest.id}': flowPages.${key}.Body must be a component`)
+      const routeOnly = def.flowPageCompose === "routeOnly"
+      if (routeOnly) {
+        if (def.shell) {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key} cannot use shell with flowPageCompose: 'routeOnly'`
+          )
+        }
+        if (def.Body) {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key} cannot use Body with flowPageCompose: 'routeOnly'`
+          )
+        }
+        if (def.Wrapper) {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key} cannot use Wrapper with flowPageCompose: 'routeOnly'`
+          )
+        }
+        if (!def.RouteMain || typeof def.RouteMain !== "function") {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key} with flowPageCompose: 'routeOnly' must define RouteMain`
+          )
+        }
+      } else {
+        if (!def.Wrapper || typeof def.Wrapper !== "function") {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key} must define a Wrapper component (or set flowPageCompose: 'routeOnly' with RouteMain)`
+          )
+        }
+        if (def.Body && typeof def.Body !== "function") {
+          throw new Error(`Template '${template.manifest.id}': flowPages.${key}.Body must be a component`)
+        }
+        if (def.RouteMain && typeof def.RouteMain !== "function") {
+          throw new Error(`Template '${template.manifest.id}': flowPages.${key}.RouteMain must be a component`)
+        }
+      }
+      if (def.RouteChrome) {
+        if (key !== "profile") {
+          throw new Error(
+            `Template '${template.manifest.id}': flowPages.${key}.RouteChrome is only supported for 'profile'`
+          )
+        }
+        if (typeof def.RouteChrome !== "function") {
+          throw new Error(`Template '${template.manifest.id}': flowPages.profile.RouteChrome must be a component`)
+        }
       }
       if (def.shell) {
         const sh = def.shell

@@ -67,7 +67,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       />
       <PdpRender
         content={pdpContent}
-        deps={{ product, selectedVariantId }}
+        deps={{ product, selectedVariantId, templateId: template.manifest.id }}
       />
       <Footer
         brandName={branding.brandName}

@@ -1,7 +1,7 @@
 import { CategoryService } from "@/services/category"
 import { ProductService } from "@/services/product"
 import type { TemplateModule } from "@/templates/types"
-import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
+import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
 
 /**
  * Server deps for `/admin/cms/shop` preview (mirrors storefront shape).
@@ -42,7 +42,7 @@ export async function getShopCmsPreviewDeps(
       sort?: string
       page?: number
     },
-    shopRendering: { ProductCard: resolveCommerceProductCard(template) },
+    shopRendering: resolveCommerceShopRendering(template),
   }
 }
 

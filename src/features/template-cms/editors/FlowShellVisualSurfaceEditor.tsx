@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@/features/template-cms/components/DefaultModernVisualCmsChrome"
@@ -58,7 +59,8 @@ export function FlowShellVisualSurfaceEditor({
   const router = useRouter()
   const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
   const flowDef = mod.flowPages![flowRoute]!
-  const Wrapper = flowDef.Wrapper
+  const FlowShellPreviewPassthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  const Wrapper = flowDef.Wrapper ?? FlowShellPreviewPassthrough
   const Shell = flowDef.shell!.Shell
 
   const flowDeps = {
@@ -151,14 +153,14 @@ export function FlowShellVisualSurfaceEditor({
           <SurfaceDocEditProvider enabled setPath={setPath}>
             <Wrapper>
               <Shell content={draft} deps={flowDeps}>
-                <FlowRouteInteractivePreview route={flowRoute} />
+                <FlowRouteInteractivePreview route={flowRoute} templateId={templateId} />
               </Shell>
             </Wrapper>
           </SurfaceDocEditProvider>
         ) : (
           <Wrapper>
             <Shell content={draft} deps={flowDeps}>
-              <FlowRouteInteractivePreview route={flowRoute} />
+              <FlowRouteInteractivePreview route={flowRoute} templateId={templateId} />
             </Shell>
           </Wrapper>
         )

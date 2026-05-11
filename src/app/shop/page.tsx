@@ -12,7 +12,7 @@ import {
   resolveStorefrontFooterContact,
   type CategoryTreeNode,
 } from "@/lib/storefront-footer-data"
-import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
+import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
 export async function generateMetadata({
   searchParams,
 }: {
@@ -155,7 +155,7 @@ export default async function ShopPage({
             sort: params.sort,
             page: currentPage,
           },
-          shopRendering: { ProductCard: resolveCommerceProductCard(template) },
+          shopRendering: resolveCommerceShopRendering(template),
         }}
       />
       <Footer

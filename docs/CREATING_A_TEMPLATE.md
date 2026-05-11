@@ -129,24 +129,35 @@ The product route **[`products/[slug]/page.tsx`](../src/app/products/[slug]/page
 
 ### `commerceSlots` (presentation slots)
 
-[`TemplateModule.commerceSlots`](../src/templates/types.ts) may set optional presentational components resolved by [`resolveCommerceSlots`](../src/templates/resolve-commerce-slots.ts) (or the shorthand `resolveCommerceProductCard` when you only need the card).
+[`TemplateModule.commerceSlots`](../src/templates/types.ts) may set optional presentational components resolved by [`resolveCommerceSlots`](../src/templates/resolve-commerce-slots.tsx) (or the shorthands `resolveCommerceProductCard` / **`resolveCommerceShopRendering`** from [`@/templates/sdk`](../src/templates/sdk/index.ts)).
 
-- **`ProductCard`** — **`"use client"`** wrapper around the engine card (or fully custom UI that still honours cart rules). Used on **[`/shop`](../src/app/shop/page.tsx)** as **`deps.shopRendering.ProductCard`** and on the **homepage product carousel** inside [`Shop`](../src/components/sections/Shop.tsx) (resolved client-side using **`HomePageDeps.templateId`**).
+- **`ProductCard`** — fully custom or engine-style card. The storefront passes it as **`deps.shopRendering.ProductCard`** on **[`/shop`](../src/app/shop/page.tsx)** via **`resolveCommerceShopRendering(template)`** (also used in the **admin shop CMS preview**). The homepage carousel resolves the same slot client-side using **`HomePageDeps.templateId`** inside [`Shop`](../src/components/sections/Shop.tsx).
+- **`CategoryPill`** — optional chip/row for category and filter links. When set, **`/shop`** includes it on **`deps.shopRendering.CategoryPill`** (same helper). Your **`pages.shop.Render`** should render pills (see **`atelier-showcase`** `AtelierShopFilters` + `AtelierCategoryPill`).
 - **`NavbarSearch`** — optional replacement for engine [`LiveSearch`](../src/components/layout/LiveSearch.tsx). Public routes pass **`NavbarSearch`** from [`getActiveChrome()`](../src/lib/active-chrome.ts) into the template chrome `Navbar`.
-- **`CategoryPill`**, **`PdpChrome`** — reserved optional keys for shop/PDP chroming; wire call sites when you need them.
+- **`PdpChrome`** — optional adornment wrapper for PDP when your `PdpRender` adopts it.
 
 ### Template engine boundaries
 
 | Area | Template-driven today? | Notes |
 |------|------------------------|--------|
-| Shop catalogue grid card | Yes | `commerceSlots.ProductCard` via `shopRendering` on `/shop` |
+| Shop catalogue grid card | Yes | `commerceSlots.ProductCard` via **`resolveCommerceShopRendering`** → **`deps.shopRendering.ProductCard`** |
+| Shop category / filter UI | Yes | Implement in **`pages.shop.Render`** (any layout). Optional **`CategoryPill`** slot is passed on **`deps.shopRendering`** when declared. |
 | Homepage featured product cards | Yes | Same **`ProductCard`** slot + homepage **`templateId`** |
 | Navbar search field | Optional | `commerceSlots.NavbarSearch`; otherwise engine `LiveSearch` |
-| PDP core layout (variants, checkout, pricing) | Mostly no | `PdpRender` composes engine UI; optional **`PdpChrome`** is for future adornment |
-| Cart / checkout / profile **inner** forms | No | `flowPages` **`Wrapper`**, optional **`shell`** band, optional **`Body`** slot — not a full route replacement |
-| Category filters | Partial | No dedicated slot; custom `ShopRender` or shared `ShopFilters` |
+| PDP core layout (variants, add-to-cart) | Yes (swap body) | Optional **`commerceSlots.ProductDetail`** replaces the full PDP product body; else engine UI. |
+| Cart / checkout / profile **main body** | Yes | **`flowPages.*.RouteMain`** replaces the default **`CartPageView` / `CheckoutPageView` / `ProfilePageView`** (see [`FlowRoutePageClient`](../src/components/flow-routes/FlowRoutePageClient.tsx)). Compose from **`Default*PageView`** only when you want default UX inside custom chrome. |
+| Profile chrome (sidebar + main) | Yes (profile only) | **`flowPages.profile.RouteChrome`** |
+| Category filters | Yes | No single engine component is required — **`atelier-showcase`** replaces **`ShopFilters`** entirely inside **`ShopRender`**. |
 
-**Template SDK:** Prefer [`useTemplateCartActions`](../src/templates/sdk/use-template-cart-actions.ts) from `@/templates/sdk` when template or slot components need cart mutations, instead of importing the Zustand store module directly.
+**Template SDK:** Prefer [`useTemplateCartActions`](../src/templates/sdk/use-template-cart-actions.ts) from `@/templates/sdk` when template or slot components need cart mutations, instead of importing the Zustand store module directly. Use **`resolveCommerceShopRendering`** when building custom admin previews that must mirror **`/shop`** deps.
+
+### Fully custom cart / checkout / profile UX (checklist)
+
+1. **`flowPages.<route>.RouteMain`** — client component; receives **`shopEnabled`** and **`variant`** (`FlowRouteMainProps`). When you return your own tree, the default page body is **not** mounted.
+2. **Cart** — use **`useTemplateCartActions()`** (or the cart store via the SDK façade) so line items, totals, and **`Link href="/checkout"`** stay compatible with the engine checkout route.
+3. **Checkout** — the default view owns the **Stripe + step validation** pipeline. For a different *look*, wrap **`DefaultCheckoutPageView`** or reuse pieces under **`src/components/checkout/`**. Replacing *logic* means re‑implementing those steps against the same APIs (high effort; not required for “different UI”).
+4. **Profile** — same pattern: **`DefaultProfilePageView`** for default forms, or custom UI that still posts to the same **`/api/user/profile`** patterns the engine uses.
+5. **`/shop`** — you own **`pages.shop.Render`**: grid, search, category tree, and which **`deps.shopRendering`** slots you read. Pass **`resolveCommerceShopRendering(template)`** from the shop route so **`ProductCard`** and **`CategoryPill`** match production.
 
 ### CMS UX: homepage block editor only
 
@@ -193,15 +204,29 @@ Chrome **must not** strand shoppers who need account settings or staff who need 
 
 Some registry templates ship a slimmer navbar without that menu—treat that as incomplete for production unless you add an equivalent pattern.
 
-### Flow routes: chrome + `flowPages` wrappers
+### Flow routes: framed vs full-bleed (`routeOnly`)
 
-`manifest.capabilities.restyles` still only lists **`home`**, **`shop`**, and **`pdp`** (the CMS-backed page surfaces). **`/cart`**, **`/checkout`** (including **`/checkout/success`**), and **`/profile`** are engine-managed **flow** routes: the App Router owns cart/checkout state and profile data, but **`getActiveChrome()`** supplies the active template’s **`Navbar`** and **`Footer`** with the same branding/footer settings as the rest of the storefront ([`StorefrontFlowShell`](../src/components/layout/StorefrontFlowShell.tsx)).
+`manifest.capabilities.restyles` still only lists **`home`**, **`shop`**, and **`pdp`**. **`/cart`**, **`/checkout`**, and **`/profile`** use [`StorefrontFlowShell`](../src/components/layout/StorefrontFlowShell.tsx) for **`Navbar` / `Footer`**, then [`FlowPageTemplateBridge`](../src/components/layout/FlowPageTemplateBridge.tsx) for optional template composition.
 
-Templates implement **`flowPages`** on [`TemplateModule`](../src/templates/types.ts): each route may define a **`Wrapper`** (layout around the engine body), an optional **`shell`** — a small **persisted** editorial band (schema + `Shell` + `EditorPanel` for typing only) stored as **`page:cart`**, **`page:checkout`**, or **`page:profile`** in `TemplateContent` — and an optional **`Body`** component that wraps the engine route UI **inside** the shell. [`FlowPageTemplateBridge`](../src/components/layout/FlowPageTemplateBridge.tsx) composes **`Wrapper` → `Shell` (if any) → `Body` (if any) → route `children`**. A **`Body`** implementation must render **`children`** or the flow page will be blank. There is **no** dedicated admin surface for shell copy beyond code defaults in this engine — change defaults in template code or extend the app if operators must edit it. Use shells for **titles, subtitles, trust copy** — not for replacing cart line items, Stripe, or account forms.
+**Default (`flowPageCompose` omitted):** **`Wrapper` → `shell` (optional) → `Body` (optional) → route `children`**. Same as before: **`Wrapper`** is required; **`Body`** must render **`children`** when used.
 
-For **`deployment: "commerce"`**, ship **`Wrapper`** components for **`cart`**, **`checkout`**, and **`profile`** so those URLs match the template’s layout language — same approach as [`default-modern/template.config.ts`](../src/templates/default-modern/template.config.ts). A passthrough (no `flowPages` or identity wrappers) is only for **landing**-first templates or **documented** minimal commerce shells where the README explains why cart/checkout/profile stay raw.
+**Full-bleed (`flowPageCompose: 'routeOnly'`):** the bridge renders **only** the route’s `children` (no **`Wrapper`**, **`shell`**, or **`Body`**). Set **`RouteMain`** to the component that owns **100% of the viewport between navbar and footer** — same creative scope as **`pages.home.Render`**. You **must not** set **`Wrapper`**, **`shell`**, or **`Body`** with **`routeOnly`** (`defineTemplate` rejects it). **`profile`** may still use **`RouteChrome`** in **`profile/layout.tsx`** (aside + main around nested routes).
 
-Cart lines, Stripe hand-offs, fulfillment forms, profile orders — all live under **`src/app/cart/`**, **`src/app/checkout/`**, **`src/app/profile/`**. **`flowPages.Wrapper` + optional `shell`** do **not** replace those trees; they wrap them. Full replacement of engine commerce UI would require forking the app routes.
+**`RouteMain`** is resolved by [`FlowRoutePageClient`](../src/components/flow-routes/FlowRoutePageClient.tsx) and receives **`shopEnabled`** + **`variant`**.
+
+### Template SDK: flow business logic without default UI
+
+From [`@/templates/sdk`](../src/templates/sdk/index.ts):
+
+- **`useTemplateCartActions()`** — cart lines, totals, **`addItem` / `removeItem` / `updateQuantity` / `clearCart`** (Zustand façade).
+- **`useCheckoutWizardModel()`** — checkout steps, **`/api/checkout/methods`**, validation between steps, **`buildOrderPayload`**, Stripe vs COD **`POST`** (same behaviour as engine checkout). Build **your own** layout; you may still render engine step pieces (**`BillingStep`**, **`ShippingStep`**, etc.) from **`@/components/checkout/*`** as building blocks, or replace them with custom fields that produce the same payload shape.
+- **`useProfileAccountModel()`** — load/save **`/api/user/profile`**, newsletter flag, sign-out / delete account.
+
+Optional reuse of the **entire** default page component: **`DefaultCartPageView`**, **`DefaultCheckoutPageView`**, **`DefaultProfilePageView`**.
+
+**PDP:** optional **`commerceSlots.ProductDetail`** replaces the **full product detail body**; omit it to keep the engine [`ProductDetail`](../src/components/shop/ProductDetail.tsx).
+
+For **`deployment: "commerce"`**, either use **`flowPageCompose: 'routeOnly'`** + custom **`RouteMain`** (see [`atelier-showcase/template.config.ts`](../src/templates/atelier-showcase/template.config.ts)) or the framed **`Wrapper`** pattern like [`default-modern/template.config.ts`](../src/templates/default-modern/template.config.ts).
 
 The storefront **catalog and search-query UX** is **`/shop`**, restyled by **`pages.shop.Render`** — not a separate template “search page” unless you add new engine routes.
 

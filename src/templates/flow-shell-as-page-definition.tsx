@@ -14,7 +14,8 @@ const PAGE_KEY_TO_ROUTE: Record<string, FlowRouteKey> = {
  */
 export function flowShellDefinitionAsPageDefinition(
   shell: FlowPageShellDefinition,
-  pageKey: string
+  pageKey: string,
+  templateId: string
 ): PageDefinition<unknown, FlowShellDeps> {
   const Shell = shell.Shell as ComponentType<{
     content: unknown
@@ -28,7 +29,7 @@ export function flowShellDefinitionAsPageDefinition(
     Render: function FlowShellCmsRender({ content, deps }) {
       return (
         <Shell content={content} deps={deps}>
-          {route ? <FlowRouteInteractivePreview route={route} /> : null}
+          {route ? <FlowRouteInteractivePreview route={route} templateId={templateId} /> : null}
         </Shell>
       )
     },

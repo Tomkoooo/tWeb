@@ -1,3 +1,5 @@
+"use client"
+
 import type { HomepageBlock } from "@/features/homepage-cms/types/block-types"
 import { getView } from "@/features/homepage-cms/registry/block-registry"
 

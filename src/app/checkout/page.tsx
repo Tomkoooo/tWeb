@@ -1,7 +1,7 @@
-"use client"
+import { TemplateService } from "@/services/template"
+import { FlowRoutePageClient } from "@/components/flow-routes/FlowRoutePageClient"
 
-import { CheckoutPageView } from "./CheckoutPageView"
-
-export default function CheckoutPage() {
-  return <CheckoutPageView variant="page" />
+export default async function CheckoutPage() {
+  const template = await TemplateService.getActive()
+  return <FlowRoutePageClient templateId={template.manifest.id} flowRoute="checkout" variant="page" />
 }

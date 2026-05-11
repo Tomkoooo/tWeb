@@ -1,7 +1,7 @@
-"use client"
+import { TemplateService } from "@/services/template"
+import { FlowRoutePageClient } from "@/components/flow-routes/FlowRoutePageClient"
 
-import { ProfilePageView } from "./ProfilePageView"
-
-export default function ProfilePage() {
-  return <ProfilePageView variant="page" />
+export default async function ProfilePage() {
+  const template = await TemplateService.getActive()
+  return <FlowRoutePageClient templateId={template.manifest.id} flowRoute="profile" variant="page" />
 }

@@ -147,15 +147,30 @@ describe("Template registry contract", () => {
         expect(typeof template.chrome.Footer).toBe("function")
       })
 
-      it("when flowPages is provided, keys are cart/checkout/profile with Wrapper components", () => {
+      it("when flowPages is provided, keys are cart/checkout/profile with valid compose rules", () => {
         const fp = template.flowPages
         if (!fp) return
         for (const key of FLOW_ROUTE_KEYS) {
           const def = fp[key]
           if (!def) continue
-          expect(typeof def.Wrapper, `${id}: flowPages.${key}.Wrapper`).toBe("function")
-          if (def.Body) {
-            expect(typeof def.Body, `${id}: flowPages.${key}.Body`).toBe("function")
+          const routeOnly = def.flowPageCompose === "routeOnly"
+          if (routeOnly) {
+            expect(typeof def.RouteMain, `${id}: flowPages.${key}.RouteMain (routeOnly)`).toBe("function")
+            expect(def.Wrapper, `${id}: routeOnly must omit Wrapper`).toBeUndefined()
+            expect(def.shell, `${id}: routeOnly must omit shell`).toBeUndefined()
+            expect(def.Body, `${id}: routeOnly must omit Body`).toBeUndefined()
+          } else {
+            expect(typeof def.Wrapper, `${id}: flowPages.${key}.Wrapper`).toBe("function")
+            if (def.Body) {
+              expect(typeof def.Body, `${id}: flowPages.${key}.Body`).toBe("function")
+            }
+            if (def.RouteMain) {
+              expect(typeof def.RouteMain, `${id}: flowPages.${key}.RouteMain`).toBe("function")
+            }
+          }
+          if (def.RouteChrome) {
+            expect(key, `${id}: RouteChrome only on profile`).toBe("profile")
+            expect(typeof def.RouteChrome, `${id}: flowPages.profile.RouteChrome`).toBe("function")
           }
         }
         for (const key of Object.keys(fp)) {
@@ -164,6 +179,12 @@ describe("Template registry contract", () => {
             `${id}: unexpected flowPages key '${key}'`
           ).toBe(true)
         }
+      })
+
+      it("when commerceSlots.ProductDetail is set it is callable", () => {
+        const c = template.commerceSlots?.ProductDetail
+        if (!c) return
+        expect(typeof c).toBe("function")
       })
 
       it("when flowPages route has shell, defaultContent validates against shell.schema", () => {
