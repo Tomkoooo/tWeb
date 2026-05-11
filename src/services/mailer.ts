@@ -14,6 +14,13 @@ export interface MailOptions {
   }[];
 }
 
+export interface SystemHtmlMailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}
+
 export const MailerService = {
   async getTransporter() {
     // In a real app, these would come from env vars
@@ -54,5 +61,17 @@ export const MailerService = {
     });
 
     return info;
-  }
+  },
+
+  /** Operational / alert mail without DB-backed EmailTemplate (e.g. invoice failures). */
+  async sendSystemHtmlEmail({ to, subject, html, text }: SystemHtmlMailOptions) {
+    const transporter = await this.getTransporter();
+    return transporter.sendMail({
+      from: `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
+      to,
+      subject,
+      html,
+      text,
+    });
+  },
 };

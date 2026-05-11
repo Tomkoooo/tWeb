@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductService } from "@/services/product";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function GET(request: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const searchParams = request.nextUrl.searchParams;
   const q = searchParams.get("q") || "";
   

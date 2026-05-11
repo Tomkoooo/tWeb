@@ -72,6 +72,74 @@ describe("checkout-validation unit", () => {
     expect(result.shippingMethod).toBe("ship1");
     expect(result.paymentMethod).toBe("pay1");
     expect(result.paymentProvider).toBe("standard");
+    expect(result.saveAddressToProfile).toBe(false);
+    expect(result.billingCountry).toBe("Magyarország");
+    expect(result.shippingCountry).toBe("Magyarország");
+  });
+
+  it("defaults saveAddressToProfile on for authenticated checkout", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const uid = "507f1f77bcf86cd799439099";
+    const result = await validateAndNormalizeCheckoutInput(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+          country: "  RO  ",
+        },
+        shippingAddress: {
+          name: "Teszt",
+          zip: "2222",
+          city: "Deb",
+          street: "Ut 2",
+          email: "a@a.com",
+          phone: "222",
+        },
+        shippingMethod: "507f1f77bcf86cd799439012",
+        paymentMethod: "507f1f77bcf86cd799439013",
+      },
+      { userId: uid }
+    );
+    expect(result.saveAddressToProfile).toBe(true);
+    expect(result.billingCountry).toBe("RO");
+    expect(result.shippingCountry).toBe("RO");
+  });
+
+  it("honours saveAddressToProfile false for authenticated checkout", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const result = await validateAndNormalizeCheckoutInput(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingAddress: {
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingMethod: "507f1f77bcf86cd799439012",
+        paymentMethod: "507f1f77bcf86cd799439013",
+        saveAddressToProfile: false,
+      },
+      { userId: "507f1f77bcf86cd799439099" }
+    );
+    expect(result.saveAddressToProfile).toBe(false);
   });
 
   it("validates GLS fixed path and requires parcel point", async () => {

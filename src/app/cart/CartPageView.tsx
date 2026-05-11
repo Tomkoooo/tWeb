@@ -1,0 +1,301 @@
+"use client"
+
+import * as React from "react"
+import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  CreditCard,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useCartStore, type CartItem } from "@/store/useCartStore"
+import { Separator } from "@/components/ui/separator"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { FallbackImage } from "@/components/common/FallbackImage"
+
+export type CartPageVariant = "page" | "embedded"
+
+export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }) {
+  const embedded = variant === "embedded"
+  const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
+  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 5
+  const totalPages = Math.ceil(items.length / itemsPerPage)
+  const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const totalBreakdown = totalsBreakdownFromGross(totalPrice)
+
+  React.useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const res = await fetch("/api/shop/availability")
+        if (!res.ok) {
+          setShopEnabled(false)
+          return
+        }
+        const data = await res.json()
+        setShopEnabled(Boolean(data.enabled))
+      } catch {
+        setShopEnabled(false)
+      }
+    }
+    loadAvailability()
+  }, [])
+
+  const shell = embedded
+    ? "min-h-0 bg-transparent py-2 pb-6 px-2 sm:px-3"
+    : "min-h-screen bg-background pt-48 pb-20 px-6"
+
+  if (shopEnabled === false) {
+    return (
+      <main className={shell}>
+        <div className="container mx-auto max-w-4xl text-center">
+          <div className="glass-card p-20 border-border">
+            <h1 className="text-4xl font-heading font-black text-foreground mb-6 uppercase tracking-tighter">
+              JELENLEG A RENDELÉS LEADÁS SZÜNETEL
+            </h1>
+            <Link href="/">
+              <Button className="bg-primary hover:bg-primary/80 text-primary-foreground h-16 px-12 text-lg btn-krausz font-black">
+                VISSZA A FŐOLDALRA <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (shopEnabled === null) {
+    return (
+      <main className={shell}>
+        {embedded ? (
+          <div className="flex justify-center py-12" aria-busy="true">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : (
+          <p className="sr-only">Betöltés</p>
+        )}
+      </main>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <main className={shell}>
+        <div className="container mx-auto max-w-4xl text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card p-20 border-border"
+          >
+            <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+              <ShoppingBag className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h1 className="mb-6 text-4xl font-heading font-black uppercase tracking-tighter text-foreground">
+              A KOSARAD ÜRES
+            </h1>
+            <p className="mx-auto mb-10 max-w-md text-lg text-muted-foreground">
+              Még nem adtál hozzá semmit a kosaradhoz. Fedezd fel professzionális szerszám kínálatunkat!
+            </p>
+            <Link href="/shop">
+              <Button className="h-16 bg-primary px-12 text-lg font-black text-primary-foreground hover:bg-primary/80 btn-krausz">
+                IRÁNY A BOLT <ArrowRight className="ml-2 inline h-5 w-5" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className={shell}>
+      <div className="container mx-auto">
+        <div className="flex flex-col gap-12 lg:flex-row">
+          <div className="lg:grow">
+            <div className="mb-10 flex items-center justify-between">
+              <h1 className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground md:text-5xl">
+                KOSÁR <span className="text-primary">({totalItems})</span>
+              </h1>
+            </div>
+
+            <div className="space-y-4">
+              <AnimatePresence mode="popLayout">
+                {paginatedItems.map((item: CartItem) => {
+                  const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="glass-card flex flex-col items-center gap-6 border-border p-6 sm:flex-row"
+                    >
+                      <div className="relative h-32 w-32 flex-none overflow-hidden border border-border bg-muted">
+                        <FallbackImage
+                          src={item.image}
+                          alt={item.name}
+                          width={128}
+                          height={128}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+
+                      <div className="grow text-center sm:text-left">
+                        <Link href={`/products/${item.slug}`}>
+                          <h3 className="mb-2 text-xl font-heading font-black uppercase text-foreground transition-colors hover:text-primary">
+                            {item.name}
+                          </h3>
+                        </Link>
+                        {item.variantLabel ? (
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            {item.variantLabel}
+                          </p>
+                        ) : null}
+                        <div className="mt-2 flex flex-wrap justify-center gap-4 text-sm font-bold sm:justify-start">
+                          {item.discount > 0 ? (
+                            <span className="text-primary">-{item.discount}% KEDVEZMÉNY</span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center border border-border bg-muted/50 p-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-12 text-center font-black text-foreground">{item.quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.quantity >= item.stock}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-foreground">{formatHuf(breakdown.lineGross)}</div>
+                          <div className="mt-1 space-y-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            <p>Egység nettó: {formatHuf(breakdown.unitNet)}</p>
+                            <p>
+                              Egység ÁFA: {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)
+                            </p>
+                            <p>Egység bruttó: {formatHuf(breakdown.unitGross)}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-none text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                          onClick={() => removeItem(item.id)}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </div>
+
+            {totalPages > 1 ? (
+              <div className="mt-10 flex justify-center gap-2">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <Button
+                    key={i}
+                    variant={currentPage === i + 1 ? "default" : "outline"}
+                    className={cn(
+                      "h-12 w-12 rounded-none font-black transition-all",
+                      currentPage === i + 1
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/30"
+                    )}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex-none lg:w-[400px]">
+            <div className="glass-card sticky top-40 border-border p-10">
+              <h2 className="mb-8 border-b border-border pb-4 text-2xl font-heading font-black uppercase tracking-tighter text-foreground">
+                RENDELÉS ÖSSZESÍTŐ
+              </h2>
+
+              <div className="mb-10 space-y-6">
+                <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  <span>Részösszeg (Nettó)</span>
+                  <span>{formatHuf(totalBreakdown.net)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  <span>ÁFA (27%)</span>
+                  <span>{formatHuf(totalBreakdown.vat)}</span>
+                </div>
+                <Separator className="bg-border" />
+                <div className="flex items-end justify-between">
+                  <div className="flex flex-col">
+                    <span className="mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                      Fizetendő összesen
+                    </span>
+                    <span className="text-4xl font-black leading-none tracking-tighter text-primary">
+                      {formatHuf(totalBreakdown.gross)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Link href="/checkout">
+                <Button className="group h-20 w-full overflow-hidden bg-primary text-xl font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/80 btn-krausz">
+                  <span className="relative z-10 flex items-center justify-center gap-4">
+                    PÉNZTÁRHOZ
+                    <ArrowRight className="h-6 w-6 transition-transform duration-300 group-hover:translate-x-2" />
+                  </span>
+                </Button>
+              </Link>
+
+              <div className="mt-10 space-y-4">
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
+                  <Truck className="h-5 w-5 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Gyors és biztos házhozszállítás
+                  </span>
+                </div>
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Hivatalos garancia minden termékre
+                  </span>
+                </div>
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Biztonságos online fizetési lehetőségek
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}

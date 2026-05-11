@@ -9,10 +9,27 @@ const featureFlagMock = vi.fn();
 const dbConnectMock = vi.fn();
 const tempOrderCreateMock = vi.fn();
 const tempOrderUpdateMock = vi.fn();
+const tempOrderDeleteOneMock = vi.fn();
 const stripeSessionCreateMock = vi.fn();
-const finalizeMock = vi.fn();
 const constructEventMock = vi.fn();
-const tempOrderFindOneAndUpdateMock = vi.fn();
+
+const webhookHandlers = vi.hoisted(() => ({
+  tryBeginStripeWebhook: vi.fn().mockResolvedValue(true),
+  markStripeWebhookProcessed: vi.fn().mockResolvedValue(undefined),
+  markStripeWebhookError: vi.fn().mockResolvedValue(undefined),
+  handleCheckoutSessionCompletedLike: vi.fn().mockResolvedValue(undefined),
+  handleCheckoutSessionExpired: vi.fn().mockResolvedValue(undefined),
+  handleCheckoutSessionAsyncPaymentFailed: vi.fn().mockResolvedValue(undefined),
+  handlePaymentIntentCanceled: vi.fn().mockResolvedValue(undefined),
+}));
+
+const allocateReservationsMock = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    ttlMs: 30 * 60 * 1000,
+  })
+);
+const releaseReservationsMock = vi.hoisted(() => vi.fn().mockResolvedValue(0));
 
 vi.mock("@/auth", () => ({ auth: authMock }));
 vi.mock("@/services/order", () => ({
@@ -34,9 +51,15 @@ vi.mock("@/models/TempOrder", () => ({
   default: {
     create: tempOrderCreateMock,
     findByIdAndUpdate: tempOrderUpdateMock,
-    findOneAndUpdate: tempOrderFindOneAndUpdateMock,
+    deleteOne: tempOrderDeleteOneMock,
   },
 }));
+vi.mock("@/services/inventory-reservation", () => ({
+  allocateReservationsForStripeTempOrder: allocateReservationsMock,
+  releaseReservationsForTempOrder: releaseReservationsMock,
+  InventoryReservationError: class InventoryReservationError extends Error {},
+}));
+vi.mock("@/services/stripe-webhook-handlers", () => webhookHandlers);
 vi.mock("@/services/stripe", () => ({
   getStripeClient: () => ({
     checkout: { sessions: { create: stripeSessionCreateMock } },
@@ -45,11 +68,6 @@ vi.mock("@/services/stripe", () => ({
   getAppBaseUrl: () => "http://localhost:3000",
   getStripeWebhookSecret: () => "secret",
 }));
-vi.mock("@/services/checkout-finalization", () => ({
-  CheckoutFinalizationService: {
-    finalizeFromTempOrder: finalizeMock,
-  },
-}));
 
 describe("checkout and payment routes", () => {
   beforeEach(() => {
@@ -57,21 +75,31 @@ describe("checkout and payment routes", () => {
     authMock.mockResolvedValue({ user: { id: "507f1f77bcf86cd799439011" } });
     featureFlagMock.mockResolvedValue(true);
     validateCheckoutMock.mockResolvedValue({
-      items: [{ quantity: 1, price: 1000, name: "Termek" }],
+      items: [
+        {
+          product: "507f1f77bcf86cd799439012",
+          quantity: 1,
+          price: 1000,
+          name: "Termek",
+        },
+      ],
       shippingFee: 100,
       paymentFee: 50,
       paymentProvider: "stripe",
     });
     createOrderMock.mockResolvedValue({ _id: "o1" });
     tempOrderCreateMock.mockResolvedValue({ _id: { toString: () => "tmp1" } });
-    stripeSessionCreateMock.mockResolvedValue({ id: "sess1", url: "https://stripe.local" });
+    stripeSessionCreateMock.mockResolvedValue({
+      id: "sess1",
+      url: "https://stripe.local",
+      payment_intent: "pi_sess1",
+    });
     tempOrderUpdateMock.mockResolvedValue({});
     constructEventMock.mockReturnValue({
+      id: "evt_1",
       type: "checkout.session.completed",
       data: { object: { id: "sess1", payment_intent: "pi_1", metadata: { tempOrderId: "tmp1" } } },
     });
-    tempOrderFindOneAndUpdateMock.mockReturnValue({ lean: () => ({ _id: { toString: () => "tmp1" } }) });
-    finalizeMock.mockResolvedValue({});
   });
 
   it("creates standard order via checkout/order route", async () => {
@@ -109,6 +137,10 @@ describe("checkout and payment routes", () => {
     expect(stripeSessionCreateMock).toHaveBeenCalled();
     expect(stripeSessionCreateMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        payment_intent_data: {
+          metadata: expect.objectContaining({ tempOrderId: "tmp1" }),
+        },
+        expires_at: expect.any(Number),
         line_items: [
           expect.objectContaining({
             price_data: expect.objectContaining({ unit_amount: 100000 }),
@@ -122,6 +154,7 @@ describe("checkout and payment routes", () => {
         ],
       })
     );
+    expect(allocateReservationsMock).toHaveBeenCalled();
     expect(tempOrderUpdateMock).toHaveBeenCalled();
   });
 
@@ -158,7 +191,8 @@ describe("checkout and payment routes", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.received).toBe(true);
-    expect(finalizeMock).toHaveBeenCalledWith("tmp1");
+    expect(webhookHandlers.handleCheckoutSessionCompletedLike).toHaveBeenCalled();
+    expect(webhookHandlers.markStripeWebhookProcessed).toHaveBeenCalledWith("evt_1");
   });
 
   it("handles missing stripe signature", async () => {
@@ -193,6 +227,7 @@ describe("checkout and payment routes", () => {
 
   it("handles expired webhook event", async () => {
     constructEventMock.mockReturnValue({
+      id: "evt_exp",
       type: "checkout.session.expired",
       data: { object: { id: "sess-exp" } },
     });
@@ -204,7 +239,25 @@ describe("checkout and payment routes", () => {
     }) as unknown as NextRequest;
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(tempOrderFindOneAndUpdateMock).toHaveBeenCalled();
+    expect(webhookHandlers.handleCheckoutSessionExpired).toHaveBeenCalled();
+  });
+
+  it("handles payment_intent.canceled webhook event", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_pi_cancel",
+      type: "payment_intent.canceled",
+      data: { object: { id: "pi_1", metadata: { tempOrderId: "tmp1" } } },
+    });
+    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const req = new Request("http://localhost/api/stripe/webhook", {
+      method: "POST",
+      headers: { "stripe-signature": "sig" },
+      body: "{}",
+    }) as unknown as NextRequest;
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(webhookHandlers.handlePaymentIntentCanceled).toHaveBeenCalled();
+    expect(webhookHandlers.markStripeWebhookProcessed).toHaveBeenCalledWith("evt_pi_cancel");
   });
 
   it("returns webhook error when signature construction fails", async () => {

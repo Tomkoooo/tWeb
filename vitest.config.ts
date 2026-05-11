@@ -7,6 +7,7 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["tests/setup/test-env.ts"],
     include: ["tests/**/*.test.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/concurrency/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],

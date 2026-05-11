@@ -29,6 +29,8 @@ export type CheckoutInput = {
     type: "personal" | "company";
     name: string;
     taxNumber?: string;
+    /** Optional; defaults for profile snapshot / display */
+    country?: string;
     zip: string;
     city: string;
     street: string;
@@ -37,6 +39,8 @@ export type CheckoutInput = {
   };
   shippingAddress: {
     name: string;
+    /** Optional; falls back to billing country when omitted */
+    country?: string;
     zip: string;
     city: string;
     street: string;
@@ -53,6 +57,8 @@ export type CheckoutInput = {
   paymentFee?: number;
   discount?: number;
   total?: number;
+  /** When true and `userId` is set, billing/shipping are copied to the user profile after order creation. */
+  saveAddressToProfile?: boolean;
 };
 
 export type ValidatedCheckoutData = {
@@ -69,6 +75,9 @@ export type ValidatedCheckoutData = {
   discount: number;
   total: number;
   paymentProvider: "stripe" | "standard";
+  saveAddressToProfile: boolean;
+  billingCountry: string;
+  shippingCountry: string;
 };
 
 function roundCurrency(value: number): number {
@@ -291,6 +300,14 @@ export async function validateAndNormalizeCheckoutInput(
   const discount = Math.max(0, couponResult.discount);
   const total = Math.max(0, roundCurrency(subtotal + shippingFee + paymentFee - discount));
 
+  const billingCountryRaw = billingInfo.country?.trim();
+  const billingCountry = billingCountryRaw || "Magyarország";
+  const shippingCountryRaw = shippingAddress.country?.trim();
+  const shippingCountry = shippingCountryRaw || billingCountry;
+
+  const saveAddressToProfile =
+    Boolean(options?.userId) && input.saveAddressToProfile !== false;
+
   return {
     items: normalizedItems,
     billingInfo: {
@@ -337,5 +354,8 @@ export async function validateAndNormalizeCheckoutInput(
     discount,
     total,
     paymentProvider: isStripeFixed ? "stripe" : "standard",
+    saveAddressToProfile,
+    billingCountry,
+    shippingCountry,
   };
 }

@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      # Keep `test:unit` (not full `npm test`): do not add `npm run test:concurrency` or Stripe-gated race
+      # suites here without intent—those need Mongo memory server and/or live Stripe test keys. Concurrency
+      # tests live under `tests/concurrency` (`npm run test:concurrency` locally); vitest excludes them from default runs.
       - name: Run env-safe unit tests
         run: npm run test:unit -- --exclude tests/unit/order-and-gls-services.test.ts
 

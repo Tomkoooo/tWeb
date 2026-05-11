@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-auth"
+import { shopCommerceBlockedResponse } from "@/lib/features/shop"
 import { ProductService } from "@/services/product"
 
 type ProductListItem = {
@@ -9,6 +10,8 @@ type ProductListItem = {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = shopCommerceBlockedResponse()
+  if (blocked) return blocked
   await requireAdmin()
   const query = request.nextUrl.searchParams.get("q") ?? ""
   const page = Number(request.nextUrl.searchParams.get("page") ?? "1")

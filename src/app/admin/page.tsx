@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
+import { isShopEnabled } from "@/lib/features/shop"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
@@ -51,6 +52,42 @@ async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps
 }
 
 export default async function AdminDashboard() {
+  if (!isShopEnabled()) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-700 max-w-xl">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
+            Admin <span className="text-primary underline decoration-primary/10 underline-offset-8">áttekintés</span>
+          </h1>
+          <p className="text-white/40 font-medium italic">
+            Csak tartalmi üzemmód: a bolt funkció ki van kapcsolva{" "}
+            <code className="text-neutral-300">ENABLE_SHOP=false</code> környezettel.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest">
+          <Link
+            href="/admin/templates"
+            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-primary/40"
+          >
+            Sablonok
+          </Link>
+          <Link
+            href="/admin/cms"
+            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-primary/40"
+          >
+            CMS
+          </Link>
+          <Link
+            href="/admin/info"
+            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-primary/40"
+          >
+            Beállítások
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const statsData = await getAdminStats()
   const { kpis, recentOrders } = statsData as { kpis: { totalRevenue: number; ordersCount: number; activeCustomersCount: number; productsCount: number }; recentOrders: RecentOrder[] }
 

@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import TempOrder from "@/models/TempOrder";
 import dbConnect from "@/lib/db";
-import { CheckoutFinalizationService } from "@/services/checkout-finalization";
 import { getStripeClient, getStripeWebhookSecret } from "@/services/stripe";
+import {
+  handleCheckoutSessionAsyncPaymentFailed,
+  handleCheckoutSessionCompletedLike,
+  handleCheckoutSessionExpired,
+  handlePaymentIntentCanceled,
+  markStripeWebhookError,
+  markStripeWebhookProcessed,
+  tryBeginStripeWebhook,
+} from "@/services/stripe-webhook-handlers";
+import "@/models/Reservation";
+import "@/models/StripeWebhookEvent";
 
 export const runtime = "nodejs";
 
@@ -20,46 +29,44 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    if (
-      event.type === "checkout.session.completed" ||
-      event.type === "checkout.session.async_payment_succeeded"
-    ) {
-      const checkoutSession = event.data.object as any;
-      const sessionId = checkoutSession.id;
-      const paymentIntentId =
-        typeof checkoutSession.payment_intent === "string"
-          ? checkoutSession.payment_intent
-          : checkoutSession.payment_intent?.id;
-
-      const tempOrder = await TempOrder.findOneAndUpdate(
-        {
-          stripeSessionId: sessionId,
-          status: { $in: ["created", "checkout_started", "paid", "finalizing"] },
-        },
-        {
-          $set: {
-            status: "paid",
-            stripePaymentIntentId: paymentIntentId || undefined,
-          },
-        },
-        { new: true }
-      ).lean();
-
-      const tempOrderId = tempOrder?._id?.toString() || checkoutSession.metadata?.tempOrderId;
-      if (tempOrderId) {
-        try {
-          await CheckoutFinalizationService.finalizeFromTempOrder(tempOrderId);
-        } catch (finalizeError) {
-          console.error("Stripe webhook finalization error:", finalizeError);
-        }
-      }
+    const shouldProcess = await tryBeginStripeWebhook(event.id, event.type);
+    if (!shouldProcess) {
+      return NextResponse.json({ received: true });
     }
 
-    if (event.type === "checkout.session.expired") {
-      const checkoutSession = event.data.object as any;
-      await TempOrder.findOneAndUpdate(
-        { stripeSessionId: checkoutSession.id, status: { $in: ["created", "checkout_started"] } },
-        { $set: { status: "expired" } }
+    try {
+      switch (event.type) {
+        case "checkout.session.completed":
+        case "checkout.session.async_payment_succeeded": {
+          const checkoutSession = event.data.object as any;
+          await handleCheckoutSessionCompletedLike(checkoutSession);
+          break;
+        }
+        case "checkout.session.expired": {
+          const checkoutSession = event.data.object as any;
+          await handleCheckoutSessionExpired(checkoutSession);
+          break;
+        }
+        case "checkout.session.async_payment_failed": {
+          const checkoutSession = event.data.object as any;
+          await handleCheckoutSessionAsyncPaymentFailed(checkoutSession);
+          break;
+        }
+        case "payment_intent.canceled": {
+          const paymentIntent = event.data.object as any;
+          await handlePaymentIntentCanceled(paymentIntent);
+          break;
+        }
+        default:
+          break;
+      }
+      await markStripeWebhookProcessed(event.id);
+    } catch (handlerError: any) {
+      console.error("Stripe webhook handler error:", handlerError);
+      await markStripeWebhookError(event.id, handlerError?.message || String(handlerError));
+      return NextResponse.json(
+        { error: handlerError?.message || "Webhook handler error" },
+        { status: 500 }
       );
     }
 

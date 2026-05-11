@@ -18,6 +18,8 @@ type EditorState = {
   addBlock: (block: HomepageBlock, index: number) => void
   duplicateBlock: (blockId: string) => void
   removeBlock: (blockId: string) => void
+  /** Merge multiple keys into `block.data` in one atomic update (avoids Zustand races). */
+  updateBlockData: (blockId: string, patch: Record<string, unknown>) => void
   moveBlock: (from: number, to: number) => void
   markSaved: () => void
   undo: () => void
@@ -104,7 +106,20 @@ export const useHomepageEditorStore = create<EditorState>((set) => ({
         ...state.snapshot,
         blocks: state.snapshot.blocks.filter((block) => block.id !== blockId),
       },
-      selectedBlockId: null,
+      selectedBlockId: state.selectedBlockId === blockId ? null : state.selectedBlockId,
+    })),
+  updateBlockData: (blockId, patch) =>
+    set((state) => ({
+      ...withHistory(state),
+      dirty: true,
+      snapshot: {
+        ...state.snapshot,
+        blocks: state.snapshot.blocks.map((block) =>
+          block.id === blockId
+            ? ({ ...block, data: { ...block.data, ...patch } } as HomepageBlock)
+            : block
+        ),
+      },
     })),
   moveBlock: (from, to) =>
     set((state) => {

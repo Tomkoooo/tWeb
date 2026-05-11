@@ -81,6 +81,11 @@ describe("checkout methods and finalization", () => {
 
     expect(result.status).toBe("finalized");
     expect(tempFindByIdAndUpdateMock).toHaveBeenCalled();
+    expect(createOrderFromCheckoutDataMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      "u1",
+      expect.objectContaining({ enforceShopEnabled: false, skipStockDecrement: true })
+    );
   });
 
   it("returns 503 when shop is disabled in methods route", async () => {

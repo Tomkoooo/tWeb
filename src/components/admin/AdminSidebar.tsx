@@ -20,7 +20,8 @@ import {
   Tag,
   ChevronDown,
   FolderTree,
-  Store
+  Store,
+  Layout as LayoutIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -32,14 +33,15 @@ type MenuItem = {
   label: string
   href: string
   featureKey?: FeatureKey
+  requiresShop?: boolean
 }
 
 const topLevelMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
-  { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders" },
-  { icon: Users, label: "Vásárlók", href: "/admin/users" },
-  { icon: BarChart3, label: "Statisztikák", href: "/admin/stats" },
-  { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews" },
+  { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders", requiresShop: true },
+  { icon: Users, label: "Vásárlók", href: "/admin/users", requiresShop: true },
+  { icon: BarChart3, label: "Statisztikák", href: "/admin/stats", requiresShop: true },
+  { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews", requiresShop: true },
   { icon: Settings, label: "Beállítások", href: "/admin/info" },
 ]
 
@@ -54,8 +56,8 @@ const menuGroups: Array<{
     label: "Termék kezelés",
     icon: FolderTree,
     items: [
-      { icon: Package, label: "Termékek", href: "/admin/products" },
-      { icon: Package, label: "Kategóriák", href: "/admin/categories" },
+      { icon: Package, label: "Termékek", href: "/admin/products", requiresShop: true },
+      { icon: Package, label: "Kategóriák", href: "/admin/categories", requiresShop: true },
     ],
   },
   {
@@ -63,12 +65,13 @@ const menuGroups: Array<{
     label: "Webshop beállítások",
     icon: Store,
     items: [
+      { icon: LayoutIcon, label: "Sablonok", href: "/admin/templates" },
       { icon: FileEdit, label: "CMS", href: "/admin/cms" },
       { icon: Mail, label: "Emailek", href: "/admin/emails" },
       { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
-      { icon: Truck, label: "Szállítás", href: "/admin/shipping" },
-      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments" },
-      { icon: Tag, label: "Kuponok", href: "/admin/coupons" },
+      { icon: Truck, label: "Szállítás", href: "/admin/shipping", requiresShop: true },
+      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", featureKey: "stripePayments", requiresShop: true },
+      { icon: Tag, label: "Kuponok", href: "/admin/coupons", requiresShop: true },
     ],
   },
 ]
@@ -78,25 +81,30 @@ export function AdminSidebar({
   onAction,
   brandName = "Generic",
   enabledFeatures,
+  shopEnabled = true,
 }: {
   className?: string
   onAction?: () => void
   brandName?: string
   enabledFeatures?: Partial<Record<FeatureKey, boolean>>
+  shopEnabled?: boolean
 }) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const sidebarName = brandName.trim() || "Generic"
-  const sidebarInitial = sidebarName.charAt(0).toUpperCase()
   const isVisibleByFeature = (item: MenuItem) => {
     if (!item.featureKey) return true
     return Boolean(enabledFeatures?.[item.featureKey])
   }
-  const visibleTopLevelItems = topLevelMenuItems.filter(isVisibleByFeature)
+  const isVisibleForShopFlag = (item: MenuItem) => {
+    if (item.requiresShop && !shopEnabled) return false
+    return true
+  }
+  const visibleTopLevelItems = topLevelMenuItems.filter(isVisibleByFeature).filter(isVisibleForShopFlag)
   const visibleMenuGroups = menuGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter(isVisibleByFeature),
+      items: group.items.filter(isVisibleByFeature).filter(isVisibleForShopFlag),
     }))
     .filter((group) => group.items.length > 0)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -216,12 +224,12 @@ export function AdminSidebar({
       </nav>
 
       <div className="p-4 border-t border-white/5 space-y-2">
-        <Link 
+        <Link
           href="/"
           className="flex items-center gap-3 w-full px-4 py-3 rounded-none text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-white hover:bg-white/5 transition-all duration-300"
         >
           <ShoppingCart className="w-5 h-5" />
-          Vissza a boltba
+          {shopEnabled ? "Vissza a boltba" : "Vissza a honlapra"}
         </Link>
         
         <button 

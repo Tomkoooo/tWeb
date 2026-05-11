@@ -7,6 +7,14 @@ import TempOrder from "@/models/TempOrder";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { validateAndNormalizeCheckoutInput } from "@/services/checkout-validation";
 import { getAppBaseUrl, getStripeClient } from "@/services/stripe";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
+import {
+  allocateReservationsForStripeTempOrder,
+  InventoryReservationError,
+  releaseReservationsForTempOrder,
+} from "@/services/inventory-reservation";
+import { clampReservationTtlMs, reservationEndsAt, stripeCheckoutExpiresAtUnix } from "@/services/reservation-ttl";
+import "@/models/Reservation";
 
 export const runtime = "nodejs";
 
@@ -18,6 +26,8 @@ export async function POST(req: NextRequest) {
   const session = await auth();
 
   try {
+    const commerceBlocked = shopCommerceBlockedResponse();
+    if (commerceBlocked) return commerceBlocked;
     const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
     if (!isShopEnabled) {
       return NextResponse.json(
@@ -47,80 +57,125 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+    const ttlMs = clampReservationTtlMs(null);
+    const provisionalExpires = reservationEndsAt(now, ttlMs);
+
     const tempOrder = await TempOrder.create({
       user: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
       checkoutData: validatedOrderData,
       paymentProvider: "stripe",
       status: "created",
-      expiresAt,
+      expiresAt: provisionalExpires,
     });
 
-    const stripe = getStripeClient();
-    const baseUrl = getAppBaseUrl();
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = validatedOrderData.items.map((item) => ({
+    const reserveItems = validatedOrderData.items.map((item) => ({
+      product: item.product,
+      variantId: item.variantId,
       quantity: item.quantity,
-      price_data: {
-        currency: "huf",
-        unit_amount: toStripeHufAmount(Number(item.price || 0)),
-        product_data: {
-          name: item.name || "Termék",
-          description: item.variantLabel || undefined,
-        },
-      },
     }));
-    if (validatedOrderData.shippingFee > 0) {
-      lineItems.push({
-        quantity: 1,
+
+    try {
+      const { expiresAt } = await allocateReservationsForStripeTempOrder(tempOrder._id, reserveItems, {
+        serverNow: now,
+        requestedTtlMs: null,
+      });
+
+      const stripe = getStripeClient();
+      const baseUrl = getAppBaseUrl();
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = validatedOrderData.items.map((item) => ({
+        quantity: item.quantity,
         price_data: {
           currency: "huf",
-          unit_amount: toStripeHufAmount(validatedOrderData.shippingFee),
+          unit_amount: toStripeHufAmount(Number(item.price || 0)),
           product_data: {
-            name: "Szállítás",
-            description: undefined,
+            name: item.name || "Termék",
+            description: item.variantLabel || undefined,
           },
         },
-      });
-    }
-    if (validatedOrderData.paymentFee > 0) {
-      lineItems.push({
-        quantity: 1,
-        price_data: {
-          currency: "huf",
-          unit_amount: toStripeHufAmount(validatedOrderData.paymentFee),
-          product_data: {
-            name: "Fizetési kezelési díj",
-            description: undefined,
+      }));
+      if (validatedOrderData.shippingFee > 0) {
+        lineItems.push({
+          quantity: 1,
+          price_data: {
+            currency: "huf",
+            unit_amount: toStripeHufAmount(validatedOrderData.shippingFee),
+            product_data: {
+              name: "Szállítás",
+              description: undefined,
+            },
+          },
+        });
+      }
+      if (validatedOrderData.paymentFee > 0) {
+        lineItems.push({
+          quantity: 1,
+          price_data: {
+            currency: "huf",
+            unit_amount: toStripeHufAmount(validatedOrderData.paymentFee),
+            product_data: {
+              name: "Fizetési kezelési díj",
+              description: undefined,
+            },
+          },
+        });
+      }
+
+      const expiresAtUnix = stripeCheckoutExpiresAtUnix(now, expiresAt);
+
+      const tempOrderIdStr = tempOrder._id.toString();
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: "payment",
+        success_url: `${baseUrl}/checkout/success?tempOrderId=${tempOrderIdStr}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/checkout?stripeCancelled=1`,
+        client_reference_id: tempOrderIdStr,
+        metadata: {
+          tempOrderId: tempOrderIdStr,
+          userId: session?.user?.id || "",
+        },
+        payment_intent_data: {
+          metadata: {
+            tempOrderId: tempOrderIdStr,
           },
         },
+        line_items: lineItems,
+        payment_method_types: ["card"],
+        locale: "hu",
+        expires_at: expiresAtUnix,
       });
+
+      const paymentIntentId =
+        typeof checkoutSession.payment_intent === "string"
+          ? checkoutSession.payment_intent
+          : checkoutSession.payment_intent?.id;
+
+      await TempOrder.findByIdAndUpdate(tempOrder._id, {
+        $set: {
+          status: "checkout_started",
+          stripeSessionId: checkoutSession.id,
+          ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
+          reservationExpiresAt: expiresAt,
+          expiresAt,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: checkoutSession.url,
+        tempOrderId: tempOrder._id,
+        reservationExpiresAt: expiresAt.toISOString(),
+        serverTime: now.toISOString(),
+      });
+    } catch (inner: any) {
+      await releaseReservationsForTempOrder(tempOrder._id.toString(), { states: ["pending"] });
+      await TempOrder.deleteOne({ _id: tempOrder._id });
+      if (inner instanceof InventoryReservationError) {
+        return NextResponse.json(
+          { error: inner.message },
+          { status: inner.code === "INSUFFICIENT_STOCK" ? 409 : 400 }
+        );
+      }
+      throw inner;
     }
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: "payment",
-      success_url: `${baseUrl}/checkout/success?tempOrderId=${tempOrder._id.toString()}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/checkout?stripeCancelled=1`,
-      client_reference_id: tempOrder._id.toString(),
-      metadata: {
-        tempOrderId: tempOrder._id.toString(),
-        userId: session?.user?.id || "",
-      },
-      line_items: lineItems,
-      payment_method_types: ["card"],
-      locale: "hu",
-    });
-
-    await TempOrder.findByIdAndUpdate(tempOrder._id, {
-      $set: {
-        status: "checkout_started",
-        stripeSessionId: checkoutSession.id,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      checkoutUrl: checkoutSession.url,
-      tempOrderId: tempOrder._id,
-    });
   } catch (error: any) {
     console.error("Stripe session POST error:", error);
     return NextResponse.json(

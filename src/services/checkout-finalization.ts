@@ -52,7 +52,7 @@ export class CheckoutFinalizationService {
       const createdOrder = await OrderService.createOrderFromCheckoutData(
         locked.checkoutData,
         locked.user?.toString(),
-        { enforceShopEnabled: false }
+        { enforceShopEnabled: false, skipStockDecrement: true }
       );
 
       await TempOrder.findByIdAndUpdate(locked._id, {

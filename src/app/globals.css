@@ -158,16 +158,15 @@ h6 {
   font-family: var(--font-heading);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: white;
-  /* Force white for headings */
+  color: var(--foreground);
 }
 
-/* High contrast glass card */
+/* Surface-aware glass panels (reads active theme tokens) */
 .glass-card {
-  background: rgba(26, 26, 26, 0.6);
+  background: color-mix(in oklab, var(--theme-surface) 82%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklab, var(--theme-border) 70%, transparent);
+  border: 1px solid color-mix(in oklab, var(--theme-border) 75%, transparent);
 }
 
 /* Explicit button style with border radius transition */

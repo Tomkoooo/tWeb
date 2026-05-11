@@ -160,6 +160,13 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | --- | --- | --- | --- |
 | `AUTH_URL` | Recommended | Explicit auth origin, useful behind reverse proxies. | `https://shop.example.com` |
 | `AUTH_TRUST_HOST` | Recommended | Trust forwarded host headers (`true` for proxy/Vercel setups). | `true` |
+| `ENABLE_SHOP` | Optional | Set to `false` to ship this codebase as landing/CMS-only (hides storefront, cart, checkout, profile, shop admin, related APIs). Omit or use any value other than `false` for full commerce. | `false` |
+
+### Admin bootstrap
+
+| Variable | Required | Purpose | Example |
+| --- | --- | --- | --- |
+| `BOOTSTRAP_ADMIN_EMAILS` | Optional | Comma-separated allowlist of emails promoted to ADMIN on first login when no ADMIN exists yet. Remove after onboard. | `you@company.com` |
 
 ### Email (for notifications and invoice emails)
 
@@ -177,6 +184,17 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | --- | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Required when Stripe features are used | Server-side Stripe API access. | `sk_live_...` |
 | `STRIPE_WEBHOOK_SECRET` | Required when Stripe webhooks are enabled | Signature validation for webhook endpoint. | `whsec_...` |
+
+**Webhooks:** point Stripe at `https://<your-domain>/api/stripe/webhook` and subscribe to the events listed in [docs/integrations/STRIPE_WEBHOOK_SETUP.md](docs/integrations/STRIPE_WEBHOOK_SETUP.md) (including `payment_intent.canceled` for hold release when Checkout session events are delayed). That doc also covers **API version** alignment with the `stripe` npm package and step-by-step Dashboard setup. For local development, use the [Stripe CLI](https://stripe.com/docs/stripe-cli) (`stripe listen --forward-to localhost:3000/api/stripe/webhook`) and paste the CLI signing secret into `STRIPE_WEBHOOK_SECRET` (it differs from the Dashboard endpoint secret).
+
+**Inventory holds (Stripe checkout):** stock is reserved when the Checkout Session is created. Optional tuning (defaults are safe with Stripe’s minimum session lifetime):
+
+| Variable | Required | Purpose | Example |
+| --- | --- | --- | --- |
+| `RESERVATION_TTL_MIN_MS` | Optional | Minimum hold duration (ms). Default 30 minutes (aligns with Stripe). | `1800000` |
+| `RESERVATION_TTL_MAX_MS` | Optional | Maximum hold (ms). Default 60 minutes. | `3600000` |
+| `RESERVATION_STRIPE_SESSION_BUFFER_SEC` | Optional | Stripe session ends this many seconds before DB hold. Default `60`. | `60` |
+| `CRON_SECRET` | Optional | Bearer secret for `POST /api/internal/reservations/sweep` to release expired pending holds. | long random string |
 
 ### GLS Shipping (enable GLS label generation)
 
@@ -230,6 +248,15 @@ Optional invoicing settings:
 # Development
 npm run dev
 
+# Concurrency / inventory race tests (Mongo memory server; not run in default `npm test` or the Docker CI unit job)
+npm run test:concurrency
+
+# Optional: parallel Stripe Checkout Session race (live Stripe test mode). `vitest.concurrency.config.ts` loads
+# `.env` from the repo root (Vitest does not do this by default). Set `RUN_STRIPE_RACE_TESTS` to `1`, `true`,
+# or `yes`, and `STRIPE_SECRET_KEY` in `.env` (or export them in the shell). Stripe CLI is only needed if you
+# assert webhook-driven behavior; see tests/concurrency/stripe-checkout-race.test.ts.
+npm run test:concurrency
+
 # Production build
 npm run build
 npm run start
@@ -245,8 +272,14 @@ npm run test
 
 ## Additional Documentation
 
-- Fork/deployment engine notes: `docs/FORK_DEPLOYMENT_ENGINE.md`
-- Vercel + custom domain: `docs/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md`
-- Google OAuth setup: `docs/GOOGLE_OAUTH_SETUP.md`
-- Portability notes: `docs/PORTABILITY.md`
-- Számlázz.hu invoicing: `docs/szamlazzhu-integration.md`
+See **[docs/README.md](docs/README.md)** for the full index. Quick links:
+
+- Fork / deployment engine: [docs/deployment/FORK_DEPLOYMENT_ENGINE.md](docs/deployment/FORK_DEPLOYMENT_ENGINE.md)
+- Vercel + custom domain: [docs/deployment/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md](docs/deployment/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md)
+- Portability: [docs/deployment/PORTABILITY.md](docs/deployment/PORTABILITY.md)
+- Google OAuth: [docs/auth/GOOGLE_OAUTH_SETUP.md](docs/auth/GOOGLE_OAUTH_SETUP.md)
+- Auth PKCE verification: [docs/auth/AUTH_PKCE_VERIFICATION.md](docs/auth/AUTH_PKCE_VERIFICATION.md)
+- Stripe webhooks: [docs/integrations/STRIPE_WEBHOOK_SETUP.md](docs/integrations/STRIPE_WEBHOOK_SETUP.md)
+- Számlázz.hu invoicing: [docs/integrations/szamlazzhu-integration.md](docs/integrations/szamlazzhu-integration.md)
+- Templates (human spec + agent brief): [docs/templates/CREATING_A_TEMPLATE.md](docs/templates/CREATING_A_TEMPLATE.md), [docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md](docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md)
+- Homepage block CMS: [docs/cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](docs/cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md)

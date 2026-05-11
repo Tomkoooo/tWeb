@@ -4,9 +4,19 @@ import { FeedbackService } from "@/services/feedback"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
 import { mediaImageSrc } from "@/lib/images"
+import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
 
 type ProductRating = { rating?: number }
-type ProductVariant = { isActive?: boolean; netPrice?: number; discount?: number }
+type ProductVariant = {
+  id: string
+  attributes?: Record<string, string>
+  netPrice?: number
+  discount?: number
+  stock?: number
+  isActive?: boolean
+  isDefault?: boolean
+  images?: string[]
+}
 type ProductCategory = { name?: string }
 type CategoryItem = {
   _id: { toString(): string }
@@ -26,27 +36,70 @@ type ProductItem = {
   discount?: number
   images?: string[]
   category?: ProductCategory
+  stock?: number
 }
 
-export async function getHomepageRenderDependencies() {
+export type HomepageRenderDependencies = Omit<HomePageDeps, "templateId">
+
+function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
+  const allVariants = Array.isArray(p.variants) ? p.variants : []
+  const effectiveVariants = allVariants.filter((v) => v.isActive !== false)
+  const hasVariants = allVariants.length > 0
+  const needsVariantPricing =
+    Boolean(p.requireVariantSelection) &&
+    effectiveVariants.length > 0
+
+  const minNet = needsVariantPricing
+    ? Math.min(
+        ...effectiveVariants.map((v) => Number(v.netPrice ?? p.netPrice) || p.netPrice)
+      )
+    : p.netPrice
+  const maxDiscount = needsVariantPricing
+    ? Math.max(...effectiveVariants.map((v) => Number(v.discount || 0) || 0))
+    : Number(p.discount || 0) || 0
+
+  const gross = minNet * 1.27 * (1 - maxDiscount / 100)
+  const rootStock =
+    typeof p.stock === "number" && Number.isFinite(p.stock) ? p.stock : 100
+
+  return {
+    hasVariants,
+    rating:
+      Array.isArray(p.ratings) && p.ratings.length > 0
+        ? p.ratings.reduce((sum, rating) => sum + (rating.rating || 0), 0) / p.ratings.length
+        : 0,
+    id: p._id.toString(),
+    name: p.name,
+    slug: p.slug,
+    requireVariantSelection: Boolean(p.requireVariantSelection),
+    price: gross,
+    image: mediaImageSrc(p.images?.[0]),
+    category: p.category?.name || "Kategória",
+    netPrice: p.netPrice,
+    discount: Number(p.discount || 0) || 0,
+    images: (p.images || []).map((img) => mediaImageSrc(img)),
+    stock: rootStock,
+    variants: allVariants.map((v) => ({
+      id: v.id,
+      netPrice: v.netPrice ?? p.netPrice,
+      discount: v.discount,
+      stock: v.stock,
+      isActive: v.isActive,
+      isDefault: v.isDefault,
+      attributes: v.attributes,
+      images: v.images?.map((img) => mediaImageSrc(img)),
+    })),
+  }
+}
+
+export async function getHomepageRenderDependencies(): Promise<HomepageRenderDependencies> {
   const [reviews, isShopPageEnabled, content] = await Promise.all([
     FeedbackService.getHomepageReviews(6),
     FeatureFlagService.isEnabled("shopPage", true),
     ShopContentService.getAll(),
   ])
 
-  let products: Array<{
-    id: string
-    name: string
-    slug: string
-    price: number
-    image: string
-    category: string
-    rating: number
-    hasVariants: boolean
-    requireVariantSelection: boolean
-  }> = []
-
+  let products: HomePageFeaturedProduct[] = []
   let categories: Array<{ id: string; name: string; description: string; image: string; slug: string }> = []
 
   if (isShopPageEnabled) {
@@ -55,31 +108,7 @@ export async function getHomepageRenderDependencies() {
       ProductService.getPaginated(1, 24, { isVisible: true }),
     ])
 
-    products = (productData.products as ProductItem[]).map((p) => ({
-      hasVariants: Array.isArray(p.variants) && p.variants.length > 0,
-      rating:
-        Array.isArray(p.ratings) && p.ratings.length > 0
-          ? p.ratings.reduce((sum: number, rating) => sum + (rating.rating || 0), 0) / p.ratings.length
-          : 0,
-      id: p._id.toString(),
-      name: p.name,
-      slug: p.slug,
-      requireVariantSelection: Boolean(p.requireVariantSelection),
-      price: (() => {
-        const variants = Array.isArray(p.variants) ? p.variants.filter((v) => v.isActive !== false) : []
-        const needsVariant = Boolean(p.requireVariantSelection) && variants.length > 0
-        const minNet = needsVariant
-          ? Math.min(...variants.map((v) => Number(v.netPrice || p.netPrice) || p.netPrice))
-          : p.netPrice
-        const maxDiscount = needsVariant
-          ? Math.max(...variants.map((v) => Number(v.discount || 0) || 0))
-          : Number(p.discount || 0) || 0
-        const gross = minNet * 1.27
-        return gross * (1 - maxDiscount / 100)
-      })(),
-      image: mediaImageSrc(p.images?.[0]),
-      category: p.category?.name || "Kategória",
-    }))
+    products = (productData.products as ProductItem[]).map(mapFeaturedProduct)
 
     categories = (categoryData.slice(0, 4) as CategoryItem[]).map((c) => ({
       id: c._id.toString(),

@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
 import { CheckoutFinalizationService } from "@/services/checkout-finalization";
 import { getStripeClient } from "@/services/stripe";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,8 @@ function sessionBelongsToTempOrder(
 
 export async function GET(req: NextRequest) {
   try {
+    const blocked = shopCommerceBlockedResponse();
+    if (blocked) return blocked;
     const { searchParams } = new URL(req.url);
     const tempOrderId = searchParams.get("tempOrderId");
     const sessionId = searchParams.get("session_id");

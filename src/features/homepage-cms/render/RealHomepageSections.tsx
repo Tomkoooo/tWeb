@@ -7,23 +7,7 @@ import { Features } from "@/components/sections/Features"
 import { Reviews } from "@/components/sections/Reviews"
 import { Contact } from "@/components/sections/Contact"
 import type { HomepageSnapshot, HomepageBlockType } from "@/features/homepage-cms/types/block-types"
-
-type Dependencies = {
-  reviews: Array<{ id: string; name: string; role: string; content: string; rating: number; avatar: string }>
-  products: Array<{
-    id: string
-    name: string
-    slug: string
-    price: number
-    image: string
-    category: string
-    rating: number
-    hasVariants: boolean
-    requireVariantSelection: boolean
-  }>
-  categories: Array<{ id: string; name: string; description: string; image: string; slug: string }>
-  company: { name: string; address: string; phone: string; email: string }
-}
+import type { HomePageDeps } from "@/templates/types"
 
 function getBlockData(snapshot: HomepageSnapshot, type: HomepageBlockType) {
   const block = snapshot.blocks.find((item) => item.type === type && item.enabled !== false)
@@ -36,7 +20,13 @@ function isVisible(data: unknown, key: string) {
   return visibility[key] !== false
 }
 
-export function RealHomepageSections({ snapshot, dependencies }: { snapshot: HomepageSnapshot; dependencies: Dependencies }) {
+export function RealHomepageSections({
+  snapshot,
+  dependencies,
+}: {
+  snapshot: HomepageSnapshot
+  dependencies: HomePageDeps
+}) {
   const hero = getBlockData(snapshot, "hero") as
     | {
         title?: string
@@ -145,6 +135,7 @@ export function RealHomepageSections({ snapshot, dependencies }: { snapshot: Hom
       ) : null}
       {productGrid ? (
         <Shop
+          templateId={dependencies.templateId}
           categories={dependencies.categories}
           products={dependencies.products}
           title={isVisible(productGrid, "title") ? productGrid.title : ""}

@@ -5,9 +5,12 @@ import Order from "@/models/Order";
 import Product from "@/models/Product"; // needed to populate products
 import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function GET(req: NextRequest) {
   try {
+    const blocked = shopCommerceBlockedResponse();
+    if (blocked) return blocked;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

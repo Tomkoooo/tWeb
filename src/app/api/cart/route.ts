@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { CartService } from "@/services/cart";
+import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function GET(req: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,6 +21,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,6 +39,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,6 +57,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const blocked = shopCommerceBlockedResponse();
+  if (blocked) return blocked;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

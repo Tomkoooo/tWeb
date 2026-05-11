@@ -1,28 +1,38 @@
 import { ProductService } from "@/services/product"
 import { CategoryService } from "@/services/category"
-import { ShopHeader } from "@/components/shop/ShopHeader"
-import { ShopFilters } from "@/components/shop/ShopFilters"
-import { ProductCard } from "@/components/shop/ProductCard"
 import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { Navbar } from "@/components/layout/Navbar"
-import { Filter } from "lucide-react"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
-
-export async function generateMetadata({ searchParams }: { searchParams: Promise<any> }): Promise<Metadata> {
+import { TemplateService } from "@/services/template"
+import { PageContentService } from "@/services/page-content"
+import { getActiveChrome } from "@/lib/active-chrome"
+import {
+  resolveStorefrontFooterContact,
+  type CategoryTreeNode,
+} from "@/lib/storefront-footer-data"
+import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}): Promise<Metadata> {
   const { q, category } = await searchParams
-  const content = await ShopContentService.getAll()
-  
-  const baseTitle = content.shop_seo_title || "Webshop | Krausz Barkácsmester"
+  const template = await TemplateService.getActive()
+  const [content, shopPageContent] = await Promise.all([
+    ShopContentService.getAll(),
+    PageContentService.get(template.manifest.id, "page:shop").catch(() => null),
+  ])
+
+  type ShopSeo = { meta?: { seoTitle?: string; seoDescription?: string } }
+  const shopMeta = shopPageContent as ShopSeo | null
+  const baseTitle =
+    shopMeta?.meta?.seoTitle ||
+    content.shop_seo_title ||
+    "Webshop | Krausz Barkácsmester"
   const baseDescription =
+    shopMeta?.meta?.seoDescription ||
     content.shop_seo_description ||
     "Válogasson prémium szerszámaink és ipari gépeink közül. Krausz - A minőség garanciája."
 
@@ -48,27 +58,39 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ 
-    page?: string; 
-    q?: string; 
-    category?: string; 
-    discounted?: string;
-    sort?: string;
+  searchParams: Promise<{
+    page?: string
+    q?: string
+    category?: string
+    discounted?: string
+    sort?: string
   }>
 }) {
   const isShopPageEnabled = await FeatureFlagService.isEnabled("shopPage", true)
+  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
+    await getActiveChrome()
+  const shopPageDef = template.pages.shop
+  const shopRaw = await PageContentService.get(template.manifest.id, "page:shop").catch(
+    () => shopPageDef.defaultContent
+  )
+  const shopContent = shopRaw as typeof shopPageDef.defaultContent
 
   if (!isShopPageEnabled) {
     return (
-      <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
-        <Navbar />
+      <main className="min-h-screen bg-background pt-32 pb-20 px-6 text-foreground">
+        <Navbar
+          brandName={branding.brandName}
+          logoSrc={branding.logoNav}
+          shopEnabled={shopEnabled}
+          NavbarSearch={NavbarSearch}
+        />
         <div className="container mx-auto">
-          <div className="max-w-2xl mx-auto border border-white/10 bg-white/5 p-10 text-center space-y-6">
-            <p className="text-xl font-black uppercase tracking-widest text-white">
+          <div className="mx-auto max-w-2xl space-y-6 border border-border bg-muted/40 p-10 text-center">
+            <p className="text-xl font-black uppercase tracking-widest text-foreground">
               jelenleg nem elérhető vissza a főoldalra
             </p>
             <Link href="/">
-              <Button className="rounded-none bg-primary hover:bg-primary/85 text-white font-black uppercase tracking-widest text-xs h-12 px-8">
+              <Button className="h-12 rounded-none bg-primary px-8 font-black uppercase tracking-widest text-xs text-primary-foreground hover:bg-primary/85">
                 Vissza a főoldalra
               </Button>
             </Link>
@@ -80,7 +102,7 @@ export default async function ShopPage({
 
   const params = await searchParams
   const currentPage = parseInt(params.page || "1")
-  const limit = 12
+  const limit = shopContent.pageSize ?? 12
 
   const filters = {
     search: params.q,
@@ -91,97 +113,61 @@ export default async function ShopPage({
     isVisible: true,
   }
 
-  const [paginationResult, categoriesResult] = await Promise.all([
-    ProductService.getPaginated(currentPage, limit, filters),
-    CategoryService.getTree()
-  ])
+  const [paginationResult, categoriesResult, contentDoc] =
+    await Promise.all([
+      ProductService.getPaginated(currentPage, limit, filters),
+      CategoryService.getTree(),
+      ShopContentService.getAll(),
+    ])
 
-  // Sanitize data for Client Components
   const products = JSON.parse(JSON.stringify(paginationResult.products))
   const total = paginationResult.total
   const pages = paginationResult.pages
   const categories = JSON.parse(JSON.stringify(categoriesResult))
 
+  const footerData = await resolveStorefrontFooterContact(template, {
+    shopContentSnapshot: contentDoc,
+    categoryTreeSnapshot: categoriesResult as CategoryTreeNode[],
+  })
+
+  const ShopRender = shopPageDef.Render
+
   return (
-    <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
-      <Navbar/>
-      <div className="container mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          {/* Mobile Filter Button */}
-          <div className="lg:hidden block mb-6">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="w-full btn-krausz bg-transparent border-white/20 text-white rounded-none h-14 flex gap-3 text-xs tracking-widest uppercase">
-                  <Filter className="w-4 h-4" />
-                  Szűrők megjelenítése
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="bg-background-dark border-r border-white/10 w-full sm:max-w-md overflow-y-auto">
-                <div className="mt-12">
-                  <ShopFilters categories={categories} />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Desktop Sidebar */}
-          <aside className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-32">
-              <ShopFilters categories={categories} />
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <ShopHeader total={total} q={params.q} />
-
-            {products.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-32 border border-white/5 bg-white/5">
-                <p className="text-neutral-500 font-medium italic mb-6">Nincs a keresésnek megfelelő termék.</p>
-                <Link href="/shop">
-                  <Button variant="outline" className="btn-krausz border-white/20 text-white rounded-none">
-                    MINDEN TERMÉK MUTATÁSA
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
-                  {products.map((product: any) => (
-                    <ProductCard key={product._id.toString()} product={product} />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {pages > 1 && (
-                  <div className="flex justify-center items-center gap-3">
-                    {Array.from({ length: pages }, (_, i) => i + 1).map((p) => {
-                      const pageParams = new URLSearchParams(Object.entries(params) as any)
-                      pageParams.set("page", p.toString())
-                      
-                      return (
-                        <Link key={p} href={`/shop?${pageParams.toString()}`}>
-                          <Button 
-                            variant="outline"
-                            className={cn(
-                              "w-12 h-12 rounded-none font-black tracking-widest text-xs",
-                              p === currentPage 
-                                ? "bg-primary border-primary text-white" 
-                                : "bg-background-dark border-white/10 text-neutral-500 hover:text-white"
-                            )}
-                          >
-                            {p}
-                          </Button>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </main>
+    <>
+      <Navbar
+        brandName={branding.brandName}
+        logoSrc={branding.logoNav}
+        shopEnabled={shopEnabled}
+        NavbarSearch={NavbarSearch}
+      />
+      <ShopRender
+        content={shopContent}
+        deps={{
+          products,
+          categories,
+          total,
+          pages,
+          currentPage,
+          query: {
+            q: params.q,
+            category: params.category,
+            discounted: params.discounted === "true",
+            sort: params.sort,
+            page: currentPage,
+          },
+          shopRendering: resolveCommerceShopRendering(template),
+        }}
+      />
+      <Footer
+        brandName={branding.brandName}
+        logoSrc={branding.logoFooter}
+        shopEnabled={shopEnabled}
+        categories={footerData.categories}
+        footerSettings={footerSettings}
+        email={footerData.email}
+        phone={footerData.phone}
+        address={footerData.address}
+      />
+    </>
   )
 }

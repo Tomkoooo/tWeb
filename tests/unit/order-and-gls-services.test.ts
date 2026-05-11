@@ -2,16 +2,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbConnectMock = vi.fn();
 const productFindByIdMock = vi.fn();
+const { decrementCheckoutLineStockMock } = vi.hoisted(() => ({
+  decrementCheckoutLineStockMock: vi.fn(),
+}));
 const cartFindOneAndUpdateMock = vi.fn();
+const userFindByIdAndUpdateMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const sendEmailMock = vi.fn();
 const flagEnabledMock = vi.fn();
 const orderSaveMock = vi.fn();
 const orderConstructorMock = vi.fn();
+const issueInvoiceMock = vi.fn();
+const downloadInvoicePdfMock = vi.fn();
+const sendInvoiceErrorShopAlertMock = vi.fn();
+const sendOrderPlacementErrorShopAlertMock = vi.fn();
 
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
 vi.mock("@/models/Product", () => ({ default: { findById: productFindByIdMock } }));
 vi.mock("@/models/Cart", () => ({ default: { findOneAndUpdate: cartFindOneAndUpdateMock } }));
+vi.mock("@/models/User", () => ({ default: { findByIdAndUpdate: userFindByIdAndUpdateMock } }));
 vi.mock("@/models/Order", () => ({
   default: Object.assign(
     function MockOrder(this: Record<string, unknown>, payload: Record<string, unknown>) {
@@ -26,8 +35,31 @@ vi.mock("@/models/Order", () => ({
 vi.mock("@/services/mailer", () => ({
   MailerService: { sendEmail: sendEmailMock },
 }));
+vi.mock("@/services/invoicing-szamlazz", () => ({
+  InvoicingSzamlazzService: {
+    issueInvoice: (...args: unknown[]) => issueInvoiceMock(...args),
+    downloadInvoicePdf: (...args: unknown[]) => downloadInvoicePdfMock(...args),
+  },
+}));
+vi.mock("@/services/invoice-error-alert", () => ({
+  sendInvoiceErrorShopAlert: (...args: unknown[]) => sendInvoiceErrorShopAlertMock(...args),
+}));
+vi.mock("@/services/order-placement-error-alert", () => ({
+  sendOrderPlacementErrorShopAlert: (...args: unknown[]) => sendOrderPlacementErrorShopAlertMock(...args),
+}));
 vi.mock("@/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: flagEnabledMock },
+}));
+vi.mock("@/services/inventory-reservation", () => ({
+  decrementCheckoutLineStock: (...args: unknown[]) => decrementCheckoutLineStockMock(...args),
+  InventoryReservationError: class InventoryReservationError extends Error {
+    code: string;
+    constructor(message: string, code = "INSUFFICIENT_STOCK") {
+      super(message);
+      this.name = "InventoryReservationError";
+      this.code = code;
+    }
+  },
 }));
 
 describe("OrderService", () => {
@@ -50,6 +82,12 @@ describe("OrderService", () => {
     });
     orderSaveMock.mockResolvedValue(undefined);
     sendEmailMock.mockResolvedValue(undefined);
+    decrementCheckoutLineStockMock.mockResolvedValue(undefined);
+    issueInvoiceMock.mockResolvedValue({ invoiceId: "INV-TEST-1" });
+    downloadInvoicePdfMock.mockResolvedValue(Buffer.from("%PDF-1.0"));
+    sendInvoiceErrorShopAlertMock.mockResolvedValue(undefined);
+    sendOrderPlacementErrorShopAlertMock.mockResolvedValue(undefined);
+    userFindByIdAndUpdateMock.mockResolvedValue({});
   });
 
   it("creates order and executes side effects", async () => {
@@ -65,7 +103,51 @@ describe("OrderService", () => {
     );
     expect(order._id).toBe("order1");
     expect(orderConstructorMock).toHaveBeenCalled();
+    expect(decrementCheckoutLineStockMock).toHaveBeenCalled();
     expect(sendEmailMock).toHaveBeenCalled();
+    expect(sendOrderPlacementErrorShopAlertMock).not.toHaveBeenCalled();
+    expect(userFindByIdAndUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it("persists profile addresses when saveAddressToProfile is true", async () => {
+    const { OrderService } = await import("@/services/order");
+    const uid = "507f1f77bcf86cd799439012";
+    await OrderService.createOrderFromCheckoutData(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1, price: 1000, name: "P1" }],
+        billingInfo: {
+          type: "personal",
+          name: "Vásárló",
+          email: "u@test.hu",
+          phone: "+36",
+          zip: "1011",
+          city: "Budapest",
+          street: "Utca 1",
+        },
+        shippingAddress: {
+          name: "Ship Name",
+          email: "u@test.hu",
+          phone: "+36",
+          zip: "1012",
+          city: "Budapest",
+          street: "Ship utca 2",
+        },
+        total: 1000,
+        saveAddressToProfile: true,
+        billingCountry: "Magyarország",
+        shippingCountry: "Magyarország",
+      },
+      uid
+    );
+    expect(userFindByIdAndUpdateMock).toHaveBeenCalledWith(
+      uid,
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          billingInfo: expect.objectContaining({ name: "Vásárló", country: "Magyarország" }),
+          shippingAddress: expect.objectContaining({ name: "Ship Name", country: "Magyarország" }),
+        }),
+      })
+    );
   });
 
   it("throws when shop is disabled", async () => {
@@ -74,10 +156,19 @@ describe("OrderService", () => {
     await expect(
       OrderService.createOrder({ items: [] }, "507f1f77bcf86cd799439012")
     ).rejects.toThrow("Jelenleg a rendelés leadás szünetel");
+    expect(sendOrderPlacementErrorShopAlertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderPersisted: false,
+        userId: "507f1f77bcf86cd799439012",
+      })
+    );
   });
 
   it("throws when product is missing", async () => {
-    productFindByIdMock.mockResolvedValue(null);
+    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    decrementCheckoutLineStockMock.mockRejectedValueOnce(
+      new InventoryReservationError("A termék nem található", "TRANSACTION_FAILED")
+    );
     const { OrderService } = await import("@/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
@@ -85,20 +176,11 @@ describe("OrderService", () => {
         billingInfo: {},
         shippingAddress: {},
       })
-    ).rejects.toThrow("not found");
+    ).rejects.toThrow("A termék nem található");
+    expect(sendOrderPlacementErrorShopAlertMock).toHaveBeenCalled();
   });
 
   it("handles variant stock deduction path", async () => {
-    productFindByIdMock.mockResolvedValueOnce({
-      _id: "p1",
-      name: "Product 1",
-      stock: 10,
-      isActive: true,
-      isVisible: true,
-      variants: [{ id: "v1", stock: 3, isActive: true }],
-      requireVariantSelection: true,
-      save: vi.fn(),
-    });
     const { OrderService } = await import("@/services/order");
     const order = await OrderService.createOrderFromCheckoutData({
       items: [{ product: "507f1f77bcf86cd799439011", variantId: "v1", quantity: 1 }],
@@ -107,18 +189,44 @@ describe("OrderService", () => {
       total: 1000,
     });
     expect(order._id).toBe("order1");
+    expect(decrementCheckoutLineStockMock).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ product: "507f1f77bcf86cd799439011", variantId: "v1", quantity: 1 })
+    );
+  });
+
+  it("alerts shop when invoicing fails", async () => {
+    issueInvoiceMock.mockRejectedValueOnce(new Error("Számlázz API timeout"));
+    const { OrderService } = await import("@/services/order");
+    await OrderService.createOrderFromCheckoutData(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1, price: 1000, name: "P1" }],
+        billingInfo: {
+          type: "personal",
+          name: "Vásárló",
+          email: "u@test.hu",
+          phone: "+36",
+          zip: "1011",
+          city: "Budapest",
+          street: "Utca 1",
+        },
+        shippingAddress: { name: "User", zip: "1111", city: "Bp", street: "Test 1", email: "u@test.hu", phone: "+36" },
+        total: 1000,
+      },
+      "507f1f77bcf86cd799439012"
+    );
+    expect(sendInvoiceErrorShopAlertMock).toHaveBeenCalledWith(
+      "order1",
+      expect.objectContaining({ message: "Számlázz API timeout" })
+    );
+    expect(sendOrderPlacementErrorShopAlertMock).not.toHaveBeenCalled();
   });
 
   it("throws for insufficient stock", async () => {
-    productFindByIdMock.mockResolvedValueOnce({
-      _id: "p1",
-      name: "Product 1",
-      stock: 0,
-      isActive: true,
-      isVisible: true,
-      variants: [],
-      save: vi.fn(),
-    });
+    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    decrementCheckoutLineStockMock.mockRejectedValueOnce(
+      new InventoryReservationError("Nincs elég készlet", "INSUFFICIENT_STOCK")
+    );
     const { OrderService } = await import("@/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
@@ -127,7 +235,8 @@ describe("OrderService", () => {
         shippingAddress: { name: "User", zip: "1111", city: "Bp", street: "Test 1" },
         total: 1000,
       })
-    ).rejects.toThrow("Insufficient stock");
+    ).rejects.toThrow("Nincs elég készlet");
+    expect(sendOrderPlacementErrorShopAlertMock).toHaveBeenCalled();
   });
 });
 

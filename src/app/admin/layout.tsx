@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
+import { AdminTemplateSessionBar } from "@/components/admin/AdminTemplateSessionBar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -7,6 +8,10 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { FeatureFlagService } from "@/services/feature-flags"
+import { isShopEnabled } from "@/lib/features/shop"
+import { readPreviewTemplateId } from "@/services/template-preview"
+import { TemplateService } from "@/services/template"
+import { getTemplateById } from "@/templates/registry"
 
 export default async function AdminLayout({
   children,
@@ -14,12 +19,14 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  const [branding, newsletterEnabled, glsParcelPickerEnabled, stripePaymentsEnabled] = await Promise.all([
-    BrandingSettingsService.get(),
-    FeatureFlagService.isEnabled("newsletter", false),
-    FeatureFlagService.isEnabled("glsParcelPicker", false),
-    FeatureFlagService.isEnabled("stripePayments", false),
-  ])
+  const [branding, newsletterEnabled, glsParcelPickerEnabled, stripePaymentsEnabled] =
+    await Promise.all([
+      BrandingSettingsService.get(),
+      FeatureFlagService.isEnabled("newsletter", false),
+      FeatureFlagService.isEnabled("glsParcelPicker", false),
+      FeatureFlagService.isEnabled("stripePayments", false),
+    ])
+  const shopEnabled = isShopEnabled()
   const adminBrandName = branding.brandName || "Generic"
   const enabledFeatures = {
     newsletter: newsletterEnabled,
@@ -34,6 +41,15 @@ export default async function AdminLayout({
   if (session.user.role !== "ADMIN") {
     redirect("/")
   }
+
+  const [activeInfo, previewTemplateId] = await Promise.all([
+    TemplateService.getActiveInfo(),
+    readPreviewTemplateId(),
+  ])
+  const dbActiveName = getTemplateById(activeInfo.templateId).manifest.name
+  const previewTemplateName = previewTemplateId
+    ? getTemplateById(previewTemplateId).manifest.name
+    : null
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
@@ -55,18 +71,31 @@ export default async function AdminLayout({
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 border-r border-white/10 w-72">
-            <AdminSidebar brandName={adminBrandName} enabledFeatures={enabledFeatures} />
+            <AdminSidebar
+              brandName={adminBrandName}
+              enabledFeatures={enabledFeatures}
+              shopEnabled={shopEnabled}
+            />
           </SheetContent>
         </Sheet>
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-72 border-r border-white/5 flex-col z-50">
-        <AdminSidebar brandName={adminBrandName} enabledFeatures={enabledFeatures} />
+        <AdminSidebar
+          brandName={adminBrandName}
+          enabledFeatures={enabledFeatures}
+          shopEnabled={shopEnabled}
+        />
       </aside>
 
       <main className="lg:ml-72 min-h-screen">
         <div className="px-6 py-8 md:px-10 md:py-12 max-w-7xl mx-auto">
+          <AdminTemplateSessionBar
+            dbActiveName={dbActiveName}
+            previewTemplateId={previewTemplateId}
+            previewTemplateName={previewTemplateName}
+          />
           {children}
         </div>
       </main>

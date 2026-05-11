@@ -3,21 +3,22 @@
 import * as React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ShoppingCart, Search, Menu } from "lucide-react"
+import { ShoppingCart, Search, Menu, UserRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 
+import type { ComponentType } from "react"
 import { UserNav } from "./UserNav"
 import { LiveSearch } from "./LiveSearch"
 import { useCartStore } from "@/store/useCartStore"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import type { NavbarSearchSlotProps } from "@/templates/types"
 
-const navLinks = [
+const ALL_NAV_LINKS = [
   { name: "Rólunk", href: "/#about" },
-  { name: "Bolt", href: "/shop" },
+  { name: "Bolt", href: "/shop", shopOnly: true as const },
   { name: "Vélemények", href: "/#reviews" },
   { name: "Kapcsolat", href: "/#contact" },
 ]
@@ -25,9 +26,25 @@ const navLinks = [
 interface NavbarProps {
   brandName?: string
   logoSrc?: string
+  /** Defaults to true. When false, shop/cart/search affordances are hidden. */
+  shopEnabled?: boolean
+  /**
+   * Visual CMS editors: strip is not viewport-fixed; looks like storefront chrome but does not navigate
+   * or open sheets; branding comes from props only (no refetch overwrite).
+   */
+  cmsChromePreview?: boolean
+  /** Template `commerceSlots.NavbarSearch` overrides engine `LiveSearch` when storefront + shop enabled. */
+  NavbarSearch?: ComponentType<NavbarSearchSlotProps>
 }
 
-export function Navbar({ brandName = "Generic Webshop", logoSrc = "/generic-logo.svg" }: NavbarProps) {
+export function Navbar({
+  brandName = "Generic Webshop",
+  logoSrc = "/generic-logo.svg",
+  shopEnabled = true,
+  cmsChromePreview = false,
+  NavbarSearch,
+}: NavbarProps) {
+  const navLinks = shopEnabled ? ALL_NAV_LINKS : ALL_NAV_LINKS.filter((l) => !("shopOnly" in l))
   const [isScrolled, setIsScrolled] = React.useState(false)
   const [resolvedBrand, setResolvedBrand] = React.useState({ brandName, logoSrc })
 
@@ -36,14 +53,16 @@ export function Navbar({ brandName = "Generic Webshop", logoSrc = "/generic-logo
   }, [brandName, logoSrc])
 
   React.useEffect(() => {
+    if (cmsChromePreview) return
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
     }
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [cmsChromePreview])
 
   React.useEffect(() => {
+    if (cmsChromePreview) return
     let cancelled = false
     fetch("/api/site/branding")
       .then((res) => (res.ok ? res.json() : null))
@@ -60,95 +79,164 @@ export function Navbar({ brandName = "Generic Webshop", logoSrc = "/generic-logo
     return () => {
       cancelled = true
     }
-  }, [brandName, logoSrc])
+  }, [brandName, logoSrc, cmsChromePreview])
+
+  const logoBlock = (
+    <div className="relative h-10 w-40 sm:h-12 sm:w-48 lg:h-14 lg:w-56">
+      <FallbackImage
+        src={resolvedBrand.logoSrc}
+        alt={resolvedBrand.brandName}
+        fill
+        className="object-contain"
+        priority
+      />
+    </div>
+  )
+
+  const linkClass =
+    "text-[11px] font-black uppercase tracking-[0.25em] whitespace-nowrap text-muted-foreground"
+
+  const centerNav = cmsChromePreview ? (
+    <nav
+      aria-label="Menü előnézet (nem kattintható)"
+      className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex"
+    >
+      {navLinks.map((link) => (
+        <span key={link.name} className={cn(linkClass, "relative cursor-default")}>
+          {link.name}
+          <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-primary/40" aria-hidden />
+        </span>
+      ))}
+    </nav>
+  ) : (
+    <nav className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex">
+      {navLinks.map((link) => (
+        <Link
+          key={link.name}
+          href={link.href}
+          className="group relative whitespace-nowrap text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {link.name}
+          <span className="absolute -bottom-2 left-0 h-[2px] w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+        </Link>
+      ))}
+    </nav>
+  )
+
+  const actions = cmsChromePreview ? (
+    <div className="flex flex-none cursor-default items-center gap-6 text-muted-foreground lg:gap-10 select-none">
+      {shopEnabled ? (
+        <>
+          <Search className="hidden h-5 w-5 lg:block" aria-hidden />
+          <div className="relative hidden lg:block">
+            <ShoppingCart className="h-6 w-6" aria-hidden />
+          </div>
+        </>
+      ) : null}
+      <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border/70">
+        <UserRound className="h-5 w-5" aria-hidden />
+      </span>
+    </div>
+  ) : (
+    <div className="flex flex-none items-center gap-6 lg:gap-10">
+      {shopEnabled ? (
+        <>
+          <div className="hidden lg:block">
+            {NavbarSearch ? (
+              <NavbarSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+            ) : (
+              <LiveSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+            )}
+          </div>
+
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="group relative h-10 w-10 p-0 hover:bg-transparent"
+          >
+            <Link href="/cart">
+              <ShoppingCart className="h-6 w-6 text-foreground transition-colors group-hover:text-primary" />
+              <CartCountBadge />
+            </Link>
+          </Button>
+        </>
+      ) : null}
+
+      <UserNav />
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="ml-2 h-10 w-10 p-0 md:hidden lg:hidden">
+            <Menu className="h-8 w-8 text-foreground" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full border-border bg-background-dark sm:max-w-md">
+          <div className="mt-20 flex flex-col gap-10 px-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="font-heading text-3xl font-black uppercase tracking-widest text-foreground transition-colors hover:text-primary"
+              >
+                {link.name}
+              </Link>
+            ))}
+
+            {shopEnabled ? (
+              <div className="mt-10">
+                {NavbarSearch ? (
+                  <NavbarSearch placeholder="SEARCH..." inputClassName="h-16 text-lg" />
+                ) : (
+                  <LiveSearch placeholder="SEARCH..." inputClassName="h-16 text-lg" />
+                )}
+              </div>
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+
+  const bar = (
+    <div className="container mx-auto flex items-center">
+      <div className="flex-none">
+        {cmsChromePreview ? (
+          <div className="pointer-events-none flex items-center select-none">{logoBlock}</div>
+        ) : (
+          <Link href="/" className="group flex items-center">
+            {logoBlock}
+          </Link>
+        )}
+      </div>
+
+      {centerNav}
+
+      {actions}
+    </div>
+  )
+
+  if (cmsChromePreview) {
+    return (
+      <header
+        className="relative z-10 w-full shrink-0 border-b border-white/10 bg-background-dark/95 py-5 shadow-[0_1px_0_0_rgba(255,255,255,0.06)]"
+        aria-label="Fejléc előnézet a CMS-ben (nem ragadós, nem vezet navigáció)"
+      >
+        {bar}
+      </header>
+    )
+  }
 
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-        isScrolled
-          ? "bg-background-dark/95 backdrop-blur-2xl py-4"
-          : "bg-transparent py-10"
+        "fixed left-0 right-0 top-0 z-50 transition-all duration-500",
+        isScrolled ? "bg-background-dark/95 py-4 backdrop-blur-2xl" : "bg-transparent py-10"
       )}
     >
-      <div className="container mx-auto flex items-center">
-        {/* Left: Logo */}
-        <div className="flex-none">
-          <Link href="/" className="flex items-center group">
-            <div className="relative w-40 h-10 sm:w-48 sm:h-12 lg:w-56 lg:h-14">
-              <FallbackImage
-                src={resolvedBrand.logoSrc}
-                alt={resolvedBrand.brandName}
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
-        </div>
-
-        {/* Center: Desktop Navigation */}
-        <nav className="hidden lg:flex flex-1 items-center justify-center gap-8 xl:gap-14 mx-12">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="text-[11px] font-black text-muted-foreground hover:text-foreground transition-colors relative group uppercase tracking-[0.25em] whitespace-nowrap"
-            >
-              {link.name}
-              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-primary transition-all duration-300 group-hover:w-full" />
-            </Link>
-          ))}
-        </nav>
-
-        {/* Right: Actions */}
-        <div className="flex flex-none items-center gap-6 lg:gap-10">
-          <div className="hidden lg:block">
-            <LiveSearch className="w-48 lg:w-40 xl:w-48 focus-within:w-64 transition-all duration-300" />
-          </div>
-
-          <Button asChild variant="ghost" size="icon" className="relative group p-0 w-10 h-10 hover:bg-transparent">
-            <Link href="/cart">
-              <ShoppingCart className="w-6 h-6 text-foreground group-hover:text-primary transition-colors" />
-              <CartCountBadge />
-            </Link>
-          </Button>
-
-          {/* User Auth Nav */}
-          <UserNav />
-
-          {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden lg:hidden p-0 w-10 h-10 ml-2">
-                <Menu className="w-8 h-8 text-foreground" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="bg-background-dark border-border w-full sm:max-w-md">
-              <div className="flex flex-col gap-10 mt-20 px-6">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="text-3xl font-heading font-black text-foreground hover:text-primary transition-colors uppercase tracking-widest"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                
-                <div className="mt-10">
-                   <LiveSearch 
-                    placeholder="SEARCH..." 
-                    inputClassName="h-16 text-lg"
-                   />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+      {bar}
     </motion.header>
   )
 }
@@ -165,7 +253,7 @@ function CartCountBadge() {
   if (totalItems === 0) return null
 
   return (
-    <Badge className="absolute -top-1 -right-1 bg-primary text-white border-none text-[10px] w-5 h-5 flex items-center justify-center p-0 font-black">
+    <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center border-none bg-primary p-0 text-[10px] font-black text-white">
       {totalItems}
     </Badge>
   )

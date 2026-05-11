@@ -1,5 +1,7 @@
 "use client"
 
+import type { ReactNode } from "react"
+
 type Props = {
   dirty: boolean
   device: "desktop" | "tablet" | "mobile"
@@ -14,6 +16,8 @@ type Props = {
   onPublish: () => void
   onDiscard: () => void
   onExit: () => void
+  /** Extra controls before “Kilépés” (e.g. “Tartalom mezők” for immersive non-home CMS). */
+  toolbarEnd?: ReactNode
 }
 
 export function TopBar({
@@ -30,6 +34,7 @@ export function TopBar({
   onPublish,
   onDiscard,
   onExit,
+  toolbarEnd,
 }: Props) {
   return (
     <div className="sticky top-0 z-50 bg-black/90 backdrop-blur border-b border-white/10 px-4 py-3">
@@ -80,6 +85,12 @@ export function TopBar({
         >
           Ismét
         </button>
+        {toolbarEnd ? (
+          <>
+            <div className="mx-1 h-6 w-px bg-white/15" />
+            {toolbarEnd}
+          </>
+        ) : null}
         <button type="button" onClick={onExit} className="px-3 h-9 border border-white/20 text-white text-xs uppercase">
           Kilépés
         </button>

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 export default function ShopFeedbackPage() {
   const { status } = useSession()
   const router = useRouter()
-  
+
   const [rating, setRating] = React.useState(0)
   const [hoveredRating, setHoveredRating] = React.useState(0)
   const [comment, setComment] = React.useState("")
@@ -24,7 +24,7 @@ export default function ShopFeedbackPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (rating === 0) {
       toast.error("Kérjük, válassz legalább 1 csillagot!")
       return
@@ -35,12 +35,11 @@ export default function ShopFeedbackPage() {
       const res = await fetch("/api/user/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, comment })
+        body: JSON.stringify({ rating, comment }),
       })
 
       if (res.ok) {
         toast.success("Köszönjük az értékelést!")
-        // Optional: redirect to profile or reset form
         router.push("/profile")
       } else {
         const err = await res.json()
@@ -56,35 +55,35 @@ export default function ShopFeedbackPage() {
   if (status === "loading") {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 max-w-2xl">
-      <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] mb-8 border-b border-white/10 pb-4">
-        Bolt Értékelése
+    <div className="max-w-2xl space-y-12 duration-500 animate-in fade-in slide-in-from-right-4">
+      <h2 className="mb-8 border-b border-border pb-4 text-xl font-black uppercase tracking-[0.2em] text-foreground">
+        Bolt értékelése
       </h2>
 
-      <div className="bg-white/5 border border-white/10 p-8 space-y-8">
+      <div className="space-y-8 rounded-xl border border-border bg-card p-8 shadow-sm">
         <div>
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4">
+          <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-primary">
             Mennyire voltál elégedett a vásárlásoddal?
           </h3>
-          <p className="text-sm text-neutral-400 mb-6 font-medium">
+          <p className="mb-6 text-sm font-medium text-muted-foreground">
             Minden visszajelzés segít nekünk, hogy még jobb szolgáltatást és minőségibb termékeket biztosíthassunk a jövőben. Ezt a funkciót csak feldolgozott rendelés után használhatod.
           </p>
 
-          <div className="flex items-center gap-2 mb-8 justify-center p-6 bg-black border border-white/5">
+          <div className="mb-8 flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 p-6">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
-                className={`w-12 h-12 cursor-pointer transition-colors ${
-                  star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-neutral-700"
+                className={`h-12 w-12 cursor-pointer transition-colors ${
+                  star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-muted-foreground/50"
                 }`}
               />
             ))}
@@ -92,19 +91,21 @@ export default function ShopFeedbackPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">További észrevételek (opcionális)</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                További észrevételek (opcionális)
+              </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Írd meg nekünk a véleményed, észrevételed..."
-                className="w-full bg-black border border-white/5 p-4 text-white placeholder-neutral-700 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none h-32"
+                className="h-32 w-full resize-none rounded-lg border border-border bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
             </div>
 
-            <Button 
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/80 text-white rounded-none h-14 font-black uppercase tracking-widest text-xs"
+              className="h-14 w-full rounded-lg border border-primary bg-primary font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90"
             >
               {loading ? "Küldés folyamatban..." : "Értékelés beküldése"}
             </Button>

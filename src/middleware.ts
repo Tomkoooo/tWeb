@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 import { NextResponse } from "next/server"
+import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
@@ -63,6 +64,26 @@ export default auth(async (req) => {
 
   if (isAdminPath && !isLoggedIn) {
     return NextResponse.redirect(new URL("/api/auth/signin", req.nextUrl))
+  }
+
+  if (!isShopEnabled()) {
+    if (isShopPublicPath(pathname)) {
+      return new NextResponse(null, { status: 404 })
+    }
+    if (isAdminUser && isShopAdminPath(pathname)) {
+      return new NextResponse(null, { status: 404 })
+    }
+  }
+
+  // Defense in depth: clear the template-preview cookie when the request is
+  // not authenticated as ADMIN. The activate/preview API only sets it for
+  // admins, but if the session changes the cookie should not leak preview
+  // chrome to a regular visitor.
+  const previewCookie = req.cookies.get("wse_template_preview")
+  if (previewCookie && !isAdminUser) {
+    const response = NextResponse.next()
+    response.cookies.delete("wse_template_preview")
+    return response
   }
 
   return NextResponse.next()

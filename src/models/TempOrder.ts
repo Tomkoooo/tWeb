@@ -18,7 +18,10 @@ export interface ITempOrder extends Document {
   finalizedOrderId?: mongoose.Types.ObjectId;
   status: TempOrderStatus;
   lastError?: string;
+  /** Legacy / display: temp checkout document cleanup; not used for Mongo TTL delete (see reservationExpiresAt). */
   expiresAt: Date;
+  /** Wall-clock end of inventory hold (aligned with Stripe Checkout expires_at + buffer). */
+  reservationExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +32,7 @@ const TempOrderSchema = new Schema<ITempOrder>(
     checkoutData: { type: Schema.Types.Mixed, required: true },
     paymentProvider: { type: String, enum: ["stripe"], required: true, default: "stripe" },
     stripeSessionId: { type: String, index: true, sparse: true },
-    stripePaymentIntentId: { type: String },
+    stripePaymentIntentId: { type: String, index: true, sparse: true },
     finalizedOrderId: { type: Schema.Types.ObjectId, ref: "Order" },
     status: {
       type: String,
@@ -39,11 +42,10 @@ const TempOrderSchema = new Schema<ITempOrder>(
     },
     lastError: { type: String },
     expiresAt: { type: Date, required: true, index: true },
+    reservationExpiresAt: { type: Date, index: true, sparse: true },
   },
   { timestamps: true }
 );
-
-TempOrderSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const TempOrder: Model<ITempOrder> =
   mongoose.models.TempOrder || mongoose.model<ITempOrder>("TempOrder", TempOrderSchema);
