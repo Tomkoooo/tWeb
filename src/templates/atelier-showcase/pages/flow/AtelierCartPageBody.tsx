@@ -9,6 +9,7 @@ import { useCartStore, type CartItem } from "@/store/useCartStore"
 import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import type { FlowRouteMainProps } from "@/templates/types"
+import { useCheckoutWithSuggestions } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
 
 const ITEMS_PER_PAGE = 5
 
@@ -19,6 +20,7 @@ const ITEMS_PER_PAGE = 5
 export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRouteMainProps) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
+  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [currentPage, setCurrentPage] = React.useState(1)
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE)
   const paginatedItems = items.slice(
@@ -174,13 +176,13 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
             </div>
           </div>
           <Button
-            asChild
+            type="button"
+            disabled={checkoutSuggestionsLoading}
             className="mt-6 h-12 w-full rounded-full bg-primary font-serif text-sm uppercase tracking-widest text-primary-foreground"
+            onClick={() => void beginCheckout()}
           >
-            <Link href="/checkout">
-              Pénztárhoz
-              <ArrowRight className="ml-2 inline h-4 w-4" />
-            </Link>
+            Pénztárhoz
+            <ArrowRight className="ml-2 inline h-4 w-4" />
           </Button>
         </section>
       </div>
@@ -191,11 +193,17 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Összesen</p>
             <p className="text-lg font-semibold">{formatHuf(totalBreakdown.gross)}</p>
           </div>
-          <Button asChild className="rounded-full bg-primary px-6 font-serif text-primary-foreground">
-            <Link href="/checkout">Pénztár</Link>
+          <Button
+            type="button"
+            disabled={checkoutSuggestionsLoading}
+            className="rounded-full bg-primary px-6 font-serif text-primary-foreground"
+            onClick={() => void beginCheckout()}
+          >
+            Pénztár
           </Button>
         </div>
       </div>
+      {checkoutModalUI}
     </main>
   )
 }

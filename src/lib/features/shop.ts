@@ -42,6 +42,7 @@ export const SHOP_DISABLED_ADMIN_PREFIXES = [
   "/admin/shipping",
   "/admin/payment",
   "/admin/coupons",
+  "/admin/shop",
 ] as const
 
 export function isShopPublicPath(pathname: string): boolean {

@@ -21,7 +21,8 @@ import {
   ChevronDown,
   FolderTree,
   Store,
-  Layout as LayoutIcon
+  Layout as LayoutIcon,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -72,6 +73,7 @@ const menuGroups: Array<{
       { icon: Truck, label: "Szállítás", href: "/admin/shipping", requiresShop: true },
       { icon: CreditCard, label: "Fizetés", href: "/admin/payment", requiresShop: true },
       { icon: Tag, label: "Kuponok", href: "/admin/coupons", requiresShop: true },
+      { icon: Sparkles, label: "Termék javaslatok", href: "/admin/shop/product-suggestions", requiresShop: true },
     ],
   },
 ]

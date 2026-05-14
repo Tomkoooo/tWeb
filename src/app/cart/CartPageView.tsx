@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useCheckoutWithSuggestions } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Trash2,
@@ -25,6 +26,7 @@ export type CartPageVariant = "page" | "embedded"
 export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
+  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 5
@@ -263,14 +265,17 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
                 </div>
               </div>
 
-              <Link href="/checkout">
-                <Button className="group h-20 w-full overflow-hidden bg-primary text-xl font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/80 btn-krausz">
-                  <span className="relative z-10 flex items-center justify-center gap-4">
-                    PÉNZTÁRHOZ
-                    <ArrowRight className="h-6 w-6 transition-transform duration-300 group-hover:translate-x-2" />
-                  </span>
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                disabled={checkoutSuggestionsLoading}
+                className="group h-20 w-full overflow-hidden bg-primary text-xl font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/80 btn-krausz"
+                onClick={() => void beginCheckout()}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-4">
+                  PÉNZTÁRHOZ
+                  <ArrowRight className="h-6 w-6 transition-transform duration-300 group-hover:translate-x-2" />
+                </span>
+              </Button>
 
               <div className="mt-10 space-y-4">
                 <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
@@ -296,6 +301,7 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
           </div>
         </div>
       </div>
+      {checkoutModalUI}
     </main>
   )
 }
