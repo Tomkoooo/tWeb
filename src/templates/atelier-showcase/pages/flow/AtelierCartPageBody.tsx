@@ -9,9 +9,24 @@ import { useCartStore, type CartItem } from "@/store/useCartStore"
 import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import type { FlowRouteMainProps } from "@/templates/types"
-import { useCheckoutWithSuggestions } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
+import {
+  useCheckoutWithSuggestions,
+  type CheckoutSuggestionsDialogPresentation,
+} from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
 
 const ITEMS_PER_PAGE = 5
+
+const ATELIER_CHECKOUT_SUGGESTION_PRESENTATION: CheckoutSuggestionsDialogPresentation = {
+  contentClassName:
+    "max-w-lg rounded-3xl border-2 border-border bg-card font-serif text-card-foreground shadow-2xl sm:max-w-lg",
+  titleClassName: "font-serif text-2xl font-semibold normal-case tracking-tight text-foreground italic",
+  descriptionClassName: "font-serif text-sm normal-case text-muted-foreground",
+  listClassName: "space-y-2",
+  itemClassName: "rounded-2xl border-border/80 bg-background/40",
+  footerClassName: "flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-between",
+  primaryButtonClassName: "h-11 rounded-full font-serif text-sm font-semibold normal-case tracking-wide",
+  secondaryButtonClassName: "h-11 rounded-full border-2 font-serif text-sm font-semibold normal-case tracking-wide",
+}
 
 /**
  * Cart: **full-bleed alternating rows** + **floating checkout bar** on small screens — unlike
@@ -20,7 +35,9 @@ const ITEMS_PER_PAGE = 5
 export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRouteMainProps) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
-  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
+  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions({
+    dialogPresentation: ATELIER_CHECKOUT_SUGGESTION_PRESENTATION,
+  })
   const [currentPage, setCurrentPage] = React.useState(1)
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE)
   const paginatedItems = items.slice(

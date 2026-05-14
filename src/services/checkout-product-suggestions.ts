@@ -21,6 +21,8 @@ export type CheckoutSuggestionItemDto = {
   image: string
   stock: number
   discount: number
+  /** True when this exact cart line already exists — still listed so the modal can appear (e.g. admin preview / fixed list). */
+  alreadyInCart?: boolean
 }
 
 const CATALOG_POOL_LIMIT = 240
@@ -112,17 +114,22 @@ function defaultTakePerSource(maxSuggestions: number, sourceCount: number): numb
 
 /**
  * Merge ordered sources: each source contributes up to `take` (or default split), capped by `maxSuggestions`.
- * Skips products already in cart (by productId). Skips duplicate line ids within the result set.
+ *
+ * - **random_** / **category**: skips products whose `productId` is in `excludeProductIds` (cart).
+ * - **fixed_products**: does **not** skip by productId so admin-picked items still appear; rows that match an
+ *   existing cart line id get `alreadyInCart: true` (same UX as "already have this exact variant").
+ * - Dedupes duplicate line ids within the merged suggestion list.
  */
 export async function resolveCheckoutSuggestionItems(
   settings: ProductSuggestionSettings,
-  opts: { excludeProductIds: Set<string> }
+  opts: { excludeProductIds: Set<string>; excludeLineIds: Set<string> }
 ): Promise<CheckoutSuggestionItemDto[]> {
   const max = settings.maxSuggestions ?? DEFAULT_PRODUCT_SUGGESTION_SETTINGS.maxSuggestions
   const sources = settings.sources ?? []
   if (!settings.enabled || sources.length === 0 || max <= 0) return []
 
   const excludeProductIds = opts.excludeProductIds
+  const excludeLineIds = opts.excludeLineIds
   const out: CheckoutSuggestionItemDto[] = []
   const seenLineIds = new Set<string>()
   const perDefault = defaultTakePerSource(max, sources.length)
@@ -130,6 +137,7 @@ export async function resolveCheckoutSuggestionItems(
   for (const source of sources as SuggestionSource[]) {
     if (out.length >= max) break
     const need = Math.min(max - out.length, sourceTake(source, perDefault))
+    const isFixed = source.type === "fixed_products"
 
     let pool: any[] = []
     switch (source.type) {
@@ -159,13 +167,18 @@ export async function resolveCheckoutSuggestionItems(
     for (const p of pool) {
       if (added >= need || out.length >= max) break
       const pid = p._id?.toString?.()
-      if (!pid || excludeProductIds.has(pid)) continue
+      if (!pid) continue
+      if (!isFixed && excludeProductIds.has(pid)) continue
 
       const dto = mapLeanProductToDto(p)
       if (!dto) continue
       if (seenLineIds.has(dedupeKey(dto))) continue
+
+      const alreadyInCart = excludeLineIds.has(dto.id)
+      if (!isFixed && alreadyInCart) continue
+
       seenLineIds.add(dto.id)
-      out.push(dto)
+      out.push(isFixed && alreadyInCart ? { ...dto, alreadyInCart: true } : dto)
       added++
     }
   }

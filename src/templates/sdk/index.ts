@@ -1,11 +1,15 @@
 export { useTemplateCartActions } from "./use-template-cart-actions"
 
-/** Cart → checkout with optional product-suggestions modal (configured in admin). Custom `RouteMain` should use this instead of linking to `/checkout`. */
+/** Cart → checkout with optional product-suggestions modal (configured in admin). Custom `RouteMain` should use this instead of linking to `/checkout`. Pass `dialogPresentation` on the hook or gate to match template typography. */
 export {
   useCheckoutWithSuggestions,
   CheckoutSuggestionsGate,
   CheckoutSuggestionsDialog,
+  type CheckoutSuggestionsDialogPresentation,
+  type UseCheckoutWithSuggestionsOptions,
 } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
+
+export type { CheckoutSuggestionItemDto } from "@/services/checkout-product-suggestions"
 
 /** Default engine bodies — optional reuse inside a custom `RouteMain`. */
 export {

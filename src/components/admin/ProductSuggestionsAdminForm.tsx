@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import type { ProductSuggestionSettings, SuggestionSource } from "@/lib/product-suggestion-settings-schema"
+import { FixedProductsSourcePicker } from "@/components/admin/FixedProductsSourcePicker"
 
 type CategoryOption = { id: string; name: string; depth: number }
 
@@ -165,10 +166,10 @@ export function ProductSuggestionsAdminForm({
                     >
                       {SOURCE_TYPES.map((t) => (
                         <option key={t} value={t}>
-                          {t === "random_catalog" && "Véletlen — teljes kínálat"}
-                          {t === "random_price_range" && "Véletlen — nettó ár tartomány"}
-                          {t === "category" && "Kategória"}
-                          {t === "fixed_products" && "Fix termék ID-k"}
+                      {t === "random_catalog" && "Véletlen — a teljes bolt"}
+                      {t === "random_price_range" && "Véletlen — nettó ár között"}
+                      {t === "category" && "Egy kategória termékei"}
+                      {t === "fixed_products" && "Kézzel kiválasztott termékek"}
                         </option>
                       ))}
                     </select>
@@ -317,22 +318,10 @@ export function ProductSuggestionsAdminForm({
                 )}
 
                 {src.type === "fixed_products" && (
-                  <div className="space-y-2">
-                    <Label className="text-neutral-500 text-[10px] font-black uppercase">
-                      Termék MongoDB ID-k (soronként vagy vesszővel)
-                    </Label>
-                    <textarea
-                      className="w-full min-h-[100px] rounded-none border border-white/10 bg-white/5 text-white text-sm p-3 font-mono"
-                      value={src.productIds.join("\n")}
-                      onChange={(e) => {
-                        const raw = e.target.value
-                          .split(/[\s,]+/)
-                          .map((x) => x.trim())
-                          .filter(Boolean)
-                        updateSource(index, { type: "fixed_products", productIds: raw })
-                      }}
-                    />
-                  </div>
+                  <FixedProductsSourcePicker
+                    productIds={src.productIds}
+                    onChange={(ids) => updateSource(index, { type: "fixed_products", productIds: ids })}
+                  />
                 )}
               </li>
             ))}

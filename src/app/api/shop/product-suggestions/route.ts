@@ -6,6 +6,7 @@ import { resolveCheckoutSuggestionItems } from "@/services/checkout-product-sugg
 
 const postBodySchema = z.object({
   excludeProductIds: z.array(z.string()).max(200).optional().default([]),
+  excludeLineIds: z.array(z.string()).max(200).optional().default([]),
 })
 
 export async function POST(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   if (blocked) return blocked
 
   const json = await request.json().catch(() => ({}))
-  const { excludeProductIds } = postBodySchema.parse(json)
+  const { excludeProductIds, excludeLineIds } = postBodySchema.parse(json)
   const settings = await ProductSuggestionSettingsService.get()
 
   if (!settings.enabled || settings.sources.length === 0) {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
 
   const items = await resolveCheckoutSuggestionItems(settings, {
     excludeProductIds: new Set(excludeProductIds),
+    excludeLineIds: new Set(excludeLineIds),
   })
 
   return NextResponse.json({

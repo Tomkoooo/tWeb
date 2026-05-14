@@ -18,6 +18,18 @@ import { formatHuf } from "@/lib/pricing"
 import { cn } from "@/lib/utils"
 import type { CheckoutSuggestionItemDto } from "@/services/checkout-product-suggestions"
 
+/** Optional Tailwind (or arbitrary) classes for templates to restyle the checkout suggestions modal. */
+export type CheckoutSuggestionsDialogPresentation = {
+  contentClassName?: string
+  titleClassName?: string
+  descriptionClassName?: string
+  listClassName?: string
+  itemClassName?: string
+  footerClassName?: string
+  primaryButtonClassName?: string
+  secondaryButtonClassName?: string
+}
+
 export type CheckoutSuggestionsDialogProps = {
   open: boolean
   /** Sync open state; when transitioning to closed, parent clears payload and navigates to checkout. */
@@ -29,6 +41,7 @@ export type CheckoutSuggestionsDialogProps = {
   selectedIds: Set<string>
   onToggle: (lineId: string) => void
   onAddSelectedAndCheckout: () => void
+  presentation?: CheckoutSuggestionsDialogPresentation
 }
 
 export function CheckoutSuggestionsDialog({
@@ -41,18 +54,27 @@ export function CheckoutSuggestionsDialog({
   onToggle,
   onDialogOpenChange,
   onAddSelectedAndCheckout,
+  presentation,
 }: CheckoutSuggestionsDialogProps) {
+  const p = presentation ?? {}
   return (
     <Dialog open={open} onOpenChange={onDialogOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-border bg-background text-foreground sm:max-w-2xl">
+      <DialogContent
+        className={cn(
+          "max-h-[90vh] max-w-2xl overflow-y-auto border-border bg-background text-foreground sm:max-w-2xl",
+          p.contentClassName
+        )}
+      >
         <DialogHeader>
-          <DialogTitle className="text-foreground">
+          <DialogTitle className={cn("text-foreground", p.titleClassName)}>
             {modalTitle?.trim() || "Még valami a kosárba?"}
           </DialogTitle>
           {modalHelper?.trim() ? (
-            <DialogDescription className="text-muted-foreground">{modalHelper}</DialogDescription>
+            <DialogDescription className={cn("text-muted-foreground", p.descriptionClassName)}>
+              {modalHelper}
+            </DialogDescription>
           ) : (
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className={cn("text-muted-foreground", p.descriptionClassName)}>
               Válassz javasolt termékeket, vagy lépj tovább a pénztárba.
             </DialogDescription>
           )}
@@ -63,20 +85,26 @@ export function CheckoutSuggestionsDialog({
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className={cn("space-y-3", p.listClassName)}>
             {items.map((it) => (
               <li
                 key={it.id}
                 className={cn(
                   "flex items-center gap-4 border border-border p-3 transition-colors",
-                  selectedIds.has(it.id) ? "border-primary/50 bg-muted/30" : "opacity-90"
+                  selectedIds.has(it.id) ? "border-primary/50 bg-muted/30" : "opacity-90",
+                  it.alreadyInCart && "border-muted bg-muted/20 opacity-100",
+                  p.itemClassName
                 )}
               >
                 <input
                   type="checkbox"
-                  className="h-4 w-4 accent-primary shrink-0"
-                  checked={selectedIds.has(it.id)}
-                  onChange={() => onToggle(it.id)}
+                  className="h-4 w-4 accent-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+                  checked={it.alreadyInCart ? false : selectedIds.has(it.id)}
+                  disabled={Boolean(it.alreadyInCart)}
+                  onChange={() => {
+                    if (it.alreadyInCart) return
+                    onToggle(it.id)
+                  }}
                   aria-label={`${it.name} kijelölése`}
                 />
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-border bg-muted">
@@ -88,24 +116,33 @@ export function CheckoutSuggestionsDialog({
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">{it.variantLabel}</p>
                   ) : null}
                   <p className="mt-1 text-sm font-black text-primary">{formatHuf(it.price)}</p>
+                  {it.alreadyInCart ? (
+                    <p className="mt-1 text-xs font-medium text-muted-foreground">Ez a tétel már a kosárban van.</p>
+                  ) : null}
                 </div>
               </li>
             ))}
           </ul>
         )}
 
-        <DialogFooter className="gap-2 sm:justify-between sm:gap-4">
+        <DialogFooter className={cn("gap-2 sm:justify-between sm:gap-4", p.footerClassName)}>
           <Button
             type="button"
             variant="outline"
-            className="rounded-none border-border font-black uppercase tracking-widest text-[10px]"
+            className={cn(
+              "rounded-none border-border font-black uppercase tracking-widest text-[10px]",
+              p.secondaryButtonClassName
+            )}
             onClick={() => onDialogOpenChange(false)}
           >
             Nem, tovább a pénztár
           </Button>
           <Button
             type="button"
-            className="rounded-none bg-primary font-black uppercase tracking-widest text-[10px] text-primary-foreground"
+            className={cn(
+              "rounded-none bg-primary font-black uppercase tracking-widest text-[10px] text-primary-foreground",
+              p.primaryButtonClassName
+            )}
             disabled={loading}
             onClick={onAddSelectedAndCheckout}
           >
@@ -135,7 +172,13 @@ function dtoToCartItem(dto: CheckoutSuggestionItemDto): CartItem {
   }
 }
 
-export function useCheckoutWithSuggestions() {
+export type UseCheckoutWithSuggestionsOptions = {
+  /** Pass Tailwind classes to match your template’s cart / typography (Atelier uses serif + rounded). */
+  dialogPresentation?: CheckoutSuggestionsDialogPresentation
+}
+
+export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOptions = {}) {
+  const { dialogPresentation } = options
   const router = useRouter()
   const cartItems = useCartStore((s) => s.items)
   const addItem = useCartStore((s) => s.addItem)
@@ -169,10 +212,11 @@ export function useCheckoutWithSuggestions() {
     setLoading(true)
     try {
       const excludeProductIds = cartItems.map((i) => i.productId)
+      const excludeLineIds = cartItems.map((i) => i.id)
       const res = await fetch("/api/shop/product-suggestions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ excludeProductIds }),
+        body: JSON.stringify({ excludeProductIds, excludeLineIds }),
       })
       if (!res.ok) {
         navigateCheckoutOnly()
@@ -192,7 +236,9 @@ export function useCheckoutWithSuggestions() {
         modalTitle: data.modalTitle,
         modalHelper: data.modalHelper,
       })
-      setSelectedIds(new Set(data.items.map((i) => i.id)))
+      setSelectedIds(
+        new Set(data.items.filter((i) => !i.alreadyInCart).map((i) => i.id))
+      )
       setOpen(true)
     } catch {
       navigateCheckoutOnly()
@@ -216,6 +262,7 @@ export function useCheckoutWithSuggestions() {
       return
     }
     for (const it of payload.items) {
+      if (it.alreadyInCart) continue
       if (selectedIds.has(it.id)) {
         addItem(dtoToCartItem(it))
       }
@@ -235,9 +282,10 @@ export function useCheckoutWithSuggestions() {
         selectedIds={selectedIds}
         onToggle={toggle}
         onAddSelectedAndCheckout={onAddSelectedAndCheckout}
+        presentation={dialogPresentation}
       />
     ),
-    [open, loading, payload, selectedIds, toggle, handleDialogOpenChange, onAddSelectedAndCheckout]
+    [open, loading, payload, selectedIds, toggle, handleDialogOpenChange, onAddSelectedAndCheckout, dialogPresentation]
   )
 
   return { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading: loading }
@@ -251,12 +299,16 @@ export function CheckoutSuggestionsGate({
   className,
   disabled,
   children,
+  dialogPresentation,
 }: {
   className?: string
   disabled?: boolean
   children: React.ReactNode
+  dialogPresentation?: CheckoutSuggestionsDialogPresentation
 }) {
-  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
+  const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions({
+    dialogPresentation,
+  })
   return (
     <>
       <Button

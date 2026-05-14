@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-auth"
 import { shopCommerceBlockedResponse } from "@/lib/features/shop"
 import { ProductService } from "@/services/product"
-
-type ProductListItem = {
-  _id: { toString(): string }
-  name: string
-  slug: string
-}
+import { mediaImageSrc } from "@/lib/images"
 
 export async function GET(request: NextRequest) {
   const blocked = shopCommerceBlockedResponse()
@@ -21,10 +16,11 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json({
-    items: (data.products as ProductListItem[]).map((item) => ({
+    items: (data.products as any[]).map((item) => ({
       id: item._id.toString(),
       name: item.name,
       slug: item.slug,
+      image: mediaImageSrc(item.images?.[0]),
     })),
     total: data.total,
   })
