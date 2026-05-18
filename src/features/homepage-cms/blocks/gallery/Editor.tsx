@@ -22,6 +22,7 @@ export function GalleryBlockEditor({ block, onPatch }: Props) {
                 src={item.image}
                 alt={item.caption}
                 editMode
+                flexibleCrop
                 onChange={(next) =>
                   onPatch(
                     "items",

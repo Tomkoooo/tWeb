@@ -13,6 +13,7 @@ export function EditableImageInline({
   width,
   height,
   usageLabel,
+  flexibleCrop,
 }: {
   blockType: HomepageBlock["type"]
   field: string
@@ -22,6 +23,7 @@ export function EditableImageInline({
   width?: number
   height?: number
   usageLabel?: string
+  flexibleCrop?: boolean
 }) {
   const cms = useCmsEdit()
   return (
@@ -32,6 +34,7 @@ export function EditableImageInline({
       width={width}
       height={height}
       usageLabel={usageLabel}
+      flexibleCrop={flexibleCrop}
       editMode={cms.enabled}
       onChange={(next) => cms.updateField(blockType, field, next)}
     />

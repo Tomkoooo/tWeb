@@ -183,9 +183,10 @@ export function Hero({
                       alt={displayTitle}
                       editMode
                       width={1200}
-                      height={1200}
+                      height={480}
+                      flexibleCrop
                       className="mx-auto max-h-[min(420px,55vh)] w-full object-contain"
-                      usageLabel="Hero kép (aktív dia)"
+                      usageLabel="Hero banner / logó (aktív dia)"
                       onChange={(next) => {
                         const idx =
                           activeImages.length > 0

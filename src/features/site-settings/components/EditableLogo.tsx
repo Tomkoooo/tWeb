@@ -10,6 +10,7 @@ export function EditableLogo({
   onChange,
   usageLabel,
   recommendedSize,
+  flexibleCrop = true,
 }: {
   src: string
   alt: string
@@ -17,6 +18,8 @@ export function EditableLogo({
   onChange: (value: string) => void
   usageLabel?: string
   recommendedSize?: { width: number; height: number }
+  /** Lets editors pick crop shape (square, logo strip, full image, etc.). */
+  flexibleCrop?: boolean
 }) {
   return (
     <div className="space-y-2">
@@ -28,6 +31,8 @@ export function EditableLogo({
           usageLabel={usageLabel}
           recommendedSize={recommendedSize}
           aspect={recommendedSize ? recommendedSize.width / recommendedSize.height : undefined}
+          allowRectangleCrop={flexibleCrop}
+          allowSkipCrop={flexibleCrop}
         />
       ) : null}
     </div>

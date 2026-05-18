@@ -12,6 +12,8 @@ type Props = {
   width?: number
   height?: number
   usageLabel?: string
+  /** Enables free rectangle crop and full-image upload in the editor (for banners and logos). */
+  flexibleCrop?: boolean
 }
 
 export function EditableImage({
@@ -23,6 +25,7 @@ export function EditableImage({
   width = 1200,
   height = 800,
   usageLabel,
+  flexibleCrop = false,
 }: Props) {
   return (
     <div className="space-y-2">
@@ -42,6 +45,8 @@ export function EditableImage({
             usageLabel={usageLabel}
             recommendedSize={{ width, height }}
             aspect={width / height}
+            allowRectangleCrop={flexibleCrop}
+            allowSkipCrop={flexibleCrop}
           />
           <input
             value={src}

@@ -135,6 +135,9 @@ export function HeroBlockEditor({ block, onPatch }: Props) {
                     src={image}
                     alt={slide.title}
                     editMode
+                    flexibleCrop
+                    width={1200}
+                    height={480}
                     onChange={(value) =>
                       patchSlides(
                         slides.map((item, idx) =>
