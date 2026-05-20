@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { TopBar } from "@/features/homepage-cms/components/editor/TopBar"
 import { Inserter } from "@/features/homepage-cms/components/editor/Inserter"
 import { createDefaultBlock, useHomepageEditorStore } from "@/features/homepage-cms/store/editor-store"
-import type { HomepageBlockType, HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
+import type { HeroBlock, HomepageBlockType, HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import { getDefinition } from "@/features/homepage-cms/registry/block-registry"
 import {
   insertionIndexForHomepageBlockType,
@@ -108,6 +108,27 @@ export function VisualHomepageEditor({
   const NavbarCmp = templateModule.chrome.Navbar
   const FooterCmp = templateModule.chrome.Footer
   const HomeRender = templateModule.pages.home.Render
+  const patchHeroTopLevelField = (
+    data: HeroBlock["data"],
+    field: string,
+    value: unknown
+  ): Record<string, unknown> | null => {
+    const slideKeys = new Set([
+      "title",
+      "description",
+      "primaryCtaLabel",
+      "primaryCtaHref",
+      "secondaryCtaLabel",
+      "secondaryCtaHref",
+    ])
+    if (!slideKeys.has(field)) return null
+    const patch: Record<string, unknown> = { [field]: value }
+    if (Array.isArray(data.heroSlides) && data.heroSlides.length > 0) {
+      patch.heroSlides = data.heroSlides.map((slide) => ({ ...slide, [field]: value }))
+    }
+    return patch
+  }
+
   const contactData = useMemo(() => {
     const block = snapshot.blocks.find((item) => item.type === "contact" && item.enabled !== false)
     const data = block?.data as { email?: string; phone?: string; address?: string } | undefined
@@ -286,6 +307,17 @@ export function VisualHomepageEditor({
                         (item) => item.type === blockType && item.enabled !== false
                       )
                       if (!target) return
+                      if (blockType === "hero" && target.type === "hero") {
+                        const heroPatch = patchHeroTopLevelField(
+                          target.data as HeroBlock["data"],
+                          field,
+                          value
+                        )
+                        if (heroPatch) {
+                          updateBlockData(target.id, heroPatch)
+                          return
+                        }
+                      }
                       updateBlockField(target.id, field, value)
                     }}
                     patchBlockData={(blockType, patch) => {

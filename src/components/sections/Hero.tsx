@@ -105,10 +105,31 @@ export function Hero({
   const secondaryHref = activeSlide?.secondaryCtaHref ?? "/#about"
   const displayBadges = activeSlide?.badges?.length ? activeSlide.badges : ["star:LOREM IPSUM", "shield:DOLOR SIT", "zap:AMET ELIT"]
 
-  const patchActiveSlide = (patch: Partial<HeroSlide>) => {
+  const commitHeroSlides = (nextSlides: HeroSlide[], mirrorSlideIndex = activeSlideIndex) => {
     if (!cms.enabled) return
-    const nextSlides = normalizedSlides.map((slide, idx) => (idx === activeSlideIndex ? { ...slide, ...patch } : slide))
-    cms.updateField("hero", "heroSlides", nextSlides)
+    const current = nextSlides[mirrorSlideIndex] ?? nextSlides[0]
+    if (!current) return
+    cms.patchBlockData("hero", {
+      heroSlides: nextSlides,
+      title: current.title,
+      description: current.description,
+      primaryCtaLabel: current.primaryCtaLabel,
+      primaryCtaHref: current.primaryCtaHref,
+      secondaryCtaLabel: current.secondaryCtaLabel,
+      secondaryCtaHref: current.secondaryCtaHref,
+      badges: current.badges,
+      heroImage: current.images[0] ?? "/generic-hero.svg",
+      heroImages: current.images,
+      imageDurationSeconds: current.imageDurationSeconds,
+      heroDurationSeconds: current.durationSeconds,
+    })
+  }
+
+  const patchActiveSlide = (patch: Partial<HeroSlide>) => {
+    const nextSlides = normalizedSlides.map((slide, idx) =>
+      idx === activeSlideIndex ? { ...slide, ...patch } : slide
+    )
+    commitHeroSlides(nextSlides)
   }
 
   React.useEffect(() => {
@@ -226,12 +247,14 @@ export function Hero({
                     blockType="hero"
                     field="title"
                     value={displayTitle}
+                    onCommit={(next) => patchActiveSlide({ title: next })}
                     className="text-3xl sm:text-4xl md:text-6xl lg:text-6xl xl:text-7xl font-heading font-black tracking-tighter text-foreground leading-[0.9] uppercase"
                   />
                   <EditableTextInline
                     blockType="hero"
                     field="description"
                     value={displayDescription}
+                    onCommit={(next) => patchActiveSlide({ description: next })}
                     multiline
                     className="text-base sm:text-lg md:text-xl text-neutral-400 font-medium tracking-tight max-w-xl mx-auto lg:mx-0"
                   />
@@ -283,6 +306,8 @@ export function Hero({
                     hrefField="primaryCtaHref"
                     label={primaryLabel}
                     href={primaryHref}
+                    onCommitLabel={(next) => patchActiveSlide({ primaryCtaLabel: next })}
+                    onCommitHref={(next) => patchActiveSlide({ primaryCtaHref: next })}
                     className="btn-krausz w-full sm:w-auto bg-primary hover:bg-foreground hover:text-background text-primary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg border-none group transition-all duration-300"
                   />
                   <EditableLinkInline
@@ -291,6 +316,8 @@ export function Hero({
                     hrefField="secondaryCtaHref"
                     label={secondaryLabel}
                     href={secondaryHref}
+                    onCommitLabel={(next) => patchActiveSlide({ secondaryCtaLabel: next })}
+                    onCommitHref={(next) => patchActiveSlide({ secondaryCtaHref: next })}
                     className="btn-krausz w-full sm:w-auto border-border text-foreground hover:bg-secondary hover:text-secondary-foreground h-14 sm:h-16 px-8 sm:px-10 text-lg group transition-all duration-300 bg-muted/40 backdrop-blur-sm"
                     buttonVariant="outline"
                   />
@@ -401,17 +428,25 @@ export function Hero({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    cms.updateField("hero", "heroSlides", [
+                  onClick={() => {
+                    const nextSlides: HeroSlide[] = [
                       ...normalizedSlides,
                       {
-                        ...activeSlide,
                         title: "Új hero",
+                        description: "",
+                        primaryCtaLabel: "VIEW PRODUCTS",
+                        primaryCtaHref: "/shop",
+                        secondaryCtaLabel: "ABOUT",
+                        secondaryCtaHref: "/#about",
                         badges: ["Star:Uj jelveny"],
                         images: ["/generic-hero.svg"],
+                        imageDurationSeconds: 4,
+                        durationSeconds: 6,
                       },
-                    ])
-                  }
+                    ]
+                    commitHeroSlides(nextSlides, nextSlides.length - 1)
+                    setActiveSlideIndex(nextSlides.length - 1)
+                  }}
                 >
                   Hero hozzáadása
                 </Button>
@@ -424,23 +459,9 @@ export function Hero({
                       const nextSlides = normalizedSlides.filter(
                         (_, idx) => idx !== activeSlideIndex
                       )
-                      const first = nextSlides[0]!
-                      cms.patchBlockData("hero", {
-                        heroSlides: nextSlides,
-                        title: first.title,
-                        description: first.description,
-                        primaryCtaLabel: first.primaryCtaLabel,
-                        primaryCtaHref: first.primaryCtaHref,
-                        secondaryCtaLabel: first.secondaryCtaLabel,
-                        secondaryCtaHref: first.secondaryCtaHref,
-                        badges: first.badges,
-                        heroImage: first.images[0] ?? "",
-                        heroImages: first.images,
-                        imageDurationSeconds: first.imageDurationSeconds,
-                        heroDurationSeconds: first.durationSeconds,
-                      })
+                      commitHeroSlides(nextSlides, 0)
                       setActiveSlideIndex((prev) =>
-                        Math.min(prev, nextSlides.length - 1)
+                        Math.min(prev, Math.max(0, nextSlides.length - 1))
                       )
                     }}
                   >

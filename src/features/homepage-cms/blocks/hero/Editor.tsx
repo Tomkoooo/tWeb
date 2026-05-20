@@ -8,6 +8,7 @@ import { EditableImage } from "@/features/homepage-cms/components/primitives/Edi
 type Props = {
   block: HeroBlock
   onPatch: (field: keyof HeroBlock["data"], value: unknown) => void
+  onPatchData?: (patch: Partial<HeroBlock["data"]>) => void
 }
 
 type HeroSlide = NonNullable<HeroBlock["data"]["heroSlides"]>[number]
@@ -27,7 +28,7 @@ function createSlide(seed?: Partial<HeroSlide>): HeroSlide {
   }
 }
 
-export function HeroBlockEditor({ block, onPatch }: Props) {
+export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
   const slides = Array.isArray(block.data.heroSlides) && block.data.heroSlides.length
     ? block.data.heroSlides
     : [
@@ -48,6 +49,24 @@ export function HeroBlockEditor({ block, onPatch }: Props) {
   const patchSlides = (nextSlides: HeroSlide[]) => {
     const normalized = nextSlides.length ? nextSlides : [createSlide()]
     const first = normalized[0]
+    const payload: Partial<HeroBlock["data"]> = {
+      heroSlides: normalized,
+      title: first.title,
+      description: first.description,
+      primaryCtaLabel: first.primaryCtaLabel,
+      primaryCtaHref: first.primaryCtaHref,
+      secondaryCtaLabel: first.secondaryCtaLabel,
+      secondaryCtaHref: first.secondaryCtaHref,
+      badges: first.badges,
+      heroImage: first.images[0] || "/generic-hero.svg",
+      heroImages: first.images,
+      imageDurationSeconds: first.imageDurationSeconds,
+      heroDurationSeconds: first.durationSeconds,
+    }
+    if (onPatchData) {
+      onPatchData(payload)
+      return
+    }
     onPatch("heroSlides", normalized)
     onPatch("title", first.title)
     onPatch("description", first.description)

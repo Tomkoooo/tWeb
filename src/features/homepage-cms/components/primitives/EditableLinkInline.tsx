@@ -14,6 +14,8 @@ export function EditableLinkInline({
   href,
   className,
   buttonVariant = "default",
+  onCommitLabel,
+  onCommitHref,
 }: {
   blockType: HomepageBlock["type"]
   labelField: string
@@ -22,6 +24,8 @@ export function EditableLinkInline({
   href: string
   className?: string
   buttonVariant?: "default" | "outline"
+  onCommitLabel?: (value: string) => void
+  onCommitHref?: (value: string) => void
 }) {
   const cms = useCmsEdit()
   const [open, setOpen] = useState(false)
@@ -61,14 +65,18 @@ export function EditableLinkInline({
           <input
             value={nextLabel}
             onChange={(event) => setNextLabel(event.target.value)}
-            onBlur={() => cms.updateField(blockType, labelField, nextLabel)}
+            onBlur={() =>
+              onCommitLabel ? onCommitLabel(nextLabel) : cms.updateField(blockType, labelField, nextLabel)
+            }
             className="w-full h-8 px-2 bg-black border border-white/20 text-xs text-white"
             placeholder="Button label"
           />
           <input
             value={nextHref}
             onChange={(event) => setNextHref(event.target.value)}
-            onBlur={() => cms.updateField(blockType, hrefField, nextHref)}
+            onBlur={() =>
+              onCommitHref ? onCommitHref(nextHref) : cms.updateField(blockType, hrefField, nextHref)
+            }
             className="w-full h-8 px-2 bg-black border border-white/20 text-xs text-white"
             placeholder="/shop"
           />

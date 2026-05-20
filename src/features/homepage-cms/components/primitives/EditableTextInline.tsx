@@ -12,6 +12,7 @@ export function EditableTextInline({
   className,
   multiline = false,
   placeholder = "Text",
+  onCommit,
 }: {
   blockType: HomepageBlock["type"]
   field: string
@@ -19,6 +20,8 @@ export function EditableTextInline({
   className?: string
   multiline?: boolean
   placeholder?: string
+  /** When set (e.g. hero slides), overrides default top-level `updateField`. */
+  onCommit?: (value: string) => void
 }) {
   const cms = useCmsEdit()
   const [localValue, setLocalValue] = useState(value || "")
@@ -26,6 +29,11 @@ export function EditableTextInline({
   useEffect(() => {
     setLocalValue(value || "")
   }, [value])
+
+  const commit = () => {
+    if (onCommit) onCommit(localValue)
+    else cms.updateField(blockType, field, localValue)
+  }
 
   if (!cms.enabled) {
     return <>{value || placeholder}</>
@@ -36,7 +44,7 @@ export function EditableTextInline({
       <textarea
         value={localValue}
         onChange={(event) => setLocalValue(event.target.value)}
-        onBlur={() => cms.updateField(blockType, field, localValue)}
+        onBlur={commit}
         placeholder={placeholder}
         className={cn("w-full border border-dashed border-white/20 bg-black/30 px-2 py-1 text-white", className)}
       />
@@ -47,7 +55,7 @@ export function EditableTextInline({
     <input
       value={localValue}
       onChange={(event) => setLocalValue(event.target.value)}
-      onBlur={() => cms.updateField(blockType, field, localValue)}
+      onBlur={commit}
       placeholder={placeholder}
       className={cn("w-full border border-dashed border-white/20 bg-black/30 px-2 py-1 text-white", className)}
     />
