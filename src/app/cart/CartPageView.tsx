@@ -18,21 +18,31 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCartStore, type CartItem } from "@/store/useCartStore"
 import { Separator } from "@/components/ui/separator"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, priceBreakdownFromGross, totalsFromMixedVatLines, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 
 export type CartPageVariant = "page" | "embedded"
 
 export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }) {
   const embedded = variant === "embedded"
-  const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
+  const { items, removeItem, updateQuantity, totalItems } = useCartStore()
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 5
   const totalPages = Math.ceil(items.length / itemsPerPage)
   const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-  const totalBreakdown = totalsBreakdownFromGross(totalPrice)
+  const totalBreakdown = React.useMemo(
+    () =>
+      totalsFromMixedVatLines(
+        items.map((i: CartItem) => ({
+          grossUnit: i.price,
+          quantity: i.quantity,
+          vatPercent: clampVatPercent(i.vatPercent ?? DEFAULT_VAT_PERCENT),
+        }))
+      ),
+    [items]
+  )
 
   React.useEffect(() => {
     const loadAvailability = async () => {
@@ -131,7 +141,11 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
             <div className="space-y-4">
               <AnimatePresence mode="popLayout">
                 {paginatedItems.map((item: CartItem) => {
-                  const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                  const breakdown = priceBreakdownFromGross(
+                    item.price,
+                    item.quantity,
+                    clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+                  )
                   return (
                     <motion.div
                       key={item.id}
@@ -249,7 +263,7 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
                   <span>{formatHuf(totalBreakdown.net)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                  <span>ÁFA (27%)</span>
+                  <span>ÁFA</span>
                   <span>{formatHuf(totalBreakdown.vat)}</span>
                 </div>
                 <Separator className="bg-border" />

@@ -11,8 +11,16 @@ import { MethodsStep } from "@/components/checkout/MethodsStep"
 import { SummaryStep } from "@/components/checkout/SummaryStep"
 import type { CheckoutStepAppearance } from "@/components/checkout/checkout-appearance"
 import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
-import { useCartStore } from "@/store/useCartStore"
+import {
+  formatHuf,
+  priceBreakdownFromGross,
+  totalsFromMixedVatLines,
+  clampVatPercent,
+  DEFAULT_VAT_PERCENT,
+} from "@/lib/pricing"
+import { getCountryDisplayName, formatAllowedCountriesList, normalizeIso2 } from "@/lib/country-codes"
+import type { TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import { useCartStore, type CartItem } from "@/store/useCartStore"
 
 export const CHECKOUT_WIZARD_STEPS = [
   { id: "billing", title: "Számlázás" },
@@ -28,7 +36,8 @@ const initialForm = () => ({
     type: "personal" as "personal" | "company",
     name: "",
     taxNumber: "",
-    country: "Magyarország",
+    countryCode: "HU",
+    country: getCountryDisplayName("HU", "hu-HU"),
     city: "",
     zip: "",
     street: "",
@@ -38,7 +47,8 @@ const initialForm = () => ({
   shipping: {
     isSameAsBilling: true,
     name: "",
-    country: "Magyarország",
+    countryCode: "HU",
+    country: getCountryDisplayName("HU", "hu-HU"),
     city: "",
     zip: "",
     street: "",
@@ -83,7 +93,21 @@ export function useCheckoutWizardModel(
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [stripeRedirectHold, setStripeRedirectHold] = React.useState<StripeRedirectHold | null>(null)
+  const [tradingLimits, setTradingLimits] = React.useState<TradingLimits | null>(null)
   const router = useRouter()
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/shop/trading-limits")
+        if (!res.ok) return
+        setTradingLimits(await res.json())
+      } catch {
+        setTradingLimits(null)
+      }
+    }
+    void load()
+  }, [])
 
   React.useEffect(() => {
     if (!stripeRedirectHold?.checkoutUrl) return
@@ -93,6 +117,26 @@ export function useCheckoutWizardModel(
     }, delayMs)
     return () => window.clearTimeout(id)
   }, [stripeRedirectHold])
+
+  React.useEffect(() => {
+    setFormData((prev) => {
+      if (!prev.shipping.isSameAsBilling) return prev
+      if (
+        prev.shipping.countryCode === prev.billing.countryCode &&
+        prev.shipping.country === prev.billing.country
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        shipping: {
+          ...prev.shipping,
+          countryCode: prev.billing.countryCode,
+          country: prev.billing.country,
+        },
+      }
+    })
+  }, [formData.billing.countryCode, formData.billing.country, formData.shipping.isSameAsBilling])
 
   React.useEffect(() => {
     const fetchMethods = async () => {
@@ -173,7 +217,31 @@ export function useCheckoutWizardModel(
   }, [cartTotalPrice, formData.coupon, selectedPayment?.grossPrice, selectedShipping?.grossPrice])
 
   const totals = calculateTotal()
-  const totalBreakdown = totalsBreakdownFromGross(totals.total)
+  const totalBreakdown = React.useMemo(() => {
+    const { subtotal: st, shippingFee, paymentFee, total } = totals
+    const goodsAfterDiscount = Math.max(0, total - shippingFee - paymentFee)
+    const scale = st > 0 ? goodsAfterDiscount / st : 1
+    const mixed = totalsFromMixedVatLines(
+      items.map((i: CartItem) => ({
+        grossUnit: Number(i.price) * scale,
+        quantity: Number(i.quantity),
+        vatPercent: clampVatPercent(i.vatPercent ?? DEFAULT_VAT_PERCENT),
+      }))
+    )
+    let net = mixed.net
+    let vat = mixed.vat
+    if (shippingFee > 0) {
+      const s = priceBreakdownFromGross(shippingFee, 1, DEFAULT_VAT_PERCENT)
+      net += s.lineNet
+      vat += s.lineVat
+    }
+    if (paymentFee > 0) {
+      const p = priceBreakdownFromGross(paymentFee, 1, DEFAULT_VAT_PERCENT)
+      net += p.lineNet
+      vat += p.lineVat
+    }
+    return { net, vat, gross: total }
+  }, [totals, items])
 
   const nextStep = React.useCallback(() => {
     if (currentStep === 0) {
@@ -190,7 +258,43 @@ export function useCheckoutWizardModel(
         toast.error("Kérjük, töltsön ki minden kötelező adatot a számlázásnál!")
         return
       }
+      const bc = normalizeIso2(b.countryCode)
+      if (!bc) {
+        toast.error("Kérjük, válasszon érvényes számlázási országot.")
+        return
+      }
+      if (
+        tradingLimits?.invoicingRestricted &&
+        tradingLimits.invoicingAllowedCountryCodes.length > 0 &&
+        !tradingLimits.invoicingAllowedCountryCodes.includes(bc)
+      ) {
+        toast.error(
+          `A számlázási ország nem engedélyezett. Csak számlázunk: ${formatAllowedCountriesList(
+            tradingLimits.invoicingAllowedCountryCodes
+          )} (${tradingLimits.invoicingAllowedCountryCodes.join(", ")}).`
+        )
+        return
+      }
     } else if (currentStep === 1) {
+      const shipCode = formData.shipping.isSameAsBilling
+        ? normalizeIso2(formData.billing.countryCode)
+        : normalizeIso2(formData.shipping.countryCode)
+      if (!shipCode) {
+        toast.error("Kérjük, állítson be érvényes szállítási országot.")
+        return
+      }
+      if (
+        tradingLimits?.shippingRestricted &&
+        tradingLimits.shippingAllowedCountryCodes.length > 0 &&
+        !tradingLimits.shippingAllowedCountryCodes.includes(shipCode)
+      ) {
+        toast.error(
+          `Ez a bolt csak a következő országokba szállít: ${formatAllowedCountriesList(
+            tradingLimits.shippingAllowedCountryCodes
+          )} (${tradingLimits.shippingAllowedCountryCodes.join(", ")}).`
+        )
+        return
+      }
       if (!formData.shipping.isSameAsBilling) {
         const s = formData.shipping
         if (!s.name || !s.zip || !s.city || !s.street || !s.email || !s.phone) {
@@ -212,7 +316,7 @@ export function useCheckoutWizardModel(
       }
     }
     setCurrentStep((prev) => Math.min(prev + 1, CHECKOUT_WIZARD_STEPS.length - 1))
-  }, [currentStep, formData])
+  }, [currentStep, formData, tradingLimits])
 
   const prevStep = React.useCallback(() => {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
@@ -230,7 +334,11 @@ export function useCheckoutWizardModel(
         price: i.price,
         quantity: i.quantity,
       })),
-      billingInfo: formData.billing,
+      billingInfo: {
+        ...formData.billing,
+        country: formData.billing.country,
+        countryCode: formData.billing.countryCode,
+      },
       shippingAddress: formData.shipping.isSameAsBilling
         ? {
             name: formData.billing.name,
@@ -238,6 +346,7 @@ export function useCheckoutWizardModel(
             city: formData.billing.city,
             street: formData.billing.street,
             country: formData.billing.country,
+            countryCode: formData.billing.countryCode,
             comment: formData.shipping.comment,
             email: formData.billing.email,
             phone: formData.billing.phone,
@@ -248,6 +357,7 @@ export function useCheckoutWizardModel(
             city: formData.shipping.city,
             street: formData.shipping.street,
             country: formData.shipping.country,
+            countryCode: formData.shipping.countryCode,
             comment: formData.shipping.comment,
             email: formData.shipping.email,
             phone: formData.shipping.phone,
@@ -332,6 +442,7 @@ export function useCheckoutWizardModel(
           <BillingStep
             appearance={stepAppearance}
             data={formData.billing}
+            tradingLimits={tradingLimits}
             onChange={(val: any) => setFormData((prev) => ({ ...prev, billing: val }))}
           />
         )
@@ -341,6 +452,7 @@ export function useCheckoutWizardModel(
             appearance={stepAppearance}
             data={formData.shipping}
             billingData={formData.billing}
+            tradingLimits={tradingLimits}
             onChange={(val: any) => setFormData((prev) => ({ ...prev, shipping: val }))}
           />
         )
@@ -367,7 +479,7 @@ export function useCheckoutWizardModel(
       default:
         return null
     }
-  }, [availableMethods, currentStep, formData, items, session?.user, stepAppearance, totals.subtotal])
+  }, [availableMethods, currentStep, formData, items, session?.user, stepAppearance, totals.subtotal, tradingLimits])
 
   return {
     currentStep,

@@ -1,4 +1,4 @@
-import { grossFromNetWithDiscount } from "@/lib/pricing"
+import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing"
 import {
   DEFAULT_PRODUCT_SUGGESTION_SETTINGS,
   type ProductSuggestionSettings,
@@ -21,6 +21,8 @@ export type CheckoutSuggestionItemDto = {
   image: string
   stock: number
   discount: number
+  /** Product VAT snapshot for cart totals. */
+  vatPercent: number
   /** True when this exact cart line already exists — still listed so the modal can appear (e.g. admin preview / fixed list). */
   alreadyInCart?: boolean
 }
@@ -45,10 +47,11 @@ export function pickCheapestInStockVariantId(product: {
     (v) => (Number(v.stock) || 0) > 0
   )
   if (active.length === 0) return undefined
+  const pct = clampVatPercent((product as { vatPercent?: unknown }).vatPercent)
   const sorted = [...active].sort(
     (a, b) =>
-      grossFromNetWithDiscount(a.netPrice, a.discount || 0) -
-      grossFromNetWithDiscount(b.netPrice, b.discount || 0)
+      grossFromNetWithDiscount(a.netPrice, a.discount || 0, pct) -
+      grossFromNetWithDiscount(b.netPrice, b.discount || 0, pct)
   )
   return sorted[0]?.id
 }
@@ -67,6 +70,7 @@ function mapLeanProductToDto(product: any, forcedVariantId?: string | null): Che
   const productId = product._id.toString()
   const id = selected ? `${productId}:${selected.id}` : productId
   const variantLabel = selected ? getVariantLabel(selected as Parameters<typeof getVariantLabel>[0]) : undefined
+  const pct = clampVatPercent(product.vatPercent)
 
   return {
     id,
@@ -75,11 +79,12 @@ function mapLeanProductToDto(product: any, forcedVariantId?: string | null): Che
     variantLabel,
     name: view.name,
     slug: product.slug,
-    price: grossFromNetWithDiscount(view.netPrice, view.discount),
+    price: grossFromNetWithDiscount(view.netPrice, view.discount, pct),
     netPrice: view.netPrice,
     image: mediaImageSrc(view.images?.[0]),
     stock: view.stock,
     discount: view.discount,
+    vatPercent: pct,
   }
 }
 

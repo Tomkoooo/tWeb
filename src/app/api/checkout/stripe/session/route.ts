@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
           product_data: {
             name: item.name || "Termék",
             description: item.variantLabel || undefined,
+            metadata: {
+              vat_percent: String(item.vatPercent ?? 27),
+            },
           },
         },
       }));
@@ -102,6 +105,10 @@ export async function POST(req: NextRequest) {
             product_data: {
               name: "Szállítás",
               description: undefined,
+              metadata: {
+                line_kind: "shipping",
+                vat_percent: "27",
+              },
             },
           },
         });
@@ -115,6 +122,10 @@ export async function POST(req: NextRequest) {
             product_data: {
               name: "Fizetési kezelési díj",
               description: undefined,
+              metadata: {
+                line_kind: "payment_fee",
+                vat_percent: "27",
+              },
             },
           },
         });

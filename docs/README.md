@@ -30,6 +30,7 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 | --- | --- |
 | [templates/CREATING_A_TEMPLATE.md](templates/CREATING_A_TEMPLATE.md) | Full template module specification |
 | [templates/AI_AGENTS_TEMPLATE_GUIDE.md](templates/AI_AGENTS_TEMPLATE_GUIDE.md) | Short LLM-oriented template checklist |
+| [templates/MULTI_CUSTOMER_TEMPLATES_AND_DEPLOYS.md](templates/MULTI_CUSTOMER_TEMPLATES_AND_DEPLOYS.md) | Many customers, per-customer templates, redeploy isolation, sharing options |
 
 ## CMS & content
 

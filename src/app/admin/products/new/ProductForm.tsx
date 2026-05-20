@@ -22,8 +22,9 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
   const [isActive, setIsActive] = useState(initialData?.isActive ?? false)
   const [isVisible, setIsVisible] = useState(initialData?.isVisible ?? true)
   const [netPrice, setNetPrice] = useState(Number(initialData?.netPrice || 0))
-  const grossPrice = netToGross(netPrice)
-  const priceBreakdown = priceBreakdownFromGross(grossPrice)
+  const [vatPercent, setVatPercent] = useState(Number(initialData?.vatPercent ?? 27))
+  const grossPrice = netToGross(netPrice, vatPercent)
+  const priceBreakdown = priceBreakdownFromGross(grossPrice, 1, vatPercent)
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -106,6 +107,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             initialOptions={initialData?.variantOptions || []}
             initialVariants={initialData?.variants || []}
             defaultNetPrice={netPrice}
+            vatPercent={vatPercent}
             initialRequireVariantSelection={initialData?.requireVariantSelection || false}
           />
 
@@ -116,7 +118,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">ÁRAZÁS ÉS KÉSZLET</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Nettó Ár (FT)</label>
                 <div className="relative">
@@ -139,7 +141,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   <Input
                     type="number"
                     value={grossPrice}
-                    onChange={(event) => setNetPrice(grossToNet(Number(event.target.value) || 0))}
+                    onChange={(event) => setNetPrice(grossToNet(Number(event.target.value) || 0, vatPercent))}
                     placeholder="0"
                     className="bg-black border-white/5 h-12 pl-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
                   />
@@ -148,6 +150,21 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                 <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
                   ÁFA: {formatHuf(priceBreakdown.unitVat)} ({priceBreakdown.vatPercent}%)
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">ÁFA kulcs (%)</label>
+                <Input
+                  type="number"
+                  name="vatPercent"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={vatPercent}
+                  onChange={(e) => setVatPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                  className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+                />
+                <p className="text-[10px] text-neutral-600">Alapértelmezés 27%.</p>
               </div>
 
               <div className="space-y-2">

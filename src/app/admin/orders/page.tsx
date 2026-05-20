@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 
 type AdminOrdersSearchParams = Promise<{
   q?: string
@@ -124,7 +124,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                 </tr>
               ) : (
                 orders.map((order: any) => {
-                  const breakdown = totalsBreakdownFromGross(order.total)
+                  const breakdown = totalsBreakdownForOrderSnapshot(order)
                   return (
                   <tr key={order._id} className="hover:bg-white/5 transition-all duration-300 group">
                     <td className="px-6 py-6">

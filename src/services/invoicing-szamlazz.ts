@@ -84,7 +84,7 @@ export class InvoicingSzamlazzService {
   private static buildBuyer(order: IOrder) {
     return new Buyer({
       name: order.billingInfo.name,
-      country: "HU",
+      country: order.billingInfo.countryCode || "HU",
       zip: order.billingInfo.zip,
       city: order.billingInfo.city,
       address: order.billingInfo.street,
@@ -97,11 +97,12 @@ export class InvoicingSzamlazzService {
     return order.items.map((line) => {
       const quantity = parseNumber(line.quantity) || 1;
       const grossUnitPrice = parseNumber(line.price);
+      const pct = Math.round(parseNumber((line as unknown as { vatPercent?: number }).vatPercent ?? 27))
       return new Item({
         label: line.variantLabel ? `${line.name} [${line.variantLabel}]` : line.name,
         quantity,
         unit: "db",
-        vat: 27,
+        vat: pct,
         grossUnitPrice,
       });
     });

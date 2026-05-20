@@ -11,15 +11,18 @@ import {
   cxTypeToggleBtn,
   cxTypeToggleShell,
 } from "@/components/checkout/checkout-appearance"
+import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import { getCountryDisplayName } from "@/lib/country-codes"
 
 interface BillingStepProps {
   data: any
   onChange: (data: any) => void
+  tradingLimits?: TradingLimits | null
   /** @default "dark" */
   appearance?: CheckoutStepAppearance
 }
 
-export function BillingStep({ data, onChange, appearance = "dark" }: BillingStepProps) {
+export function BillingStep({ data, onChange, tradingLimits = null, appearance = "dark" }: BillingStepProps) {
   const handleChange = (field: string, value: string) => {
     onChange({ ...data, [field]: value })
   }
@@ -45,6 +48,20 @@ export function BillingStep({ data, onChange, appearance = "dark" }: BillingStep
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <CheckoutCountryPicker
+          id="checkout-billing-country"
+          valueCode={data.countryCode || "HU"}
+          limits={tradingLimits}
+          kind="billing"
+          appearance={a}
+          onChangeCode={(code) =>
+            onChange({
+              ...data,
+              countryCode: code,
+              country: getCountryDisplayName(code, "hu-HU"),
+            })
+          }
+        />
         <div className="space-y-2 md:col-span-2">
           <Label className={cxLabel(a)}>Név / Cégnév</Label>
           <Input

@@ -31,6 +31,7 @@ type Props = {
   initialVariants?: VariantRow[];
   defaultNetPrice: number;
   initialRequireVariantSelection?: boolean;
+  vatPercent?: number;
 };
 
 function cartesianProduct(optionGroups: Array<{ name: string; values: string[] }>) {
@@ -68,6 +69,7 @@ export function ProductVariantsEditor({
   initialVariants = [],
   defaultNetPrice,
   initialRequireVariantSelection = false,
+  vatPercent = 27,
 }: Props) {
   const [enabled, setEnabled] = useState(initialVariants.length > 0 || initialOptions.length > 0);
   const [requireVariantSelection, setRequireVariantSelection] = useState(Boolean(initialRequireVariantSelection));
@@ -318,8 +320,8 @@ export function ProductVariantsEditor({
                     <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
                     <Input
                       type="number"
-                      value={netToGross(bulk.netPrice)}
-                      onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: grossToNet(Number(event.target.value) || 0) }))}
+                      value={netToGross(bulk.netPrice, vatPercent)}
+                      onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: grossToNet(Number(event.target.value) || 0, vatPercent) }))}
                       className="bg-black border-white/5 h-11 text-white rounded-none"
                       placeholder="Bruttó ár"
                     />
@@ -431,11 +433,11 @@ export function ProductVariantsEditor({
                         <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
                         <Input
                           type="number"
-                          value={netToGross(activeVariant.netPrice)}
+                          value={netToGross(activeVariant.netPrice, vatPercent)}
                           onChange={(event) =>
                             setVariants((prev) =>
                               prev.map((item) =>
-                                item.id === activeVariant.id ? { ...item, netPrice: grossToNet(Number(event.target.value) || 0) } : item
+                                item.id === activeVariant.id ? { ...item, netPrice: grossToNet(Number(event.target.value) || 0, vatPercent) } : item
                               )
                             )
                           }
@@ -443,7 +445,7 @@ export function ProductVariantsEditor({
                           placeholder="Bruttó ár"
                         />
                         <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-                          ÁFA: {formatHuf(priceBreakdownFromGross(netToGross(activeVariant.netPrice)).unitVat)}
+                          ÁFA: {formatHuf(priceBreakdownFromGross(netToGross(activeVariant.netPrice, vatPercent), 1, vatPercent).unitVat)}
                         </p>
                       </div>
                       <div className="space-y-1">

@@ -6,7 +6,7 @@ import { ArrowRight, Minus, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCartStore, type CartItem } from "@/store/useCartStore"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, priceBreakdownFromGross, totalsFromMixedVatLines, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import type { FlowRouteMainProps } from "@/templates/types"
 import {
@@ -34,7 +34,7 @@ const ATELIER_CHECKOUT_SUGGESTION_PRESENTATION: CheckoutSuggestionsDialogPresent
  */
 export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRouteMainProps) {
   const embedded = variant === "embedded"
-  const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore()
+  const { items, removeItem, updateQuantity, totalItems } = useCartStore()
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions({
     dialogPresentation: ATELIER_CHECKOUT_SUGGESTION_PRESENTATION,
   })
@@ -44,7 +44,17 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   )
-  const totalBreakdown = totalsBreakdownFromGross(totalPrice)
+  const totalBreakdown = React.useMemo(
+    () =>
+      totalsFromMixedVatLines(
+        items.map((i: CartItem) => ({
+          grossUnit: i.price,
+          quantity: i.quantity,
+          vatPercent: clampVatPercent(i.vatPercent ?? DEFAULT_VAT_PERCENT),
+        }))
+      ),
+    [items]
+  )
 
   const shell = embedded
     ? "min-h-0 bg-transparent py-2 pb-6 px-2 sm:px-3"
@@ -95,7 +105,11 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
 
         <ul className="divide-y divide-border border-y border-border">
           {paginatedItems.map((item: CartItem, idx) => {
-            const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+            const breakdown = priceBreakdownFromGross(
+              item.price,
+              item.quantity,
+              clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+            )
             return (
               <li
                 key={item.id}

@@ -169,6 +169,7 @@ function dtoToCartItem(dto: CheckoutSuggestionItemDto): CartItem {
     stock: dto.stock,
     netPrice: dto.netPrice,
     discount: dto.discount,
+    vatPercent: dto.vatPercent,
   }
 }
 

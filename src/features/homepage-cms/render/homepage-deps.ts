@@ -4,6 +4,7 @@ import { FeedbackService } from "@/services/feedback"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
 import { mediaImageSrc } from "@/lib/images"
+import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing"
 import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
 
 type ProductRating = { rating?: number }
@@ -37,6 +38,7 @@ type ProductItem = {
   images?: string[]
   category?: ProductCategory
   stock?: number
+  vatPercent?: number
 }
 
 export type HomepageRenderDependencies = Omit<HomePageDeps, "templateId">
@@ -58,7 +60,7 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
     ? Math.max(...effectiveVariants.map((v) => Number(v.discount || 0) || 0))
     : Number(p.discount || 0) || 0
 
-  const gross = minNet * 1.27 * (1 - maxDiscount / 100)
+  const gross = grossFromNetWithDiscount(minNet, maxDiscount, clampVatPercent(p.vatPercent))
   const rootStock =
     typeof p.stock === "number" && Number.isFinite(p.stock) ? p.stock : 100
 

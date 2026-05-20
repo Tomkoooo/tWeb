@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross, clampVatPercent } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 
@@ -37,8 +37,9 @@ export function ProductCard({ product }: ProductCardProps) {
       ? Math.max(...activeVariants.map((variant: any) => variant.discount || 0))
       : product.discount || 0
 
-  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount)
-  const breakdown = priceBreakdownFromGross(finalPrice)
+  const vatPct = clampVatPercent(product.vatPercent)
+  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount, vatPct)
+  const breakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
   React.useEffect(() => {
@@ -74,7 +75,8 @@ export function ProductCard({ product }: ProductCardProps) {
       quantity: 1,
       stock: product.stock,
       netPrice: product.netPrice,
-      discount: product.discount
+      discount: product.discount,
+      vatPercent: vatPct,
     })
   }
 

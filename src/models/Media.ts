@@ -7,6 +7,8 @@ export interface IMedia extends Document {
   useCount: number;
   mimeType: string;
   size: number;
+  /** File bytes (required for new uploads; legacy rows may rely on disk until re-uploaded). */
+  data?: Buffer;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +21,7 @@ const MediaSchema = new Schema<IMedia>(
     useCount: { type: Number, default: 0 },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true },
+    data: { type: Buffer },
   },
   { timestamps: true }
 );

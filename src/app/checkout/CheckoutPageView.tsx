@@ -11,6 +11,7 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 import { useCheckoutWizardModel } from "@/components/checkout/use-checkout-wizard-model"
 import { ReservationCountdown } from "@/components/checkout/ReservationCountdown"
 import type { CartItem } from "@/store/useCartStore"
+import { clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "embedded" }) {
   const embedded = variant === "embedded"
@@ -227,7 +228,11 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
 
                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar mb-8">
                   {items.map((item: CartItem) => {
-                    const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+                    const breakdown = priceBreakdownFromGross(
+                      item.price,
+                      item.quantity,
+                      clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+                    )
                     return (
                       <div key={item.id} className="flex gap-4">
                         <div className="relative w-16 h-16 bg-muted border border-border flex-none overflow-hidden">
@@ -286,7 +291,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                     <span>{formatHuf(totalBreakdown.net)}</span>
                   </div>
                   <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    <span>ÁFA összesen ({totalBreakdown.vatPercent}%)</span>
+                    <span>ÁFA összesen</span>
                     <span>{formatHuf(totalBreakdown.vat)}</span>
                   </div>
                   <div className="flex justify-between items-end pt-4">

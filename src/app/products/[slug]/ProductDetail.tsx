@@ -27,6 +27,7 @@ import {
   grossFromNetWithDiscount,
   netToGross,
   priceBreakdownFromGross,
+  clampVatPercent,
 } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
@@ -80,9 +81,10 @@ export function ProductDetail({
     [product, selectedVariantId]
   )
   const discountAmount = view.discount || 0
-  const price = netToGross(view.netPrice)
-  const finalPrice = grossFromNetWithDiscount(view.netPrice, discountAmount)
-  const priceBreakdown = priceBreakdownFromGross(finalPrice)
+  const vatPct = clampVatPercent(product.vatPercent)
+  const price = netToGross(view.netPrice, vatPct)
+  const finalPrice = grossFromNetWithDiscount(view.netPrice, discountAmount, vatPct)
+  const priceBreakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
   const selectedVariant = view.selectedVariant
   const hasVariantOptions = hasVariants(product)
   const variantRequired = Boolean(product.requireVariantSelection) && hasVariantOptions
@@ -160,6 +162,7 @@ export function ProductDetail({
       stock: view.stock,
       netPrice: view.netPrice,
       discount: view.discount,
+      vatPercent: vatPct,
     })
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 2000)

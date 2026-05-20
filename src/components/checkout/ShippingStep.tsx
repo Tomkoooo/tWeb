@@ -12,18 +12,26 @@ import {
   cxLabel,
   cxTextarea,
 } from "@/components/checkout/checkout-appearance"
+import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import { getCountryDisplayName } from "@/lib/country-codes"
 
 interface ShippingStepProps {
   data: any
   onChange: (data: any) => void
   billingData: any
+  tradingLimits?: TradingLimits | null
   /** @default "dark" */
   appearance?: CheckoutStepAppearance
 }
 
-export function ShippingStep({ data, onChange, billingData: _billingData, appearance = "dark" }: ShippingStepProps) {
-  void _billingData
-  const handleChange = (field: string, value: any) => {
+export function ShippingStep({
+  data,
+  onChange,
+  billingData,
+  tradingLimits = null,
+  appearance = "dark",
+}: ShippingStepProps) {
+  const handleChange = (field: string, value: unknown) => {
     onChange({ ...data, [field]: value })
   }
   const a = appearance
@@ -31,7 +39,12 @@ export function ShippingStep({ data, onChange, billingData: _billingData, appear
   const toggleSameAsBilling = () => {
     const isNowSame = !data.isSameAsBilling
     if (isNowSame) {
-      handleChange("isSameAsBilling", true)
+      onChange({
+        ...data,
+        isSameAsBilling: true,
+        countryCode: billingData.countryCode,
+        country: billingData.country,
+      })
     } else {
       handleChange("isSameAsBilling", false)
     }
@@ -39,7 +52,7 @@ export function ShippingStep({ data, onChange, billingData: _billingData, appear
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-      <button type="button" onClick={toggleSameAsBilling} className="flex cursor-pointer items-center gap-4 group">
+      <button type="button" onClick={toggleSameAsBilling} className="group flex cursor-pointer items-center gap-4">
         <div
           className={cn(
             "flex h-6 w-6 items-center justify-center border-2 transition-all duration-300",
@@ -71,6 +84,20 @@ export function ShippingStep({ data, onChange, billingData: _billingData, appear
             className="overflow-hidden"
           >
             <div className="grid grid-cols-1 gap-8 pt-4 md:grid-cols-2">
+              <CheckoutCountryPicker
+                id="checkout-shipping-country"
+                valueCode={data.countryCode || "HU"}
+                limits={tradingLimits}
+                kind="shipping"
+                appearance={a}
+                onChangeCode={(code) =>
+                  onChange({
+                    ...data,
+                    countryCode: code,
+                    country: getCountryDisplayName(code, "hu-HU"),
+                  })
+                }
+              />
               <div className="space-y-2 md:col-span-2">
                 <Label className={cxLabel(a)}>Átvevő neve</Label>
                 <Input

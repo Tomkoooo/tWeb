@@ -14,13 +14,13 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { FeatureFlagService } from "@/services/feature-flags"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const order = await getOrderById(id)
   const glsEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false)
-  const totalBreakdown = order ? totalsBreakdownFromGross(order.total) : null
+  const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
 
   if (!order) {
     return (
@@ -223,9 +223,23 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               Rendelt Tételek
             </h2>
             <div className="space-y-4">
-              {order.items.map((item: { name: string; quantity: number; variantLabel?: string; price: number }, index: number) => {
-                const breakdown = priceBreakdownFromGross(item.price, item.quantity)
-                return (
+              {order.items.map(
+                (
+                  item: {
+                    name: string
+                    quantity: number
+                    variantLabel?: string
+                    price: number
+                    vatPercent?: number
+                  },
+                  index: number
+                ) => {
+                  const breakdown = priceBreakdownFromGross(
+                    item.price,
+                    item.quantity,
+                    clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+                  )
+                  return (
                 <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all">
                   <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-colors overflow-hidden shrink-0">
                     <Package className="w-8 h-8 text-neutral-800" />
@@ -261,7 +275,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     <span>{formatHuf(totalBreakdown.net)}</span>
                   </div>
                   <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
-                    <span>ÁFA összesen ({totalBreakdown.vatPercent}%):</span>
+                    <span>ÁFA összesen:</span>
                     <span>{formatHuf(totalBreakdown.vat)}</span>
                   </div>
                 </>

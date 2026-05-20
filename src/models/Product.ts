@@ -33,6 +33,8 @@ export interface IProductVariant {
 }
 
 export interface IProduct extends Document {
+  /** VAT % included in gross price calculations (Hungary default 27). */
+  vatPercent: number;
   name: string;
   images: string[];
   description: string;
@@ -56,6 +58,7 @@ export interface IProduct extends Document {
 
 const ProductSchema = new Schema<IProduct>(
   {
+    vatPercent: { type: Number, default: 27, min: 0, max: 100 },
     name: { type: String, required: true },
     images: { type: [String], required: true, default: [] },
     description: { type: String, required: true },

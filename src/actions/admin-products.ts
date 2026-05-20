@@ -114,6 +114,8 @@ export async function createProduct(formData: FormData) {
   const images = formData.getAll("images") as string[];
   const stock = parseInt(formData.get("stock") as string) || 0;
   const netPrice = parseFloat(formData.get("netPrice") as string) || 0;
+  const vatPercent =
+    Math.min(100, Math.max(0, Math.round(parseFloat(String(formData.get("vatPercent"))) || 27))) || 27;
   const discount = parseFloat(formData.get("discount") as string) || 0;
   const category = formData.get("category") as string;
   const slug = slugify(name);
@@ -152,6 +154,7 @@ export async function createProduct(formData: FormData) {
       images,
       stock: baseStock,
       netPrice,
+      vatPercent,
       discount,
       category: category as any,
       slug,
@@ -177,6 +180,8 @@ export async function updateProduct(id: string, formData: FormData) {
   const images = formData.getAll("images") as string[];
   const stock = parseInt(formData.get("stock") as string) || 0;
   const netPrice = parseFloat(formData.get("netPrice") as string) || 0;
+  const vatPercent =
+    Math.min(100, Math.max(0, Math.round(parseFloat(String(formData.get("vatPercent"))) || 27))) || 27;
   const discount = parseFloat(formData.get("discount") as string) || 0;
   const category = formData.get("category") as string;
 
@@ -214,6 +219,7 @@ export async function updateProduct(id: string, formData: FormData) {
       images,
       stock: baseStock,
       netPrice,
+      vatPercent,
       slug: slugify(name),
       discount,
       category: category as any,

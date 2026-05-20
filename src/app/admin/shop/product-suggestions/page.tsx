@@ -26,7 +26,7 @@ export default async function AdminProductSuggestionsPage() {
           TERMÉK <span className="text-primary underline decoration-primary/10 underline-offset-8">JAVASLATOK</span>
         </h1>
         <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px] max-w-2xl">
-          Kosár → pénztár gombnál megjelenő javasolt termékek. Nettó árszűrő a katalógus szűrésével egyezik (27% ÁFA előtti nettó).
+          Kosár → pénztár gombnál megjelenő javasolt termékek. Nettó árszűrő a katalógus szűrével egyezik; termékek bruttó javaslatánál a termék saját ÁFA kulcsát használjuk.
         </p>
       </div>
 

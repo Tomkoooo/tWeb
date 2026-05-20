@@ -10,11 +10,15 @@ export interface IOrder extends Document {
     name: string;
     price: number;
     quantity: number;
+    /** Snapshot of product VAT % at purchase. */
+    vatPercent?: number;
   }[];
   billingInfo: {
     type: "personal" | "company";
     name: string;
     taxNumber?: string;
+    country?: string;
+    countryCode?: string;
     zip: string;
     city: string;
     street: string;
@@ -23,6 +27,8 @@ export interface IOrder extends Document {
   };
   shippingAddress: {
     name: string;
+    country?: string;
+    countryCode?: string;
     zip: string;
     city: string;
     street: string;
@@ -86,12 +92,15 @@ const OrderSchema = new Schema<IOrder>(
         name: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
+        vatPercent: { type: Number, min: 0, max: 100 },
       },
     ],
     billingInfo: {
       type: { type: String, enum: ["personal", "company"], required: true },
       name: { type: String, required: true },
       taxNumber: { type: String },
+      country: { type: String },
+      countryCode: { type: String },
       zip: { type: String, required: true },
       city: { type: String, required: true },
       street: { type: String, required: true },
@@ -100,6 +109,8 @@ const OrderSchema = new Schema<IOrder>(
     },
     shippingAddress: {
       name: { type: String, required: true },
+      country: { type: String },
+      countryCode: { type: String },
       zip: { type: String, required: true },
       city: { type: String, required: true },
       street: { type: String, required: true },

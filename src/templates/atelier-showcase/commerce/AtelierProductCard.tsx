@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 import { getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross, clampVatPercent } from "@/lib/pricing"
 import { useCartStore } from "@/store/useCartStore"
 
 /**
@@ -39,8 +39,9 @@ export function AtelierProductCard({ product }: { product: unknown }) {
       ? Math.max(...activeVariants.map((v: { netPrice?: number; discount?: number }) => v.discount || 0))
       : p.discount || 0
 
-  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount)
-  const breakdown = priceBreakdownFromGross(finalPrice)
+  const vatPct = clampVatPercent(p.vatPercent)
+  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount, vatPct)
+  const breakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
   const ratingValue = typeof p.rating === "number" ? p.rating : 0
 
   React.useEffect(() => {
@@ -77,6 +78,7 @@ export function AtelierProductCard({ product }: { product: unknown }) {
       stock: p.stock,
       netPrice: p.netPrice,
       discount: p.discount,
+      vatPercent: vatPct,
     })
   }
 

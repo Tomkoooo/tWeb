@@ -15,6 +15,8 @@ export interface CartItem {
   stock: number;
   netPrice: number;
   discount: number;
+  /** Product VAT % snapshot for checkout breakdowns. */
+  vatPercent?: number;
 }
 
 interface CartState {

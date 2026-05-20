@@ -1,36 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextRequest, NextResponse } from "next/server"
+import { MediaService } from "@/services/media"
+
+export const dynamic = "force-dynamic"
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ filename: string }> }
 ) {
-  const { filename } = await params;
-  const filePath = path.join(process.cwd(), 'uploads', filename);
+  const { filename } = await params
+  const payload = await MediaService.getFilePayload(filename)
 
-  if (!fs.existsSync(filePath)) {
-    return new NextResponse('File not found', { status: 404 });
+  if (!payload) {
+    return new NextResponse("File not found", { status: 404 })
   }
 
-  const fileBuffer = fs.readFileSync(filePath);
-  
-  // Basic content-type detection based on extension
-  const ext = path.extname(filename).toLowerCase();
-  let contentType = 'application/octet-stream';
-  if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
-  else if (ext === '.png') contentType = 'image/png';
-  else if (ext === '.webp') contentType = 'image/webp';
-  else if (ext === '.gif') contentType = 'image/gif';
-  else if (ext === '.pdf') contentType = 'application/pdf';
-  else if (ext === '.txt') contentType = 'text/plain; charset=utf-8';
-  else if (ext === '.doc') contentType = 'application/msword';
-  else if (ext === '.docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-  return new NextResponse(fileBuffer, {
+  return new NextResponse(new Uint8Array(payload.buffer), {
     headers: {
-      'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      "Content-Type": payload.mimeType,
+      "Content-Length": String(payload.size),
+      "Cache-Control": "public, max-age=31536000, immutable",
     },
-  });
+  })
 }

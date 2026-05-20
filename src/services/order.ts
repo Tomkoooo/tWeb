@@ -15,7 +15,6 @@ import {
 } from "@/services/inventory-reservation";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
-
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
     return this.createOrderFromCheckoutData(orderData, userId, { enforceShopEnabled: true });
@@ -48,6 +47,8 @@ export class OrderService {
         saveAddressToProfile,
         billingCountry: billingCountryRaw,
         shippingCountry: shippingCountryRaw,
+        billingCountryCode: _bcc,
+        shippingCountryCode: _scc,
         paymentProvider: _paymentProvider,
         ...orderPayload
       } = orderData;

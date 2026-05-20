@@ -12,12 +12,11 @@ We use **Prisma** as an ORM. This allows you to switch between different databas
     3. Update `prisma.config.ts` if you need specific driver adapters.
     4. Run `npx prisma db push`.
 
-## 2. Local File Persistence
-Product images are stored locally in the `/uploads` directory at the root of the project.
+## 2. Media storage
+Uploaded images and documents (products, banners, branding, legal PDFs) are stored in **MongoDB** on the `Media` collection (`data` buffer field). This works on **Vercel** and other read-only serverless hosts.
 
-- **Storage Strategy**: Files are uploaded to the physical server disk.
-- **Docker Support**: The `docker-compose.yml` file mounts the `./uploads` directory to the container. This ensures that images persist even if the container is recreated.
-- **Next.js Serving**: Since Next.js cannot access files added after build-time in the `public` folder, we use a custom API route `/api/media/[filename]` to serve these files to the browser.
+- **Serving**: `/api/media/[filename]` reads from the database (with optional legacy fallback to `./uploads/` on VPS if an old row has no `data` field).
+- **Docker / VPS**: You may still mount `./uploads` for older deployments; new uploads do not require a writable disk.
 
 ## 3. How to Move the Project
 1. **Zip the whole directory**: Include the `.env`, `prisma/`, `src/`, and most importantly, the `uploads/` folder.

@@ -7,7 +7,7 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 
 export default function OrdersPage() {
   const { status } = useSession()
@@ -46,7 +46,7 @@ export default function OrdersPage() {
   const completedOrders = orders.filter((o) => !ongoingStatuses.includes(o.status))
 
   const OrderCard = ({ order }: { order: any }) => {
-    const breakdown = totalsBreakdownFromGross(order.total)
+    const breakdown = totalsBreakdownForOrderSnapshot(order)
     return (
       <Link href={`/profile/orders/${order._id}`}>
         <div className="group flex h-full cursor-pointer flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md">

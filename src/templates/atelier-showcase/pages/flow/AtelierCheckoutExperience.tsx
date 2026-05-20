@@ -11,6 +11,7 @@ import { useCheckoutWizardModel } from "@/components/checkout/use-checkout-wizar
 import { ReservationCountdown } from "@/components/checkout/ReservationCountdown"
 import type { CartItem } from "@/store/useCartStore"
 import type { FlowRouteMainProps } from "@/templates/types"
+import { clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 /**
  * Full-bleed checkout: same wizard model as the engine (`useCheckoutWizardModel`), layout unlike
@@ -67,7 +68,11 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
       <h2 className="border-b border-border pb-3 font-serif text-sm font-semibold uppercase tracking-widest">Rendelés</h2>
       <ul className="mt-4 max-h-[min(50vh,24rem)] space-y-4 overflow-y-auto">
         {items.map((item: CartItem) => {
-          const b = priceBreakdownFromGross(item.price, item.quantity)
+          const b = priceBreakdownFromGross(
+            item.price,
+            item.quantity,
+            clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+          )
           return (
             <li key={item.id} className="flex gap-3 text-sm">
               <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">

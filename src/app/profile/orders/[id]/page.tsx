@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { ArrowLeft, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownFromGross } from "@/lib/pricing"
+import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 
@@ -59,7 +59,7 @@ export default function OrderDetailPage() {
       </div>
     )
   }
-  const totalBreakdown = totalsBreakdownFromGross(order.total)
+  const totalBreakdown = totalsBreakdownForOrderSnapshot(order)
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -136,7 +136,11 @@ export default function OrderDetailPage() {
         <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Termékek</h3>
         <div className="divide-y divide-border rounded-xl border border-border">
           {order.items.map((item: any, i: number) => {
-            const breakdown = priceBreakdownFromGross(item.price, item.quantity)
+            const breakdown = priceBreakdownFromGross(
+              item.price,
+              item.quantity,
+              clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
+            )
             return (
             <div key={i} className="p-6 flex flex-col md:flex-row justify-between md:items-center gap-6">
               <div className="flex items-center gap-6 flex-1">
@@ -186,7 +190,7 @@ export default function OrderDetailPage() {
           <span>{formatHuf(totalBreakdown.net)}</span>
         </div>
         <div className="flex justify-between items-center text-sm font-bold text-neutral-400">
-          <span>ÁFA összesen ({totalBreakdown.vatPercent}%)</span>
+          <span>ÁFA összesen</span>
           <span>{formatHuf(totalBreakdown.vat)}</span>
         </div>
         <div className="flex justify-between items-center text-sm font-bold text-neutral-400">

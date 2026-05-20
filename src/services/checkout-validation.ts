@@ -9,7 +9,14 @@ import {
 } from "@/services/gls-shipping";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
-import { grossFromNetWithDiscount } from "@/lib/pricing";
+import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
+import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
+import {
+  resolveCountryInput,
+  formatAllowedCountriesList,
+  normalizeIso2,
+  getCountryDisplayName,
+} from "@/lib/country-codes";
 
 export const STRIPE_FIXED_PAYMENT_METHOD_ID = "stripe_fixed";
 
@@ -21,6 +28,8 @@ export type CheckoutInputItem = {
   name?: string;
   price?: number;
   quantity: number;
+  /** Set server-side only; ignored from client payloads. */
+  vatPercent?: number;
 };
 
 export type CheckoutInput = {
@@ -29,8 +38,8 @@ export type CheckoutInput = {
     type: "personal" | "company";
     name: string;
     taxNumber?: string;
-    /** Optional; defaults for profile snapshot / display */
     country?: string;
+    countryCode?: string;
     zip: string;
     city: string;
     street: string;
@@ -39,8 +48,8 @@ export type CheckoutInput = {
   };
   shippingAddress: {
     name: string;
-    /** Optional; falls back to billing country when omitted */
     country?: string;
+    countryCode?: string;
     zip: string;
     city: string;
     street: string;
@@ -78,6 +87,8 @@ export type ValidatedCheckoutData = {
   saveAddressToProfile: boolean;
   billingCountry: string;
   shippingCountry: string;
+  billingCountryCode: string;
+  shippingCountryCode: string;
 };
 
 function roundCurrency(value: number): number {
@@ -91,7 +102,11 @@ function ensureString(value: unknown, field: string): string {
   return value.trim();
 }
 
-function resolveItemPrice(product: any, variantId?: string): { unitPrice: number; variantLabel?: string } {
+function resolveItemPrice(
+  product: any,
+  variantId?: string
+): { unitPrice: number; variantLabel?: string; vatPercent: number } {
+  const pct = clampVatPercent(product.vatPercent ?? 27)
   const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
   const requireVariantSelection = Boolean(product.requireVariantSelection) && hasVariants;
 
@@ -104,10 +119,11 @@ function resolveItemPrice(product: any, variantId?: string): { unitPrice: number
       throw new Error(`A kiválasztott variáns nem aktív: ${product.name}`);
     }
     return {
-      unitPrice: grossFromNetWithDiscount(Number(variant.netPrice || 0), Number(variant.discount || 0)),
+      unitPrice: grossFromNetWithDiscount(Number(variant.netPrice || 0), Number(variant.discount || 0), pct),
       variantLabel: Object.entries(variant.attributes || {})
         .map(([key, value]) => `${key}: ${value}`)
         .join(" / "),
+      vatPercent: pct,
     };
   }
 
@@ -115,7 +131,7 @@ function resolveItemPrice(product: any, variantId?: string): { unitPrice: number
     throw new Error(`Válassz variánst a termékhez: ${product.name}`);
   }
 
-  return { unitPrice: grossFromNetWithDiscount(Number(product.netPrice || 0), Number(product.discount || 0)) };
+  return { unitPrice: grossFromNetWithDiscount(Number(product.netPrice || 0), Number(product.discount || 0), pct), vatPercent: pct };
 }
 
 async function validateCoupon(
@@ -175,6 +191,51 @@ async function resolveStripePaymentMethodId(): Promise<string> {
     isActive: false,
   });
   return created._id.toString();
+}
+
+function assertCountryPolicy(
+  billingCode: string,
+  shippingCode: string,
+  trading: { shippingAllowedCountryCodes: string[]; invoicingAllowedCountryCodes: string[] }
+) {
+  const shipAllow = trading.shippingAllowedCountryCodes
+  const invAllow = trading.invoicingAllowedCountryCodes
+
+  if (invAllow.length > 0 && !invAllow.includes(billingCode)) {
+    const readable = formatAllowedCountriesList(invAllow)
+    throw new Error(
+      `A számlázási ország (${getCountryDisplayName(billingCode, "hu-HU")}, ${billingCode}) nem engedélyezett. A bolt csak a következő országoknak állít ki számlát: ${readable}.`
+    )
+  }
+  if (shipAllow.length > 0 && !shipAllow.includes(shippingCode)) {
+    const readable = formatAllowedCountriesList(shipAllow)
+    throw new Error(
+      `A szállítási ország (${getCountryDisplayName(shippingCode, "hu-HU")}, ${shippingCode}) nem engedélyezett. A bolt csak a következő országokba szállít: ${readable}.`
+    )
+  }
+}
+
+function requireResolvedCountry(
+  kindHu: string,
+  props: { explicitCode?: string; freeText?: string }
+): { code: string; label: string } {
+  const fromExplicit = normalizeIso2(props.explicitCode)
+  if (fromExplicit) {
+    return { code: fromExplicit, label: getCountryDisplayName(fromExplicit, "hu-HU") }
+  }
+  const res = resolveCountryInput(props.freeText || "")
+  if (res.code) {
+    return { code: res.code, label: getCountryDisplayName(res.code, "hu-HU") }
+  }
+  const hint = res.suggestions
+    .slice(0, 5)
+    .map((s) => `${s.code} (${s.labelHu})`)
+    .join("; ")
+  throw new Error(
+    `Nem sikerült egyértelműen azonosítani a(z) ${kindHu} országot. Add meg az ISO országkódot (pl. HU), vagy válassz a listából.${
+      hint ? ` Javaslatok: ${hint}` : ""
+    }`
+  )
 }
 
 export async function validateAndNormalizeCheckoutInput(
@@ -291,6 +352,7 @@ export async function validateAndNormalizeCheckoutInput(
       name: item.name || product.name,
       price: unitPrice,
       quantity,
+      vatPercent: priceInfo.vatPercent,
     });
   }
 
@@ -300,13 +362,35 @@ export async function validateAndNormalizeCheckoutInput(
   const discount = Math.max(0, couponResult.discount);
   const total = Math.max(0, roundCurrency(subtotal + shippingFee + paymentFee - discount));
 
-  const billingCountryRaw = billingInfo.country?.trim();
-  const billingCountry = billingCountryRaw || "Magyarország";
-  const shippingCountryRaw = shippingAddress.country?.trim();
-  const shippingCountry = shippingCountryRaw || billingCountry;
+  const billingResolved = requireResolvedCountry("számlázási", {
+    explicitCode: billingInfo.countryCode?.trim(),
+    freeText:
+      billingInfo.country?.trim() ||
+      billingInfo.countryCode?.trim() ||
+      "Magyarország",
+  })
+
+  let shippingResolved: { code: string; label: string }
+  if (isGlsFixed && input.glsParcelPoint?.contact?.countryCode) {
+    shippingResolved = requireResolvedCountry("szállítási (GLS csomagpont)", {
+      explicitCode: input.glsParcelPoint.contact.countryCode.trim(),
+      freeText: undefined,
+    })
+  } else {
+    shippingResolved = requireResolvedCountry("szállítási", {
+      explicitCode: shippingAddress.countryCode?.trim(),
+      freeText:
+        shippingAddress.country?.trim() ||
+        shippingAddress.countryCode?.trim() ||
+        billingResolved.label,
+    })
+  }
+
+  const trading = await ShopTradingSettingsService.get()
+  assertCountryPolicy(billingResolved.code, shippingResolved.code, trading)
 
   const saveAddressToProfile =
-    Boolean(options?.userId) && input.saveAddressToProfile !== false;
+    Boolean(options?.userId) && input.saveAddressToProfile !== false
 
   return {
     items: normalizedItems,
@@ -314,6 +398,8 @@ export async function validateAndNormalizeCheckoutInput(
       type: billingInfo.type === "company" ? "company" : "personal",
       name: billingInfo.name.trim(),
       taxNumber: billingInfo.taxNumber?.trim() || undefined,
+      country: billingResolved.label,
+      countryCode: billingResolved.code,
       zip: billingInfo.zip.trim(),
       city: billingInfo.city.trim(),
       street: billingInfo.street.trim(),
@@ -322,6 +408,8 @@ export async function validateAndNormalizeCheckoutInput(
     },
     shippingAddress: {
       name: shippingAddress.name.trim(),
+      country: shippingResolved.label,
+      countryCode: shippingResolved.code,
       zip: shippingAddress.zip.trim(),
       city: shippingAddress.city.trim(),
       street: shippingAddress.street.trim(),
@@ -355,7 +443,9 @@ export async function validateAndNormalizeCheckoutInput(
     total,
     paymentProvider: isStripeFixed ? "stripe" : "standard",
     saveAddressToProfile,
-    billingCountry,
-    shippingCountry,
+    billingCountry: billingResolved.label,
+    shippingCountry: shippingResolved.label,
+    billingCountryCode: billingResolved.code,
+    shippingCountryCode: shippingResolved.code,
   };
 }
