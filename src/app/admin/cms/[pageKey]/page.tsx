@@ -46,6 +46,7 @@ export default async function CmsPageEditor({
 }) {
   const { pageKey } = await params
   const template = await TemplateService.getActive()
+  const dbActiveTemplate = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
   const editablePages = listEditablePages(template, shopEnabled)
   const entry = editablePages.find((p) => p.adminSegment === pageKey)
@@ -57,10 +58,10 @@ export default async function CmsPageEditor({
     BrandingSettingsService.get(),
     FooterSettingsService.get(),
     SeoSettingsService.get(),
-    ThemeService.getMergedForTemplate(template),
+    ThemeService.getMergedForTemplate(dbActiveTemplate),
   ])
 
-  const themeResetBaseline = getEffectiveThemeBase(template)
+  const themeResetBaseline = getEffectiveThemeBase(dbActiveTemplate)
 
   if (entry.editorKind === "homepage-blocks") {
     if (template.pages.home.cmsPageKind !== "homepage-blocks") notFound()

@@ -53,8 +53,8 @@ export function AdminTemplateSessionBar({
               </span>
               <span className="text-neutral-500">
                 {" "}
-                — only your admin session; max 1 h. Starting preview on another template replaces
-                this one.
+                — only your admin session; max 1 h. While previewing another template, saved theme
+                overrides are hidden on the storefront. End preview to see your shop colors.
               </span>
             </p>
           ) : (

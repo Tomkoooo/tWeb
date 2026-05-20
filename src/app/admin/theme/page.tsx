@@ -3,7 +3,7 @@ import { TemplateService } from "@/services/template"
 import { getEffectiveThemeBase, ThemeService } from "@/services/theme"
 
 export default async function AdminThemePage() {
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const merged = await ThemeService.getMergedForTemplate(template)
   const baseline = getEffectiveThemeBase(template)
   const baselineSource = template.defaultTheme

@@ -7,6 +7,7 @@ import { BrandingSettingsService } from "@/services/branding-settings";
 import { getEffectiveThemeBase, ThemeService } from "@/services/theme";
 import { TemplateService } from "@/services/template";
 import { readPreviewTemplateId } from "@/services/template-preview";
+import { getTemplateById } from "@/templates/registry";
 import { themeTokensToCssVars } from "@/lib/theme-css-vars";
 
 const geistSans = Geist({
@@ -75,19 +76,20 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [seo, template, previewTemplateId] = await Promise.all([
+  const [seo, activeInfo, previewTemplateId] = await Promise.all([
     SeoSettingsService.get(),
-    TemplateService.getActive(),
+    TemplateService.getActiveInfo(),
     readPreviewTemplateId(),
   ]);
-  // In admin preview mode, show the preview template's own defaultTheme without
-  // applying stored overrides — those were tuned against the DB-active template's
-  // baseline (or are a legacy full snapshot) and would mask what the previewed
-  // template ships with. The active template still uses merged overrides.
-  const isPreviewing = previewTemplateId === template.manifest.id;
-  const theme = isPreviewing
-    ? getEffectiveThemeBase(template)
-    : await ThemeService.getMergedForTemplate(template);
+  const dbActiveTemplate = getTemplateById(activeInfo.templateId);
+  // Only when previewing a *different* template than the DB active one: use that
+  // template's packaged palette without shop overrides (overrides are keyed to
+  // the DB-active baseline). Same-template preview + normal visits use merged.
+  const isPreviewingDifferentTemplate =
+    previewTemplateId != null && previewTemplateId !== activeInfo.templateId;
+  const theme = isPreviewingDifferentTemplate
+    ? getEffectiveThemeBase(getTemplateById(previewTemplateId))
+    : await ThemeService.getMergedForTemplate(dbActiveTemplate);
   const themeVars = themeTokensToCssVars(theme);
 
   return (

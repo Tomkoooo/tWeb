@@ -31,14 +31,14 @@ const themeSchema = z.object({
 
 export async function GET() {
   await requireAdmin()
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const merged = await ThemeService.getMergedForTemplate(template)
   return NextResponse.json(merged)
 }
 
 export async function PUT(request: Request) {
   await requireAdmin()
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const payload = themeSchema.parse(await request.json())
   const updated = await ThemeService.saveFullThemeForTemplate(template, payload)
   revalidatePath("/", "layout")
@@ -48,7 +48,7 @@ export async function PUT(request: Request) {
 export async function DELETE() {
   await requireAdmin()
   await ThemeService.clearStoredOverrides()
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const merged = await ThemeService.getMergedForTemplate(template)
   revalidatePath("/", "layout")
   return NextResponse.json(merged)

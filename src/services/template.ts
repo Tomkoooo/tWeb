@@ -51,6 +51,12 @@ export class TemplateService {
     return getTemplateById(info.templateId)
   }
 
+  /** Active template from Mongo — ignores admin preview cookie (use for theme persistence). */
+  static async getDbActive(): Promise<TemplateModule> {
+    const info = await readActiveTemplateRecord()
+    return getTemplateById(info.templateId)
+  }
+
   static getById(id: string): TemplateModule | null {
     return TEMPLATE_REGISTRY[id] ?? null
   }
