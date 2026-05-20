@@ -91,8 +91,12 @@ export function UploadSheet({
       const formData = new FormData()
       formData.append("file", blob, filename)
       const response = await fetch("/api/admin/uploads", { method: "POST", body: formData })
-      const data = await response.json()
-      if (response.ok && data.url) onUploaded(data.url)
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        console.error("[upload]", data?.error || response.statusText)
+        throw new Error(typeof data?.error === "string" ? data.error : "Feltöltés sikertelen")
+      }
+      if (data.url) onUploaded(data.url)
     },
     [onUploaded]
   )
@@ -114,6 +118,9 @@ export function UploadSheet({
     try {
       await uploadBlob(sourceFile, sourceFile.name)
       resetEditor()
+    } catch (err) {
+      console.error(err)
+      window.alert(err instanceof Error ? err.message : "Feltöltés sikertelen")
     } finally {
       setLoading(false)
     }
@@ -331,6 +338,9 @@ export function UploadSheet({
                       if (!croppedBlob) return
                       await uploadBlob(croppedBlob, "edited-image.jpg")
                       resetEditor()
+                    } catch (err) {
+                      console.error(err)
+                      window.alert(err instanceof Error ? err.message : "Feltöltés sikertelen")
                     } finally {
                       setLoading(false)
                     }

@@ -21,7 +21,7 @@ const MediaSchema = new Schema<IMedia>(
     useCount: { type: Number, default: 0 },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true },
-    data: { type: Buffer },
+    data: { type: Buffer, required: true },
   },
   { timestamps: true }
 );
