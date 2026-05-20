@@ -1,65 +1,25 @@
 import type { FeaturesBlock } from "@/features/homepage-cms/types/block-types"
-import { Award, Check, Clock3, Heart, Package, Shield, ShieldCheck, Sparkles, Star, ThumbsUp, Truck, Zap } from "lucide-react"
+import { Award, Hammer, Lightbulb, Shield, Star, Users } from "lucide-react"
 
-const ICON_MAP = {
-  Award,
-  Check,
-  Clock3,
-  Heart,
-  Package,
-  Shield,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  ThumbsUp,
-  Truck,
-  Zap,
-} as const
-
-function normalizeCards(input: unknown): Array<{ title: string; description: string; icon?: string }> {
-  if (Array.isArray(input)) {
-    return input
-      .filter((item): item is { title?: unknown; description?: unknown; icon?: unknown } => Boolean(item && typeof item === "object"))
-      .map((item) => ({
-        title: String(item.title ?? ""),
-        description: String(item.description ?? ""),
-        icon: typeof item.icon === "string" ? item.icon : undefined,
-      }))
-  }
-
-  if (typeof input === "string") {
-    try {
-      const parsed = JSON.parse(input)
-      return normalizeCards(parsed)
-    } catch {
-      return []
-    }
-  }
-
-  return []
-}
+const ICON_MAP = { Shield, Hammer, Users, Lightbulb, Star, Award } as const
 
 export function FeaturesBlockView({ block }: { block: FeaturesBlock }) {
-  const cards = normalizeCards(block.data.cards)
-
   return (
-    <section className="py-20 border-b border-white/10">
-      <div className="container mx-auto px-4 space-y-8">
-        <h2 className="text-3xl font-black text-white">{block.data.title}</h2>
-        <p className="text-neutral-400">{block.data.subtitle}</p>
-        <div className="grid md:grid-cols-3 gap-4">
-          {cards.map((card, idx) => (
-            <article key={idx} className="border border-white/10 p-4 bg-white/5">
-              {card.icon && card.icon in ICON_MAP
-                ? (() => {
-                    const Icon = ICON_MAP[card.icon as keyof typeof ICON_MAP]
-                    return <Icon className="w-5 h-5 text-primary mb-2" />
-                  })()
-                : null}
-              <h3 className="text-white font-bold">{card.title}</h3>
-              <p className="text-neutral-400 text-sm mt-2">{card.description}</p>
-            </article>
-          ))}
+    <section className="border-b border-border bg-background py-20">
+      <div className="container mx-auto space-y-8 px-4">
+        <h2 className="text-3xl font-black text-foreground">{block.data.title}</h2>
+        <p className="text-muted-foreground">{block.data.subtitle}</p>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {block.data.cards.map((card, idx) => {
+            const Icon = card.icon && card.icon in ICON_MAP ? ICON_MAP[card.icon as keyof typeof ICON_MAP] : null
+            return (
+              <article key={idx} className="border border-border bg-muted/30 p-4">
+                {Icon ? <Icon className="mb-2 h-5 w-5 text-primary" /> : null}
+                <h3 className="font-bold text-foreground">{card.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{card.description}</p>
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>

@@ -4,8 +4,9 @@ export interface IThemeSetting extends Document {
   key: string
   colors: Record<string, string>
   /**
-   * When true, `colors` holds only overrides relative to the active template
-   * baseline (`template.defaultTheme` or engine defaults). Omit/false: legacy full snapshot.
+   * When true, `colors` is merged on top of the active template baseline.
+   * Saves from the theme editor store all tokens so the full palette applies.
+   * Omit/false: legacy full snapshot.
    */
   overridesOnly?: boolean
 }

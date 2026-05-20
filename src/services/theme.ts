@@ -103,13 +103,12 @@ export function getEffectiveThemeBase(template: TemplateModule | null | undefine
   return ENGINE_DEFAULT_THEME
 }
 
-function computeOverridesAgainstBase(base: ThemeTokens, desired: ThemeTokens): Partial<ThemeTokens> {
-  const out: Partial<ThemeTokens> = {}
+/** Persist the full palette so storefront/CMS never keep baseline colors for omitted keys. */
+function fullPaletteFromDesired(desired: ThemeTokens): ThemeTokens {
+  const out = {} as ThemeTokens
   for (const key of THEME_TOKEN_KEYS) {
     const k = key as keyof ThemeTokens
-    if (desired[k] !== base[k]) {
-      out[k] = desired[k]
-    }
+    out[k] = desired[k]
   }
   return out
 }
@@ -155,18 +154,17 @@ export class ThemeService {
     template: TemplateModule,
     desired: ThemeTokens
   ): Promise<ThemeTokens> {
-    const base = getEffectiveThemeBase(template)
-    const overrides = computeOverridesAgainstBase(base, desired)
+    const palette = fullPaletteFromDesired(desired)
     await dbConnect()
     const latest = await ThemeSetting.findOne({ key: "theme" }).sort({ updatedAt: -1, _id: -1 })
     if (latest?._id) {
       await ThemeSetting.findByIdAndUpdate(latest._id, {
-        $set: { key: "theme", colors: overrides, overridesOnly: true },
+        $set: { key: "theme", colors: palette, overridesOnly: true },
       })
     } else {
       await ThemeSetting.create({
         key: "theme",
-        colors: overrides,
+        colors: palette,
         overridesOnly: true,
       })
     }

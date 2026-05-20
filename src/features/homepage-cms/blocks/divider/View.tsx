@@ -2,10 +2,12 @@ import type { DividerBlock } from "@/features/homepage-cms/types/block-types"
 
 export function DividerBlockView({ block }: { block: DividerBlock }) {
   return (
-    <section className="py-8 border-b border-white/10">
+    <section className="border-b border-border bg-background py-8">
       <div className="container mx-auto px-4">
-        <div className="h-px bg-white/10" />
-        {block.data.label ? <p className="mt-3 text-xs text-neutral-500 uppercase tracking-widest">{block.data.label}</p> : null}
+        <div className="h-px bg-border" />
+        {block.data.label ? (
+          <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">{block.data.label}</p>
+        ) : null}
       </div>
     </section>
   )

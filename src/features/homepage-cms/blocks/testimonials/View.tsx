@@ -2,15 +2,17 @@ import type { TestimonialsBlock } from "@/features/homepage-cms/types/block-type
 
 export function TestimonialsBlockView({ block }: { block: TestimonialsBlock }) {
   return (
-    <section className="py-20 border-b border-white/10">
-      <div className="container mx-auto px-4 space-y-6">
-        <h2 className="text-3xl font-black text-white">{block.data.title}</h2>
-        <p className="text-neutral-400">{block.data.subtitle}</p>
-        <div className="grid md:grid-cols-2 gap-4">
+    <section className="border-b border-border bg-background py-20">
+      <div className="container mx-auto space-y-8 px-4">
+        <h2 className="text-3xl font-black text-foreground">{block.data.title}</h2>
+        <p className="text-muted-foreground">{block.data.subtitle}</p>
+        <div className="grid gap-3 md:grid-cols-2">
           {block.data.items.map((item, idx) => (
-            <article key={idx} className="border border-white/10 bg-white/5 p-4">
-              <p className="text-white">&ldquo;{item.quote}&rdquo;</p>
-              <p className="text-neutral-400 text-sm mt-2">{item.name} - {item.role}</p>
+            <article key={idx} className="border border-border bg-muted/30 p-4">
+              <p className="text-foreground">&ldquo;{item.quote}&rdquo;</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {item.name} - {item.role}
+              </p>
             </article>
           ))}
         </div>

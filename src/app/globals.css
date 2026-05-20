@@ -97,27 +97,8 @@
   }
 }
 
+/* Theme token values are set on <html> in src/app/layout.tsx (DB + template merge). */
 :root {
-  --theme-background: #0A0A0A;
-  --theme-foreground: #FFFFFF;
-  --theme-primary: #111827;
-  --theme-primary-foreground: #FFFFFF;
-  --theme-accent: #2563EB;
-  --theme-accent-foreground: #FFFFFF;
-  --theme-secondary: #1F2937;
-  --theme-secondary-foreground: #FFFFFF;
-  --theme-muted: #222222;
-  --theme-muted-foreground: #999999;
-  --theme-surface: #151515;
-  --theme-surface-foreground: #FFFFFF;
-  --theme-border: #333333;
-  --theme-success: #16A34A;
-  --theme-success-foreground: #FFFFFF;
-  --theme-warning: #D97706;
-  --theme-warning-foreground: #FFFFFF;
-  --theme-error: #DC2626;
-  --theme-error-foreground: #FFFFFF;
-
   --background: var(--theme-background);
   --foreground: var(--theme-foreground);
   --primary: var(--theme-primary);
@@ -130,10 +111,10 @@
   --muted-foreground: var(--theme-muted-foreground);
   --card: var(--theme-surface);
   --card-foreground: var(--theme-surface-foreground);
-  --popover: #0A0A0A;
-  --popover-foreground: #FFFFFF;
+  --popover: var(--theme-surface);
+  --popover-foreground: var(--theme-surface-foreground);
   --border: var(--theme-border);
-  --input: #1A1A1A;
+  --input: var(--theme-muted);
   --ring: var(--accent);
   scroll-behavior: smooth;
 }
