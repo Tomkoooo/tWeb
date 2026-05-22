@@ -33,8 +33,26 @@ const DEFAULT_FLAGS: FlagSeed[] = [
   },
   {
     key: "glsParcelPicker",
-    label: "GLS csomagpont választó",
-    description: "Pénztárban GLS map picker megjelenítése.",
+    label: "GLS csomagpont választó (pénztár)",
+    description: "GLS csomagpont térkép/widget a pénztárban; a GLS szállítási mód csak így jelenik meg.",
+    defaultEnabled: false,
+  },
+  {
+    key: "glsParcelManager",
+    label: "GLS csomagkezelő (admin)",
+    description: "Rendelés adminban: GLS címke generálás és letöltés MyGLS API-val.",
+    defaultEnabled: false,
+  },
+  {
+    key: "foxpostParcelPicker",
+    label: "Foxpost csomagautomata választó (pénztár)",
+    description: "Foxpost APT finder iframe a pénztárban; a Foxpost szállítási mód csak így jelenik meg.",
+    defaultEnabled: false,
+  },
+  {
+    key: "foxpostParcelManager",
+    label: "Foxpost csomagkezelő (admin)",
+    description: "Rendelés adminban: Foxpost csomag létrehozás és címke PDF FoxWeb API-val.",
     defaultEnabled: false,
   },
   {
@@ -51,6 +69,34 @@ const DEFAULT_FLAGS: FlagSeed[] = [
   },
 ];
 
+async function migrateLegacyCombinedParcelFlag() {
+  const legacy = await FeatureFlag.findOne({ key: "glsParcelPicker" }).lean();
+  if (!legacy?.description?.includes("GLS és Foxpost")) {
+    return;
+  }
+  const wasEnabled = Boolean(legacy.enabled);
+  const parcelKeys = ["glsParcelPicker", "glsParcelManager", "foxpostParcelPicker", "foxpostParcelManager"] as const;
+  const seeds = DEFAULT_FLAGS.filter((f) => parcelKeys.includes(f.key as (typeof parcelKeys)[number]));
+
+  for (const seed of seeds) {
+    await FeatureFlag.findOneAndUpdate(
+      { key: seed.key },
+      {
+        $set: {
+          label: seed.label,
+          description: seed.description,
+          ...(wasEnabled ? { enabled: true } : {}),
+        },
+        $setOnInsert: {
+          key: seed.key,
+          enabled: wasEnabled ? true : seed.defaultEnabled,
+        },
+      },
+      { upsert: true }
+    );
+  }
+}
+
 export async function getAdminFeatureFlags() {
   await requireAdmin();
   await dbConnect();
@@ -66,12 +112,28 @@ export async function getAdminFeatureFlags() {
           enabled: flag.defaultEnabled,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
+    );
+  }
+
+  await migrateLegacyCombinedParcelFlag();
+
+  for (const flag of DEFAULT_FLAGS) {
+    await FeatureFlag.findOneAndUpdate(
+      { key: flag.key },
+      { $set: { label: flag.label, description: flag.description } },
+      { upsert: false }
     );
   }
 
   const flags = await FeatureFlag.find({}).sort({ key: 1 }).lean();
   return JSON.parse(JSON.stringify(flags));
+}
+
+export async function getShopParcelFeatureFlags() {
+  const flags = await getAdminFeatureFlags();
+  const keys = new Set(["glsParcelPicker", "glsParcelManager", "foxpostParcelPicker", "foxpostParcelManager"]);
+  return flags.filter((f: { key: string }) => keys.has(f.key));
 }
 
 export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
@@ -81,8 +143,9 @@ export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
   await FeatureFlag.findOneAndUpdate(
     { key: flagKey },
     { enabled },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   revalidatePath("/admin/info");
+  revalidatePath("/admin/shop/flags");
 }

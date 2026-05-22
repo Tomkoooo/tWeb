@@ -80,7 +80,7 @@ export class TemplateService {
         activatedAt: new Date(),
         activatedBy,
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     )
     await ThemeService.clearStoredIfLegacySnapshot()
     return template

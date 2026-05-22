@@ -88,7 +88,7 @@ export function SummaryStep({
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="space-y-6">
         <h3 className={cn(cxSectionHeading(a), "flex items-center gap-3")}>
-          <Tag className="h-5 w-5 text-primary" />
+          <Tag className="h-5 w-5 text-primary-foreground" />
           Kuponkód felhasználása
         </h3>
 
@@ -96,14 +96,14 @@ export function SummaryStep({
           <div
             className={cn(
               "flex items-center justify-between border p-6",
-              a === "light" ? "rounded-xl border-primary/30 bg-primary/10" : "border-primary/30 bg-primary/10"
+              a === "light" ? "rounded-xl border-primary-foreground/30 bg-primary/10" : "border-primary-foreground/30 bg-primary/10"
             )}
           >
             <div>
               <p className={cn("text-[10px] font-bold uppercase tracking-widest", a === "light" ? "text-foreground" : "text-white")}>
                 Alkalmazott kupon
               </p>
-              <p className="mt-1 text-lg font-bold uppercase tracking-tighter text-primary">{data.coupon.code}</p>
+              <p className="mt-1 text-lg font-bold uppercase tracking-tighter text-primary-foreground">{data.coupon.code}</p>
             </div>
             {couponRemoveBtn}
           </div>

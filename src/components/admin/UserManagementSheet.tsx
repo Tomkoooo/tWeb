@@ -157,7 +157,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
         <Button
           size="sm"
           variant="ghost"
-          className="rounded-none text-neutral-400 hover:text-primary hover:bg-white/5"
+          className="rounded-none text-neutral-400 hover:text-white hover:bg-white/5"
           title="Részletek"
         >
           <Eye className="w-4 h-4" />
@@ -170,7 +170,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
         </SheetHeader>
         <div className="p-8 space-y-8">
           <form action={handleProfileSubmit} className="space-y-4" noValidate>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Fiók adatok</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Fiók adatok</h3>
             <input
               name="name"
               defaultValue={user.name || ""}
@@ -211,7 +211,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
           </form>
 
           <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Jelszó kezelése</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Jelszó kezelése</h3>
             <div className="grid grid-cols-1 gap-3">
               <form action={handlePasswordSubmit} className="space-y-3" noValidate>
                 <input
@@ -250,7 +250,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
                   type="button"
                   onClick={handlePasswordReset}
                   disabled={resetPending || !user.email}
-                  className="w-full h-12 rounded-none border border-primary/40 bg-transparent hover:bg-primary/10 text-primary font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+                  className="w-full h-12 rounded-none admin-action-outline font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
                 >
                   {resetPending ? "Küldés..." : "Reset email küldése"}
                 </Button>
@@ -259,7 +259,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Rendelések</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Rendelések</h3>
             {recentOrders.length === 0 ? (
               <p className="text-sm text-neutral-500 italic">Nincs rendelése.</p>
             ) : (
@@ -268,7 +268,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
                   <Link
                     key={order._id}
                     href={`/admin/orders/${order._id}`}
-                    className="flex items-center justify-between border border-white/10 bg-white/5 p-3 hover:border-primary/30 transition-colors"
+                    className="flex items-center justify-between border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors"
                   >
                     <div>
                       <p className="text-white font-black uppercase tracking-widest text-sm">{formatOrderNumberLabel(order._id)}</p>
@@ -277,7 +277,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-primary font-black">{formatHuf(order.total)}</p>
+                      <p className="admin-value font-black">{formatHuf(order.total)}</p>
                       <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
                         Nettó {formatHuf(totalsBreakdownFromGross(order.total).net)}
                       </p>

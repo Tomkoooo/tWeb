@@ -83,7 +83,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                 <h2 className="text-4xl md:text-7xl font-heading font-black mb-10 text-foreground uppercase tracking-tighter">
                   {displayTitle.includes("STORY") ? (
                     <>
-                      LOREM <span className="text-primary">IPSUM STORY</span>
+                      LOREM <span className="text-primary-foreground">IPSUM STORY</span>
                     </>
                   ) : (
                     displayTitle
@@ -101,7 +101,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                 onCreateItem={() => ({ title: "Új lenyíló", content: "Új tartalom" })}
                 onRenderItem={(item: any, index, helpers) => (
                   <AccordionItem key={index} value={`item-${index}`} className="border-border/40 bg-surface/40 px-6 rounded-none">
-                    <AccordionTrigger className="text-foreground hover:text-primary font-heading font-black uppercase tracking-widest text-left no-underline py-6">
+                    <AccordionTrigger className="text-foreground hover:text-primary-foreground font-heading font-black uppercase tracking-widest text-left no-underline py-6">
                       {cms.enabled ? (
                         <input
                           value={item.title}
@@ -160,11 +160,11 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
                 <div className={cn(
-                  "glass-card p-10 h-full flex flex-col items-center text-center group hover:border-primary/50 transition-all",
+                  "glass-card p-10 h-full flex flex-col items-center text-center group hover:border-primary-foreground/50 transition-all",
                   i % 2 === 1 ? "lg:mt-12" : ""
                 )}>
                   <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-8 border border-border/40 group-hover:bg-primary/20 transition-all">
-                    <div className="text-primary"><DynamicLucideIcon name={item.icon || "Shield"} className="w-10 h-10" /></div>
+                    <div className="text-primary-foreground"><DynamicLucideIcon name={item.icon || "Shield"} className="w-10 h-10" /></div>
                   </div>
                   {cms.enabled ? (
                     <div className="space-y-2 w-full">

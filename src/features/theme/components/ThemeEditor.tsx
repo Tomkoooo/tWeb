@@ -131,6 +131,21 @@ export function ThemeEditor({
         </div>
       </section>
 
+      <p className="text-[11px] text-neutral-400 max-w-3xl border border-white/10 bg-white/5 p-3">
+        <strong className="text-neutral-200">primary</strong> — gombok háttere (
+        <code className="text-neutral-300">bg-primary</code>). Boltban ne használd ikonokra, szövegre,
+        keretekre — helyette{" "}
+        <code className="text-neutral-300">text-primary-foreground</code>,{" "}
+        <code className="text-neutral-300">border-primary-foreground/35</code>, vagy{" "}
+        <code className="text-neutral-300">text-secondary-foreground</code> (lásd{" "}
+        <code className="text-neutral-300">storefront-ui.ts</code>). Admin:{" "}
+        <code className="text-neutral-300">admin-value</code>,{" "}
+        <code className="text-neutral-300">admin-headline-accent</code>.{" "}
+        <strong className="text-neutral-200">primaryForeground</strong> — szöveg primary gombokon és
+        storefront kiemelések. <strong className="text-neutral-200">secondaryForeground</strong> — finomabb
+        hover/link. <strong className="text-neutral-200">foreground</strong> — fő szöveg és árak.
+      </p>
+
       <div className="grid md:grid-cols-2 gap-3">
         {THEME_TOKEN_KEYS.map((key) => (
           <label key={key} className="space-y-1">

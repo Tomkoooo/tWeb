@@ -29,7 +29,7 @@ export function EmailTemplateEditor({ template }: EmailTemplateEditorProps) {
         </Link>
         <div>
           <h1 className="text-3xl md:text-4xl font-heading font-black tracking-tight mb-1 uppercase italic text-white leading-[0.9]">
-            SZERKESZTÉS: <span className="text-primary">{template.type.replace('_', ' ')}</span>
+            SZERKESZTÉS: <span className="admin-text-accent">{template.type.replace('_', ' ')}</span>
           </h1>
           <p className="text-white/40 font-medium italic text-sm">Szabja testre az üzenet tárgyát és tartalmát.</p>
         </div>
@@ -72,7 +72,7 @@ export function EmailTemplateEditor({ template }: EmailTemplateEditorProps) {
           <div className="space-y-6">
             <div className="bg-white/5 border border-white/10 p-6 space-y-6">
               <div className="flex items-center gap-3 text-white">
-                <div className="w-1 h-5 bg-primary" />
+                <div className="w-1 h-5 admin-section-marker" />
                 <h3 className="font-heading font-black italic uppercase tracking-wider">Használható Változók</h3>
               </div>
               
@@ -84,7 +84,7 @@ export function EmailTemplateEditor({ template }: EmailTemplateEditorProps) {
                 <div className="grid grid-cols-1 gap-3">
                   {template.variables.map((variable: string) => (
                     <div key={variable} className="bg-black border border-white/5 p-3 flex items-center justify-between group">
-                      <code className="text-primary font-black text-[11px] tracking-wider italic">
+                      <code className="admin-value font-black text-[11px] tracking-wider italic">
                         {"{{"}{variable}{"}}"}
                       </code>
                       <Button 

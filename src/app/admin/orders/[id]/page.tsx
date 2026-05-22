@@ -1,4 +1,5 @@
 import {
+  generateOrderFoxpostShipment,
   generateOrderGlsLabel,
   getOrderById,
   resendOrderInvoiceEmail,
@@ -6,20 +7,33 @@ import {
   updateOrderStatus,
   uploadManualInvoicePdf,
 } from "@/actions/admin-orders"
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, CheckCircle2, Printer } from "lucide-react"
+import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, CheckCircle2 } from "lucide-react"
+import {
+  OrderParcelPanel,
+  orderHasParcelShipping,
+} from "@/components/admin/OrderParcelPanel"
+import { getOrderParcelProvider, getOrderShippingTypeLabel } from "@/lib/parcel-locker"
+import {
+  isFoxpostParcelManagerEnabled,
+  isGlsParcelManagerEnabled,
+} from "@/lib/parcel-feature-flags"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import { FeatureFlagService } from "@/services/feature-flags"
 import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const order = await getOrderById(id)
-  const glsEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false)
+  const [glsManagerEnabled, foxpostManagerEnabled] = await Promise.all([
+    isGlsParcelManagerEnabled(),
+    isFoxpostParcelManagerEnabled(),
+  ])
+  const parcelManagerEnabled = glsManagerEnabled || foxpostManagerEnabled
+  const parcelProvider = order ? getOrderParcelProvider(order) : null
   const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
 
   if (!order) {
@@ -61,10 +75,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Vissza a rendelésekhez</span>
           </Link>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Rendelés <span className="text-primary underline decoration-primary/10 underline-offset-8">Részletei</span>
+            Rendelés <span className="admin-headline-accent">Részletei</span>
           </h1>
           <div className="flex items-center gap-4 text-white/40 italic">
-            <span className="text-lg font-bold uppercase tracking-tight text-primary">{formatOrderNumberLabel(order._id)}</span>
+            <span className="text-lg font-bold uppercase tracking-tight admin-text-accent">{formatOrderNumberLabel(order._id)}</span>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -86,9 +100,9 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-2 space-y-8">
           {/* Status Update Card */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-none relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -rotate-45 translate-x-16 -translate-y-16 pointer-events-none group-hover:bg-primary/10 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 -rotate-45 translate-x-16 -translate-y-16 pointer-events-none group-hover:bg-white/10 transition-colors" />
             <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-primary rounded-full" />
+              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Állapot Frissítése
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -112,63 +126,50 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </form>
               ))}
             </div>
-            {(glsEnabled || order.glsParcelPoint?.id || order.glsLabel?.parcelNumber || order.glsLabel?.lastError) && (
-            <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">GLS Címke</h3>
-              {glsEnabled && order.glsParcelPoint?.id ? (
-                <form
-                  action={async () => {
-                    "use server"
-                    await generateOrderGlsLabel(order._id.toString())
-                  }}
-                >
-                  <Button
-                    variant="outline"
-                    className="h-12 border-primary/40 text-primary hover:bg-primary/10 rounded-none uppercase tracking-widest text-[10px] font-black"
-                  >
-                    <Printer className="w-4 h-4 mr-2" />
-                    GLS CÍMKE GENERÁLÁSA
-                  </Button>
-                </form>
-              ) : glsEnabled ? (
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                  Ehhez a rendeléshez nincs GLS csomagpont mentve.
-                </p>
-              ) : (
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                  A GLS funkció jelenleg ki van kapcsolva.
-                </p>
-              )}
-              {order.glsLabel?.parcelNumber ? (
-                <div className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-300 space-y-2">
-                  <p>Parcel Number: <span className="text-white">{order.glsLabel.parcelNumber}</span></p>
-                  {order.glsLabel.generatedAt ? (
-                    <p>
-                      Generálva:{" "}
-                      <span className="text-white">
-                        {format(new Date(order.glsLabel.generatedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
-                      </span>
-                    </p>
-                  ) : null}
-                  {order.glsLabel.labelUrl ? (
-                    <a
-                      href={order.glsLabel.labelUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex text-primary hover:text-primary/80"
-                    >
-                      CÍMKE MEGNYITÁSA
-                    </a>
-                  ) : null}
-                </div>
-              ) : null}
-              {order.glsLabel?.lastError ? (
-                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
-                  GLS HIBA: {order.glsLabel.lastError}
-                </p>
-              ) : null}
-            </div>
-            )}
+            {orderHasParcelShipping(order) ||
+            order.glsLabel?.parcelNumber ||
+            order.glsLabel?.lastError ||
+            order.foxpostShipment?.clFoxId ||
+            order.foxpostShipment?.lastError ? (
+              <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">
+                  Csomagpont szállítás
+                </h3>
+                {!parcelManagerEnabled ? (
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                    A csomag/címke kezelő ki van kapcsolva (Webshop beállítások → GLS / Foxpost).
+                  </p>
+                ) : null}
+                {parcelProvider === "gls" ? (
+                  <OrderParcelPanel
+                    parcelManagerEnabled={glsManagerEnabled}
+                    provider="gls"
+                    orderId={order._id.toString()}
+                    glsParcelPoint={order.glsParcelPoint}
+                    glsLabel={order.glsLabel}
+                    generateGlsAction={async () => {
+                      "use server"
+                      await generateOrderGlsLabel(order._id.toString())
+                    }}
+                    generateFoxpostAction={async () => {}}
+                  />
+                ) : null}
+                {parcelProvider === "foxpost" ? (
+                  <OrderParcelPanel
+                    parcelManagerEnabled={foxpostManagerEnabled}
+                    provider="foxpost"
+                    orderId={order._id.toString()}
+                    foxpostParcelPoint={order.foxpostParcelPoint}
+                    foxpostShipment={order.foxpostShipment}
+                    generateGlsAction={async () => {}}
+                    generateFoxpostAction={async () => {
+                      "use server"
+                      await generateOrderFoxpostShipment(order._id.toString())
+                    }}
+                  />
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">Számla kezelés</h3>
@@ -196,7 +197,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
 
               <form action={uploadManualInvoicePdf.bind(null, order._id.toString())} className="flex flex-col md:flex-row gap-3 md:items-center">
                 <input type="file" name="file" accept=".pdf,application/pdf" required className="text-xs text-neutral-300" />
-                <Button className="h-11 rounded-none border border-primary/40 bg-transparent hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                <Button className="h-11 rounded-none admin-action-outline text-[10px] font-black uppercase tracking-widest">
                   Manuális számla PDF feltöltése
                 </Button>
               </form>
@@ -208,7 +209,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   </Button>
                 </form>
                 <a href={`/api/admin/orders/${order._id.toString()}/invoice`} target="_blank" rel="noreferrer">
-                  <Button className="h-11 rounded-none border border-primary/40 bg-transparent hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <Button className="h-11 rounded-none admin-action-outline text-[10px] font-black uppercase tracking-widest">
                     Számla PDF letöltése
                   </Button>
                 </a>
@@ -219,7 +220,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
           {/* Items Card */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-none">
             <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-primary rounded-full" />
+              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Rendelt Tételek
             </h2>
             <div className="space-y-4">
@@ -240,15 +241,15 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
                   )
                   return (
-                <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all">
-                  <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-colors overflow-hidden shrink-0">
+                <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-white/25 transition-all">
+                  <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-white/25 transition-colors overflow-hidden shrink-0">
                     <Package className="w-8 h-8 text-neutral-800" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-heading font-black text-white uppercase tracking-wider text-base">{item.name}</h3>
                     <p className="text-[10px] text-neutral-600 font-black tracking-[0.2em] uppercase mt-0.5">Mennység: {item.quantity} DB</p>
                     {item.variantLabel ? (
-                      <p className="text-[10px] text-primary font-black tracking-[0.2em] uppercase mt-1">
+                      <p className="text-[10px] admin-value font-black tracking-[0.2em] uppercase mt-1">
                         Varians: {item.variantLabel}
                       </p>
                     ) : null}
@@ -292,10 +293,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               )}
               <div className="flex justify-between text-white text-2xl font-black uppercase italic pt-2">
                 <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   Végösszeg:
                 </span>
-                <span className="text-primary underline decoration-primary/20 underline-offset-8">
+                <span className="admin-headline-accent">
                   {formatHuf(order.total)}
                 </span>
               </div>
@@ -309,20 +310,20 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
           <div className="bg-white/5 border border-white/10 p-8 rounded-none relative overflow-hidden">
             <div className="absolute top-0 right-0 w-px h-full bg-linear-to-b from-transparent via-accent/20 to-transparent" />
             <h2 className="text-xl font-bold mb-8 italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-primary rounded-full" />
+              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Vásárló adatai
             </h2>
             
             <div className="space-y-8">
               <div className="flex gap-4">
-                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
-                  <User className="w-5 h-5 text-primary" />
+                <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
+                  <User className="w-5 h-5 admin-icon-accent" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Számlázási Név</p>
                   <p className="text-lg font-bold text-white uppercase italic leading-none">{order.billingInfo.name}</p>
                   {order.billingInfo.type === "company" && (
-                    <div className="mt-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 border border-primary/20 px-2 py-1 inline-block">
+                    <div className="mt-2 text-[10px] font-black text-white uppercase tracking-[0.2em] bg-white/10 border border-white/20 px-2 py-1 inline-block">
                       ADÓSZÁM: {order.billingInfo.taxNumber}
                     </div>
                   )}
@@ -330,8 +331,8 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="flex gap-4">
-                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
-                  <MapPin className="w-5 h-5 text-primary" />
+                <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
+                  <MapPin className="w-5 h-5 admin-icon-accent" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Szállítási Cím</p>
@@ -339,7 +340,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <p className="text-neutral-400 text-sm mt-1">{order.shippingAddress.zip} {order.shippingAddress.city}</p>
                   <p className="text-neutral-400 text-sm">{order.shippingAddress.street}</p>
                   {order.shippingAddress.comment && (
-                    <div className="mt-4 p-3 bg-black/40 border-l-2 border-primary text-neutral-400 text-xs italic">
+                    <div className="mt-4 p-3 bg-black/40 border-l-2 border-white/30 text-neutral-400 text-xs italic">
                       &quot;{order.shippingAddress.comment}&quot;
                     </div>
                   )}
@@ -347,8 +348,8 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="flex gap-4">
-                <div className="p-3 bg-primary/10 rounded-none border border-primary/20 grow-0 h-fit">
-                  <Truck className="w-5 h-5 text-primary" />
+                <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
+                  <Truck className="w-5 h-5 admin-icon-accent" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Módszerek</p>
@@ -360,7 +361,14 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     <div className="flex items-center gap-2 text-white/80">
                       <Truck className="w-3.5 h-3.5" />
                       <span className="text-xs font-black uppercase tracking-tight">
-                        Szállítás: {order.glsParcelPoint?.name ? `GLS Csomagpont (${order.glsParcelPoint.name})` : "Futár"}
+                        Szállítás:{" "}
+                        {order.glsParcelPoint?.name
+                          ? `GLS Csomagpont (${order.glsParcelPoint.name})`
+                          : order.foxpostParcelPoint?.name
+                            ? `Foxpost (${order.foxpostParcelPoint.name})`
+                            : getOrderShippingTypeLabel(order) === "Standard"
+                              ? "Futár"
+                              : getOrderShippingTypeLabel(order)}
                       </span>
                     </div>
                   </div>

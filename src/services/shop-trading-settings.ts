@@ -58,7 +58,7 @@ export class ShopTradingSettingsService {
           invoicingAllowedCountryCodes: merged.invoicingAllowedCountryCodes,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     return merged

@@ -218,6 +218,25 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | `GLS_PICKUP_CONTACT_EMAIL` | Optional | Pickup contact email |
 | `GLS_SHIPPING_METHOD_NAME` | Optional | Display name for GLS shipping method |
 
+### GLS / Foxpost parcel locker (optional)
+
+Enable the four flags under **Admin → Webshop beállítások → GLS / Foxpost** (`/admin/shop/flags`): GLS/Foxpost **picker** (checkout) and **manager** (admin labels). Full setup: [`docs/integrations/parcel-locker-gls-foxpost.md`](docs/integrations/parcel-locker-gls-foxpost.md).
+
+Create active shipping methods named `GLS Csomagpont` and/or `Foxpost Csomagautomata` (or override `GLS_SHIPPING_METHOD_NAME` / `FOXPOST_SHIPPING_METHOD_NAME`).
+
+Checkout uses the official Foxpost APT finder iframe (`cdn.foxpost.hu`). Admin order detail can create parcels and download labels via FoxWeb API.
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `FOXPOST_API_USERNAME` | Required for Foxpost | Basic auth username (from foxpost.hu Beállítások) |
+| `FOXPOST_API_PASSWORD` | Required for Foxpost | Basic auth password |
+| `FOXPOST_API_KEY` | Required for Foxpost | API key header value |
+| `FOXPOST_API_BASE_URL` | Optional | API base (default sandbox `https://webapi-test.foxpost.hu/api`) |
+| `FOXPOST_SHIPPING_METHOD_NAME` | Optional | DB shipping method name to match (default `Foxpost Csomagautomata`) |
+| `FOXPOST_PARCEL_SIZE` | Optional | Parcel size at create time (default `M`) |
+| `FOXPOST_LABEL_PAGE_SIZE` | Optional | Label PDF size: `A6`, `A7`, `_85X85` (default `A6`) |
+| `FOXPOST_IS_WEB` | Optional | Set `true` to pass `isWeb=true` on parcel create (default `false` on sandbox) |
+
 ### Számlázz.hu Invoicing (optional)
 
 Set one authentication mode:

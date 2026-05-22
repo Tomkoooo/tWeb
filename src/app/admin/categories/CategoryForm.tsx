@@ -32,7 +32,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
         </Link>
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            {isEdit ? "KATEGÓRIA" : "ÚJ"} <span className="text-primary underline decoration-primary/10 underline-offset-8">{isEdit ? "SZERKESZTÉSE" : "KATEGÓRIA"}</span>
+            {isEdit ? "KATEGÓRIA" : "ÚJ"} <span className="admin-headline-accent">{isEdit ? "SZERKESZTÉSE" : "KATEGÓRIA"}</span>
           </h1>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
           {/* Main Info */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-primary" />
+              <div className="w-1.5 h-6 admin-section-marker" />
               ALAPADATOK
             </h2>
             
@@ -56,6 +56,27 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                   placeholder="KÉZI SZERSZÁMOK" 
                   className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
+                  Kiemelt lista index (főoldal)
+                </label>
+                <Input
+                  name="featuredListIndex"
+                  type="number"
+                  step={1}
+                  defaultValue={
+                    initialData?.featuredListIndex != null
+                      ? String(initialData.featuredListIndex)
+                      : ""
+                  }
+                  placeholder="Üres = alap sorrend"
+                  className="bg-black border-white/5 h-12 text-white font-mono rounded-none"
+                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                  Kisebb szám = előrébb a kiemelt kategória sávban (automatikus mód).
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -74,7 +95,15 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Kategória Képe</label>
-                  <ImageUpload currentImage={imageUrl} onUpload={(filename) => setImageUrl(filename)} />
+                  <ImageUpload
+                    currentImage={imageUrl}
+                    onUpload={(filename) => setImageUrl(filename)}
+                    flexibleCrop
+                    aspect={16 / 9}
+                  />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    Négyzet (1:1) vagy 16:9 — a boltban nagyítással teljes arány látszik.
+                  </p>
                   <input type="hidden" name="image" value={imageUrl} />
                 </div>
               </div>
@@ -84,7 +113,7 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
           {/* SEO Section */}
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 bg-primary" />
+              <div className="w-1.5 h-6 admin-section-marker" />
               SEO BEÁLLÍTÁSOK
             </h2>
             

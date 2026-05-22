@@ -8,6 +8,7 @@ import { Reviews } from "@/components/sections/Reviews"
 import { Contact } from "@/components/sections/Contact"
 import type { HomepageSnapshot, HomepageBlockType } from "@/features/homepage-cms/types/block-types"
 import type { HomePageDeps } from "@/templates/types"
+import { resolveContactDisplayField } from "@/lib/contact-display"
 
 function getBlockData(snapshot: HomepageSnapshot, type: HomepageBlockType) {
   const block = snapshot.blocks.find((item) => item.type === type && item.enabled !== false)
@@ -154,9 +155,21 @@ export function RealHomepageSections({
       />
       {contact ? (
         <Contact
-          email={isVisible(contact, "email") ? (contact.email ?? dependencies.company.email) : ""}
-          phone={isVisible(contact, "phone") ? (contact.phone ?? dependencies.company.phone) : ""}
-          address={isVisible(contact, "address") ? (contact.address ?? dependencies.company.address) : ""}
+          email={
+            isVisible(contact, "email")
+              ? resolveContactDisplayField(contact.email, dependencies.company.email)
+              : ""
+          }
+          phone={
+            isVisible(contact, "phone")
+              ? resolveContactDisplayField(contact.phone, dependencies.company.phone)
+              : ""
+          }
+          address={
+            isVisible(contact, "address")
+              ? resolveContactDisplayField(contact.address, dependencies.company.address)
+              : ""
+          }
           title={isVisible(contact, "title") ? contact.title : ""}
           description={isVisible(contact, "description") ? contact.description : ""}
           sendButtonLabel={contact.sendButtonLabel}

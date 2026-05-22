@@ -100,7 +100,7 @@ export function AtelierProductCard({ product }: { product: unknown }) {
           )}
         />
         <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap gap-1 drop-shadow-sm">
-          <Badge className="rounded-full border border-primary/30 bg-primary px-2 py-0 font-serif text-[9px] uppercase tracking-widest text-primary-foreground">
+          <Badge className="rounded-full border border-primary-foreground/30 bg-primary px-2 py-0 font-serif text-[9px] uppercase tracking-widest text-primary-foreground">
             {p.category?.name || "Termék"}
           </Badge>
           {maxDiscount > 0 ? (

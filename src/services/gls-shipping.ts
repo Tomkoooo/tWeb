@@ -7,12 +7,20 @@ export function getGlsShippingMethodName(): string {
 
 export async function resolveConfiguredGlsShippingMethod(options?: { requireActive?: boolean }) {
   const name = getGlsShippingMethodName();
-  const query: Record<string, unknown> = { name };
+  const query: Record<string, unknown> = {
+    $or: [{ provider: "gls" }, { name }],
+  };
   if (options?.requireActive !== false) {
     query.isActive = true;
   }
 
-  const method = await ShippingMethod.findOne(query).lean();
+  let method = await ShippingMethod.findOne({
+    ...(options?.requireActive !== false ? { isActive: true } : {}),
+    provider: "gls",
+  }).lean();
+  if (!method?._id) {
+    method = await ShippingMethod.findOne(query).lean();
+  }
   if (!method?._id) {
     return null;
   }

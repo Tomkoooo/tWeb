@@ -55,7 +55,7 @@ export function ShopHeader({ total, q }: ShopHeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="h-12 border-border/40 bg-background-dark text-foreground hover:bg-surface/50 hover:text-foreground rounded-none flex gap-3 px-6 font-black text-[10px] tracking-[0.2em] uppercase">
-              <ArrowUpDown className="w-4 h-4 text-primary" />
+              <ArrowUpDown className="w-4 h-4 text-primary-foreground" />
               Rendezés: {sortOptions.find(o => o.value === currentSort)?.label}
               <ChevronDown className="w-4 h-4 opacity-50" />
             </Button>
@@ -74,7 +74,7 @@ export function ShopHeader({ total, q }: ShopHeaderProps) {
         </DropdownMenu>
 
         <div className="flex border border-border/40 rounded-none h-12 overflow-hidden ml-auto">
-          <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none bg-surface/40 border-none text-primary">
+          <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none bg-surface/40 border-none text-primary-foreground">
             <LayoutGrid className="w-5 h-5" />
           </Button>
           <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none hover:bg-surface/50 text-muted-foreground border-none">

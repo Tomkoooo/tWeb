@@ -42,7 +42,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-t-2 border-primary-foreground/35 border-solid rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -53,7 +53,7 @@ export default function OrderDetailPage() {
         <h2 className="mb-4 text-xl font-black uppercase tracking-[0.2em] text-foreground">
           A rendelés nem található
         </h2>
-        <Link href="/profile/orders" className="text-primary font-black uppercase tracking-widest text-xs hover:underline">
+        <Link href="/profile/orders" className="text-primary-foreground font-black uppercase tracking-widest text-xs hover:underline">
           <ArrowLeft className="w-4 h-4 inline mr-2" /> Vissza a rendelésekhez
         </Link>
       </div>
@@ -67,7 +67,7 @@ export default function OrderDetailPage() {
         <div>
           <Link
             href="/profile/orders"
-            className="mb-4 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-primary"
+            className="mb-4 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-primary-foreground"
           >
             <ArrowLeft className="mr-2 h-3 w-3" /> Vissza
           </Link>
@@ -85,7 +85,7 @@ export default function OrderDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Státusz</h3>
+          <h3 className="text-sm font-black text-primary-foreground uppercase tracking-[0.2em]">Státusz</h3>
           <p className="inline-block rounded-lg border border-border bg-muted/40 p-4 text-sm font-bold uppercase tracking-widest text-foreground">
             {order.status === "pending" && "Függőben"}
             {order.status === "processing" && "Feldolgozás alatt"}
@@ -101,7 +101,7 @@ export default function OrderDetailPage() {
             <p className="text-xs font-bold text-foreground">{order.shippingAddress.name}</p>
             <p className="text-xs text-neutral-400">{order.shippingAddress.zip} {order.shippingAddress.city}</p>
             <p className="text-xs text-neutral-400">{order.shippingAddress.street}</p>
-            {order.shippingMethod && <p className="text-primary text-xs font-black uppercase tracking-widest mt-2">{order.shippingMethod.name}</p>}
+            {order.shippingMethod && <p className="text-primary-foreground text-xs font-black uppercase tracking-widest mt-2">{order.shippingMethod.name}</p>}
           </div>
           <div className="space-y-2">
             <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Számlázás</p>
@@ -109,12 +109,12 @@ export default function OrderDetailPage() {
             <p className="text-xs text-neutral-400">{order.billingInfo.zip} {order.billingInfo.city}</p>
             <p className="text-xs text-neutral-400">{order.billingInfo.street}</p>
             {order.billingInfo.type === "company" && <p className="text-xs text-neutral-400">Adószám: {order.billingInfo.taxNumber}</p>}
-            {order.paymentMethod && <p className="text-primary text-xs font-black uppercase tracking-widest mt-2">{order.paymentMethod.name}</p>}
+            {order.paymentMethod && <p className="text-primary-foreground text-xs font-black uppercase tracking-widest mt-2">{order.paymentMethod.name}</p>}
           </div>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Számla</h3>
+          <h3 className="text-sm font-black text-primary-foreground uppercase tracking-[0.2em]">Számla</h3>
           <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-4 text-sm font-bold uppercase tracking-widest text-foreground">
             <p>Állapot: {order.invoiceStatus || "pending"}</p>
             <p>Számlaszám: {order.invoiceId || "-"}</p>
@@ -123,7 +123,7 @@ export default function OrderDetailPage() {
             ) : null}
             <div className="pt-2">
               <a href={order.invoiceDownloadUrl || `/api/user/orders/${order._id}/invoice`} target="_blank" rel="noreferrer">
-                <Button className="h-10 rounded-none border border-primary bg-transparent text-primary hover:bg-primary/10 uppercase tracking-widest text-[10px] font-black">
+                <Button className="h-10 rounded-none border border-primary-foreground/35 bg-transparent text-primary-foreground hover:bg-primary/10 uppercase tracking-widest text-[10px] font-black">
                   Számla letöltése
                 </Button>
               </a>
@@ -133,7 +133,7 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="space-y-6">
-        <h3 className="text-sm font-black text-primary uppercase tracking-[0.2em]">Termékek</h3>
+        <h3 className="text-sm font-black text-primary-foreground uppercase tracking-[0.2em]">Termékek</h3>
         <div className="divide-y divide-border rounded-xl border border-border">
           {order.items.map((item: any, i: number) => {
             const breakdown = priceBreakdownFromGross(
@@ -148,7 +148,7 @@ export default function OrderDetailPage() {
                 <div>
                   <h4 className="mb-1 text-sm font-black uppercase tracking-widest text-foreground">
                     {item.product ? (
-                      <Link href={`/products/${item.product.slug}`} className="hover:text-primary transition-colors">
+                      <Link href={`/products/${item.product.slug}`} className="hover:text-primary-foreground transition-colors">
                         {item.name}
                       </Link>
                     ) : (
@@ -160,7 +160,7 @@ export default function OrderDetailPage() {
                     Nettó {formatHuf(breakdown.lineNet)} · ÁFA {formatHuf(breakdown.lineVat)} ({breakdown.vatPercent}%)
                   </p>
                   {item.variantLabel ? (
-                    <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
+                    <p className="text-[10px] text-primary-foreground font-black uppercase tracking-widest mt-1">
                       {item.variantLabel}
                     </p>
                   ) : null}
@@ -202,7 +202,7 @@ export default function OrderDetailPage() {
           <span>{formatHuf(order.paymentFee)}</span>
         </div>
         {order.discount > 0 && (
-          <div className="flex justify-between items-center text-sm font-bold text-primary">
+          <div className="flex justify-between items-center text-sm font-bold text-primary-foreground">
             <span>Kedvezmény (-{formatHuf(order.discount)})</span>
           </div>
         )}
@@ -256,7 +256,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
       <div className="text-right">
         <div className="flex items-center gap-1 mb-1 justify-end">
           {[1, 2, 3, 4, 5].map((star) => (
-            <Star key={star} className={`w-3 h-3 ${star <= existingReview.rating ? "fill-primary text-primary" : "text-neutral-700"}`} />
+            <Star key={star} className={`w-3 h-3 ${star <= existingReview.rating ? "fill-primary text-primary-foreground" : "text-neutral-700"}`} />
           ))}
         </div>
         <button
@@ -274,7 +274,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
     return (
       <Button 
         onClick={() => setIsOpen(true)}
-        className="h-10 rounded-lg border border-primary bg-transparent px-6 font-black uppercase tracking-widest text-[10px] text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+        className="h-10 rounded-lg border border-primary-foreground/35 bg-transparent px-6 font-black uppercase tracking-widest text-[10px] text-primary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
       >
         Értékelem
       </Button>
@@ -293,7 +293,7 @@ function ReviewForm({ productId, userId, existingRatings }: { productId: string,
               onMouseEnter={() => setHoveredRating(star)}
               onMouseLeave={() => setHoveredRating(0)}
               className={`w-5 h-5 transition-colors ${
-                star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-neutral-700"
+                star <= (hoveredRating || rating) ? "fill-primary text-primary-foreground" : "text-neutral-700"
               }`}
             />
           ))}

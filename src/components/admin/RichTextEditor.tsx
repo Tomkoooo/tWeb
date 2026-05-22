@@ -141,8 +141,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
               item.action?.()
             }}
             className={cn(
-              "w-8 h-8 rounded-none hover:bg-primary/20 hover:text-primary transition-colors",
-              item.isActive?.() ? "bg-primary/20 text-primary" : "text-neutral-400"
+              "w-8 h-8 rounded-none hover:bg-white/10 hover:text-white transition-colors",
+              item.isActive?.() ? "bg-white/15 text-white" : "text-neutral-400"
             )}
             title={item.title}
           >
@@ -164,7 +164,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-primary underline cursor-pointer",
+          class: "admin-link-accent cursor-pointer",
         },
       }),
     ],

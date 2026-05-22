@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CmsEditProvider } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import type { HomePageDeps } from "@/templates/types"
 import type { HomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
+import { resolveContactDisplayField } from "@/lib/contact-display"
+
 type Props = {
   templateId: string
   /** Mirrors storefront chrome links (shop/cart) in the template Navbar/Footer. */
@@ -133,9 +135,9 @@ export function VisualHomepageEditor({
     const block = snapshot.blocks.find((item) => item.type === "contact" && item.enabled !== false)
     const data = block?.data as { email?: string; phone?: string; address?: string } | undefined
     return {
-      email: data?.email || dependencies.company.email,
-      phone: data?.phone || dependencies.company.phone,
-      address: data?.address || dependencies.company.address,
+      email: resolveContactDisplayField(data?.email, dependencies.company.email),
+      phone: resolveContactDisplayField(data?.phone, dependencies.company.phone),
+      address: resolveContactDisplayField(data?.address, dependencies.company.address),
     }
   }, [dependencies.company.address, dependencies.company.email, dependencies.company.phone, snapshot.blocks])
 
@@ -370,14 +372,14 @@ export function VisualHomepageEditor({
             <button
               type="button"
               onClick={() => setSettingsTab("theme")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary text-white" : "border-white/20 text-neutral-300"}`}
+              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
             >
               Téma
             </button>
             <button
               type="button"
               onClick={() => setSettingsTab("seo")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary text-white" : "border-white/20 text-neutral-300"}`}
+              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
             >
               SEO
             </button>

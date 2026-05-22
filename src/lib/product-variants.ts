@@ -10,6 +10,7 @@ type VariantShape = {
   nameOverride?: string;
   descriptionOverride?: string;
   netPrice: number;
+  grossPrice?: number;
   discount?: number;
   stock?: number;
   isActive?: boolean;
@@ -23,8 +24,10 @@ type ProductShape = {
   description: string;
   images?: string[];
   netPrice: number;
+  grossPrice?: number;
   discount?: number;
   stock?: number;
+  vatPercent?: number;
   seo?: SeoShape;
   variants?: VariantShape[];
   requireVariantSelection?: boolean;
@@ -73,6 +76,7 @@ export function resolveProductView(product: ProductShape, variantId?: string | n
       : product.discount || 0;
 
   const netPrice = selectedVariant?.netPrice ?? product.netPrice;
+  const grossPrice = selectedVariant?.grossPrice ?? product.grossPrice;
   const discount = selectedVariant?.discount ?? product.discount ?? 0;
   const stock = selectedVariant?.stock ?? product.stock ?? 0;
   const name = selectedVariant?.nameOverride || product.name;
@@ -95,6 +99,7 @@ export function resolveProductView(product: ProductShape, variantId?: string | n
     description,
     images,
     netPrice,
+    grossPrice,
     discount,
     stock,
     seo,

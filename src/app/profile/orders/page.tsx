@@ -36,7 +36,7 @@ export default function OrdersPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
       </div>
     )
   }
@@ -49,7 +49,7 @@ export default function OrdersPage() {
     const breakdown = totalsBreakdownForOrderSnapshot(order)
     return (
       <Link href={`/profile/orders/${order._id}`}>
-        <div className="group flex h-full cursor-pointer flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md">
+        <div className="group flex h-full cursor-pointer flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary-foreground/40 hover:shadow-md">
           <div>
             <div className="mb-4 flex items-start justify-between">
               <div className="space-y-1">
@@ -72,12 +72,12 @@ export default function OrdersPage() {
               {order.items.map((item: any, i: number) => (
                 <p key={i} className="truncate text-sm font-medium text-foreground">
                   {item.quantity}x {item.name}
-                  {item.variantLabel ? <span className="text-primary"> ({item.variantLabel})</span> : null}
+                  {item.variantLabel ? <span className="text-primary-foreground"> ({item.variantLabel})</span> : null}
                 </p>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-border pt-4 transition-colors group-hover:border-primary/30">
+          <div className="flex items-center justify-between border-t border-border pt-4 transition-colors group-hover:border-primary-foreground/30">
             <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Összesen</span>
             <div className="text-right">
               <span className="block text-lg font-black text-foreground">{formatHuf(breakdown.gross)}</span>
@@ -105,7 +105,7 @@ export default function OrdersPage() {
         <>
           {ongoingOrders.length > 0 && (
             <div className="space-y-6">
-              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">Folyamatban lévő</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-foreground">Folyamatban lévő</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {ongoingOrders.map((order) => (
                   <OrderCard key={order._id} order={order} />

@@ -60,7 +60,11 @@ function summarizeCheckoutPayload(orderData: unknown): Record<string, unknown> {
     glsParcelPoint:
       o.glsParcelPoint && typeof o.glsParcelPoint === "object" ?
         { id: o.glsParcelPoint.id, name: o.glsParcelPoint.name }
-      : undefined,
+        : undefined,
+    foxpostParcelPoint:
+      o.foxpostParcelPoint && typeof o.foxpostParcelPoint === "object"
+        ? { id: o.foxpostParcelPoint.id, name: o.foxpostParcelPoint.name }
+        : undefined,
   };
 }
 

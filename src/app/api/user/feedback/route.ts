@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     await ShopFeedback.findOneAndUpdate(
       { user: session.user.id },
       { rating, comment, status: "pending" },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     return NextResponse.json({ success: true });

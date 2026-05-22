@@ -23,7 +23,7 @@ export default async function AdminProductSuggestionsPage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          TERMÉK <span className="text-primary underline decoration-primary/10 underline-offset-8">JAVASLATOK</span>
+          TERMÉK <span className="admin-headline-accent">JAVASLATOK</span>
         </h1>
         <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px] max-w-2xl">
           Kosár → pénztár gombnál megjelenő javasolt termékek. Nettó árszűrő a katalógus szűrével egyezik; termékek bruttó javaslatánál a termék saját ÁFA kulcsát használjuk.

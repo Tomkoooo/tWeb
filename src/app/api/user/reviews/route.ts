@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         description: comment?.trim() || "Értékelés szöveges megjegyzés nélkül.",
         status: "pending",
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     return NextResponse.json({ success: true });

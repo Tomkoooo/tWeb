@@ -17,7 +17,7 @@ export const EmailTemplateService = {
     return EmailTemplate.findOneAndUpdate(
       { type },
       { $set: data },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
   }
 };

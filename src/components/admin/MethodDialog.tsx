@@ -18,11 +18,20 @@ interface MethodDialogProps {
   title: string
   action: (formData: FormData) => Promise<void>
   initialData?: any
+  /** When set, shows provider type (standard / GLS / Foxpost) for shipping methods. */
+  shippingProviderMode?: boolean
 }
 
-export function MethodDialog({ children, title, action, initialData }: MethodDialogProps) {
+export function MethodDialog({
+  children,
+  title,
+  action,
+  initialData,
+  shippingProviderMode = false,
+}: MethodDialogProps) {
   const [open, setOpen] = React.useState(false)
   const [isActive, setIsActive] = React.useState(initialData?.isActive ?? true)
+  const [provider, setProvider] = React.useState(initialData?.provider ?? "standard")
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -39,6 +48,28 @@ export function MethodDialog({ children, title, action, initialData }: MethodDia
           await action(formData)
           setOpen(false)
         }} className="space-y-8 py-6">
+          {shippingProviderMode ? (
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                Típus (pénztár)
+              </Label>
+              <select
+                name="provider"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="h-12 w-full border border-white/10 bg-black px-3 text-sm font-bold uppercase tracking-widest text-white"
+              >
+                <option value="standard">Házhozszállítás / standard</option>
+                <option value="gls">GLS csomagpont (térkép + ár)</option>
+                <option value="foxpost">Foxpost automata (APT + ár)</option>
+              </select>
+              <p className="text-[10px] text-neutral-500 leading-relaxed">
+                GLS/Foxpost típusnál a pénztárban megjelenik a választó; az ár itt állítható. A GLS/Foxpost
+                kapcsolókat a Webshop → GLS / Foxpost menüben kapcsold be.
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Megnevezés</Label>
             <Input 

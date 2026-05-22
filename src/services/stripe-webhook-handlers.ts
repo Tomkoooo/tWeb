@@ -57,7 +57,7 @@ export async function handleCheckoutSessionCompletedLike(checkoutSession: {
         stripePaymentIntentId: paymentIntentId || undefined,
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
 
   const tempOrderId = tempOrder?._id?.toString() || checkoutSession.metadata?.tempOrderId;
@@ -94,7 +94,7 @@ export async function handleCheckoutSessionExpired(checkoutSession: { id: string
   const temp = await TempOrder.findOneAndUpdate(
     { stripeSessionId: sessionId, status: { $in: ["created", "checkout_started"] } },
     { $set: { status: "expired" } },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
   if (temp?._id) {
     await releaseReservationsForTempOrder(temp._id.toString(), { states: ["pending"] });

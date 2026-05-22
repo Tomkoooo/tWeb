@@ -18,7 +18,7 @@ const ITEMS_PER_PAGE = 5
 
 const ATELIER_CHECKOUT_SUGGESTION_PRESENTATION: CheckoutSuggestionsDialogPresentation = {
   contentClassName:
-    "max-w-lg rounded-3xl border-2 border-border bg-card font-serif text-card-foreground shadow-2xl sm:max-w-lg",
+    "max-w-lg overflow-hidden rounded-3xl border-2 border-border bg-card font-serif text-card-foreground shadow-2xl sm:max-w-lg",
   titleClassName: "font-serif text-2xl font-semibold normal-case tracking-tight text-foreground italic",
   descriptionClassName: "font-serif text-sm normal-case text-muted-foreground",
   listClassName: "space-y-2",
@@ -69,7 +69,7 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
             <p className="mt-4 font-serif text-muted-foreground">
               Jelenleg nem lehet kosarat leadni. Látogass vissza később, vagy írj nekünk.
             </p>
-            <Button asChild className="mt-8 rounded-full border-2 border-primary font-serif uppercase tracking-widest">
+            <Button asChild className="mt-8 rounded-full border-2 border-primary-foreground/35 font-serif uppercase tracking-widest">
               <Link href="/">Vissza a főoldalra</Link>
             </Button>
           </div>
@@ -99,7 +99,7 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
         <header className="px-4 pb-8 sm:px-0">
           <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.4em] text-muted-foreground">Kosár</p>
           <h1 className="mt-2 font-serif text-4xl font-semibold md:text-5xl">
-            Tételek <span className="text-primary">({totalItems})</span>
+            Tételek <span className="text-primary-foreground">({totalItems})</span>
           </h1>
         </header>
 
@@ -128,11 +128,11 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <Link href={`/products/${item.slug}`} className="font-serif text-xl font-semibold hover:text-primary">
+                  <Link href={`/products/${item.slug}`} className="font-serif text-xl font-semibold hover:text-primary-foreground">
                     {item.name}
                   </Link>
                   {item.variantLabel ? (
-                    <p className="mt-1 font-serif text-xs uppercase tracking-widest text-primary">{item.variantLabel}</p>
+                    <p className="mt-1 font-serif text-xs uppercase tracking-widest text-primary-foreground">{item.variantLabel}</p>
                   ) : null}
                   <div className="mt-4 inline-flex items-center overflow-hidden rounded-full border border-border">
                     <Button

@@ -52,7 +52,7 @@ export default async function AdminLayout({
     : null
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white">
+    <div className="admin-shell min-h-screen bg-[#0A0A0B] text-white">
       {/* Mobile Header */}
       <div className="lg:hidden h-20 border-b border-white/5 bg-black/50 backdrop-blur-xl px-6 flex items-center justify-between sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors">
@@ -61,7 +61,7 @@ export default async function AdminLayout({
         </Link>
         
         <span className="text-sm font-heading font-black tracking-tight uppercase italic">
-          {adminBrandName} <span className="text-primary underline decoration-primary/20 underline-offset-4">Admin</span>
+          {adminBrandName} <span className="admin-headline-accent admin-headline-accent-tight">Admin</span>
         </span>
 
         <Sheet>

@@ -17,7 +17,7 @@ export default async function MaintenancePage() {
       <div className="w-full max-w-2xl border border-white/10 bg-white/5 p-10 md:p-14 text-center space-y-7">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-            <Wrench className="w-8 h-8 text-primary" />
+            <Wrench className="w-8 h-8 text-primary-foreground" />
           </div>
         </div>
 

@@ -20,6 +20,8 @@ export interface IProductVariant {
   nameOverride?: string;
   descriptionOverride?: string;
   netPrice: number;
+  /** Merchant-entered customer gross (HUF); when set, overrides netToGross for display/checkout. */
+  grossPrice?: number;
   discount: number;
   stock: number;
   isActive: boolean;
@@ -44,6 +46,7 @@ export interface IProduct extends Document {
   requireVariantSelection: boolean;
   stock: number;
   netPrice: number;
+  grossPrice?: number;
   discount: number;
   category: mongoose.Types.ObjectId | any;
   seo: {
@@ -54,6 +57,8 @@ export interface IProduct extends Document {
   slug: string;
   isActive: boolean;
   isVisible: boolean;
+  /** Lower = earlier in homepage featured section (within category / manual lists). */
+  featuredListIndex?: number | null;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -85,6 +90,7 @@ const ProductSchema = new Schema<IProduct>(
         nameOverride: { type: String },
         descriptionOverride: { type: String },
         netPrice: { type: Number, required: true },
+        grossPrice: { type: Number },
         discount: { type: Number, default: 0 },
         stock: { type: Number, required: true, default: 0 },
         isActive: { type: Boolean, default: true },
@@ -100,6 +106,7 @@ const ProductSchema = new Schema<IProduct>(
     requireVariantSelection: { type: Boolean, default: false },
     stock: { type: Number, required: true, default: 0 },
     netPrice: { type: Number, required: true },
+    grossPrice: { type: Number },
     discount: { type: Number, default: 0 },
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     seo: {
@@ -110,6 +117,7 @@ const ProductSchema = new Schema<IProduct>(
     slug: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: false },
     isVisible: { type: Boolean, default: true }, // "Disabled but not hidden" by default
+    featuredListIndex: { type: Number, default: null },
   },
   { timestamps: true }
 );

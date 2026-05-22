@@ -23,7 +23,9 @@ import {
   Store,
   Layout as LayoutIcon,
   Sparkles,
+  ListOrdered,
   Globe2,
+  MapPin,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -72,10 +74,12 @@ const menuGroups: Array<{
       { icon: Mail, label: "Emailek", href: "/admin/emails" },
       { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
       { icon: Truck, label: "Szállítás", href: "/admin/shipping", requiresShop: true },
+      { icon: MapPin, label: "GLS / Foxpost", href: "/admin/shop/flags", requiresShop: true },
       { icon: CreditCard, label: "Fizetés", href: "/admin/payment", requiresShop: true },
       { icon: Tag, label: "Kuponok", href: "/admin/coupons", requiresShop: true },
       { icon: Sparkles, label: "Termék javaslatok", href: "/admin/shop/product-suggestions", requiresShop: true },
       { icon: Globe2, label: "Ország / kereskedés", href: "/admin/shop/trading", requiresShop: true },
+      { icon: ListOrdered, label: "Kiemelt termékek", href: "/admin/shop/featured", requiresShop: true },
     ],
   },
 ]
@@ -117,12 +121,12 @@ export function AdminSidebar({
   })
 
   return (
-    <div className={cn("h-full flex flex-col bg-[#0A0A0B]", className)}>
+    <div className={cn("admin-shell h-full flex flex-col bg-[#0A0A0B]", className)}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-3 group" onClick={onAction}>
 
           <span className="text-2xl font-heading font-black tracking-tight text-white uppercase italic">
-            {sidebarName} <span className="text-primary underline decoration-primary/20 underline-offset-4">Admin</span>
+            {sidebarName} <span className="admin-headline-accent admin-headline-accent-tight">Admin</span>
           </span>
         </Link>
         
@@ -145,11 +149,11 @@ export function AdminSidebar({
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
                 isActive 
-                  ? "bg-primary text-white shadow-lg shadow-accent/10" 
+                  ? "bg-white/15 text-white shadow-lg shadow-black/20" 
                   : "text-neutral-500 hover:text-white hover:bg-white/5"
               )}
             >
-              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-600")} />
+              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
               {item.label}
             </Link>
           )
@@ -169,11 +173,11 @@ export function AdminSidebar({
                 className={cn(
                   "flex w-full items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
                   isGroupActive
-                    ? "bg-primary/15 text-white"
+                    ? "bg-white/15 text-white"
                     : "text-neutral-500 hover:text-white hover:bg-white/5"
                 )}
               >
-                <group.icon className={cn("w-5 h-5", isGroupActive ? "text-white" : "text-neutral-600")} />
+                <group.icon className={cn("w-5 h-5", isGroupActive ? "text-white" : "text-neutral-400")} />
                 <span className="flex-1 text-left">{group.label}</span>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen ? "rotate-180" : "")} />
               </button>
@@ -191,11 +195,11 @@ export function AdminSidebar({
                         className={cn(
                           "flex items-center gap-3 px-4 py-2.5 rounded-none text-xs font-black uppercase tracking-widest transition-all duration-300",
                           isActive
-                            ? "bg-primary text-white shadow-lg shadow-accent/10"
+                            ? "bg-white/15 text-white shadow-lg shadow-black/20"
                             : "text-neutral-500 hover:text-white hover:bg-white/5"
                         )}
                       >
-                        <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-neutral-600")} />
+                        <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-neutral-400")} />
                         {item.label}
                       </Link>
                     )
@@ -216,11 +220,11 @@ export function AdminSidebar({
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
                 isActive
-                  ? "bg-primary text-white shadow-lg shadow-accent/10"
+                  ? "bg-white/15 text-white shadow-lg shadow-black/20"
                   : "text-neutral-500 hover:text-white hover:bg-white/5"
               )}
             >
-              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-600")} />
+              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
               {item.label}
             </Link>
           )

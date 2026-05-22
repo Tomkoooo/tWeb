@@ -218,14 +218,14 @@ export function DefaultModernVisualCmsChrome({
             <button
               type="button"
               onClick={() => setSettingsTab("theme")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary text-white" : "border-white/20 text-neutral-300"}`}
+              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
             >
               Téma
             </button>
             <button
               type="button"
               onClick={() => setSettingsTab("seo")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary text-white" : "border-white/20 text-neutral-300"}`}
+              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
             >
               SEO
             </button>

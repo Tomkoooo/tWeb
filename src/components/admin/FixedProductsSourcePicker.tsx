@@ -149,7 +149,7 @@ export function FixedProductsSourcePicker({
             autoComplete="off"
           />
           {searching ? (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-highlight" />
           ) : null}
         </div>
 
@@ -170,7 +170,7 @@ export function FixedProductsSourcePicker({
                         <FallbackImage src={p.image} alt="" width={44} height={44} className="h-full w-full object-cover" />
                       </div>
                       <span className="min-w-0 flex-1 text-sm font-semibold text-white">{p.name}</span>
-                      <Plus className="h-4 w-4 shrink-0 text-primary" />
+                      <Plus className="h-4 w-4 shrink-0 admin-icon-accent" />
                     </button>
                   </li>
                 ))}

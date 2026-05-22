@@ -23,7 +23,7 @@ export function InspectorTabs({ selectedBlock, onFieldChange }: Props) {
             key={item}
             type="button"
             onClick={() => setTab(item)}
-            className={`px-2 h-7 text-xs uppercase border ${tab === item ? "border-primary text-white" : "border-white/20 text-neutral-300"}`}
+            className={`px-2 h-7 text-xs uppercase border ${tab === item ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
           >
             {item}
           </button>

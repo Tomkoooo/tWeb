@@ -10,7 +10,6 @@ import { ShippingStep } from "@/components/checkout/ShippingStep"
 import { MethodsStep } from "@/components/checkout/MethodsStep"
 import { SummaryStep } from "@/components/checkout/SummaryStep"
 import type { CheckoutStepAppearance } from "@/components/checkout/checkout-appearance"
-import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls"
 import {
   formatHuf,
   priceBreakdownFromGross,
@@ -19,7 +18,13 @@ import {
   DEFAULT_VAT_PERCENT,
 } from "@/lib/pricing"
 import { getCountryDisplayName, formatAllowedCountriesList, normalizeIso2 } from "@/lib/country-codes"
+import { checkoutPrefillFromUserProfile } from "@/lib/checkout-profile-prefill"
 import type { TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import {
+  isFoxpostParcelShippingMethod,
+  isGlsParcelShippingMethod,
+  offersOnlyParcelLockerShipping,
+} from "@/lib/shipping-providers"
 import { useCartStore, type CartItem } from "@/store/useCartStore"
 
 export const CHECKOUT_WIZARD_STEPS = [
@@ -60,6 +65,7 @@ const initialForm = () => ({
     shippingMethod: "",
     paymentMethod: "",
     glsParcelPoint: null as any,
+    foxpostParcelPoint: null as any,
   },
   coupon: null as any,
   /** Logged-in users only; sent to API, default on */
@@ -89,12 +95,45 @@ export function useCheckoutWizardModel(
   const items = useCartStore((s) => s.items)
   const cartTotalPrice = useCartStore((s) => s.totalPrice)
   const clearCart = useCartStore((s) => s.clearCart)
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [stripeRedirectHold, setStripeRedirectHold] = React.useState<StripeRedirectHold | null>(null)
   const [tradingLimits, setTradingLimits] = React.useState<TradingLimits | null>(null)
   const router = useRouter()
+
+  const parcelOnlyShipping = React.useMemo(
+    () => offersOnlyParcelLockerShipping(availableMethods?.shippingMethods),
+    [availableMethods?.shippingMethods]
+  )
+
+  const activeSteps = React.useMemo(
+    () =>
+      parcelOnlyShipping
+        ? CHECKOUT_WIZARD_STEPS.filter((s) => s.id !== "shipping")
+        : [...CHECKOUT_WIZARD_STEPS],
+    [parcelOnlyShipping]
+  )
+
+  React.useEffect(() => {
+    if (!parcelOnlyShipping) return
+    setFormData((prev) =>
+      prev.shipping.isSameAsBilling
+        ? prev
+        : {
+            ...prev,
+            shipping: {
+              ...prev.shipping,
+              isSameAsBilling: true,
+            },
+          }
+    )
+  }, [parcelOnlyShipping])
+
+  React.useEffect(() => {
+    if (currentStep < activeSteps.length) return
+    setCurrentStep(Math.max(0, activeSteps.length - 1))
+  }, [activeSteps.length, currentStep])
 
   React.useEffect(() => {
     const load = async () => {
@@ -169,22 +208,64 @@ export function useCheckoutWizardModel(
   }, [])
 
   React.useEffect(() => {
-    if (session?.user) {
-      setFormData((prev) => ({
-        ...prev,
-        billing: {
-          ...prev.billing,
-          name: session.user.name || "",
-          email: session.user.email || prev.billing.email,
-        },
-        shipping: {
-          ...prev.shipping,
-          name: session.user.name || "",
-          email: session.user.email || prev.shipping.email,
-        },
-      }))
+    if (sessionStatus !== "authenticated" || !session?.user) return
+
+    let cancelled = false
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/user/profile")
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (cancelled || data?.error) return
+
+        const prefill = checkoutPrefillFromUserProfile(data, {
+          email: session.user.email,
+          name: session.user.name,
+        })
+
+        setFormData((prev) => {
+          let billing = { ...prev.billing }
+          let shipping = { ...prev.shipping }
+          if (prefill) {
+            billing = { ...billing, ...prefill.billing }
+            shipping = { ...shipping, ...prefill.shipping }
+          } else {
+            if (session.user.name) {
+              billing.name = billing.name || session.user.name
+              shipping.name = shipping.name || session.user.name
+            }
+            if (session.user.email) {
+              billing.email = billing.email || session.user.email
+              shipping.email = shipping.email || session.user.email
+            }
+          }
+
+          const savedBilling = data.billingInfo as { phone?: string; email?: string } | undefined
+          const savedShipping = data.shippingAddress as { phone?: string; email?: string } | undefined
+          if (savedBilling?.phone?.trim()) {
+            billing.phone = billing.phone || savedBilling.phone.trim()
+          }
+          if (savedBilling?.email?.trim()) {
+            billing.email = billing.email || savedBilling.email.trim()
+          }
+          if (savedShipping?.phone?.trim()) {
+            shipping.phone = shipping.phone || savedShipping.phone.trim()
+          }
+          if (savedShipping?.email?.trim()) {
+            shipping.email = shipping.email || savedShipping.email.trim()
+          }
+          return { ...prev, billing, shipping }
+        })
+      } catch {
+        /* profile prefill is best-effort */
+      }
     }
-  }, [session])
+
+    void loadProfile()
+    return () => {
+      cancelled = true
+    }
+  }, [sessionStatus, session?.user?.email, session?.user?.name])
 
   const selectedShipping = availableMethods?.shippingMethods?.find(
     (m: any) => m._id === formData.methods.shippingMethod
@@ -244,7 +325,8 @@ export function useCheckoutWizardModel(
   }, [totals, items])
 
   const nextStep = React.useCallback(() => {
-    if (currentStep === 0) {
+    const stepId = activeSteps[currentStep]?.id
+    if (stepId === "billing") {
       const b = formData.billing
       if (
         !b.name ||
@@ -275,7 +357,7 @@ export function useCheckoutWizardModel(
         )
         return
       }
-    } else if (currentStep === 1) {
+    } else if (stepId === "shipping") {
       const shipCode = formData.shipping.isSameAsBilling
         ? normalizeIso2(formData.billing.countryCode)
         : normalizeIso2(formData.shipping.countryCode)
@@ -302,21 +384,28 @@ export function useCheckoutWizardModel(
           return
         }
       }
-    } else if (currentStep === 2) {
+    } else if (stepId === "methods") {
       if (!formData.methods.shippingMethod || !formData.methods.paymentMethod) {
         toast.error("Kérjük, válasszon szállítási és fizetési módot!")
         return
       }
       if (
-        formData.methods.shippingMethod === GLS_FIXED_SHIPPING_METHOD_ID &&
+        isGlsParcelShippingMethod(formData.methods.shippingMethod, selectedShipping) &&
         !formData.methods.glsParcelPoint?.id
       ) {
         toast.error("Kérjük, válasszon GLS csomagpontot!")
         return
       }
+      if (
+        isFoxpostParcelShippingMethod(formData.methods.shippingMethod, selectedShipping) &&
+        !formData.methods.foxpostParcelPoint?.id
+      ) {
+        toast.error("Kérjük, válasszon Foxpost csomagautomatát!")
+        return
+      }
     }
-    setCurrentStep((prev) => Math.min(prev + 1, CHECKOUT_WIZARD_STEPS.length - 1))
-  }, [currentStep, formData, tradingLimits])
+    setCurrentStep((prev) => Math.min(prev + 1, activeSteps.length - 1))
+  }, [activeSteps, currentStep, formData, selectedShipping, tradingLimits])
 
   const prevStep = React.useCallback(() => {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
@@ -365,6 +454,7 @@ export function useCheckoutWizardModel(
       shippingMethod: formData.methods.shippingMethod,
       paymentMethod: formData.methods.paymentMethod,
       glsParcelPoint: formData.methods.glsParcelPoint || undefined,
+      foxpostParcelPoint: formData.methods.foxpostParcelPoint || undefined,
       couponCodes: formData.coupon ? [formData.coupon.code] : [],
       subtotal: t.subtotal,
       shippingFee: t.shippingFee,
@@ -435,7 +525,7 @@ export function useCheckoutWizardModel(
   }, [stripeRedirectHold])
 
   const renderStep = React.useCallback(() => {
-    const stepId = CHECKOUT_WIZARD_STEPS[currentStep]?.id
+    const stepId = activeSteps[currentStep]?.id
     switch (stepId) {
       case "billing":
         return (
@@ -479,12 +569,23 @@ export function useCheckoutWizardModel(
       default:
         return null
     }
-  }, [availableMethods, currentStep, formData, items, session?.user, stepAppearance, totals.subtotal, tradingLimits])
+  }, [
+    activeSteps,
+    availableMethods,
+    currentStep,
+    formData,
+    items,
+    session?.user,
+    stepAppearance,
+    totals.subtotal,
+    tradingLimits,
+  ])
 
   return {
     currentStep,
     setCurrentStep,
-    steps: CHECKOUT_WIZARD_STEPS,
+    steps: activeSteps,
+    parcelOnlyShipping,
     formData,
     setFormData,
     availableMethods,

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import Stripe from "stripe";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
@@ -21,6 +20,19 @@ export const runtime = "nodejs";
 function toStripeHufAmount(amount: number): number {
   return Math.max(1, Math.round(Number(amount || 0) * 100));
 }
+
+type StripeCheckoutLineItem = {
+  quantity: number;
+  price_data: {
+    currency: "huf";
+    unit_amount: number;
+    product_data: {
+      name: string;
+      description?: string;
+      metadata?: Record<string, string>;
+    };
+  };
+};
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -82,7 +94,7 @@ export async function POST(req: NextRequest) {
 
       const stripe = getStripeClient();
       const baseUrl = getAppBaseUrl();
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = validatedOrderData.items.map((item) => ({
+      const lineItems: StripeCheckoutLineItem[] = validatedOrderData.items.map((item) => ({
         quantity: item.quantity,
         price_data: {
           currency: "huf",

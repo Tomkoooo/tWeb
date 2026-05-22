@@ -265,7 +265,7 @@ export function Hero({
                     {isDefaultTitle ? (
                       <>
                         LOREM
-                        <span className="block text-primary">IPSUM DOLOR</span>
+                        <span className="block text-primary-foreground">IPSUM DOLOR</span>
                       </>
                     ) : (
                       <span className="block">
@@ -356,8 +356,8 @@ export function Hero({
               {displayBadges.map((badge, i) => {
                 const parsed = parseBadge(badge)
                 return (
-                <div key={i} className="flex flex-row sm:flex-col items-center lg:items-start justify-center sm:justify-start gap-3 sm:gap-1 p-3 border border-border/40 rounded-xl bg-muted/40 hover:border-primary/30 transition-all duration-300">
-                  <DynamicLucideIcon name={parsed.icon} className="w-4 h-4 text-primary" />
+                <div key={i} className="flex flex-row sm:flex-col items-center lg:items-start justify-center sm:justify-start gap-3 sm:gap-1 p-3 border border-border/40 rounded-xl bg-muted/40 hover:border-primary-foreground/30 transition-all duration-300">
+                  <DynamicLucideIcon name={parsed.icon} className="w-4 h-4 text-primary-foreground" />
                   <div className="flex flex-col">
                     {cms.enabled ? (
                       <DropdownMenu

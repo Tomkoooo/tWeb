@@ -7,11 +7,13 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
+import { getOrderShippingTypeLabel, orderNeedsParcelLabel } from "@/lib/parcel-locker"
 
 type AdminOrdersSearchParams = Promise<{
   q?: string
   status?: string
   invoiceStatus?: string
+  shippingType?: string
   dateFrom?: string
   dateTo?: string
 }>
@@ -46,12 +48,12 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Rendelések <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
+          Rendelések <span className="admin-headline-accent">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">Kísérje figyelemmel a beérkező rendeléseket és frissítse az állapotukat.</p>
       </div>
 
-      <form className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white/5 border border-white/10 p-4">
+      <form className="grid grid-cols-1 items-end gap-3 bg-white/5 border border-white/10 p-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <input
           name="q"
           defaultValue={filters.q || ""}
@@ -81,20 +83,33 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
           <option value="failed">Failed</option>
           <option value="manual">Manual</option>
         </select>
+        <select
+          name="shippingType"
+          defaultValue={filters.shippingType || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden szállítás</option>
+          <option value="gls">GLS csomagpont</option>
+          <option value="foxpost">Foxpost</option>
+          <option value="standard">Standard</option>
+        </select>
         <input
           type="date"
           name="dateFrom"
           defaultValue={filters.dateFrom || ""}
           className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
         />
-        <div className="flex gap-2">
+        <div className="flex min-w-0 items-end gap-2 md:col-span-2 xl:col-span-1">
           <input
             type="date"
             name="dateTo"
             defaultValue={filters.dateTo || ""}
-            className="min-w-0 flex-1 h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
+            className="h-12 min-w-0 flex-1 rounded-none border border-white/10 bg-black px-4 text-sm text-white"
           />
-          <Button className="h-12 rounded-none bg-primary hover:bg-primary/80 text-white font-black uppercase tracking-widest text-[10px]">
+          <Button
+            type="submit"
+            className="h-12 shrink-0 rounded-none bg-primary font-black uppercase tracking-widest text-[10px] text-white hover:bg-primary/80"
+          >
             Szűrés
           </Button>
         </div>
@@ -108,6 +123,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Azonosító / Dátum</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Vásárló</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Termékek</th>
+                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Szállítás</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Állapot</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Számla</th>
                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Összeg</th>
@@ -117,7 +133,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
             <tbody className="divide-y divide-white/5">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center text-white/20 italic">
+                  <td colSpan={8} className="px-6 py-20 text-center text-white/20 italic">
                     <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-5" />
                     Még nem érkezett rendelés.
                   </td>
@@ -141,7 +157,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                     <td className="px-6 py-6">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                          <User className="w-3 h-3 text-primary" />
+                          <User className="w-3 h-3 admin-icon-accent" />
                           <span className="font-bold text-white uppercase tracking-tight italic">{order.billingInfo.name}</span>
                         </div>
                         <span className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">{order.shippingAddress.city}</span>
@@ -152,6 +168,18 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                         <Package className="w-4 h-4 text-neutral-700" />
                         <span className="font-black text-white text-sm tracking-widest">{order.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} DB</span>
                         <span className="text-[10px] text-neutral-600 font-black tracking-widest">({order.items.length} TÉTEL)</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">
+                          {getOrderShippingTypeLabel(order)}
+                        </span>
+                        {orderNeedsParcelLabel(order) ? (
+                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">
+                            Címke hiányzik
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-6 py-6">
@@ -189,7 +217,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                     </td>
                     <td className="px-6 py-6 text-right">
                       <Link href={`/admin/orders/${order._id}`}>
-                        <Button variant="ghost" size="icon" className="w-12 h-12 hover:bg-primary/20 text-neutral-500 hover:text-primary rounded-none border border-transparent hover:border-primary/30 transition-all shadow-lg" title="Megtekintés">
+                        <Button variant="ghost" size="icon" className="w-12 h-12 hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/30 transition-all shadow-lg" title="Megtekintés">
                           <Eye className="w-5 h-5" />
                         </Button>
                       </Link>

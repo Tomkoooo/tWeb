@@ -6,6 +6,11 @@ import Order from "@/models/Order"
 import { auth } from "@/auth"
 import { MailerService } from "@/services/mailer"
 import { GlsService } from "@/services/gls"
+import { FoxpostService } from "@/services/foxpost"
+import {
+  matchesOrderShippingTypeFilter,
+  type OrderShippingTypeFilter,
+} from "@/lib/parcel-locker"
 import mongoose from "mongoose"
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
@@ -23,6 +28,7 @@ type OrderFilters = {
   q?: string
   status?: string
   invoiceStatus?: string
+  shippingType?: string
   dateFrom?: string
   dateTo?: string
 }
@@ -43,7 +49,13 @@ export async function getOrders(filters: OrderFilters = {}) {
     }
   }
 
-  const orders = JSON.parse(JSON.stringify(await Order.find(query).sort({ createdAt: -1 })))
+  let orders = JSON.parse(JSON.stringify(await Order.find(query).sort({ createdAt: -1 })))
+
+  const shippingType = (filters.shippingType || "all") as OrderShippingTypeFilter
+  if (shippingType !== "all") {
+    orders = orders.filter((order: any) => matchesOrderShippingTypeFilter(order, shippingType))
+  }
+
   const search = String(filters.q || "").trim().toLowerCase()
   if (!search) return orders
 
@@ -143,6 +155,72 @@ export async function generateOrderGlsLabel(orderId: string) {
     const message = error instanceof Error ? error.message : "A GLS címke létrehozása sikertelen."
     order.glsLabel = {
       ...(order.glsLabel || {}),
+      lastError: message,
+    }
+    await order.save()
+    revalidatePath("/admin/orders")
+    revalidatePath(`/admin/orders/${orderId}`)
+    return { success: false, error: message }
+  }
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  return { success: true }
+}
+
+export async function generateOrderFoxpostShipment(orderId: string) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+  if (!order.foxpostParcelPoint?.id) {
+    throw new Error("Ehhez a rendeléshez nincs Foxpost csomagautomata mentve.")
+  }
+
+  const session = await auth()
+
+  let clFoxId = order.foxpostShipment?.clFoxId
+  let refCode = order.foxpostShipment?.refCode
+
+  try {
+    if (!clFoxId) {
+      const created = await FoxpostService.createParcelForOrder(order as unknown as IOrder)
+      clFoxId = created.clFoxId || created.barcode
+      refCode = created.refCode || order._id.toString().slice(-30)
+      if (!clFoxId) {
+        throw new Error("Foxpost csomag azonosító hiányzik a létrehozás után.")
+      }
+      order.foxpostShipment = {
+        ...(order.foxpostShipment || {}),
+        clFoxId,
+        refCode,
+        lastError: undefined,
+      }
+      await order.save()
+    }
+
+    const result = await FoxpostService.createShipmentForOrder(order as unknown as IOrder)
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      clFoxId: result.clFoxId,
+      refCode: result.refCode || refCode,
+      labelDataBase64: result.labelDataBase64,
+      labelPageSize: result.labelPageSize,
+      trackingStatus: result.trackingStatus,
+      labelUrl: `/api/admin/orders/${order._id.toString()}/foxpost-label`,
+      generatedAt: new Date(),
+      generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
+      lastError: undefined,
+    }
+    await order.save()
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "A Foxpost csomag/címke létrehozása sikertelen."
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      clFoxId: clFoxId || order.foxpostShipment?.clFoxId,
+      refCode: refCode || order.foxpostShipment?.refCode,
       lastError: message,
     }
     await order.save()

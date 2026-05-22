@@ -52,7 +52,7 @@ export function EditableImage({
             value={src}
             onChange={(event) => onChange(event.target.value)}
             placeholder="/api/media/..."
-            className="w-full bg-transparent border border-dashed border-white/20 px-2 py-1 text-xs text-white focus:outline-none focus:border-primary"
+            className="w-full bg-transparent border border-dashed border-white/20 px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-foreground/50"
           />
         </div>
       ) : null}

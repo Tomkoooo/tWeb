@@ -63,7 +63,7 @@ export function TopBar({
             key={item}
             type="button"
             onClick={() => onDeviceChange(item)}
-            className={`px-2 h-9 border text-xs uppercase ${device === item ? "border-primary text-white" : "border-white/20 text-white/70"}`}
+            className={`px-2 h-9 border text-xs uppercase ${device === item ? "border-primary-foreground/35 text-white" : "border-white/20 text-white/70"}`}
           >
             {item === "desktop" ? "Asztali" : item === "tablet" ? "Tablet" : "Mobil"}
           </button>

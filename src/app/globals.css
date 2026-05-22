@@ -171,3 +171,105 @@ h6 {
   -webkit-text-fill-color: initial !important;
   color: inherit !important;
 }
+
+/* Admin UI: theme-independent selection (dark panels) */
+.admin-item-selected {
+  border-color: color-mix(in oklab, white 40%, transparent);
+  background-color: color-mix(in oklab, white 15%, transparent);
+  color: white;
+  box-shadow: 0 0 0 1px color-mix(in oklab, white 30%, transparent);
+}
+
+.admin-item-idle {
+  border-color: color-mix(in oklab, white 10%, transparent);
+  color: rgb(212 212 212);
+}
+
+.admin-item-idle:hover {
+  border-color: color-mix(in oklab, white 25%, transparent);
+  background-color: color-mix(in oklab, white 5%, transparent);
+}
+
+.admin-action-outline {
+  border-color: color-mix(in oklab, white 20%, transparent);
+  background-color: transparent;
+  color: white;
+}
+
+.admin-action-outline:hover {
+  background-color: color-mix(in oklab, white 10%, transparent);
+}
+
+/* Admin shell is always dark; theme `primary` is for fills, not body text */
+.admin-headline-accent {
+  color: #ffffff;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in oklab, white 12%, transparent);
+  text-underline-offset: 0.5rem;
+}
+
+.admin-headline-accent-tight {
+  text-underline-offset: 0.25rem;
+}
+
+.admin-text-accent {
+  color: #ffffff;
+}
+
+.admin-value {
+  color: #ffffff;
+}
+
+.admin-icon-accent {
+  color: #ffffff;
+}
+
+.admin-icon-well {
+  background-color: color-mix(in oklab, white 10%, transparent);
+  border: 1px solid color-mix(in oklab, white 18%, transparent);
+}
+
+.admin-section-marker {
+  background-color: color-mix(in oklab, white 35%, transparent);
+}
+
+/* Admin shell: avoid theme primary on icon/text hovers (buttons use data-slot from shadcn) */
+.admin-shell [data-slot="button"][data-variant="ghost"]:hover,
+.admin-shell [data-slot="button"][data-variant="outline"]:hover {
+  background-color: color-mix(in oklab, white 10%, transparent) !important;
+  color: #ffffff !important;
+}
+
+.admin-shell [data-slot="button"][data-variant="ghost"]:hover svg,
+.admin-shell [data-slot="button"][data-variant="outline"]:hover svg {
+  color: #ffffff;
+}
+
+.admin-link-accent {
+  color: var(--color-highlight, #ffd700);
+}
+
+.admin-link-accent:hover {
+  text-decoration: underline;
+}
+
+/* Storefront: primary is a fill; accents use foreground/secondary on normal surfaces */
+.storefront-text-accent {
+  color: var(--primary-foreground);
+}
+
+.storefront-icon-accent {
+  color: var(--primary-foreground);
+}
+
+.storefront-border-accent {
+  border-color: color-mix(in oklab, var(--primary-foreground) 35%, transparent);
+}
+
+.storefront-link-accent {
+  color: var(--primary-foreground);
+}
+
+.storefront-link-accent:hover {
+  color: var(--secondary-foreground);
+}

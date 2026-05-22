@@ -165,7 +165,7 @@ async function seed() {
     await ShopContent.findOneAndUpdate(
       { key: item.key },
       item,
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
   }
 

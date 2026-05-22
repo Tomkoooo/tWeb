@@ -1,4 +1,5 @@
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
+import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import { PageContentService } from "@/services/page-content"
 import { getActiveChrome } from "@/lib/active-chrome"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
@@ -8,12 +9,18 @@ export default async function LandingPage() {
     await getActiveChrome()
   const homePageDef = template.pages.home
 
-  const [content, homepageDeps] = await Promise.all([
-    PageContentService.get(template.manifest.id, "page:home").catch(
-      () => homePageDef.defaultContent
-    ),
-    getHomepageRenderDependencies(),
-  ])
+  const content = await PageContentService.get<HomepageSnapshot>(template.manifest.id, "page:home").catch(
+    () => homePageDef.defaultContent as HomepageSnapshot
+  )
+  const productGridBlock = content.blocks.find(
+    (b) => b.type === "productGrid" && b.enabled !== false
+  )
+  const productGridData =
+    productGridBlock?.type === "productGrid" ? productGridBlock.data : undefined
+  const homepageDeps = await getHomepageRenderDependencies({
+    cmsSelectedProductIds: productGridData?.selectedProductIds,
+    maxItems: productGridData?.maxItems,
+  })
   const dependencies = { ...homepageDeps, templateId: template.manifest.id }
 
   const footerData = await resolveStorefrontFooterContact(template, {

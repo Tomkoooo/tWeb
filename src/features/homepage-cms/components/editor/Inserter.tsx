@@ -25,7 +25,7 @@ export function Inserter({
               key={definition.type}
               type="button"
               onClick={() => onInsert(definition.type)}
-              className="px-2 h-7 border border-white/20 text-[10px] uppercase text-white hover:border-primary"
+              className="px-2 h-7 border border-white/20 text-[10px] uppercase text-white hover:border-primary-foreground/40"
             >
               {definition.label}
             </button>

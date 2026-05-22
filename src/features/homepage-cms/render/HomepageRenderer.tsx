@@ -29,13 +29,15 @@ export function HomepageRenderer({ blocks, reviews, products, categories, compan
         if (!Component) return null
         const selectedProducts =
           block.type === "productGrid"
-            ? products
-                .filter((product) =>
-                  (block.data.selectedProductIds as string[]).length
-                    ? (block.data.selectedProductIds as string[]).includes(product.id)
-                    : true
-                )
-                .map((product) => ({
+            ? (() => {
+                const ids = block.data.selectedProductIds as string[]
+                const byId = new Map(products.map((p) => [p.id, p]))
+                const rows =
+                  ids.length > 0
+                    ? ids.map((id) => byId.get(id)).filter((p): p is (typeof products)[0] => Boolean(p))
+                    : products
+                return rows
+              })().map((product) => ({
                   id: product.id,
                   name: product.name,
                   slug: product.slug,

@@ -87,7 +87,7 @@ export default function CheckoutSuccessPage() {
           <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-10">
             {status === "processing" ? (
               <div className="w-full h-full bg-primary/20 rounded-full flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <Loader2 className="w-12 h-12 text-primary-foreground animate-spin" />
               </div>
             ) : status === "error" ? (
               <div className="w-full h-full bg-amber-500/15 rounded-full flex items-center justify-center">
@@ -103,7 +103,7 @@ export default function CheckoutSuccessPage() {
           {status === "processing" && isStripeFlow && (
             <>
               <h1 className="text-4xl md:text-5xl font-heading font-black text-white mb-6 uppercase tracking-tighter italic">
-                FIZETÉS <span className="text-primary">ELLENŐRZÉSE</span>
+                FIZETÉS <span className="text-primary-foreground">ELLENŐRZÉSE</span>
               </h1>
               <p className="text-neutral-400 text-lg mb-12 max-w-md mx-auto font-medium">
                 A fizetés visszaigazolása folyamatban van. Kérjük, maradj az oldalon, ne zárd be a böngészőt.

@@ -9,6 +9,7 @@ import { useSession, signIn } from "next-auth/react"
 import { toast } from "sonner"
 import type { FooterSettings } from "@/services/footer-settings"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import { hasContactFieldValue } from "@/lib/contact-display"
 
 type LegalLink = {
   key: "impresszum" | "terms" | "gdpr"
@@ -37,9 +38,9 @@ interface FooterProps {
 export function Footer({
   brandName = "Generic Webshop",
   logoSrc = "/generic-logo.svg",
-  email = "hello@example.com",
-  phone = "+1 555 000 0000",
-  address = "123 Example Street, Example City",
+  email = "",
+  phone = "",
+  address = "",
   categories = [],
   settings,
   cmsEditable = false,
@@ -241,7 +242,7 @@ export function Footer({
                 const Icon = socialIconMap[item.platform]
                 return (
                   <Link key={item.platform} href={item.url || "#"} target={item.url ? "_blank" : undefined}>
-                    <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none bg-muted/40 border border-border text-muted-foreground hover:text-primary hover:bg-muted/60 transition-all">
+                    <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none bg-muted/40 border border-border text-muted-foreground hover:text-primary-foreground hover:bg-muted/60 transition-all">
                       <Icon className="w-6 h-6" />
                     </Button>
                   </Link>
@@ -361,18 +362,24 @@ export function Footer({
               <h3 className="text-foreground font-heading font-black text-xl uppercase tracking-widest">{settings?.contactTitle || "Contact"}</h3>
             )}
             <ul className="space-y-6">
-              <li className="flex items-start gap-5 text-neutral-400">
-                <MapPin className="w-6 h-6 text-primary shrink-0" />
-                <span className="text-base font-medium">{address}</span>
-              </li>
-              <li className="flex items-center gap-5 text-neutral-400">
-                <Phone className="w-6 h-6 text-primary shrink-0" />
-                <span className="text-base font-medium">{phone}</span>
-              </li>
-              <li className="flex items-center gap-5 text-neutral-400">
-                <Mail className="w-6 h-6 text-primary shrink-0" />
-                <span className="text-base font-medium uppercase tracking-tighter">{email}</span>
-              </li>
+              {hasContactFieldValue(address) || cmsEditable ? (
+                <li className="flex items-start gap-5 text-neutral-400">
+                  <MapPin className="w-6 h-6 text-primary-foreground shrink-0" />
+                  <span className="text-base font-medium">{address || (cmsEditable ? "—" : "")}</span>
+                </li>
+              ) : null}
+              {hasContactFieldValue(phone) || cmsEditable ? (
+                <li className="flex items-center gap-5 text-neutral-400">
+                  <Phone className="w-6 h-6 text-primary-foreground shrink-0" />
+                  <span className="text-base font-medium">{phone || (cmsEditable ? "—" : "")}</span>
+                </li>
+              ) : null}
+              {hasContactFieldValue(email) || cmsEditable ? (
+                <li className="flex items-center gap-5 text-neutral-400">
+                  <Mail className="w-6 h-6 text-primary-foreground shrink-0" />
+                  <span className="text-base font-medium uppercase tracking-tighter">{email || (cmsEditable ? "—" : "")}</span>
+                </li>
+              ) : null}
             </ul>
 
             {newsletterEnabled ? (
@@ -383,7 +390,7 @@ export function Footer({
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
                   placeholder={settings?.newsletterPlaceholder || "Your email"}
-                  className="w-full h-11 bg-surface border border-border px-3 text-foreground text-sm focus:outline-none focus:border-primary"
+                  className="w-full h-11 bg-surface border border-border px-3 text-foreground text-sm focus:outline-none focus:border-primary-foreground/50"
                   disabled={Boolean(session?.user?.email)}
                 />
                 <Button
@@ -429,7 +436,7 @@ export function Footer({
             variant="outline"
             size="icon"
             onClick={scrollToTop}
-            className="w-14 h-14 rounded-none bg-surface/40 border-border/40 text-primary hover:bg-primary hover:text-primary-foreground transition-all shadow-2xl"
+            className="w-14 h-14 rounded-none bg-surface/40 border-border/40 text-primary-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-2xl"
           >
             <ChevronUp className="w-6 h-6" />
           </Button>

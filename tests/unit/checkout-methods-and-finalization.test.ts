@@ -6,6 +6,7 @@ const shippingFindMock = vi.fn();
 const paymentFindMock = vi.fn();
 const featureFlagMock = vi.fn();
 const resolveGlsMethodMock = vi.fn();
+const resolveFoxpostMethodMock = vi.fn();
 
 const tempFindByIdMock = vi.fn();
 const tempFindOneAndUpdateMock = vi.fn();
@@ -20,7 +21,12 @@ vi.mock("@/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: featureFlagMock },
 }));
 vi.mock("@/services/gls-shipping", () => ({
+  getGlsShippingMethodName: () => "GLS Csomagpont",
   resolveConfiguredGlsShippingMethod: resolveGlsMethodMock,
+}));
+vi.mock("@/services/foxpost-shipping", () => ({
+  getFoxpostShippingMethodName: () => "Foxpost Csomagautomata",
+  resolveConfiguredFoxpostShippingMethod: resolveFoxpostMethodMock,
 }));
 
 vi.mock("@/models/TempOrder", () => ({
@@ -41,16 +47,37 @@ describe("checkout methods and finalization", () => {
     featureFlagMock.mockImplementation(async (key: string) => {
       if (key === "shopPage") return true;
       if (key === "stripePayments") return true;
-      if (key === "glsParcelPicker") return true;
+      if (key === "glsParcelPicker" || key === "foxpostParcelPicker") return true;
       return false;
     });
     shippingFindMock.mockReturnValue({
-      lean: async () => [{ _id: { toString: () => "ship1" }, name: "Hazhoz", grossPrice: 990, isActive: true }],
+      lean: async () => [
+        { _id: { toString: () => "ship1" }, name: "Hazhoz", grossPrice: 990, isActive: true, provider: "standard" },
+        {
+          _id: { toString: () => "ship_gls" },
+          name: "GLS Csomagpont",
+          grossPrice: 1490,
+          isActive: true,
+          provider: "gls",
+        },
+        {
+          _id: { toString: () => "ship_fox" },
+          name: "Foxpost Csomagautomata",
+          grossPrice: 1290,
+          isActive: true,
+          provider: "foxpost",
+        },
+      ],
     });
     paymentFindMock.mockReturnValue({
       lean: async () => [{ _id: { toString: () => "pay1" }, name: "Utalas", grossPrice: 0, isActive: true }],
     });
     resolveGlsMethodMock.mockResolvedValue({ id: "ship_gls", name: "GLS Csomagpont", grossPrice: 1490 });
+    resolveFoxpostMethodMock.mockResolvedValue({
+      id: "ship_fox",
+      name: "Foxpost Csomagautomata",
+      grossPrice: 1290,
+    });
   });
 
   it("returns normalized methods with fixed stripe and gls options", async () => {
@@ -60,7 +87,14 @@ describe("checkout methods and finalization", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.shippingMethods[0]._id).toBe("gls_fixed");
+    const shippingIds = body.shippingMethods.map((m: { _id: string }) => m._id);
+    expect(shippingIds).toContain("ship_gls");
+    expect(shippingIds).toContain("ship_fox");
+    expect(shippingIds).not.toContain("gls_fixed");
+    expect(shippingIds).not.toContain("foxpost_fixed");
+    const gls = body.shippingMethods.find((m: { _id: string }) => m._id === "ship_gls");
+    expect(gls.grossPrice).toBe(1490);
+    expect(gls.provider).toBe("gls");
     expect(body.paymentMethods[0]._id).toBe("stripe_fixed");
   });
 

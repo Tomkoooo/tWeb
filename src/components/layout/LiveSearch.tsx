@@ -83,12 +83,12 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           className={cn(
-            "pl-12 bg-muted/40 border-border focus-visible:ring-primary rounded-none text-[10px] font-bold tracking-[0.2em] text-foreground placeholder:text-muted-foreground transition-all",
+            "pl-12 bg-muted/40 border-border focus-visible:ring-primary-foreground/40 rounded-none text-[10px] font-bold tracking-[0.2em] text-foreground placeholder:text-muted-foreground transition-all",
             inputClassName
           )}
         />
         {isLoading && (
-          <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+          <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground animate-spin" />
         )}
       </form>
 
@@ -120,7 +120,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                     </div>
                     <div className="grow min-w-0">
                       <p className="text-xs font-black text-foreground uppercase truncate tracking-widest">{product.name}</p>
-                      <p className="text-[10px] font-bold text-primary mt-1">
+                      <p className="text-[10px] font-bold text-primary-foreground mt-1">
                         {needsVariantSelection ? "Tól " : ""}
                         {minNetPrice.toLocaleString("hu-HU")} FT
                       </p>
@@ -132,7 +132,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
               <Button
                 onClick={onSubmit}
                 variant="ghost"
-                className="w-full h-12 rounded-none bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground font-black text-[10px] tracking-widest uppercase gap-3 transition-all"
+                className="w-full h-12 rounded-none bg-primary/10 text-primary-foreground hover:bg-primary hover:text-primary-foreground font-black text-[10px] tracking-widest uppercase gap-3 transition-all"
               >
                 Minden találat megtekintése
                 <ArrowRight className="w-4 h-4" />

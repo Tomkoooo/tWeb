@@ -57,7 +57,7 @@ export default async function AdminNewslettersPage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Hírlevelek <span className="text-primary underline decoration-primary/10 underline-offset-8">Kampányok</span>
+          Hírlevelek <span className="admin-headline-accent">Kampányok</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Kampány készítése és kiküldése vásárlóknak.

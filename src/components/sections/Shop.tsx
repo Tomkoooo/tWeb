@@ -17,6 +17,9 @@ import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-c
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { EditableLinkInline } from "@/features/homepage-cms/components/primitives/EditableLinkInline"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import { MediaLightbox, useMediaLightbox, type MediaLightboxItem } from "@/components/common/MediaLightbox"
+import { MediaZoomButton } from "@/components/common/MediaZoomButton"
+import { mediaImageSrc } from "@/lib/images"
 import { getTemplateById } from "@/templates/registry"
 import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
 import { homepageFeaturedToProductDetail } from "@/features/homepage-cms/render/homepage-product-card-shape"
@@ -47,6 +50,17 @@ export function Shop({
   categoriesDescription,
 }: ShopProps) {
   const cms = useCmsEdit()
+  const categoryLightboxItems = React.useMemo<MediaLightboxItem[]>(
+    () =>
+      (categories || [])
+        .filter((cat) => Boolean(cat?.image))
+        .map((cat) => ({
+          src: mediaImageSrc(cat.image),
+          alt: cat.name || "Kategória",
+        })),
+    [categories]
+  )
+  const categoryLightbox = useMediaLightbox({ images: categoryLightboxItems })
 
   const ProductCardCmp = React.useMemo(
     () => resolveCommerceProductCard(getTemplateById(templateId)),
@@ -129,12 +143,35 @@ export function Shop({
               transition={{ delay: idx * 0.1 }}
               className="relative group h-[400px] overflow-hidden border border-white/5"
             >
+              <button
+                type="button"
+                onClick={() => {
+                  const lbIndex = categoryLightboxItems.findIndex(
+                    (item) =>
+                      item.alt === (category.name || "Kategória") &&
+                      item.src === mediaImageSrc(category.image)
+                  )
+                  if (lbIndex >= 0) categoryLightbox.openAt(lbIndex)
+                }}
+                className="absolute inset-0 z-1 cursor-zoom-in"
+                aria-label={`${category.name} kép nagyítása`}
+              />
               <FallbackImage
                 src={category.image}
                 alt={category.name}
                 fill
                 unoptimized
-                className="object-cover transition-transform duration-1000 group-hover:scale-110 opacity-60 group-hover:opacity-100"
+                className="pointer-events-none object-cover transition-transform duration-1000 opacity-60 group-hover:scale-110 group-hover:opacity-100"
+              />
+              <MediaZoomButton
+                onClick={() => {
+                  const lbIndex = categoryLightboxItems.findIndex(
+                    (item) =>
+                      item.alt === (category.name || "Kategória") &&
+                      item.src === mediaImageSrc(category.image)
+                  )
+                  if (lbIndex >= 0) categoryLightbox.openAt(lbIndex)
+                }}
               />
               <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent" />
               <div className="absolute inset-0 p-10 flex flex-col justify-end items-start text-left">
@@ -210,12 +247,20 @@ export function Shop({
               ))}
             </CarouselContent>
             <div className="hidden lg:flex justify-end gap-3 mt-10">
-              <CarouselPrevious className="relative left-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
-              <CarouselNext className="relative right-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
+              <CarouselPrevious className="relative left-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary-foreground/40 rounded-none" />
+              <CarouselNext className="relative right-0 translate-y-0 h-14 w-14 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary-foreground/40 rounded-none" />
             </div>
           </Carousel>
         </div>
       </div>
+
+      <MediaLightbox
+        open={categoryLightbox.open}
+        onOpenChange={categoryLightbox.setOpen}
+        images={categoryLightboxItems}
+        index={categoryLightbox.index}
+        onIndexChange={categoryLightbox.setIndex}
+      />
     </section>
   )
 }

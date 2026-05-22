@@ -29,7 +29,7 @@ export class CategoryService {
   static async update(id: string, data: Partial<ICategory>) {
     await dbConnect();
     const oldCategory = await Category.findById(id).lean();
-    const category = await Category.findByIdAndUpdate(id, data, { new: true });
+    const category = await Category.findByIdAndUpdate(id, data, { returnDocument: "after" });
     
     if (oldCategory && category) {
       await MediaService.syncUsage(

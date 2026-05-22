@@ -7,9 +7,15 @@ import Coupon, { DiscountType } from "@/models/Coupon";
 import {
   resolveConfiguredGlsShippingMethod,
 } from "@/services/gls-shipping";
+import { resolveConfiguredFoxpostShippingMethod } from "@/services/foxpost-shipping";
 import { FeatureFlagService } from "@/services/feature-flags";
+import {
+  isFoxpostParcelPickerEnabled,
+  isGlsParcelPickerEnabled,
+} from "@/lib/parcel-feature-flags";
 import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
-import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
+import { FOXPOST_FIXED_SHIPPING_METHOD_ID, FoxpostParcelPoint } from "@/lib/foxpost";
+import { customerGrossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
 import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
 import {
   resolveCountryInput,
@@ -60,6 +66,7 @@ export type CheckoutInput = {
   shippingMethod: string;
   paymentMethod: string;
   glsParcelPoint?: GlsParcelPoint;
+  foxpostParcelPoint?: FoxpostParcelPoint;
   couponCodes?: string[];
   subtotal?: number;
   shippingFee?: number;
@@ -77,6 +84,7 @@ export type ValidatedCheckoutData = {
   shippingMethod: string;
   paymentMethod: string;
   glsParcelPoint?: GlsParcelPoint;
+  foxpostParcelPoint?: FoxpostParcelPoint;
   couponCodes: string[];
   subtotal: number;
   shippingFee: number;
@@ -119,7 +127,12 @@ function resolveItemPrice(
       throw new Error(`A kiválasztott variáns nem aktív: ${product.name}`);
     }
     return {
-      unitPrice: grossFromNetWithDiscount(Number(variant.netPrice || 0), Number(variant.discount || 0), pct),
+      unitPrice: customerGrossFromNetWithDiscount(
+        Number(variant.netPrice || 0),
+        Number(variant.discount || 0),
+        pct,
+        variant.grossPrice
+      ),
       variantLabel: Object.entries(variant.attributes || {})
         .map(([key, value]) => `${key}: ${value}`)
         .join(" / "),
@@ -131,7 +144,15 @@ function resolveItemPrice(
     throw new Error(`Válassz variánst a termékhez: ${product.name}`);
   }
 
-  return { unitPrice: grossFromNetWithDiscount(Number(product.netPrice || 0), Number(product.discount || 0), pct), vatPercent: pct };
+  return {
+    unitPrice: customerGrossFromNetWithDiscount(
+      Number(product.netPrice || 0),
+      Number(product.discount || 0),
+      pct,
+      product.grossPrice
+    ),
+    vatPercent: pct,
+  };
 }
 
 async function validateCoupon(
@@ -264,11 +285,13 @@ export async function validateAndNormalizeCheckoutInput(
   ensureString(shippingAddress.phone, "shippingAddress.phone");
 
   const isGlsFixed = input.shippingMethod === GLS_FIXED_SHIPPING_METHOD_ID;
+  const isFoxpostFixed = input.shippingMethod === FOXPOST_FIXED_SHIPPING_METHOD_ID;
+  let isGlsParcel = isGlsFixed;
+  let isFoxpostParcel = isFoxpostFixed;
   let resolvedShippingMethodId = "";
   let shippingMethodGrossPrice = 0;
   if (isGlsFixed) {
-    const glsParcelPickerEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false);
-    if (!glsParcelPickerEnabled) {
+    if (!(await isGlsParcelPickerEnabled())) {
       throw new Error("A kiválasztott szállítási mód nem támogatott");
     }
     const configuredGlsMethod = await resolveConfiguredGlsShippingMethod({ requireActive: true });
@@ -280,6 +303,19 @@ export async function validateAndNormalizeCheckoutInput(
     }
     resolvedShippingMethodId = configuredGlsMethod.id;
     shippingMethodGrossPrice = configuredGlsMethod.grossPrice;
+  } else if (isFoxpostFixed) {
+    if (!(await isFoxpostParcelPickerEnabled())) {
+      throw new Error("A kiválasztott szállítási mód nem támogatott");
+    }
+    const configuredFoxpostMethod = await resolveConfiguredFoxpostShippingMethod({ requireActive: true });
+    if (!configuredFoxpostMethod) {
+      throw new Error("A Foxpost szállítás jelenleg nem elérhető");
+    }
+    if (!input.foxpostParcelPoint?.id || !input.foxpostParcelPoint?.name) {
+      throw new Error("A Foxpost csomagautomata kiválasztása kötelező");
+    }
+    resolvedShippingMethodId = configuredFoxpostMethod.id;
+    shippingMethodGrossPrice = configuredFoxpostMethod.grossPrice;
   } else {
     if (!mongoose.Types.ObjectId.isValid(input.shippingMethod)) {
       throw new Error("Érvénytelen szállítási mód");
@@ -290,6 +326,24 @@ export async function validateAndNormalizeCheckoutInput(
     }).lean();
     if (!shippingMethod) {
       throw new Error("A kiválasztott szállítási mód nem elérhető");
+    }
+    const provider = (shippingMethod as { provider?: string }).provider || "standard";
+    if (provider === "gls") {
+      if (!(await isGlsParcelPickerEnabled())) {
+        throw new Error("A kiválasztott szállítási mód nem támogatott");
+      }
+      if (!input.glsParcelPoint?.id || !input.glsParcelPoint?.name) {
+        throw new Error("A GLS csomagpont kiválasztása kötelező");
+      }
+      isGlsParcel = true;
+    } else if (provider === "foxpost") {
+      if (!(await isFoxpostParcelPickerEnabled())) {
+        throw new Error("A kiválasztott szállítási mód nem támogatott");
+      }
+      if (!input.foxpostParcelPoint?.id || !input.foxpostParcelPoint?.name) {
+        throw new Error("A Foxpost csomagautomata kiválasztása kötelező");
+      }
+      isFoxpostParcel = true;
     }
     resolvedShippingMethodId = shippingMethod._id.toString();
     shippingMethodGrossPrice = Number(shippingMethod.grossPrice || 0);
@@ -371,9 +425,14 @@ export async function validateAndNormalizeCheckoutInput(
   })
 
   let shippingResolved: { code: string; label: string }
-  if (isGlsFixed && input.glsParcelPoint?.contact?.countryCode) {
+  if (isGlsParcel && input.glsParcelPoint?.contact?.countryCode) {
     shippingResolved = requireResolvedCountry("szállítási (GLS csomagpont)", {
       explicitCode: input.glsParcelPoint.contact.countryCode.trim(),
+      freeText: undefined,
+    })
+  } else if (isFoxpostParcel && input.foxpostParcelPoint?.countryCode) {
+    shippingResolved = requireResolvedCountry("szállítási (Foxpost)", {
+      explicitCode: input.foxpostParcelPoint.countryCode.trim(),
       freeText: undefined,
     })
   } else {
@@ -433,6 +492,17 @@ export async function validateAndNormalizeCheckoutInput(
                 email: input.glsParcelPoint.contact.email?.trim() || undefined,
               }
             : undefined,
+        }
+      : undefined,
+    foxpostParcelPoint: isFoxpostFixed
+      ? {
+          id: ensureString(input.foxpostParcelPoint?.id, "foxpostParcelPoint.id"),
+          name: ensureString(input.foxpostParcelPoint?.name, "foxpostParcelPoint.name"),
+          address: input.foxpostParcelPoint?.address?.trim() || undefined,
+          zip: input.foxpostParcelPoint?.zip?.trim() || undefined,
+          city: input.foxpostParcelPoint?.city?.trim() || undefined,
+          findme: input.foxpostParcelPoint?.findme?.trim() || undefined,
+          load: input.foxpostParcelPoint?.load?.trim() || undefined,
         }
       : undefined,
     couponCodes: couponResult.couponCodes,

@@ -17,20 +17,27 @@ export async function POST(request: NextRequest) {
   const { excludeProductIds, excludeLineIds } = postBodySchema.parse(json)
   const settings = await ProductSuggestionSettingsService.get()
 
-  if (!settings.enabled || settings.sources.length === 0) {
+  if (!settings.enabled) {
     return NextResponse.json({
+      enabled: false,
+      showCartLinesInModal: false,
       items: [] as unknown[],
       modalTitle: settings.modalTitle,
       modalHelper: settings.modalHelper,
     })
   }
 
-  const items = await resolveCheckoutSuggestionItems(settings, {
-    excludeProductIds: new Set(excludeProductIds),
-    excludeLineIds: new Set(excludeLineIds),
-  })
+  const items =
+    settings.sources.length > 0
+      ? await resolveCheckoutSuggestionItems(settings, {
+          excludeProductIds: new Set(excludeProductIds),
+          excludeLineIds: new Set(excludeLineIds),
+        })
+      : []
 
   return NextResponse.json({
+    enabled: true,
+    showCartLinesInModal: Boolean(settings.showCartLinesInModal),
     items,
     modalTitle: settings.modalTitle,
     modalHelper: settings.modalHelper,

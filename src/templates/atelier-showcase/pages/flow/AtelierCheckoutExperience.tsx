@@ -141,7 +141,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
       {searchParams.get("stripeCancelled") === "1" && (
         <div className="mx-auto mb-8 max-w-2xl rounded-xl border border-amber-600/40 bg-amber-500/10 px-5 py-4 font-serif text-sm text-foreground">
           <p className="font-semibold">A Stripe fizetés megszakadt.</p>
-          <Link href="/#contact" className="mt-2 inline-block text-primary underline">
+          <Link href="/#contact" className="mt-2 inline-block text-primary-foreground underline">
             Kapcsolat
           </Link>
         </div>
@@ -169,7 +169,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                     className={cn(
                       "flex min-w-[7rem] flex-1 items-center justify-center border-b-2 px-2 py-3 text-center font-serif text-[10px] font-semibold uppercase tracking-widest transition-colors sm:min-w-0 sm:px-4 sm:text-[11px]",
                       active
-                        ? "border-primary text-foreground"
+                        ? "border-primary-foreground/35 text-foreground"
                         : done
                           ? "border-transparent text-muted-foreground"
                           : "border-transparent text-muted-foreground/60"
@@ -210,7 +210,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                     type="button"
                     onClick={handleSubmitOrder}
                     disabled={isSubmitting}
-                    className="rounded-full border border-primary bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
+                    className="rounded-full border border-primary-foreground/35 bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
                   >
                     {isSubmitting ? "Küldés…" : "Megrendelés"}
                   </Button>
@@ -218,7 +218,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                   <Button
                     type="button"
                     onClick={nextStep}
-                    className="rounded-full border border-primary bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
+                    className="rounded-full border border-primary-foreground/35 bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
                   >
                     Tovább
                     <ChevronRight className="ml-2 h-4 w-4" />

@@ -30,6 +30,33 @@ export function grossToNet(grossPrice: number, vatPercent?: number): number {
   return roundHuf(Number(grossPrice || 0) / denom)
 }
 
+/** Net stored in DB from a merchant-entered gross (HUF integers). UI may keep gross exact. */
+export function deriveNetFromGross(grossPrice: number, vatPercent?: number): number {
+  return grossToNet(grossPrice, vatPercent)
+}
+
+/** Customer-facing unit gross: stored gross wins over net-derived. */
+export function customerUnitGross(
+  netPrice: number,
+  vatPercent?: number,
+  storedGross?: number | null
+): number {
+  if (storedGross != null && Number.isFinite(storedGross) && storedGross > 0) {
+    return roundHuf(storedGross)
+  }
+  return netToGross(netPrice, vatPercent)
+}
+
+export function customerGrossFromNetWithDiscount(
+  netPrice: number,
+  discount = 0,
+  vatPercent?: number,
+  storedGross?: number | null
+): number {
+  const base = customerUnitGross(netPrice, vatPercent, storedGross)
+  return roundHuf(base * (1 - Number(discount || 0) / 100))
+}
+
 export function grossFromNetWithDiscount(netPrice: number, discount = 0, vatPercent?: number): number {
   const r = vatRateFromPercent(vatPercent ?? DEFAULT_VAT_PERCENT)
   const gross = Number(netPrice || 0) * (1 + r)

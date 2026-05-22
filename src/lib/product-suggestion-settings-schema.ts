@@ -27,6 +27,8 @@ export type SuggestionSource = z.infer<typeof suggestionSourceSchema>
 
 export const productSuggestionSettingsSchema = z.object({
   enabled: z.boolean(),
+  /** When true, the pre-checkout modal lists current cart lines (even if there are no upsell suggestions). */
+  showCartLinesInModal: z.boolean().optional().default(false),
   modalTitle: z.string().max(200).optional(),
   modalHelper: z.string().max(500).optional(),
   maxSuggestions: z.number().int().min(1).max(24),
@@ -37,6 +39,7 @@ export type ProductSuggestionSettings = z.infer<typeof productSuggestionSettings
 
 export const DEFAULT_PRODUCT_SUGGESTION_SETTINGS: ProductSuggestionSettings = {
   enabled: false,
+  showCartLinesInModal: false,
   modalTitle: "Még valami a kosárba?",
   modalHelper: "Válassz javasolt termékeket, vagy lépj tovább a pénztárba.",
   maxSuggestions: 6,

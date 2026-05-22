@@ -26,7 +26,7 @@ export default async function AdminCategories() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Kategóriák <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
+            Kategóriák <span className="admin-headline-accent">Kezelése</span>
           </h1>
           <p className="text-white/40 font-medium italic">Itt kezelheti a bolt termék-kategóriáit és azok hierarchiáját.</p>
         </div>
@@ -63,14 +63,14 @@ export default async function AdminCategories() {
                         {/* Hierarchy Indentation */}
                         {category.depth > 0 && (
                           <div 
-                            className="flex items-center text-primary/40" 
+                            className="flex items-center text-white/40" 
                             style={{ marginLeft: `${(category.depth - 1) * 2}rem` }}
                           >
                             <CornerDownRight className="w-4 h-4 mr-2" />
                           </div>
                         )}
                         
-                        <div className="w-12 h-12 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary/30 transition-colors shrink-0">
+                        <div className="w-12 h-12 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-white/25 transition-colors shrink-0">
                           <FallbackImage src={mediaImageSrc(category.image)} alt={category.name} width={48} height={48} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div>

@@ -10,7 +10,17 @@ export function cxInput(appearance: CheckoutStepAppearance) {
         "placeholder:text-muted-foreground",
         "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       )
-    : "bg-black border-white/5 h-14 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
+    : cn(
+        "h-12 w-full min-w-0 rounded-none border border-border bg-muted/60 px-3 py-2",
+        "text-sm font-bold uppercase tracking-widest text-foreground",
+        "placeholder:text-muted-foreground placeholder:normal-case placeholder:tracking-normal",
+        "focus-visible:border-primary-foreground/50 focus-visible:ring-1 focus-visible:ring-primary-foreground/40 outline-none"
+      )
+}
+
+/** Native select — same surface as inputs so it does not render as a floating black slab. */
+export function cxSelect(appearance: CheckoutStepAppearance) {
+  return cn(cxInput(appearance), "appearance-none cursor-pointer pr-10")
 }
 
 export function cxLabel(appearance: CheckoutStepAppearance) {
@@ -28,7 +38,7 @@ export function cxSectionHeading(appearance: CheckoutStepAppearance) {
 export function cxTypeToggleShell(appearance: CheckoutStepAppearance) {
   return appearance === "light"
     ? "flex gap-1 rounded-lg border border-border bg-muted/50 p-1"
-    : "flex gap-4 p-1 bg-white/5 border border-white/10 w-fit"
+    : "flex gap-1 rounded-none border border-border bg-muted/40 p-1 w-fit max-w-full"
 }
 
 export function cxTypeToggleBtn(appearance: CheckoutStepAppearance, active: boolean) {
@@ -39,8 +49,8 @@ export function cxTypeToggleBtn(appearance: CheckoutStepAppearance, active: bool
         ? "bg-primary text-primary-foreground shadow-sm"
         : "text-muted-foreground hover:bg-background hover:text-foreground"
       : active
-        ? "bg-primary text-white"
-        : "text-neutral-500 hover:text-white"
+        ? "bg-[var(--primary-foreground)] text-[var(--primary)] font-black shadow-sm"
+        : "text-muted-foreground hover:text-foreground"
   )
 }
 
@@ -49,10 +59,10 @@ export function cxMethodCard(appearance: CheckoutStepAppearance, selected: boole
     "p-6 border-2 text-left transition-all duration-300 flex items-center justify-between group rounded-lg",
     appearance === "light"
       ? selected
-        ? "border-primary bg-primary/5 shadow-sm"
-        : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+        ? "border-secondary bg-secondary/30 shadow-sm"
+        : "border-border bg-card hover:border-primary-foreground/40 hover:bg-muted/30"
       : selected
-        ? "bg-white/5 border-primary"
+        ? "bg-white/5 border-primary-foreground/35"
         : "bg-black border-white/5 hover:border-white/10"
   )
 }
@@ -74,7 +84,7 @@ export function cxDivider(appearance: CheckoutStepAppearance) {
 export function cxGlsBox(appearance: CheckoutStepAppearance) {
   return appearance === "light"
     ? "h-[420px] rounded-lg border border-border bg-muted/40"
-    : "h-[420px] bg-black border border-white/10"
+    : "h-[420px] bg-muted/40 border border-border"
 }
 
 export function cxTextarea(appearance: CheckoutStepAppearance) {
@@ -84,7 +94,10 @@ export function cxTextarea(appearance: CheckoutStepAppearance) {
         "placeholder:text-muted-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       )
-    : "w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
+    : cn(
+        "w-full rounded-none border border-border bg-muted/60 p-4 text-foreground font-medium resize-none",
+        "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-foreground/40 transition-all"
+      )
 }
 
 export function cxSummaryMuted(appearance: CheckoutStepAppearance) {

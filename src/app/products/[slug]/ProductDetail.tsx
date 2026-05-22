@@ -11,6 +11,9 @@ import {
   Tag,
   Check,
 } from "lucide-react"
+import { MediaLightbox, useMediaLightbox, type MediaLightboxItem } from "@/components/common/MediaLightbox"
+import { MediaZoomButton } from "@/components/common/MediaZoomButton"
+import { mediaAspectVariant, mediaFrameClassName, type MediaFrameVariant } from "@/lib/media-aspect"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -18,14 +21,15 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useCartStore } from "@/store/useCartStore"
 import {
   getActiveVariants,
+  getVariantById,
   getVariantLabel,
   hasVariants,
   resolveProductView,
 } from "@/lib/product-variants"
 import {
   formatHuf,
-  grossFromNetWithDiscount,
-  netToGross,
+  customerGrossFromNetWithDiscount,
+  customerUnitGross,
   priceBreakdownFromGross,
   clampVatPercent,
 } from "@/lib/pricing"
@@ -64,9 +68,10 @@ export function ProductDetail({
   /** Editorial templates: lead with price / CTA column on desktop. */
   buyColumnFirst?: boolean
 }) {
-  const [mainImageLoaded, setMainImageLoaded] = useState(false)
+  const [loadedImageKeys, setLoadedImageKeys] = useState<Record<string, true>>({})
+  const [frameByImageKey, setFrameByImageKey] = useState<Record<string, MediaFrameVariant>>({})
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId || "")
-  const [activeImage, setActiveImage] = useState(product.images?.[0] || "")
+  const [activeImage, setActiveImage] = useState<string>(product.images?.[0] || "")
   const [isAdded, setIsAdded] = useState(false)
   const [shopEnabled, setShopEnabled] = useState<boolean | null>(null)
   const router = useRouter()
@@ -82,14 +87,46 @@ export function ProductDetail({
   )
   const discountAmount = view.discount || 0
   const vatPct = clampVatPercent(product.vatPercent)
-  const price = netToGross(view.netPrice, vatPct)
-  const finalPrice = grossFromNetWithDiscount(view.netPrice, discountAmount, vatPct)
+  const price = customerUnitGross(view.netPrice, vatPct, view.grossPrice)
+  const finalPrice = customerGrossFromNetWithDiscount(
+    view.netPrice,
+    discountAmount,
+    vatPct,
+    view.grossPrice
+  )
   const priceBreakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
   const selectedVariant = view.selectedVariant
+  const displayImages = useMemo(() => {
+    const variant = getVariantById(product, selectedVariantId)
+    const variantImages = (variant?.images || []).filter((img: string) => Boolean(img?.trim()))
+    if (variantImages.length > 0) return variantImages
+    return (product.images || []).filter((img: string) => Boolean(img?.trim()))
+  }, [product, selectedVariantId])
+
+  const gallerySignature = displayImages.join("\u0000")
+
+  const galleryImages = useMemo<MediaLightboxItem[]>(
+    () =>
+      displayImages.map((img: string, idx: number) => ({
+        src: img,
+        alt: idx === 0 ? view.name : `${view.name} – ${idx + 1}`,
+      })),
+    [displayImages, view.name]
+  )
+  const lightbox = useMediaLightbox({ images: galleryImages })
+  const activeLightboxIndex = Math.max(
+    0,
+    galleryImages.findIndex((item) => item.src === activeImage)
+  )
   const hasVariantOptions = hasVariants(product)
   const variantRequired = Boolean(product.requireVariantSelection) && hasVariantOptions
   const canShowPriceAndStock = !variantRequired || Boolean(selectedVariant)
   const cms = useSurfaceDocEdit()
+  const mainImageLoaded = activeImage ? Boolean(loadedImageKeys[activeImage]) : true
+  const mainFrameVariant = activeImage
+    ? frameByImageKey[activeImage] || "square"
+    : "square"
+
   const reviewCount = product.reviews?.length || 0
   const averageRating = reviewCount
     ? product.reviews.reduce(
@@ -126,10 +163,13 @@ export function ProductDetail({
   }, [])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset preview when SKU/variant image set changes
-    setActiveImage(view.images?.[0] || "")
-    setMainImageLoaded(false)
-  }, [view.images])
+    // Only change preview when the available image set actually changes — keep current if still valid.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync active thumb when gallery set changes
+    setActiveImage((prev) => {
+      if (prev && displayImages.includes(prev)) return prev
+      return displayImages[0] || ""
+    })
+  }, [gallerySignature, displayImages])
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() || "")
@@ -276,45 +316,75 @@ export function ProductDetail({
 
       <div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
         <div className={cn("space-y-6", buyColumnFirst && "lg:order-2")}>
-          <div className="group relative aspect-square min-h-72 w-full overflow-hidden rounded-3xl border border-border bg-muted">
+          <div
+            className={cn(
+              "group relative min-h-72 w-full overflow-hidden rounded-3xl border border-border bg-muted",
+              mediaFrameClassName(mainFrameVariant)
+            )}
+          >
             {!mainImageLoaded && <Skeleton className="absolute inset-0 z-10" />}
+            <button
+              type="button"
+              onClick={() => lightbox.openAt(activeLightboxIndex >= 0 ? activeLightboxIndex : 0)}
+              className="absolute inset-0 z-1 cursor-zoom-in"
+              aria-label="Termékkép nagyítása"
+            />
             <FallbackImage
               src={mediaImageSrc(activeImage)}
               alt={view.name}
               fill
-              onLoad={() => setMainImageLoaded(true)}
+              onLoad={(event) => {
+                if (!activeImage) return
+                const img = event.currentTarget
+                const frame = mediaAspectVariant(img.naturalWidth, img.naturalHeight)
+                setLoadedImageKeys((prev) =>
+                  prev[activeImage] ? prev : { ...prev, [activeImage]: true }
+                )
+                setFrameByImageKey((prev) =>
+                  prev[activeImage] ? prev : { ...prev, [activeImage]: frame }
+                )
+              }}
               className={cn(
-                "object-cover transition-all duration-700 group-hover:scale-105",
+                "pointer-events-none object-contain transition-opacity duration-500",
                 mainImageLoaded ? "opacity-100" : "opacity-0"
               )}
             />
+            <MediaZoomButton
+              onClick={() => lightbox.openAt(activeLightboxIndex >= 0 ? activeLightboxIndex : 0)}
+            />
             {discountAmount > 0 ? (
-              <div className="absolute left-6 top-6 z-10 bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
-                Sale
+              <div className="pointer-events-none absolute left-6 top-6 z-10 bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
+                Akció
               </div>
             ) : null}
           </div>
 
-          {view.images && view.images.length > 1 ? (
+          {displayImages.length > 1 ? (
             <div className="grid grid-cols-4 gap-4">
-              {view.images.map((img: string, idx: number) => (
+              {displayImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setActiveImage(img)}
+                  onDoubleClick={() => lightbox.openAt(idx)}
                   className={cn(
-                    "relative aspect-square cursor-pointer overflow-hidden rounded-2xl border bg-muted transition-colors",
-                  activeImage === img
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border hover:border-primary/40"
+                    "group/thumb relative aspect-square cursor-pointer overflow-hidden rounded-2xl border bg-muted transition-colors",
+                    activeImage === img
+                      ? "border-primary-foreground/35 ring-2 ring-primary-foreground/20"
+                      : "border-border hover:border-primary-foreground/40"
                   )}
                 >
                   <FallbackImage
                     src={mediaImageSrc(img)}
-                    alt={`${view.name} - ${idx + 1}`}
+                    alt={`${view.name} – ${idx + 1}`}
                     fill
                     className="object-cover"
                   />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity group-hover/thumb:opacity-100 group-hover/thumb:bg-black/35">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-white">
+                      Nagyítás
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -324,7 +394,7 @@ export function ProductDetail({
         <div className={cn("flex flex-col", buyColumnFirst && "lg:order-1")}>
           <div className="mb-8">
             <Badge className="mb-6 rounded-full border-transparent bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              {product.category?.name || "Category"}
+              {product.category?.name || "Kategória"}
             </Badge>
             <h1 className="mb-6 font-heading text-4xl font-semibold uppercase leading-tight tracking-tighter md:text-5xl lg:normal-case lg:text-6xl">
               {view.name}
@@ -343,8 +413,8 @@ export function ProductDetail({
               </div>
               <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                 {reviewCount > 0
-                  ? `${averageRating.toFixed(1)} (${reviewCount} reviews)`
-                  : "No reviews yet"}
+                  ? `${averageRating.toFixed(1)} (${reviewCount} értékelés)`
+                  : "Még nincs értékelés"}
               </span>
             </div>
           </div>
@@ -361,17 +431,17 @@ export function ProductDetail({
                   ) : null}
                 </div>
                 <p className="text-sm font-medium italic text-muted-foreground">
-                  Gross · Net {formatHuf(priceBreakdown.unitNet)} · VAT{" "}
+                  Bruttó · Nettó {formatHuf(priceBreakdown.unitNet)} · ÁFA{" "}
                   {formatHuf(priceBreakdown.unitVat)} ({priceBreakdown.vatPercent}%)
                 </p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Stock: {view.stock}
-                  {selectedVariant ? ` (variant: ${getVariantLabel(selectedVariant)})` : ""}
+                  Készlet: {view.stock}
+                  {selectedVariant ? ` (${getVariantLabel(selectedVariant)})` : ""}
                 </p>
               </>
             ) : (
               <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Select a variant to see price and add to cart.
+                Válassz variánst az ár megtekintéséhez és a kosárba helyezéshez.
               </p>
             )}
           </div>
@@ -387,7 +457,7 @@ export function ProductDetail({
                   key={i}
                   className="flex cursor-default items-center gap-1.5 rounded-full border border-border bg-muted/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <Tag className="h-3 w-3 text-primary" />
+                  <Tag className="h-3 w-3 text-primary-foreground" />
                   {tag}
                 </div>
               ))}
@@ -397,7 +467,7 @@ export function ProductDetail({
           {hasVariantOptions ? (
             <div className="mb-10 space-y-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                {variantRequired ? "Choose variant (required)" : "Choose variant (optional)"}
+                {variantRequired ? "Variáns kiválasztása (kötelező)" : "Variáns kiválasztása (opcionális)"}
               </p>
               <div className="flex flex-wrap gap-2">
                 {activeVariants.map((variant) => {
@@ -410,8 +480,8 @@ export function ProductDetail({
                       className={cn(
                         "h-11 border px-4 text-xs font-semibold uppercase tracking-widest transition-colors",
                         isSelected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-foreground hover:border-primary/40"
+                          ? "border-primary-foreground/35 bg-primary/10 text-primary-foreground"
+                          : "border-border text-foreground hover:border-primary-foreground/40"
                       )}
                     >
                       {getVariantLabel(variant as never)}
@@ -421,11 +491,11 @@ export function ProductDetail({
               </div>
               {!selectedVariant && variantRequired ? (
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
-                  Pick a variant to add this product to your cart.
+                  Válassz variánst a termék kosárba helyezéséhez.
                 </p>
               ) : selectedVariant ? (
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Selected: {getVariantLabel(selectedVariant)}
+                  Kiválasztva: {getVariantLabel(selectedVariant)}
                 </p>
               ) : null}
             </div>
@@ -500,19 +570,19 @@ export function ProductDetail({
 
           <div className="grid grid-cols-1 gap-6 border-t border-border pt-12 md:grid-cols-3">
             <div className="flex flex-col items-center gap-3 text-center">
-              <ShieldCheck className="h-8 w-8 text-primary" />
+              <ShieldCheck className="h-8 w-8 text-primary-foreground" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-foreground">
                 Warranty
               </span>
             </div>
             <div className="flex flex-col items-center gap-3 text-center">
-              <Truck className="h-8 w-8 text-primary" />
+              <Truck className="h-8 w-8 text-primary-foreground" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-foreground">
                 Fast shipping
               </span>
             </div>
             <div className="flex flex-col items-center gap-3 text-center">
-              <RotateCcw className="h-8 w-8 text-primary" />
+              <RotateCcw className="h-8 w-8 text-primary-foreground" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-foreground">
                 Easy returns
               </span>
@@ -645,6 +715,18 @@ export function ProductDetail({
           </dl>
         </div>
       ) : null}
+
+      <MediaLightbox
+        open={lightbox.open}
+        onOpenChange={lightbox.setOpen}
+        images={galleryImages}
+        index={lightbox.index}
+        onIndexChange={(next) => {
+          lightbox.setIndex(next)
+          const nextSrc = galleryImages[next]?.src
+          if (nextSrc) setActiveImage(nextSrc)
+        }}
+      />
     </div>
   )
 }

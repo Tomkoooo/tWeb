@@ -35,7 +35,7 @@ export class CheckoutFinalizationService {
           lastError: undefined,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!locked) {

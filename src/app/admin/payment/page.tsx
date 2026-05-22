@@ -21,7 +21,7 @@ export default async function AdminPaymentPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            FIZETÉSI <span className="text-primary underline decoration-primary/10 underline-offset-8">MÓDOK</span>
+            FIZETÉSI <span className="admin-headline-accent">MÓDOK</span>
           </h1>
           <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px]">Pénztárban választható fizetési lehetőségek kezelése</p>
         </div>
@@ -44,7 +44,7 @@ export default async function AdminPaymentPage() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-heading font-black text-white uppercase italic truncate max-w-[200px]">{method.name}</h3>
-                <p className="text-primary font-black text-2xl mt-2">{formatHuf(breakdown.gross)}</p>
+                <p className="admin-value font-black text-2xl mt-2">{formatHuf(breakdown.gross)}</p>
                 <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">
                   Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
                 </p>
@@ -64,7 +64,7 @@ export default async function AdminPaymentPage() {
                 initialData={method}
               >
                 <Button variant="outline" className="grow h-12 border-white/10 text-white hover:bg-white/5 rounded-none uppercase tracking-widest text-[10px] font-black">
-                  <Edit2 className="w-4 h-4 mr-2" /> SZERKESZTÉS
+                  <Edit2 className="w-4 h-4 mr-2 text-white" /> SZERKESZTÉS
                 </Button>
               </MethodDialog>
               <form action={deletePaymentMethod.bind(null, method._id.toString())}>

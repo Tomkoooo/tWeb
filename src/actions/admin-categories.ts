@@ -6,6 +6,13 @@ import { redirect } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-auth";
 
+function parseFeaturedListIndex(raw: FormDataEntryValue | null): number | null {
+  const text = String(raw ?? "").trim();
+  if (!text) return null;
+  const n = Math.round(Number(text));
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function createCategory(formData: FormData) {
   await requireAdmin();
 
@@ -19,6 +26,7 @@ export async function createCategory(formData: FormData) {
     description: formData.get("seo_description") as string || "",
     keywords: (formData.get("seo_keywords") as string || "").split(",").map(k => k.trim()),
   };
+  const featuredListIndex = parseFeaturedListIndex(formData.get("featuredListIndex"));
 
   try {
     await CategoryService.create({
@@ -26,10 +34,12 @@ export async function createCategory(formData: FormData) {
       parent: parent as any,
       image,
       slug,
-      seo
+      seo,
+      featuredListIndex,
     });
   } catch (error) {
     console.error("Error creating category:", error);
+    throw error;
   }
   revalidatePath("/admin/categories");
   redirect("/admin/categories");
@@ -47,6 +57,7 @@ export async function updateCategory(id: string, formData: FormData) {
     description: formData.get("seo_description") as string || "",
     keywords: (formData.get("seo_keywords") as string || "").split(",").map(k => k.trim()),
   };
+  const featuredListIndex = parseFeaturedListIndex(formData.get("featuredListIndex"));
 
   try {
     await CategoryService.update(id, {
@@ -54,10 +65,12 @@ export async function updateCategory(id: string, formData: FormData) {
       slug: slugify(name),
       parent: parent as any,
       image,
-      seo
+      seo,
+      featuredListIndex,
     });
   } catch (error) {
     console.error("Error updating category:", error);
+    throw error;
   }
   revalidatePath("/admin/categories");
   redirect("/admin/categories");

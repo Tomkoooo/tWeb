@@ -30,6 +30,7 @@ export class ProductSuggestionSettingsService {
     }
     return parseDoc({
       enabled: doc?.enabled,
+      showCartLinesInModal: doc?.showCartLinesInModal,
       modalTitle: doc?.modalTitle,
       modalHelper: doc?.modalHelper,
       maxSuggestions: doc?.maxSuggestions,
@@ -47,6 +48,7 @@ export class ProductSuggestionSettingsService {
       {
         $set: {
           enabled: parsed.enabled,
+          showCartLinesInModal: parsed.showCartLinesInModal,
           modalTitle: parsed.modalTitle,
           modalHelper: parsed.modalHelper,
           maxSuggestions: parsed.maxSuggestions,

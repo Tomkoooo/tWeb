@@ -1,12 +1,17 @@
-import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing"
 import {
   DEFAULT_PRODUCT_SUGGESTION_SETTINGS,
   type ProductSuggestionSettings,
   type SuggestionSource,
 } from "@/lib/product-suggestion-settings-schema"
-import { getActiveVariants, getVariantLabel, resolveProductView } from "@/lib/product-variants"
-import { mediaImageSrc } from "@/lib/images"
+import {
+  allPurchasableVariantsInCart,
+  mapProductToCheckoutSuggestion,
+  pickCheapestInStockVariantId,
+} from "@/lib/checkout-suggestion-product"
+import { isStorefrontCatalogProduct, storefrontCatalogFilters } from "@/lib/storefront-catalog"
 import { ProductService } from "@/services/product"
+
+export type { CheckoutSuggestionVariantOption } from "@/lib/checkout-suggestion-product"
 
 /** Public API / client: enough to call `useCartStore.getState().addItem` like PDP. */
 export type CheckoutSuggestionItemDto = {
@@ -23,11 +28,24 @@ export type CheckoutSuggestionItemDto = {
   discount: number
   /** Product VAT snapshot for cart totals. */
   vatPercent: number
+  /** When true, the modal shows a variant picker before add-to-cart. */
+  requiresVariantChoice?: boolean
+  /** In-stock variants for quick selection on the suggestion card. */
+  variants?: Array<{
+    variantId: string
+    label: string
+    attributes: Record<string, string>
+    price: number
+    netPrice: number
+    stock: number
+    discount: number
+    image: string
+  }>
   /** True when this exact cart line already exists — still listed so the modal can appear (e.g. admin preview / fixed list). */
   alreadyInCart?: boolean
 }
 
-const CATALOG_POOL_LIMIT = 240
+const CATALOG_POOL_LIMIT = 400
 
 export function shuffleInPlace<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -40,62 +58,15 @@ export function shuffleInPlace<T>(arr: T[]): void {
  * For suggestions we need a concrete variant when the PDP would require one.
  * Picks the cheapest in-stock active variant by gross-after-discount; undefined if none.
  */
-export function pickCheapestInStockVariantId(product: {
-  variants?: Array<{ id: string; netPrice: number; discount?: number; stock?: number; isActive?: boolean }>
-}): string | undefined {
-  const active = getActiveVariants(product as Parameters<typeof getActiveVariants>[0]).filter(
-    (v) => (Number(v.stock) || 0) > 0
-  )
-  if (active.length === 0) return undefined
-  const pct = clampVatPercent((product as { vatPercent?: unknown }).vatPercent)
-  const sorted = [...active].sort(
-    (a, b) =>
-      grossFromNetWithDiscount(a.netPrice, a.discount || 0, pct) -
-      grossFromNetWithDiscount(b.netPrice, b.discount || 0, pct)
-  )
-  return sorted[0]?.id
-}
-
-function mapLeanProductToDto(product: any, forcedVariantId?: string | null): CheckoutSuggestionItemDto | null {
-  if (!product?._id || !product.slug) return null
-  const requiresVariant =
-    Boolean(product.requireVariantSelection) && getActiveVariants(product).length > 0
-  const variantId = requiresVariant ? forcedVariantId ?? pickCheapestInStockVariantId(product) : forcedVariantId
-  if (requiresVariant && !variantId) return null
-
-  const view = resolveProductView(product, variantId ?? null)
-  if (!view || (view.stock ?? 0) <= 0) return null
-
-  const selected = view.selectedVariant
-  const productId = product._id.toString()
-  const id = selected ? `${productId}:${selected.id}` : productId
-  const variantLabel = selected ? getVariantLabel(selected as Parameters<typeof getVariantLabel>[0]) : undefined
-  const pct = clampVatPercent(product.vatPercent)
-
-  return {
-    id,
-    productId,
-    variantId: selected?.id,
-    variantLabel,
-    name: view.name,
-    slug: product.slug,
-    price: grossFromNetWithDiscount(view.netPrice, view.discount, pct),
-    netPrice: view.netPrice,
-    image: mediaImageSrc(view.images?.[0]),
-    stock: view.stock,
-    discount: view.discount,
-    vatPercent: pct,
-  }
-}
+export { pickCheapestInStockVariantId } from "@/lib/checkout-suggestion-product"
 
 function dedupeKey(dto: CheckoutSuggestionItemDto): string {
-  return dto.id
+  return dto.productId
 }
 
 async function loadProductPool(filters: Parameters<typeof ProductService.getPaginated>[2]): Promise<any[]> {
   const { products } = await ProductService.getPaginated(1, CATALOG_POOL_LIMIT, {
-    isActive: true,
-    isVisible: true,
+    ...storefrontCatalogFilters(),
     ...filters,
   })
   return products
@@ -105,7 +76,7 @@ async function productsFromFixedIds(ids: string[]): Promise<any[]> {
   const out: any[] = []
   for (const id of ids) {
     const p = await ProductService.getById(id)
-    if (p && (p as any).isActive && (p as any).isVisible !== false) {
+    if (p && isStorefrontCatalogProduct(p as { isVisible?: boolean })) {
       out.push(p)
     }
   }
@@ -173,16 +144,17 @@ export async function resolveCheckoutSuggestionItems(
       if (added >= need || out.length >= max) break
       const pid = p._id?.toString?.()
       if (!pid) continue
-      if (!isFixed && excludeProductIds.has(pid)) continue
+      if (!isFixed && allPurchasableVariantsInCart(p, pid, excludeLineIds)) continue
 
-      const dto = mapLeanProductToDto(p)
+      const dto = mapProductToCheckoutSuggestion(p)
       if (!dto) continue
       if (seenLineIds.has(dedupeKey(dto))) continue
 
-      const alreadyInCart = excludeLineIds.has(dto.id)
+      const lineId = dto.variantId ? `${pid}:${dto.variantId}` : dto.id
+      const alreadyInCart = excludeLineIds.has(lineId)
       if (!isFixed && alreadyInCart) continue
 
-      seenLineIds.add(dto.id)
+      seenLineIds.add(dedupeKey(dto))
       out.push(isFixed && alreadyInCart ? { ...dto, alreadyInCart: true } : dto)
       added++
     }

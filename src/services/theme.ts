@@ -177,7 +177,7 @@ export class ThemeService {
     await ThemeSetting.findOneAndUpdate(
       { key: "theme" },
       { $set: { key: "theme", colors: {}, overridesOnly: true } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     )
   }
 

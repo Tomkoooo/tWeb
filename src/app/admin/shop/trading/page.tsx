@@ -9,7 +9,7 @@ export default async function AdminShopTradingPage() {
       <div>
         <h1 className="mb-2 font-heading text-4xl font-black uppercase italic leading-[0.9] tracking-tight text-white md:text-5xl">
           ORSZÁG &amp;{" "}
-          <span className="text-primary underline decoration-primary/10 underline-offset-8">KERESKEDÉS</span>
+          <span className="admin-headline-accent">KERESKEDÉS</span>
         </h1>
         <p className="max-w-2xl text-[10px] font-bold uppercase tracking-widest text-neutral-500">
           Szállítási és számlázási országkorlátok (ISO2). A pénztár és a backend ugyanezt a listát érvényesíti. Üres lista =

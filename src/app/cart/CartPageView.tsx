@@ -23,7 +23,14 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 
 export type CartPageVariant = "page" | "embedded"
 
-export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }) {
+export function CartPageView({
+  variant = "page",
+  showPageHeading = true,
+}: {
+  variant?: CartPageVariant
+  /** When false, template flow shell supplies the page title (default-modern cart). */
+  showPageHeading?: boolean
+}) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalItems } = useCartStore()
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
@@ -63,7 +70,10 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
 
   const shell = embedded
     ? "min-h-0 bg-transparent py-2 pb-6 px-2 sm:px-3"
-    : "min-h-screen bg-background pt-48 pb-20 px-6"
+    : cn(
+        "min-h-screen bg-background pb-20 px-6",
+        showPageHeading ? "pt-48" : "pt-0"
+      )
 
   if (shopEnabled === false) {
     return (
@@ -89,7 +99,7 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
       <main className={shell}>
         {embedded ? (
           <div className="flex justify-center py-12" aria-busy="true">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
           </div>
         ) : (
           <p className="sr-only">Betöltés</p>
@@ -132,11 +142,18 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
       <div className="container mx-auto">
         <div className="flex flex-col gap-12 lg:flex-row">
           <div className="lg:grow">
-            <div className="mb-10 flex items-center justify-between">
-              <h1 className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground md:text-5xl">
-                KOSÁR <span className="text-primary">({totalItems})</span>
-              </h1>
-            </div>
+            {showPageHeading ? (
+              <div className="mb-10 flex items-center justify-between">
+                <h1 className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground md:text-5xl">
+                  KOSÁR{" "}
+                  <span className="text-[var(--primary-foreground)]">({totalItems})</span>
+                </h1>
+              </div>
+            ) : (
+              <p className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                {totalItems} tétel a kosárban
+              </p>
+            )}
 
             <div className="space-y-4">
               <AnimatePresence mode="popLayout">
@@ -153,76 +170,93 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
-                      className="glass-card flex flex-col items-center gap-6 border-border p-6 sm:flex-row"
+                      className="glass-card border-border p-4 sm:p-6"
                     >
-                      <div className="relative h-32 w-32 flex-none overflow-hidden border border-border bg-muted">
-                        <FallbackImage
-                          src={item.image}
-                          alt={item.name}
-                          width={128}
-                          height={128}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-
-                      <div className="grow text-center sm:text-left">
-                        <Link href={`/products/${item.slug}`}>
-                          <h3 className="mb-2 text-xl font-heading font-black uppercase text-foreground transition-colors hover:text-primary">
-                            {item.name}
-                          </h3>
-                        </Link>
-                        {item.variantLabel ? (
-                          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                            {item.variantLabel}
-                          </p>
-                        ) : null}
-                        <div className="mt-2 flex flex-wrap justify-center gap-4 text-sm font-bold sm:justify-start">
-                          {item.discount > 0 ? (
-                            <span className="text-primary">-{item.discount}% KEDVEZMÉNY</span>
-                          ) : null}
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-start">
+                        <div className="relative mx-auto h-32 w-32 shrink-0 overflow-hidden border border-border bg-muted sm:mx-0">
+                          <FallbackImage
+                            src={item.image}
+                            alt={item.name}
+                            width={128}
+                            height={128}
+                            className="h-full w-full object-cover"
+                          />
                         </div>
-                      </div>
 
-                      <div className="flex items-center border border-border bg-muted/50 p-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-12 text-center font-black text-foreground">{item.quantity}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.stock}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
-                        <div className="text-right">
-                          <div className="text-2xl font-black text-foreground">{formatHuf(breakdown.lineGross)}</div>
-                          <div className="mt-1 space-y-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            <p>Egység nettó: {formatHuf(breakdown.unitNet)}</p>
-                            <p>
-                              Egység ÁFA: {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)
+                        <div className="min-w-0 text-center sm:text-left">
+                          <Link href={`/products/${item.slug}`}>
+                            <h3 className="mb-2 text-xl font-heading font-black uppercase text-foreground transition-colors hover:text-[var(--primary-foreground)]">
+                              {item.name}
+                            </h3>
+                          </Link>
+                          {item.variantLabel ? (
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--primary-foreground)]">
+                              {item.variantLabel}
                             </p>
-                            <p>Egység bruttó: {formatHuf(breakdown.unitGross)}</p>
+                          ) : null}
+                          {item.discount > 0 ? (
+                            <p className="mt-2 text-sm font-bold text-[var(--primary-foreground)]">
+                              -{item.discount}% KEDVEZMÉNY
+                            </p>
+                          ) : null}
+                          <div className="mt-4 inline-flex items-center border border-border bg-muted/50 p-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="w-12 text-center font-black text-foreground">{item.quantity}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-none text-foreground hover:bg-muted"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              disabled={item.quantity >= item.stock}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-none text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                          onClick={() => removeItem(item.id)}
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
+
+                        <div className="flex items-start justify-between gap-4 border-t border-border pt-4 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                          <div className="min-w-[10rem] text-left sm:text-right">
+                            <p className="text-2xl font-black tabular-nums text-foreground">
+                              {formatHuf(breakdown.lineGross)}
+                            </p>
+                            <dl className="mt-2 space-y-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                              <div className="flex justify-between gap-4 sm:block">
+                                <dt className="sm:inline">Egység nettó</dt>
+                                <dd className="tabular-nums sm:inline sm:before:content-[':_']">
+                                  {formatHuf(breakdown.unitNet)}
+                                </dd>
+                              </div>
+                              <div className="flex justify-between gap-4 sm:block">
+                                <dt className="sm:inline">Egység ÁFA ({breakdown.vatPercent}%)</dt>
+                                <dd className="tabular-nums sm:inline sm:before:content-[':_']">
+                                  {formatHuf(breakdown.unitVat)}
+                                </dd>
+                              </div>
+                              <div className="flex justify-between gap-4 sm:block">
+                                <dt className="sm:inline">Egység bruttó</dt>
+                                <dd className="tabular-nums sm:inline sm:before:content-[':_']">
+                                  {formatHuf(breakdown.unitGross)}
+                                </dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 rounded-none text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                            onClick={() => removeItem(item.id)}
+                            aria-label="Tétel eltávolítása"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </div>
                     </motion.div>
                   )
@@ -239,7 +273,7 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
                     className={cn(
                       "h-12 w-12 rounded-none font-black transition-all",
                       currentPage === i + 1
-                        ? "border-primary bg-primary text-primary-foreground"
+                        ? "border-primary-foreground/35 bg-primary text-primary-foreground"
                         : "border-border text-muted-foreground hover:border-muted-foreground/30"
                     )}
                     onClick={() => setCurrentPage(i + 1)}
@@ -258,24 +292,22 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
               </h2>
 
               <div className="mb-10 space-y-6">
-                <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="flex items-center justify-between gap-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   <span>Részösszeg (Nettó)</span>
-                  <span>{formatHuf(totalBreakdown.net)}</span>
+                  <span className="tabular-nums text-foreground">{formatHuf(totalBreakdown.net)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="flex items-center justify-between gap-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   <span>ÁFA</span>
-                  <span>{formatHuf(totalBreakdown.vat)}</span>
+                  <span className="tabular-nums text-foreground">{formatHuf(totalBreakdown.vat)}</span>
                 </div>
                 <Separator className="bg-border" />
-                <div className="flex items-end justify-between">
-                  <div className="flex flex-col">
-                    <span className="mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-                      Fizetendő összesen
-                    </span>
-                    <span className="text-4xl font-black leading-none tracking-tighter text-primary">
-                      {formatHuf(totalBreakdown.gross)}
-                    </span>
-                  </div>
+                <div className="flex items-end justify-between gap-4">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                    Fizetendő összesen
+                  </span>
+                  <span className="text-4xl font-black leading-none tracking-tighter tabular-nums text-foreground">
+                    {formatHuf(totalBreakdown.gross)}
+                  </span>
                 </div>
               </div>
 
@@ -292,20 +324,20 @@ export function CartPageView({ variant = "page" }: { variant?: CartPageVariant }
               </Button>
 
               <div className="mt-10 space-y-4">
-                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
-                  <Truck className="h-5 w-5 text-primary" />
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary-foreground/30">
+                  <Truck className="h-5 w-5 text-primary-foreground" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Gyors és biztos házhozszállítás
                   </span>
                 </div>
-                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary-foreground/30">
+                  <ShieldCheck className="h-5 w-5 text-primary-foreground" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Hivatalos garancia minden termékre
                   </span>
                 </div>
-                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary/30">
-                  <CreditCard className="h-5 w-5 text-primary" />
+                <div className="group flex items-center gap-4 rounded-none border border-border bg-muted/50 p-4 transition-colors hover:border-primary-foreground/30">
+                  <CreditCard className="h-5 w-5 text-primary-foreground" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Biztonságos online fizetési lehetőségek
                   </span>

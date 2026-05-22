@@ -10,6 +10,8 @@ const featureFindMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const orderFindMock = vi.fn();
 const glsCreateLabelMock = vi.fn();
+const foxpostCreateParcelMock = vi.fn();
+const foxpostCreateShipmentMock = vi.fn();
 const mailerSendMock = vi.fn();
 
 const shippingCreateMock = vi.fn();
@@ -30,6 +32,12 @@ vi.mock("@/models/FeatureFlag", () => ({
 }));
 vi.mock("@/services/gls", () => ({
   GlsService: { createLabelForOrder: glsCreateLabelMock },
+}));
+vi.mock("@/services/foxpost", () => ({
+  FoxpostService: {
+    createParcelForOrder: foxpostCreateParcelMock,
+    createShipmentForOrder: foxpostCreateShipmentMock,
+  },
 }));
 vi.mock("@/services/mailer", () => ({ MailerService: { sendEmail: mailerSendMock } }));
 vi.mock("@/models/Order", () => ({
@@ -75,6 +83,12 @@ describe("admin actions and routes", () => {
       }),
     });
     glsCreateLabelMock.mockResolvedValue({ labelDataBase64: "UERG", parcelNumber: "123" });
+    foxpostCreateParcelMock.mockResolvedValue({ clFoxId: "CLFOX1", refCode: "ref" });
+    foxpostCreateShipmentMock.mockResolvedValue({
+      clFoxId: "CLFOX1",
+      labelDataBase64: "UERG",
+      labelPageSize: "A6",
+    });
   });
 
   it("seeds and returns feature flags", async () => {
@@ -87,7 +101,7 @@ describe("admin actions and routes", () => {
   it("updates one feature flag and revalidates", async () => {
     const { updateFeatureFlag } = await import("@/actions/admin-flags");
     await updateFeatureFlag("shopPage", false);
-    expect(featureFindOneAndUpdateMock).toHaveBeenCalledWith({ key: "shopPage" }, { enabled: false }, { new: true });
+    expect(featureFindOneAndUpdateMock).toHaveBeenCalledWith({ key: "shopPage" }, { enabled: false }, { returnDocument: "after" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/admin/info");
   });
 
@@ -170,6 +184,31 @@ describe("admin actions and routes", () => {
     });
     const { GET } = await import("@/app/api/admin/orders/[id]/gls-label/route");
     const req = new NextRequest("http://localhost/api/admin/orders/1/gls-label");
+    const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/pdf");
+  });
+
+  it("generates foxpost shipment from admin order action", async () => {
+    orderFindByIdMock.mockResolvedValueOnce({
+      _id: { toString: () => "507f1f77bcf86cd799439011" },
+      foxpostParcelPoint: { id: "hu5516", name: "Fox" },
+      foxpostShipment: {},
+      shippingAddress: { name: "N", email: "a@a.com", phone: "+36201234567" },
+      save: vi.fn(),
+    });
+    const { generateOrderFoxpostShipment } = await import("@/actions/admin-orders");
+    const result = await generateOrderFoxpostShipment("507f1f77bcf86cd799439011");
+    expect(result.success).toBe(true);
+    expect(foxpostCreateShipmentMock).toHaveBeenCalled();
+  });
+
+  it("serves Foxpost pdf stream for admin", async () => {
+    orderFindByIdMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({ foxpostShipment: { labelDataBase64: "UERG" } }),
+    });
+    const { GET } = await import("@/app/api/admin/orders/[id]/foxpost-label/route");
+    const req = new NextRequest("http://localhost/api/admin/orders/1/foxpost-label");
     const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("application/pdf");

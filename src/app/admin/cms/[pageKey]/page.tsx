@@ -17,6 +17,7 @@ import { FooterSettingsService } from "@/services/footer-settings"
 import { SeoSettingsService } from "@/services/seo-settings"
 import { getEffectiveThemeBase, ThemeService } from "@/services/theme"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
+import { resolveContactDisplayField } from "@/lib/contact-display"
 import type { FlowRouteKey } from "@/templates/types"
 import { getShopCmsPreviewDeps, getPdpPreviewProduct } from "@/features/template-cms/resolve-cms-preview-deps"
 import type { ShopContent } from "@/templates/default-modern/pages/shop/schema"
@@ -76,9 +77,18 @@ export default async function CmsPageEditor({
               data: {
                 ...block.data,
                 companyName: block.data.companyName || dependencies.company.name,
-                address: block.data.address || dependencies.company.address,
-                phone: block.data.phone || dependencies.company.phone,
-                email: block.data.email || dependencies.company.email,
+                address: resolveContactDisplayField(
+                  block.data.address,
+                  dependencies.company.address
+                ),
+                phone: resolveContactDisplayField(
+                  block.data.phone,
+                  dependencies.company.phone
+                ),
+                email: resolveContactDisplayField(
+                  block.data.email,
+                  dependencies.company.email
+                ),
               },
             }
           : block
@@ -100,7 +110,7 @@ export default async function CmsPageEditor({
             </h1>
             <p className="text-xs text-neutral-500">
               Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
-              <span className="ml-2 text-primary">· Blokkos főoldal</span>
+              <span className="ml-2 admin-text-accent">· Blokkos főoldal</span>
             </p>
           </div>
           <AdminCmsTabs editablePages={editablePages} activeSegment={pageKey} />
@@ -312,7 +322,7 @@ function SurfacePageLayout({
           <h1 className="text-3xl font-black uppercase tracking-tight text-white">CMS: {label}</h1>
           <p className="text-xs text-neutral-500">
             Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
-            <span className="ml-2 text-primary">· {subtitle}</span>
+            <span className="ml-2 admin-text-accent">· {subtitle}</span>
           </p>
         </div>
         <AdminCmsTabs editablePages={editablePages} activeSegment={pageKey} />

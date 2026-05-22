@@ -29,7 +29,7 @@ export function EditableHeading({
       }}
       placeholder={placeholder}
       className={cn(
-        "w-full bg-transparent border border-dashed border-white/20 px-2 py-1 text-white focus:outline-none focus:border-primary",
+        "w-full bg-transparent border border-dashed border-white/20 px-2 py-1 text-white focus:outline-none focus:border-primary-foreground/50",
         className
       )}
     />

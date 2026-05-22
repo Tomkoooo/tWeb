@@ -35,7 +35,7 @@ export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageD
     <main className="min-h-screen bg-gradient-to-b from-muted/40 via-background to-background pb-28 pt-36 text-foreground md:pt-40">
       <div className="container mx-auto px-4 sm:px-6">
         {(content.heading || content.subheading || cms.enabled) && (
-          <div className="mb-10 flex flex-col gap-4 border-l-4 border-primary pl-6 md:flex-row md:items-end md:justify-between">
+          <div className="mb-10 flex flex-col gap-4 border-l-4 border-primary-foreground/35 pl-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
               {(content.heading || cms.enabled) && (
                 <h1 className="font-serif text-4xl font-semibold tracking-tight md:text-5xl">
@@ -63,7 +63,7 @@ export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageD
             <p className="mb-6 max-w-md text-center text-muted-foreground">
               <EditableDocText path="emptyStateMessage" value={content.emptyStateMessage} />
             </p>
-            <Button asChild variant="outline" className="rounded-full border-primary/40 px-10">
+            <Button asChild variant="outline" className="rounded-full border-primary-foreground/40 px-10">
               <Link href="/shop">Összes termék</Link>
             </Button>
           </div>
@@ -91,7 +91,7 @@ export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageD
                       className={cn(
                         "h-10 min-w-10 rounded-full font-serif text-sm",
                         p === currentPage
-                          ? "border-primary bg-primary text-primary-foreground"
+                          ? "border-primary-foreground/35 bg-primary text-primary-foreground"
                           : "border-border bg-background/80 text-muted-foreground hover:text-foreground"
                       )}
                     >

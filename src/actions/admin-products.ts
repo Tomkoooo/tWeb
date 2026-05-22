@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-auth";
+import { deriveProductLevelFromVariants } from "@/lib/admin-product-variants";
 
 type VariantOptionInput = { name: string; values: string[] };
 type VariantInput = {
@@ -14,6 +15,7 @@ type VariantInput = {
   nameOverride?: string;
   descriptionOverride?: string;
   netPrice?: number;
+  grossPrice?: number;
   discount?: number;
   stock?: number;
   isActive?: boolean;
@@ -64,6 +66,10 @@ function sanitizeVariants(
         .join("-") ||
       `variant-${index + 1}`;
     const baseId = slugify(identitySource) || `variant-${index + 1}`;
+    const netPrice = Number(variant.netPrice ?? fallbackNetPrice) || 0;
+    const grossRaw = Number(variant.grossPrice);
+    const grossPrice =
+      Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined;
 
     return {
       id: baseId,
@@ -72,7 +78,8 @@ function sanitizeVariants(
       attributes: normalizedAttributes,
       nameOverride: String(variant.nameOverride || "").trim() || undefined,
       descriptionOverride: String(variant.descriptionOverride || "").trim() || undefined,
-      netPrice: Number(variant.netPrice ?? fallbackNetPrice) || 0,
+      netPrice,
+      grossPrice,
       discount: Number(variant.discount ?? 0) || 0,
       stock: Number(variant.stock ?? 0) || 0,
       isActive: variant.isActive !== false,
@@ -106,67 +113,123 @@ function sanitizeVariants(
   return values;
 }
 
-export async function createProduct(formData: FormData) {
-  await requireAdmin();
+function parseProductPricing(formData: FormData, variants: ReturnType<typeof sanitizeVariants>, variantsEnabled: boolean, requireVariantSelection: boolean) {
+  let netPrice = parseFloat(formData.get("netPrice") as string) || 0;
+  let stock = parseInt(formData.get("stock") as string, 10) || 0;
+  let discount = parseFloat(formData.get("discount") as string) || 0;
+  const grossRaw = parseFloat(String(formData.get("grossPrice") ?? ""));
+  let grossPrice = Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined;
 
+  if (variantsEnabled && requireVariantSelection && variants.length > 0) {
+    const derived = deriveProductLevelFromVariants(
+      variants.map((v) => ({
+        id: v.id,
+        attributes: v.attributes,
+        netPrice: v.netPrice,
+        grossPrice: v.grossPrice,
+        discount: v.discount,
+        stock: v.stock,
+        isActive: v.isActive,
+        isDefault: Boolean(v.isDefault),
+      }))
+    );
+    netPrice = derived.netPrice;
+    stock = derived.stock;
+    discount = derived.discount;
+    if (derived.grossPrice > 0) grossPrice = derived.grossPrice;
+  }
+
+  return { netPrice, stock, discount, grossPrice };
+}
+
+async function persistProduct(
+  mode: "create" | "update",
+  id: string | undefined,
+  formData: FormData
+) {
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const images = formData.getAll("images") as string[];
-  const stock = parseInt(formData.get("stock") as string) || 0;
-  const netPrice = parseFloat(formData.get("netPrice") as string) || 0;
   const vatPercent =
     Math.min(100, Math.max(0, Math.round(parseFloat(String(formData.get("vatPercent"))) || 27))) || 27;
-  const discount = parseFloat(formData.get("discount") as string) || 0;
   const category = formData.get("category") as string;
   const slug = slugify(name);
-  
+
   const isActive = formData.get("isActive") === "true";
   const isVisible = formData.get("isVisible") === "true";
+  const featuredRaw = String(formData.get("featuredListIndex") ?? "").trim();
+  const featuredListIndex =
+    featuredRaw === ""
+      ? null
+      : Number.isFinite(Number(featuredRaw))
+        ? Math.round(Number(featuredRaw))
+        : null;
 
   const seo = {
     title: (formData.get("seo_title") as string) || name,
-    description: (formData.get("seo_description") as string) || (description.substring(0, 160)),
-    keywords: (formData.get("seo_keywords") as string || "").split(",").map(k => k.trim()),
+    description: (formData.get("seo_description") as string) || description.substring(0, 160),
+    keywords: ((formData.get("seo_keywords") as string) || "").split(",").map((k) => k.trim()),
   };
+
   const variantsEnabledInput = formData.get("variantsEnabled") === "true";
   const requireVariantSelection = formData.get("requireVariantSelection") === "true";
   const variantOptionsInput = parseJsonField<VariantOptionInput[]>(
     formData.get("variantOptionsJson"),
     []
   );
-  const variantsInput = parseJsonField<VariantInput[]>(
-    formData.get("variantsJson"),
-    []
-  );
+  const variantsInput = parseJsonField<VariantInput[]>(formData.get("variantsJson"), []);
   const hasVariantPayload = Array.isArray(variantsInput) && variantsInput.length > 0;
   const variantsEnabled = variantsEnabledInput || hasVariantPayload;
   const variantOptions = variantsEnabled ? sanitizeVariantOptions(variantOptionsInput) : [];
-  const variants = variantsEnabled ? sanitizeVariants(variantsInput, netPrice) : [];
+
+  const preNet = parseFloat(formData.get("netPrice") as string) || 0;
+  const variants = variantsEnabled ? sanitizeVariants(variantsInput, preNet) : [];
+
   if (variantsEnabled && variants.length === 0) {
     throw new Error("A variáns termékhez legalább egy variáns kötelező.");
   }
 
+  const { netPrice, stock, discount, grossPrice } = parseProductPricing(
+    formData,
+    variants,
+    variantsEnabled,
+    requireVariantSelection
+  );
+
+  const payload = {
+    name,
+    description,
+    images,
+    stock,
+    netPrice,
+    grossPrice,
+    vatPercent,
+    discount,
+    category: category as any,
+    seo,
+    variantOptions,
+    variants,
+    requireVariantSelection: variantsEnabled ? requireVariantSelection : false,
+    isActive,
+    isVisible,
+    featuredListIndex,
+  };
+
+  if (mode === "create") {
+    await ProductService.create({ ...payload, slug });
+  } else {
+    await ProductService.update(id!, { ...payload, slug: slugify(name) });
+  }
+}
+
+export async function createProduct(formData: FormData) {
+  await requireAdmin();
+
   try {
-    const baseStock = stock;
-    await ProductService.create({
-      name,
-      description,
-      images,
-      stock: baseStock,
-      netPrice,
-      vatPercent,
-      discount,
-      category: category as any,
-      slug,
-      seo,
-      variantOptions,
-      variants,
-      requireVariantSelection: variantsEnabled ? requireVariantSelection : false,
-      isActive,
-      isVisible
-    });
+    await persistProduct("create", undefined, formData);
   } catch (error) {
     console.error("Error creating product:", error);
+    throw error;
   }
   revalidatePath("/admin/products");
   redirect("/admin/products");
@@ -175,68 +238,15 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(id: string, formData: FormData) {
   await requireAdmin();
 
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const images = formData.getAll("images") as string[];
-  const stock = parseInt(formData.get("stock") as string) || 0;
-  const netPrice = parseFloat(formData.get("netPrice") as string) || 0;
-  const vatPercent =
-    Math.min(100, Math.max(0, Math.round(parseFloat(String(formData.get("vatPercent"))) || 27))) || 27;
-  const discount = parseFloat(formData.get("discount") as string) || 0;
-  const category = formData.get("category") as string;
-
-  const isActive = formData.get("isActive") === "true";
-  const isVisible = formData.get("isVisible") === "true";
-
-  const seo = {
-    title: (formData.get("seo_title") as string) || name,
-    description: (formData.get("seo_description") as string) || (description.substring(0, 160)),
-    keywords: (formData.get("seo_keywords") as string || "").split(",").map(k => k.trim()),
-  };
-  const variantsEnabledInput = formData.get("variantsEnabled") === "true";
-  const requireVariantSelection = formData.get("requireVariantSelection") === "true";
-  const variantOptionsInput = parseJsonField<VariantOptionInput[]>(
-    formData.get("variantOptionsJson"),
-    []
-  );
-  const variantsInput = parseJsonField<VariantInput[]>(
-    formData.get("variantsJson"),
-    []
-  );
-  const hasVariantPayload = Array.isArray(variantsInput) && variantsInput.length > 0;
-  const variantsEnabled = variantsEnabledInput || hasVariantPayload;
-  const variantOptions = variantsEnabled ? sanitizeVariantOptions(variantOptionsInput) : [];
-  const variants = variantsEnabled ? sanitizeVariants(variantsInput, netPrice) : [];
-  if (variantsEnabled && variants.length === 0) {
-    throw new Error("A variáns termékhez legalább egy variáns kötelező.");
-  }
-
   try {
-    const baseStock = stock;
-    await ProductService.update(id, {
-      name,
-      description,
-      images,
-      stock: baseStock,
-      netPrice,
-      vatPercent,
-      slug: slugify(name),
-      discount,
-      category: category as any,
-      seo,
-      variantOptions,
-      variants,
-      requireVariantSelection: variantsEnabled ? requireVariantSelection : false,
-      isActive,
-      isVisible
-    });
+    await persistProduct("update", id, formData);
   } catch (error) {
     console.error("Error updating product:", error);
+    throw error;
   }
   revalidatePath("/admin/products");
   redirect("/admin/products");
 }
-
 
 export async function deleteProduct(id: string) {
   await requireAdmin();
@@ -245,6 +255,7 @@ export async function deleteProduct(id: string) {
     await ProductService.delete(id);
   } catch (error) {
     console.error("Error deleting product:", error);
+    throw error;
   }
   revalidatePath("/admin/products");
   redirect("/admin/products");

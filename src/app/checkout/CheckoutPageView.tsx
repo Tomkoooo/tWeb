@@ -141,7 +141,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                     className={cn(
                       "w-12 h-12 rounded-none flex items-center justify-center border-2 transition-all duration-500 font-black",
                       isActive
-                        ? "bg-primary border-primary text-primary-foreground scale-110 shadow-[0_0_20px_color-mix(in_oklab,var(--primary)_30%,transparent)]"
+                        ? "bg-primary border-primary-foreground/35 text-primary-foreground scale-110 shadow-[0_0_20px_color-mix(in_oklab,var(--primary)_30%,transparent)]"
                         : isCompleted
                           ? "bg-muted text-foreground border-border"
                           : "bg-background border-border text-muted-foreground"
@@ -220,7 +220,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
             <div className="lg:col-span-4">
               <div className="glass-card p-8 border-border sticky top-40">
                 <div className="flex items-center gap-3 mb-8 border-b border-border pb-4">
-                  <Package className="w-5 h-5 text-primary" />
+                  <Package className="w-5 h-5 text-primary-foreground" />
                   <h3 className="font-heading font-black text-foreground uppercase tracking-tighter">
                     MEGRENDELÉS
                   </h3>
@@ -247,7 +247,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                         <div className="grow min-w-0">
                           <p className="text-[10px] font-black text-foreground uppercase truncate">{item.name}</p>
                           {item.variantLabel ? (
-                            <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
+                            <p className="text-[10px] text-primary-foreground font-black uppercase tracking-widest mt-1">
                               {item.variantLabel}
                             </p>
                           ) : null}
@@ -270,7 +270,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                   </div>
                   <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     <span>Szállítás</span>
-                    <span className={cn(selectedShipping ? "text-foreground" : "text-primary")}>
+                    <span className={cn(selectedShipping ? "text-foreground" : "text-primary-foreground")}>
                       {selectedShipping ? formatHuf(totals.shippingFee) : "VÁLASZTÁS ALATT"}
                     </span>
                   </div>
@@ -281,7 +281,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                     </div>
                   )}
                   {totals.discount > 0 && (
-                    <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
+                    <div className="flex justify-between text-[10px] font-black text-primary-foreground uppercase tracking-widest">
                       <span>Kedvezmény</span>
                       <span>-{formatHuf(totals.discount)}</span>
                     </div>
@@ -299,7 +299,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                       <p className="text-[10px] font-black text-foreground uppercase tracking-[0.3em] mb-1">
                         Összesen
                       </p>
-                      <p className="text-3xl font-black text-primary tracking-tighter leading-none">
+                      <p className="text-3xl font-black text-foreground tracking-tighter leading-none">
                         {formatHuf(totalBreakdown.gross)}
                       </p>
                     </div>

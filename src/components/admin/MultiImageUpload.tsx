@@ -10,9 +10,15 @@ interface MultiImageUploadProps {
   onUpload: (filenames: string[]) => void
   currentImages?: string[]
   aspect?: number
+  flexibleCrop?: boolean
 }
 
-export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: MultiImageUploadProps) {
+export function MultiImageUpload({
+  onUpload,
+  currentImages = [],
+  aspect = 1,
+  flexibleCrop = true,
+}: MultiImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [images, setImages] = useState<string[]>(currentImages)
   const [cropQueue, setCropQueue] = useState<string[]>([])
@@ -114,7 +120,8 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
             
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
               <div className="flex justify-end gap-1">
-                <button 
+                <button
+                  type="button"
                   onClick={() => removeImage(index)}
                   className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-red-500 transition-colors"
                 >
@@ -124,14 +131,16 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
 
               <div className="flex justify-between items-end">
                 <div className="flex gap-1">
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => moveImage(index, 'up')}
                     disabled={index === 0}
                     className="p-1 bg-black/60 backdrop-blur-md rounded-md text-white disabled:opacity-30"
                   >
                     <GripVertical className="w-3 h-3 rotate-90" />
                   </button>
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => moveImage(index, 'down')}
                     disabled={index === images.length - 1}
                     className="p-1 bg-black/60 backdrop-blur-md rounded-md text-white disabled:opacity-30"
@@ -140,11 +149,12 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
                   </button>
                 </div>
                 
-                <button 
+                <button
+                  type="button"
                   onClick={() => setAsMain(index)}
                   className={cn(
                     "p-1.5 rounded-lg transition-colors",
-                    index === 0 ? "bg-primary text-white" : "bg-black/60 text-white hover:text-primary"
+                    index === 0 ? "bg-white/20 text-white" : "bg-black/60 text-white hover:text-highlight"
                   )}
                   title={index === 0 ? "Elsődleges kép" : "Legyen elsődleges"}
                 >
@@ -165,7 +175,7 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
 
         <label className="relative aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-primary/40 transition-all">
           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2">
-            {uploading ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-neutral-600" />}
+            {uploading ? <Loader2 className="w-5 h-5 text-highlight animate-spin" /> : <Upload className="w-5 h-5 text-neutral-600" />}
           </div>
           <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Képek hozzáadása</span>
           <input type="file" className="hidden" onChange={handleUpload} accept="image/*" multiple />
@@ -182,6 +192,7 @@ export function MultiImageUpload({ onUpload, currentImages = [], aspect = 1 }: M
         <ImageCropper
           image={cropQueue[0]}
           aspect={aspect}
+          flexibleCrop={flexibleCrop}
           onCropComplete={handleCropComplete}
           onCancel={handleCancelCrop}
         />

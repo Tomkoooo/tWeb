@@ -16,7 +16,7 @@ export default async function AdminCouponsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            KUPONOK <span className="text-primary underline decoration-primary/10 underline-offset-8">KEZELÉSE</span>
+            KUPONOK <span className="admin-headline-accent">KEZELÉSE</span>
           </h1>
           <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px]">Kedvezményes kódok és promóciók beállítása</p>
         </div>
@@ -33,11 +33,11 @@ export default async function AdminCouponsPage() {
 
       <div className="grid grid-cols-1 gap-6">
         {coupons.map((coupon: any) => (
-          <div key={coupon._id} className="glass-card p-8 border-white/5 group hover:border-primary/20 transition-all duration-500">
+          <div key={coupon._id} className="glass-card p-8 border-white/5 group hover:border-white/20 transition-all duration-500">
             <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
               <div className="flex gap-6 items-center">
-                <div className="w-16 h-16 bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Tag className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 admin-icon-well flex items-center justify-center">
+                  <Tag className="w-8 h-8 admin-icon-accent" />
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-1">
@@ -49,7 +49,7 @@ export default async function AdminCouponsPage() {
                       {coupon.isActive ? "AKTÍV" : "INAKTÍV"}
                     </div>
                   </div>
-                  <p className="text-primary font-black uppercase tracking-widest text-xs">
+                  <p className="admin-value font-black uppercase tracking-widest text-xs">
                     {coupon.type === "percentage" ? `${coupon.value}% KEDVEZMÉNY` : 
                      coupon.type === "fixed" ? `${coupon.value.toLocaleString("hu-HU")} FT KEDVEZMÉNY` : 
                      "INGYENES SZÁLLÍTÁS"}

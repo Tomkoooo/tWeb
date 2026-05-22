@@ -47,7 +47,10 @@ export function InspectorPanel({ selectedBlock, onFieldChange, onDelete, onDupli
             >
               Pick featured products
             </button>
-            <p className="text-xs text-neutral-400">{selectedProducts.length} product(s) selected</p>
+            <p className="text-xs text-neutral-400">{selectedProducts.length} termék kiválasztva (sorrend = megjelenítés)</p>
+            <p className="text-xs text-neutral-500">
+              Üres lista esetén a Webshop → Kiemelt termékek beállítások érvényesek.
+            </p>
           </div>
         ) : null}
         <button

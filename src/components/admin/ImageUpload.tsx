@@ -9,9 +9,15 @@ interface ImageUploadProps {
   onUpload: (filename: string) => void
   currentImage?: string
   aspect?: number
+  flexibleCrop?: boolean
 }
 
-export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadProps) {
+export function ImageUpload({
+  onUpload,
+  currentImage,
+  aspect = 1,
+  flexibleCrop = true,
+}: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(currentImage)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
@@ -65,7 +71,7 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
 
   return (
     <div className="space-y-4">
-      <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-primary/40">
+      <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-white/40">
         {preview ? (
           <>
             <FallbackImage
@@ -75,7 +81,8 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
               height={240}
               className="w-full h-full object-cover" 
             />
-            <button 
+            <button
+              type="button"
               onClick={() => { setPreview(""); onUpload(""); }}
               className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
             >
@@ -94,7 +101,7 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
 
         {uploading && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <Loader2 className="w-8 h-8 text-highlight animate-spin" />
           </div>
         )}
       </div>
@@ -103,6 +110,7 @@ export function ImageUpload({ onUpload, currentImage, aspect = 1 }: ImageUploadP
         <ImageCropper
           image={selectedFile}
           aspect={aspect}
+          flexibleCrop={flexibleCrop}
           onCropComplete={handleCropComplete}
           onCancel={() => setIsCropping(false)}
         />

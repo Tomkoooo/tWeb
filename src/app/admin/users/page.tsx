@@ -35,7 +35,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Vásárlók <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
+          Vásárlók <span className="admin-headline-accent">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Felhasználók, szerepkörök és vásárlási összefoglaló.
@@ -97,7 +97,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
                   <td className="px-5 py-5">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-primary" />
+                        <User className="w-4 h-4 admin-icon-accent" />
                         <span className="text-white font-black uppercase tracking-wider">
                           {item.name || "Névtelen felhasználó"}
                         </span>

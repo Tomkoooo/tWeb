@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         status: { $in: ["created", "checkout_started"] },
       },
       { $set: { status: "failed", lastError: "Checkout cancelled" } },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!updated) {

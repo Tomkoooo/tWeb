@@ -13,6 +13,7 @@ import {
   cxTextarea,
 } from "@/components/checkout/checkout-appearance"
 import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import { TradingLimitsContactNote } from "@/components/checkout/TradingLimitsContactNote"
 import { getCountryDisplayName } from "@/lib/country-codes"
 
 interface ShippingStepProps {
@@ -35,6 +36,7 @@ export function ShippingStep({
     onChange({ ...data, [field]: value })
   }
   const a = appearance
+  const fieldClass = cn(cxInput(a), a === "dark" && "shadow-none dark:bg-transparent")
 
   const toggleSameAsBilling = () => {
     const isNowSame = !data.isSameAsBilling
@@ -52,14 +54,16 @@ export function ShippingStep({
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
+      <TradingLimitsContactNote limits={tradingLimits} kind="shipping" appearance={a} />
+
       <button type="button" onClick={toggleSameAsBilling} className="group flex cursor-pointer items-center gap-4">
         <div
           className={cn(
             "flex h-6 w-6 items-center justify-center border-2 transition-all duration-300",
             data.isSameAsBilling
-              ? "border-primary bg-primary"
+              ? "border-primary-foreground/35 bg-primary"
               : a === "light"
-                ? "border-border bg-transparent group-hover:border-primary/50"
+                ? "border-border bg-transparent group-hover:border-primary-foreground/50"
                 : "border-white/20 bg-transparent group-hover:border-white/40"
           )}
         >
@@ -83,9 +87,10 @@ export function ShippingStep({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 gap-8 pt-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2 md:gap-8">
               <CheckoutCountryPicker
                 id="checkout-shipping-country"
+                className="md:col-span-2"
                 valueCode={data.countryCode || "HU"}
                 limits={tradingLimits}
                 kind="shipping"
@@ -104,7 +109,7 @@ export function ShippingStep({
                   value={data.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                   placeholder={a === "light" ? "Teljes név" : "TELJES NÉV"}
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
 
@@ -114,7 +119,7 @@ export function ShippingStep({
                   value={data.zip}
                   onChange={(e) => handleChange("zip", e.target.value)}
                   placeholder="1234"
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
 
@@ -124,7 +129,7 @@ export function ShippingStep({
                   value={data.city}
                   onChange={(e) => handleChange("city", e.target.value)}
                   placeholder={a === "light" ? "Budapest" : "BUDAPEST"}
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
 
@@ -134,7 +139,7 @@ export function ShippingStep({
                   value={data.street}
                   onChange={(e) => handleChange("street", e.target.value)}
                   placeholder={a === "light" ? "Utca, házszám" : "VALAMI UTCA 12."}
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
 
@@ -145,7 +150,7 @@ export function ShippingStep({
                   value={data.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
                   placeholder="name@example.com"
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
 
@@ -155,7 +160,7 @@ export function ShippingStep({
                   value={data.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   placeholder="+36701234567"
-                  className={cxInput(a)}
+                  className={fieldClass}
                 />
               </div>
             </div>

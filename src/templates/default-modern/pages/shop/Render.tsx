@@ -138,7 +138,7 @@ export function ShopRender({
                           className={cn(
                             "w-12 h-12 rounded-none font-black tracking-widest text-xs",
                             p === currentPage
-                              ? "bg-primary border-primary text-white"
+                              ? "bg-primary border-primary-foreground/35 text-white"
                               : "bg-background-dark border-white/10 text-neutral-500 hover:text-white"
                           )}
                         >

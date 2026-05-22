@@ -28,7 +28,7 @@ export function AboutBlockView({ block }: { block: AboutBlock }) {
                 key={`${item.title}-${index}`}
                 className="space-y-2 border border-border bg-muted/30 p-4"
               >
-                {Icon ? <Icon className="h-5 w-5 text-primary" /> : null}
+                {Icon ? <Icon className="h-5 w-5 text-primary-foreground" /> : null}
                 <h3 className="font-bold text-foreground">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.description}</p>
               </article>

@@ -1,0 +1,19 @@
+# Paste customer-provided website copy below this line.
+# Lines starting with # are ignored by humans/agents (not read by any script automatically).
+#
+# The agent reads this file, runs cms:inspect for the user-specified template,
+# then writes scripts/imports/payload.json and runs cms:apply-import.
+# ---
+
+Hero headline:
+Your headline here
+
+Hero intro:
+Short value proposition paragraph.
+
+About us:
+Longer story paragraph from the client.
+
+Contact email: hello@example.com
+Phone: +36 1 234 5678
+Address: Budapest, Example utca 1.

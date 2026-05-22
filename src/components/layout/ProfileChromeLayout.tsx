@@ -2,7 +2,7 @@ import Link from "next/link"
 import type { FlowProfileRouteChromeProps } from "@/templates/types"
 
 const navClass =
-  "group flex items-center justify-between border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:bg-primary/10"
+  "group flex items-center justify-between border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary-foreground/40 hover:bg-primary/10"
 
 /** Default profile area chrome (sidebar + main column). */
 export function ProfileChromeLayout({ children, shopEnabled: _shopEnabled }: FlowProfileRouteChromeProps) {

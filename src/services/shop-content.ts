@@ -56,7 +56,7 @@ export const ShopContentService = {
     return ShopContent.findOneAndUpdate(
       { key },
       { value, section },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
   },
 

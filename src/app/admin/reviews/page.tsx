@@ -56,7 +56,7 @@ function Stars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={cn("w-4 h-4", star <= rating ? "fill-accent text-primary" : "text-white/10")}
+          className={cn("w-4 h-4", star <= rating ? "fill-accent text-highlight" : "text-white/10")}
         />
       ))}
     </div>
@@ -73,7 +73,7 @@ export default async function AdminReviewsPage() {
     <div className="space-y-10 animate-in fade-in duration-700">
       <div>
         <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Vélemények <span className="text-primary underline decoration-primary/10 underline-offset-8">Kezelése</span>
+          Vélemények <span className="admin-headline-accent">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">
           Termékértékelések és bolti visszajelzések moderálása egy helyen.
@@ -82,7 +82,7 @@ export default async function AdminReviewsPage() {
 
       <section className="space-y-5">
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-5 h-5 text-primary" />
+          <MessageSquare className="w-5 h-5 admin-icon-accent" />
           <h2 className="text-xl font-black uppercase tracking-wider">Termékértékelések</h2>
         </div>
 
@@ -101,7 +101,7 @@ export default async function AdminReviewsPage() {
                         {review.product?.name || "Törölt termék"}
                       </h3>
                       {review.product?.slug && (
-                        <Link href={`/products/${review.product.slug}`} className="text-[10px] uppercase tracking-widest text-primary hover:underline">
+                        <Link href={`/products/${review.product.slug}`} className="text-[10px] uppercase tracking-widest admin-link-accent">
                           termékoldal
                         </Link>
                       )}
@@ -146,7 +146,7 @@ export default async function AdminReviewsPage() {
 
       <section className="space-y-5">
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-5 h-5 text-primary" />
+          <MessageSquare className="w-5 h-5 admin-icon-accent" />
           <h2 className="text-xl font-black uppercase tracking-wider">Boltértékelések</h2>
         </div>
 

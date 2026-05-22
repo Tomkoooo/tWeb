@@ -10,6 +10,8 @@ Read [CREATING_A_TEMPLATE.md](./CREATING_A_TEMPLATE.md) before generating code. 
 
 For **homepage block CMS** internals (data model, `CmsEditProvider`, inline primitives, rendering caveats), read [HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](../cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md).
 
+To **import customer-provided copy** into CMS/template content, read [AGENT_CONTENT_IMPORT.md](../cms/AGENT_CONTENT_IMPORT.md) (`npm run cms:inspect`, `npm run cms:apply-import`).
+
 ## Full-site branding (mandatory for new registry templates)
 
 A new template is **not** “chrome + one static page.” Operators expect a coherent **layout language** everywhere the engine delegates to the template. Work through this list in order; skipping restyled pages while only editing Navbar, Footer, and `/about` is a failed template.

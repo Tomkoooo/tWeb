@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "notes": "Example: map customer copy into homepage blocks for default-modern",
+  "publish": false,
+  "pages": [
+    {
+      "pageKey": "page:home",
+      "mode": "merge",
+      "blockPatches": [
+        {
+          "matchBy": "type",
+          "target": "hero",
+          "data": {
+            "title": "Customer headline",
+            "description": "Customer hero paragraph from pasted copy.",
+            "primaryCtaLabel": "Bolt",
+            "primaryCtaHref": "/shop"
+          }
+        },
+        {
+          "matchBy": "type",
+          "target": "about",
+          "data": {
+            "title": "Rólunk",
+            "paragraph": "Customer about section text."
+          }
+        },
+        {
+          "matchBy": "type",
+          "target": "contact",
+          "data": {
+            "title": "Kapcsolat",
+            "email": "hello@customer.hu",
+            "phone": "+36 1 234 5678",
+            "address": "Budapest, Példa utca 1."
+          }
+        }
+      ],
+      "content": {
+        "meta": {
+          "seoTitle": "Customer Shop | Főoldal",
+          "seoDescription": "SEO description from customer brief."
+        }
+      }
+    },
+    {
+      "pageKey": "page:shop",
+      "mode": "merge",
+      "content": {
+        "heading": "Termékek",
+        "subheading": "Fedezd fel a kínálatunkat"
+      }
+    }
+  ]
+}

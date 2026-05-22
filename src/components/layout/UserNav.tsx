@@ -26,7 +26,7 @@ export function UserNav() {
       <Button 
         onClick={() => signIn("google")}
         variant="ghost" 
-        className="text-xs font-black text-foreground hover:text-primary hover:bg-transparent tracking-[0.2em] uppercase px-0"
+        className="text-xs font-black text-foreground hover:text-primary-foreground hover:bg-transparent tracking-[0.2em] uppercase px-0"
       >
         <LogIn className="w-5 h-5 mr-2 sm:hidden" />
         <span className="hidden sm:inline">Bejelentkezés</span>
@@ -44,7 +44,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 border border-border hover:border-primary/50 transition-colors">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 border border-border hover:border-primary-foreground/50 transition-colors">
           <Avatar className="h-9 w-9">
             <AvatarImage src={user?.image || ""} alt={user?.name || ""} />
             <AvatarFallback className="bg-muted/40 text-foreground text-xs font-bold">{initials}</AvatarFallback>
@@ -61,13 +61,13 @@ export function UserNav() {
         <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuItem asChild>
           <Link href="/profile" className="cursor-pointer flex items-center gap-2 hover:bg-muted/40 focus:bg-muted/40">
-            <User className="mr-2 h-4 w-4 text-primary" />
+            <User className="mr-2 h-4 w-4 text-primary-foreground" />
             <span className="text-xs font-bold uppercase tracking-widest">Profil</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/profile/orders" className="cursor-pointer flex items-center gap-2 hover:bg-muted/40 focus:bg-muted/40">
-            <Package className="mr-2 h-4 w-4 text-primary" />
+            <Package className="mr-2 h-4 w-4 text-primary-foreground" />
             <span className="text-xs font-bold uppercase tracking-widest">Rendelések</span>
           </Link>
         </DropdownMenuItem>
@@ -77,7 +77,7 @@ export function UserNav() {
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem asChild>
               <Link href="/admin" className="cursor-pointer flex items-center gap-2 hover:bg-muted/40 focus:bg-muted/40">
-                <LayoutDashboard className="mr-2 h-4 w-4 text-primary" />
+                <LayoutDashboard className="mr-2 h-4 w-4 text-primary-foreground" />
                 <span className="text-xs font-bold uppercase tracking-widest">Admin Panel</span>
               </Link>
             </DropdownMenuItem>

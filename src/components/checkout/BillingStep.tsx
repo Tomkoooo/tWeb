@@ -12,6 +12,7 @@ import {
   cxTypeToggleShell,
 } from "@/components/checkout/checkout-appearance"
 import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
+import { TradingLimitsContactNote } from "@/components/checkout/TradingLimitsContactNote"
 import { getCountryDisplayName } from "@/lib/country-codes"
 
 interface BillingStepProps {
@@ -27,6 +28,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
     onChange({ ...data, [field]: value })
   }
   const a = appearance
+  const fieldClass = cn(cxInput(a), a === "dark" && "shadow-none dark:bg-transparent")
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -47,9 +49,12 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <TradingLimitsContactNote limits={tradingLimits} kind="billing" appearance={a} />
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
         <CheckoutCountryPicker
           id="checkout-billing-country"
+          className="md:col-span-2"
           valueCode={data.countryCode || "HU"}
           limits={tradingLimits}
           kind="billing"
@@ -67,8 +72,8 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            placeholder={a === "light" ? "Teljes név vagy cégnév" : "TELJES NÉV VAGY CÉGNÉV"}
-            className={cxInput(a)}
+            placeholder={a === "light" ? "Teljes név vagy cégnév" : "Teljes név vagy cégnév"}
+            className={fieldClass}
           />
         </div>
 
@@ -79,7 +84,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
               value={data.taxNumber}
               onChange={(e) => handleChange("taxNumber", e.target.value)}
               placeholder="12345678-1-12"
-              className={cxInput(a)}
+              className={fieldClass}
             />
           </div>
         )}
@@ -90,7 +95,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
             value={data.zip}
             onChange={(e) => handleChange("zip", e.target.value)}
             placeholder="1234"
-            className={cxInput(a)}
+            className={fieldClass}
           />
         </div>
 
@@ -99,8 +104,8 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.city}
             onChange={(e) => handleChange("city", e.target.value)}
-            placeholder={a === "light" ? "Budapest" : "BUDAPEST"}
-            className={cxInput(a)}
+            placeholder={a === "light" ? "Budapest" : "Budapest"}
+            className={fieldClass}
           />
         </div>
 
@@ -109,8 +114,8 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.street}
             onChange={(e) => handleChange("street", e.target.value)}
-            placeholder={a === "light" ? "Utca, házszám…" : "VALAMI UTCA 12. 3/4"}
-            className={cxInput(a)}
+            placeholder={a === "light" ? "Utca, házszám…" : "Valami utca 12. 3/4"}
+            className={fieldClass}
           />
         </div>
 
@@ -121,7 +126,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
             value={data.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
             placeholder="name@example.com"
-            className={cxInput(a)}
+            className={fieldClass}
           />
         </div>
 
@@ -131,7 +136,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
             value={data.phone || ""}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="+36701234567"
-            className={cxInput(a)}
+            className={fieldClass}
           />
         </div>
       </div>

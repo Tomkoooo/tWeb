@@ -12,7 +12,7 @@ export default async function AdminEmails() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Email <span className="text-primary underline decoration-primary/10 underline-offset-8">Sablonok</span>
+            Email <span className="admin-headline-accent">Sablonok</span>
           </h1>
           <p className="text-white/40 font-medium italic">Szabja testre a vásárlóknak küldött automatikus rendszerüzeneteket.</p>
         </div>
@@ -42,11 +42,11 @@ export default async function AdminEmails() {
           </div>
         ) : (
           templates.map((template) => (
-            <div key={template.type} className="group bg-white/5 border border-white/10 p-8 space-y-6 hover:border-primary/30 transition-all duration-300">
+            <div key={template.type} className="group bg-white/5 border border-white/10 p-8 space-y-6 hover:border-white/25 transition-all duration-300">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/20 flex items-center justify-center border border-primary/20 transition-transform group-hover:scale-110">
-                    <Mail className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 admin-icon-well flex items-center justify-center transition-transform group-hover:scale-110">
+                    <Mail className="w-6 h-6 admin-icon-accent" />
                   </div>
                   <div>
                     <h3 className="font-heading font-black text-xl text-white uppercase italic tracking-wider leading-none mb-1">

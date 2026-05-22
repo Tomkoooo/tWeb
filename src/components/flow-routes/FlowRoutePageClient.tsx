@@ -50,7 +50,7 @@ export function FlowRoutePageClient({
   if (RouteMain && shopEnabled === null) {
     return variant === "embedded" ? (
       <div className="flex justify-center py-12" aria-busy="true">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
       </div>
     ) : (
       <p className="sr-only">Betöltés</p>

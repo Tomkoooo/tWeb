@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose"
 export interface IProductSuggestionSetting extends Document {
   key: string
   enabled: boolean
+  showCartLinesInModal?: boolean
   modalTitle?: string
   modalHelper?: string
   maxSuggestions: number
@@ -14,6 +15,7 @@ const ProductSuggestionSettingSchema = new Schema<IProductSuggestionSetting>(
   {
     key: { type: String, required: true, unique: true, default: "default" },
     enabled: { type: Boolean, default: false },
+    showCartLinesInModal: { type: Boolean, default: false },
     modalTitle: { type: String },
     modalHelper: { type: String },
     maxSuggestions: { type: Number, default: 6 },

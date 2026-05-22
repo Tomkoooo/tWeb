@@ -20,7 +20,7 @@ export function EditableText({ label, value, onChange }: Props) {
     return (
       <button
         type="button"
-        className="w-full text-left p-2 border border-dashed border-white/20 text-white hover:border-primary"
+        className="w-full text-left p-2 border border-dashed border-white/20 text-white hover:border-primary-foreground/40"
         onClick={() => setEditing(true)}
       >
         <span className="text-[10px] uppercase tracking-widest text-neutral-400">{label}</span>

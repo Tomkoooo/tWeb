@@ -3,7 +3,6 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/store/useCartStore"
-import type { CartItem } from "@/store/useCartStore"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,10 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 import { formatHuf } from "@/lib/pricing"
 import { cn } from "@/lib/utils"
 import type { CheckoutSuggestionItemDto } from "@/services/checkout-product-suggestions"
+import { shouldOpenCheckoutSuggestionsModal } from "@/lib/checkout-suggestions-modal"
+import { checkoutSuggestionToCartItem } from "@/lib/checkout-suggestion-cart"
+import { suggestionLineInCart } from "@/lib/checkout-suggestion-product"
+import { CheckoutSuggestionProductRow } from "@/components/checkout-suggestions/CheckoutSuggestionProductRow"
 
 /** Optional Tailwind (or arbitrary) classes for templates to restyle the checkout suggestions modal. */
 export type CheckoutSuggestionsDialogPresentation = {
@@ -30,17 +33,30 @@ export type CheckoutSuggestionsDialogPresentation = {
   secondaryButtonClassName?: string
 }
 
+export type CheckoutSuggestionsCartLine = {
+  id: string
+  name: string
+  variantLabel?: string
+  quantity: number
+  price: number
+  image: string
+}
+
 export type CheckoutSuggestionsDialogProps = {
   open: boolean
   /** Sync open state; when transitioning to closed, parent clears payload and navigates to checkout. */
   onDialogOpenChange: (open: boolean) => void
   loading: boolean
   items: CheckoutSuggestionItemDto[]
+  cartLines?: CheckoutSuggestionsCartLine[]
   modalTitle?: string
   modalHelper?: string
   selectedIds: Set<string>
-  onToggle: (lineId: string) => void
+  variantByProductId: Record<string, string>
+  onToggle: (itemId: string) => void
+  onVariantChange: (productId: string, variantId: string) => void
   onAddSelectedAndCheckout: () => void
+  cartLineIds: Set<string>
   presentation?: CheckoutSuggestionsDialogPresentation
 }
 
@@ -48,12 +64,16 @@ export function CheckoutSuggestionsDialog({
   open,
   loading,
   items,
+  cartLines = [],
   modalTitle,
   modalHelper,
   selectedIds,
+  variantByProductId,
   onToggle,
+  onVariantChange,
   onDialogOpenChange,
   onAddSelectedAndCheckout,
+  cartLineIds,
   presentation,
 }: CheckoutSuggestionsDialogProps) {
   const p = presentation ?? {}
@@ -61,11 +81,11 @@ export function CheckoutSuggestionsDialog({
     <Dialog open={open} onOpenChange={onDialogOpenChange}>
       <DialogContent
         className={cn(
-          "max-h-[90vh] max-w-2xl overflow-y-auto border-border bg-background text-foreground sm:max-w-2xl",
+          "flex max-h-[90vh] max-w-2xl flex-col overflow-hidden border-border bg-background text-foreground sm:max-w-2xl",
           p.contentClassName
         )}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle className={cn("text-foreground", p.titleClassName)}>
             {modalTitle?.trim() || "Még valami a kosárba?"}
           </DialogTitle>
@@ -81,51 +101,90 @@ export function CheckoutSuggestionsDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex justify-center py-12" aria-busy="true">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="flex flex-1 items-center justify-center py-12" aria-busy="true">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
           </div>
         ) : (
-          <ul className={cn("space-y-3", p.listClassName)}>
-            {items.map((it) => (
-              <li
-                key={it.id}
-                className={cn(
-                  "flex items-center gap-4 border border-border p-3 transition-colors",
-                  selectedIds.has(it.id) ? "border-primary/50 bg-muted/30" : "opacity-90",
-                  it.alreadyInCart && "border-muted bg-muted/20 opacity-100",
-                  p.itemClassName
-                )}
-              >
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
-                  checked={it.alreadyInCart ? false : selectedIds.has(it.id)}
-                  disabled={Boolean(it.alreadyInCart)}
-                  onChange={() => {
-                    if (it.alreadyInCart) return
-                    onToggle(it.id)
-                  }}
-                  aria-label={`${it.name} kijelölése`}
+          <div className="flex min-h-0 flex-1 flex-col gap-6">
+            {cartLines.length > 0 ? (
+              <div className="shrink-0 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Kosár tartalma
+                </p>
+                <ul className={cn("space-y-3", p.listClassName)}>
+                  {cartLines.map((line) => (
+                    <li
+                      key={line.id}
+                      className={cn(
+                        "flex items-center gap-4 border border-border p-3 bg-muted/20",
+                        p.itemClassName
+                      )}
+                    >
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-border bg-muted">
+                        <FallbackImage
+                          src={line.image}
+                          alt=""
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-heading font-black text-sm uppercase leading-tight text-foreground">
+                          {line.name}
+                        </p>
+                        {line.variantLabel ? (
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground">
+                            {line.variantLabel}
+                          </p>
+                        ) : null}
+                        <p className="mt-1 text-sm font-black text-muted-foreground">
+                          {line.quantity} × {formatHuf(line.price)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {items.length > 0 ? (
+              <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <p className="shrink-0 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Javasolt termékek
+                </p>
+                <ul
+                  className={cn(
+                    "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1",
+                    p.listClassName
+                  )}
+                >
+            {items.map((it) => {
+              const chosenVariantId = variantByProductId[it.productId] ?? it.variantId
+              const inCart = suggestionLineInCart(it, cartLineIds, chosenVariantId)
+              return (
+                <CheckoutSuggestionProductRow
+                  key={it.productId}
+                  item={{ ...it, alreadyInCart: inCart }}
+                  selected={selectedIds.has(it.id)}
+                  chosenVariantId={chosenVariantId}
+                  onToggle={() => onToggle(it.id)}
+                  onVariantChange={(variantId) => onVariantChange(it.productId, variantId)}
+                  className={p.itemClassName}
                 />
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-border bg-muted">
-                  <FallbackImage src={it.image} alt="" width={64} height={64} className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-heading font-black text-sm uppercase leading-tight text-foreground">{it.name}</p>
-                  {it.variantLabel ? (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">{it.variantLabel}</p>
-                  ) : null}
-                  <p className="mt-1 text-sm font-black text-primary">{formatHuf(it.price)}</p>
-                  {it.alreadyInCart ? (
-                    <p className="mt-1 text-xs font-medium text-muted-foreground">Ez a tétel már a kosárban van.</p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+              )
+            })}
+                </ul>
+              </div>
+            ) : cartLines.length === 0 ? (
+              <p className="shrink-0 text-sm text-muted-foreground">
+                Jelenleg nincs megjeleníthető javasolt termék (látható készlettel / variánssal).
+              </p>
+            ) : null}
+          </div>
         )}
 
-        <DialogFooter className={cn("gap-2 sm:justify-between sm:gap-4", p.footerClassName)}>
+        <DialogFooter className={cn("shrink-0 gap-2 sm:justify-between sm:gap-4", p.footerClassName)}>
           <Button
             type="button"
             variant="outline"
@@ -154,25 +213,6 @@ export function CheckoutSuggestionsDialog({
   )
 }
 
-function dtoToCartItem(dto: CheckoutSuggestionItemDto): CartItem {
-  return {
-    id: dto.id,
-    productId: dto.productId,
-    variantId: dto.variantId,
-    variantLabel: dto.variantLabel,
-    selectedAttributes: {},
-    name: dto.name,
-    slug: dto.slug,
-    price: dto.price,
-    image: dto.image,
-    quantity: 1,
-    stock: dto.stock,
-    netPrice: dto.netPrice,
-    discount: dto.discount,
-    vatPercent: dto.vatPercent,
-  }
-}
-
 export type UseCheckoutWithSuggestionsOptions = {
   /** Pass Tailwind classes to match your template’s cart / typography (Atelier uses serif + rounded). */
   dialogPresentation?: CheckoutSuggestionsDialogPresentation
@@ -188,10 +228,13 @@ export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOp
   const [loading, setLoading] = React.useState(false)
   const [payload, setPayload] = React.useState<{
     items: CheckoutSuggestionItemDto[]
+    showCartLinesInModal?: boolean
     modalTitle?: string
     modalHelper?: string
   } | null>(null)
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  const [variantByProductId, setVariantByProductId] = React.useState<Record<string, string>>({})
+  const cartLineIds = React.useMemo(() => new Set(cartItems.map((i) => i.id)), [cartItems])
 
   const navigateCheckoutOnly = React.useCallback(() => {
     router.push("/checkout")
@@ -203,6 +246,7 @@ export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOp
       if (!next) {
         setPayload(null)
         setSelectedIds(new Set())
+        setVariantByProductId({})
         router.push("/checkout")
       }
     },
@@ -224,29 +268,48 @@ export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOp
         return
       }
       const data = (await res.json()) as {
+        enabled?: boolean
+        showCartLinesInModal?: boolean
         items: CheckoutSuggestionItemDto[]
         modalTitle?: string
         modalHelper?: string
       }
-      if (!data.items?.length) {
+      const showCart = Boolean(data.showCartLinesInModal) && cartItems.length > 0
+      const hasSuggestions = Boolean(data.items?.length)
+      if (
+        !shouldOpenCheckoutSuggestionsModal({
+          enabled: Boolean(data.enabled),
+          suggestionCount: data.items?.length ?? 0,
+          showCartLinesInModal: Boolean(data.showCartLinesInModal),
+          cartLineCount: cartItems.length,
+        })
+      ) {
         navigateCheckoutOnly()
         return
       }
       setPayload({
-        items: data.items,
+        items: data.items ?? [],
+        showCartLinesInModal: showCart,
         modalTitle: data.modalTitle,
         modalHelper: data.modalHelper,
       })
-      setSelectedIds(
-        new Set(data.items.filter((i) => !i.alreadyInCart).map((i) => i.id))
-      )
+      const initialVariants: Record<string, string> = {}
+      for (const i of data.items ?? []) {
+        if (i.variantId) initialVariants[i.productId] = i.variantId
+      }
+      setVariantByProductId(initialVariants)
+      setSelectedIds(new Set())
       setOpen(true)
     } catch {
       navigateCheckoutOnly()
     } finally {
       setLoading(false)
     }
-  }, [cartItems, navigateCheckoutOnly])
+  }, [cartItems, cartLineIds, navigateCheckoutOnly])
+
+  const onVariantChange = React.useCallback((productId: string, variantId: string) => {
+    setVariantByProductId((prev) => ({ ...prev, [productId]: variantId }))
+  }, [])
 
   const toggle = React.useCallback((lineId: string) => {
     setSelectedIds((prev) => {
@@ -263,13 +326,22 @@ export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOp
       return
     }
     for (const it of payload.items) {
-      if (it.alreadyInCart) continue
-      if (selectedIds.has(it.id)) {
-        addItem(dtoToCartItem(it))
-      }
+      if (!selectedIds.has(it.id)) continue
+      const vid = variantByProductId[it.productId] ?? it.variantId
+      if (suggestionLineInCart(it, cartLineIds, vid)) continue
+      const cartItem = checkoutSuggestionToCartItem(it, vid)
+      if (cartItem) addItem(cartItem)
     }
     handleDialogOpenChange(false)
-  }, [payload, selectedIds, addItem, handleDialogOpenChange, navigateCheckoutOnly])
+  }, [
+    payload,
+    selectedIds,
+    variantByProductId,
+    cartLineIds,
+    addItem,
+    handleDialogOpenChange,
+    navigateCheckoutOnly,
+  ])
 
   const checkoutModalUI = React.useMemo(
     () => (
@@ -278,15 +350,43 @@ export function useCheckoutWithSuggestions(options: UseCheckoutWithSuggestionsOp
         onDialogOpenChange={handleDialogOpenChange}
         loading={loading}
         items={payload?.items ?? []}
+        cartLines={
+          payload?.showCartLinesInModal
+            ? cartItems.map((line) => ({
+                id: line.id,
+                name: line.name,
+                variantLabel: line.variantLabel,
+                quantity: line.quantity,
+                price: line.price,
+                image: line.image,
+              }))
+            : []
+        }
         modalTitle={payload?.modalTitle}
         modalHelper={payload?.modalHelper}
         selectedIds={selectedIds}
+        variantByProductId={variantByProductId}
         onToggle={toggle}
+        onVariantChange={onVariantChange}
         onAddSelectedAndCheckout={onAddSelectedAndCheckout}
+        cartLineIds={cartLineIds}
         presentation={dialogPresentation}
       />
     ),
-    [open, loading, payload, selectedIds, toggle, handleDialogOpenChange, onAddSelectedAndCheckout, dialogPresentation]
+    [
+      open,
+      loading,
+      payload,
+      cartItems,
+      selectedIds,
+      variantByProductId,
+      cartLineIds,
+      toggle,
+      onVariantChange,
+      handleDialogOpenChange,
+      onAddSelectedAndCheckout,
+      dialogPresentation,
+    ]
   )
 
   return { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading: loading }

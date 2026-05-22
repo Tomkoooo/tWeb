@@ -7,6 +7,7 @@ const paymentFindOneMock = vi.fn();
 const paymentCreateMock = vi.fn();
 const couponFindOneMock = vi.fn();
 const resolveGlsMethodMock = vi.fn();
+const resolveFoxpostMethodMock = vi.fn();
 const flagEnabledMock = vi.fn();
 
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
@@ -20,6 +21,17 @@ vi.mock("@/models/Coupon", () => ({
   DiscountType: { FREE_SHIPPING: "free_shipping", PERCENTAGE: "percentage", FIXED: "fixed" },
 }));
 vi.mock("@/services/gls-shipping", () => ({ resolveConfiguredGlsShippingMethod: resolveGlsMethodMock }));
+vi.mock("@/services/foxpost-shipping", () => ({
+  resolveConfiguredFoxpostShippingMethod: resolveFoxpostMethodMock,
+}));
+vi.mock("@/services/shop-trading-settings", () => ({
+  ShopTradingSettingsService: {
+    get: vi.fn().mockResolvedValue({
+      shippingAllowedCountryCodes: [],
+      invoicingAllowedCountryCodes: [],
+    }),
+  },
+}));
 vi.mock("@/services/feature-flags", () => ({ FeatureFlagService: { isEnabled: flagEnabledMock } }));
 
 describe("checkout-validation unit", () => {
@@ -41,6 +53,7 @@ describe("checkout-validation unit", () => {
     couponFindOneMock.mockResolvedValue(null);
     flagEnabledMock.mockResolvedValue(true);
     resolveGlsMethodMock.mockResolvedValue({ id: "ship_gls", grossPrice: 1200 });
+    resolveFoxpostMethodMock.mockResolvedValue({ id: "ship_fox", grossPrice: 990 });
     paymentCreateMock.mockResolvedValue({ _id: { toString: () => "stripe-db-id" } });
   });
 
@@ -107,8 +120,8 @@ describe("checkout-validation unit", () => {
       { userId: uid }
     );
     expect(result.saveAddressToProfile).toBe(true);
-    expect(result.billingCountry).toBe("RO");
-    expect(result.shippingCountry).toBe("RO");
+    expect(result.billingCountryCode).toBe("RO");
+    expect(result.shippingCountryCode).toBe("RO");
   });
 
   it("honours saveAddressToProfile false for authenticated checkout", async () => {
@@ -168,6 +181,63 @@ describe("checkout-validation unit", () => {
         paymentMethod: "507f1f77bcf86cd799439013",
       })
     ).rejects.toThrow("A GLS csomagpont kiválasztása kötelező");
+  });
+
+  it("validates Foxpost fixed path and requires parcel point", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    await expect(
+      validateAndNormalizeCheckoutInput({
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingAddress: {
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingMethod: "foxpost_fixed",
+        paymentMethod: "507f1f77bcf86cd799439013",
+      })
+    ).rejects.toThrow("A Foxpost csomagautomata kiválasztása kötelező");
+  });
+
+  it("resolves Foxpost fixed shipping with parcel point", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const result = await validateAndNormalizeCheckoutInput({
+      items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+      billingInfo: {
+        type: "personal",
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingAddress: {
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingMethod: "foxpost_fixed",
+      paymentMethod: "507f1f77bcf86cd799439013",
+      foxpostParcelPoint: { id: "hu5516", name: "Fox automata" },
+    });
+    expect(result.shippingMethod).toBe("ship_fox");
+    expect(result.foxpostParcelPoint?.id).toBe("hu5516");
   });
 
   it("supports stripe fixed payment path", async () => {

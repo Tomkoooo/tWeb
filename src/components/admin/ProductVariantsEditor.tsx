@@ -1,37 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, slugify } from "@/lib/utils";
-import { formatHuf, grossToNet, netToGross, priceBreakdownFromGross } from "@/lib/pricing";
+import { deriveNetFromGross, netToGross } from "@/lib/pricing";
+import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields";
+import { AdminFormField, ADMIN_METRICS_ROW_CLASS } from "@/components/admin/AdminFormField";
+import { useAdminPricePair } from "@/hooks/useAdminPricePair";
+import type { AdminVariantRow } from "@/lib/admin-product-variants";
 
 type VariantOption = { name: string; values: string[] };
-type VariantRow = {
-  id: string;
-  attributes: Record<string, string>;
-  sku?: string;
-  nameOverride?: string;
-  descriptionOverride?: string;
-  netPrice: number;
-  discount: number;
-  stock: number;
-  isActive: boolean;
-  isDefault: boolean;
-  seo?: {
-    title?: string;
-    description?: string;
-    keywords?: string[];
-  };
-};
 
 type Props = {
   initialOptions?: VariantOption[];
-  initialVariants?: VariantRow[];
+  initialVariants?: AdminVariantRow[];
   defaultNetPrice: number;
+  defaultGrossPrice?: number;
   initialRequireVariantSelection?: boolean;
-  vatPercent?: number;
+  vatPercent: number;
+  onVatChange: (vat: number) => void;
+  onModeChange?: (mode: { enabled: boolean; requireVariantSelection: boolean }) => void;
+  onVariantsChange?: (variants: AdminVariantRow[]) => void;
 };
 
 function cartesianProduct(optionGroups: Array<{ name: string; values: string[] }>) {
@@ -68,62 +59,78 @@ export function ProductVariantsEditor({
   initialOptions = [],
   initialVariants = [],
   defaultNetPrice,
+  defaultGrossPrice,
   initialRequireVariantSelection = false,
-  vatPercent = 27,
+  vatPercent,
+  onVatChange,
+  onModeChange,
+  onVariantsChange,
 }: Props) {
   const [enabled, setEnabled] = useState(initialVariants.length > 0 || initialOptions.length > 0);
-  const [requireVariantSelection, setRequireVariantSelection] = useState(Boolean(initialRequireVariantSelection));
+  const [requireVariantSelection, setRequireVariantSelection] = useState(
+    Boolean(initialRequireVariantSelection)
+  );
   const [options, setOptions] = useState<Array<{ name: string; valuesText: string }>>(
     initialOptions.length > 0
       ? initialOptions.map((option) => ({ name: option.name, valuesText: option.values.join(", ") }))
       : [{ name: "", valuesText: "" }]
   );
-  const [variants, setVariants] = useState<VariantRow[]>(
-    initialVariants.map((variant, index) => ({
-      ...variant,
-      id: variant.id || `variant-${index + 1}`,
-      netPrice: Number(variant.netPrice ?? defaultNetPrice) || 0,
-      discount: Number(variant.discount ?? 0) || 0,
-      stock: Number(variant.stock ?? 0) || 0,
-      isActive: variant.isActive !== false,
-      isDefault: Boolean(variant.isDefault),
-      seo: {
-        title: variant.seo?.title || "",
-        description: variant.seo?.description || "",
-        keywords: variant.seo?.keywords || [],
-      },
-    }))
+  const [variants, setVariants] = useState<AdminVariantRow[]>(
+    initialVariants.map((variant, index) => {
+      const net = Number(variant.netPrice ?? defaultNetPrice) || 0;
+      return {
+        ...variant,
+        id: variant.id || `variant-${index + 1}`,
+        netPrice: net,
+        grossPrice:
+          variant.grossPrice != null && variant.grossPrice > 0
+            ? Number(variant.grossPrice)
+            : netToGross(net, vatPercent),
+        discount: Number(variant.discount ?? 0) || 0,
+        stock: Number(variant.stock ?? 0) || 0,
+        isActive: variant.isActive !== false,
+        isDefault: Boolean(variant.isDefault),
+        seo: {
+          title: variant.seo?.title || "",
+          description: variant.seo?.description || "",
+          keywords: variant.seo?.keywords || [],
+        },
+      };
+    })
   );
-  const [bulk, setBulk] = useState({
-    netPrice: defaultNetPrice || 0,
-    discount: 0,
-    stock: 0,
-  });
+
+  const bulkPrice = useAdminPricePair(defaultNetPrice, vatPercent, defaultGrossPrice);
+  const [bulkDiscount, setBulkDiscount] = useState(0);
+  const [bulkStock, setBulkStock] = useState(0);
   const [activeVariantId, setActiveVariantId] = useState<string>(initialVariants?.[0]?.id || "");
 
-  const normalizedOptions = useMemo(
-    () => {
-      const grouped = new Map<string, Set<string>>();
-      for (const option of options) {
-        const name = option.name.trim();
-        if (!name) continue;
-        const values = option.valuesText
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean);
-        if (values.length === 0) continue;
-        if (!grouped.has(name)) grouped.set(name, new Set<string>());
-        const bucket = grouped.get(name)!;
-        for (const value of values) bucket.add(value);
-      }
+  useEffect(() => {
+    onModeChange?.({ enabled, requireVariantSelection });
+  }, [enabled, requireVariantSelection, onModeChange]);
 
-      return Array.from(grouped.entries()).map(([name, values]) => ({
-        name,
-        values: Array.from(values),
-      }));
-    },
-    [options]
-  );
+  useEffect(() => {
+    if (enabled) onVariantsChange?.(variants);
+  }, [variants, enabled, onVariantsChange]);
+
+  const normalizedOptions = useMemo(() => {
+    const grouped = new Map<string, Set<string>>();
+    for (const option of options) {
+      const name = option.name.trim();
+      if (!name) continue;
+      const values = option.valuesText
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (values.length === 0) continue;
+      if (!grouped.has(name)) grouped.set(name, new Set<string>());
+      const bucket = grouped.get(name)!;
+      for (const value of values) bucket.add(value);
+    }
+    return Array.from(grouped.entries()).map(([name, values]) => ({
+      name,
+      values: Array.from(values),
+    }));
+  }, [options]);
 
   const variantOptionsJson = JSON.stringify(normalizedOptions);
   const variantsJson = JSON.stringify(
@@ -141,6 +148,15 @@ export function ProductVariantsEditor({
   const safeActiveIndex = activeVariantIndex >= 0 ? activeVariantIndex : variants.length > 0 ? 0 : -1;
   const activeVariant = safeActiveIndex >= 0 ? variants[safeActiveIndex] : null;
 
+  const updateVariantPrices = (
+    variantId: string,
+    patch: { netPrice?: number; grossPrice?: number }
+  ) => {
+    setVariants((prev) =>
+      prev.map((item) => (item.id === variantId ? { ...item, ...patch } : item))
+    );
+  };
+
   const generateCombinations = () => {
     if (normalizedOptions.length === 0) return;
     const matrix = cartesianProduct(normalizedOptions);
@@ -152,11 +168,13 @@ export function ProductVariantsEditor({
       seenIds.set(baseId, count + 1);
       const id = count === 0 ? baseId : `${baseId}-${count + 1}`;
       const existing = byId.get(id);
+      const net = Number(defaultNetPrice) || 0;
       return (
         existing || {
           id,
           attributes,
-          netPrice: Number(defaultNetPrice) || 0,
+          netPrice: net,
+          grossPrice: netToGross(net, vatPercent),
           discount: 0,
           stock: 0,
           isActive: true,
@@ -176,9 +194,10 @@ export function ProductVariantsEditor({
     setVariants((prev) =>
       prev.map((variant) => ({
         ...variant,
-        netPrice: Number(bulk.netPrice) || 0,
-        discount: Number(bulk.discount) || 0,
-        stock: Number(bulk.stock) || 0,
+        netPrice: bulkPrice.netPrice,
+        grossPrice: bulkPrice.grossPrice,
+        discount: Number(bulkDiscount) || 0,
+        stock: Number(bulkStock) || 0,
       }))
     );
   };
@@ -215,6 +234,27 @@ export function ProductVariantsEditor({
         </p>
       ) : (
         <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-white/10 p-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
+                ÁFA kulcs (%) — minden variánsra
+              </label>
+              <Input
+                type="number"
+                name="vatPercent"
+                min={0}
+                max={100}
+                step={1}
+                value={vatPercent}
+                onChange={(e) => onVatChange(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                className="bg-black border-white/5 h-11 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+              />
+            </div>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest self-end pb-2">
+              A bruttó ár a vevő által fizetett összeg. A nettó a számlázáshoz kerül mentésre.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between border border-white/10 p-4">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-white">
@@ -291,7 +331,7 @@ export function ProductVariantsEditor({
                 type="button"
                 onClick={generateCombinations}
                 variant="outline"
-                className="h-10 rounded-none border-primary/40 text-primary hover:bg-primary/10"
+                className="h-10 rounded-none admin-action-outline hover:bg-white/10"
               >
                 <WandSparkles className="w-4 h-4 mr-2" />
                 Variánsok generálása
@@ -303,52 +343,43 @@ export function ProductVariantsEditor({
             <>
               <div className="border border-white/10 p-4 space-y-3">
                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                  Bulk szerkesztés
+                  Bulk szerkesztés — alkalmazás minden variánsra
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Nettó ár (Ft)</label>
+                <div className={ADMIN_METRICS_ROW_CLASS}>
+                  <AdminPricePairFields
+                    netPrice={bulkPrice.netPrice}
+                    grossPrice={bulkPrice.grossPrice}
+                    vatPercent={vatPercent}
+                    onNetChange={bulkPrice.setNetPrice}
+                    onGrossChange={bulkPrice.setGrossPrice}
+                    compact
+                    showVatHint={false}
+                  />
+                  <AdminFormField label="Kedvezmény (%)">
                     <Input
                       type="number"
-                      value={bulk.netPrice}
-                      onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: Number(event.target.value) }))}
-                      className="bg-black border-white/5 h-11 text-white rounded-none"
-                      placeholder="Nettó ár"
+                      value={bulkDiscount}
+                      onChange={(event) => setBulkDiscount(Number(event.target.value) || 0)}
+                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                     />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
+                  </AdminFormField>
+                  <AdminFormField label="Készlet (db)">
                     <Input
                       type="number"
-                      value={netToGross(bulk.netPrice, vatPercent)}
-                      onChange={(event) => setBulk((prev) => ({ ...prev, netPrice: grossToNet(Number(event.target.value) || 0, vatPercent) }))}
-                      className="bg-black border-white/5 h-11 text-white rounded-none"
-                      placeholder="Bruttó ár"
+                      value={bulkStock}
+                      onChange={(event) => setBulkStock(Number(event.target.value) || 0)}
+                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                     />
+                  </AdminFormField>
+                  <div className="col-span-2 flex items-end sm:col-span-1 xl:col-span-1">
+                    <Button
+                      type="button"
+                      onClick={applyBulkValues}
+                      className="h-11 w-full rounded-none bg-primary text-white xl:w-auto"
+                    >
+                      Alkalmazás
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Kedvezmény (%)</label>
-                    <Input
-                      type="number"
-                      value={bulk.discount}
-                      onChange={(event) => setBulk((prev) => ({ ...prev, discount: Number(event.target.value) }))}
-                      className="bg-black border-white/5 h-11 text-white rounded-none"
-                      placeholder="Kedvezmény"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Készlet (db)</label>
-                    <Input
-                      type="number"
-                      value={bulk.stock}
-                      onChange={(event) => setBulk((prev) => ({ ...prev, stock: Number(event.target.value) }))}
-                      className="bg-black border-white/5 h-11 text-white rounded-none"
-                      placeholder="Készlet"
-                    />
-                  </div>
-                  <Button type="button" onClick={applyBulkValues} className="h-11 rounded-none bg-primary text-white">
-                    Alkalmazás
-                  </Button>
                 </div>
               </div>
 
@@ -361,9 +392,7 @@ export function ProductVariantsEditor({
                       onClick={() => setActiveVariantId(variant.id)}
                       className={cn(
                         "w-full text-left px-3 py-2 border text-[10px] font-black uppercase tracking-widest transition-colors",
-                        activeVariant?.id === variant.id
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-white/10 text-neutral-300 hover:border-primary/40"
+                        activeVariant?.id === variant.id ? "admin-item-selected" : "admin-item-idle"
                       )}
                     >
                       {attributesToLabel(variant.attributes)}
@@ -401,9 +430,9 @@ export function ProductVariantsEditor({
                           className="h-9 rounded-none text-rose-500 hover:text-white hover:bg-rose-500/20"
                           onClick={() =>
                             setVariants((prev) => {
-                              const next = prev.filter((item) => item.id !== activeVariant.id)
-                              setActiveVariantId(next[0]?.id || "")
-                              return next
+                              const next = prev.filter((item) => item.id !== activeVariant.id);
+                              setActiveVariantId(next[0]?.id || "");
+                              return next;
                             })
                           }
                         >
@@ -412,87 +441,73 @@ export function ProductVariantsEditor({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Nettó ár (Ft)</label>
-                        <Input
-                          type="number"
-                          value={activeVariant.netPrice}
-                          onChange={(event) =>
-                            setVariants((prev) =>
-                              prev.map((item) =>
-                                item.id === activeVariant.id ? { ...item, netPrice: Number(event.target.value) || 0 } : item
-                              )
-                            )
-                          }
-                          className="bg-black border-white/5 h-11 text-white rounded-none"
-                          placeholder="Nettó ár"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Bruttó ár (Ft)</label>
-                        <Input
-                          type="number"
-                          value={netToGross(activeVariant.netPrice, vatPercent)}
-                          onChange={(event) =>
-                            setVariants((prev) =>
-                              prev.map((item) =>
-                                item.id === activeVariant.id ? { ...item, netPrice: grossToNet(Number(event.target.value) || 0, vatPercent) } : item
-                              )
-                            )
-                          }
-                          className="bg-black border-white/5 h-11 text-white rounded-none"
-                          placeholder="Bruttó ár"
-                        />
-                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-                          ÁFA: {formatHuf(priceBreakdownFromGross(netToGross(activeVariant.netPrice, vatPercent), 1, vatPercent).unitVat)}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Kedvezmény (%)</label>
+                    <div className={ADMIN_METRICS_ROW_CLASS}>
+                      <AdminPricePairFields
+                        netPrice={activeVariant.netPrice}
+                        grossPrice={
+                          activeVariant.grossPrice ?? netToGross(activeVariant.netPrice, vatPercent)
+                        }
+                        vatPercent={vatPercent}
+                        onNetChange={(net) =>
+                          updateVariantPrices(activeVariant.id, {
+                            netPrice: net,
+                            grossPrice: netToGross(net, vatPercent),
+                          })
+                        }
+                        onGrossChange={(gross) =>
+                          updateVariantPrices(activeVariant.id, {
+                            grossPrice: gross,
+                            netPrice: deriveNetFromGross(gross, vatPercent),
+                          })
+                        }
+                        compact
+                        showVatHint={false}
+                      />
+                      <AdminFormField label="Kedvezmény (%)">
                         <Input
                           type="number"
                           value={activeVariant.discount}
                           onChange={(event) =>
                             setVariants((prev) =>
                               prev.map((item) =>
-                                item.id === activeVariant.id ? { ...item, discount: Number(event.target.value) || 0 } : item
+                                item.id === activeVariant.id
+                                  ? { ...item, discount: Number(event.target.value) || 0 }
+                                  : item
                               )
                             )
                           }
-                          className="bg-black border-white/5 h-11 text-white rounded-none"
-                          placeholder="Kedvezmény"
+                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                         />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Készlet (db)</label>
+                      </AdminFormField>
+                      <AdminFormField label="Készlet (db)">
                         <Input
                           type="number"
                           value={activeVariant.stock}
                           onChange={(event) =>
                             setVariants((prev) =>
                               prev.map((item) =>
-                                item.id === activeVariant.id ? { ...item, stock: Number(event.target.value) || 0 } : item
+                                item.id === activeVariant.id
+                                  ? { ...item, stock: Number(event.target.value) || 0 }
+                                  : item
                               )
                             )
                           }
-                          className="bg-black border-white/5 h-11 text-white rounded-none"
-                          placeholder="Készlet"
+                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                         />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">SKU</label>
+                      </AdminFormField>
+                      <AdminFormField label="SKU">
                         <Input
                           value={activeVariant.sku || ""}
                           onChange={(event) =>
                             setVariants((prev) =>
-                              prev.map((item) => (item.id === activeVariant.id ? { ...item, sku: event.target.value } : item))
+                              prev.map((item) =>
+                                item.id === activeVariant.id ? { ...item, sku: event.target.value } : item
+                              )
                             )
                           }
-                          className="bg-black border-white/5 h-11 text-white rounded-none"
-                          placeholder="SKU"
+                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                         />
-                      </div>
+                      </AdminFormField>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

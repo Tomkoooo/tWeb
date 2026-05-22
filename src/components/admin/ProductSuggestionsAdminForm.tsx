@@ -96,6 +96,26 @@ export function ProductSuggestionsAdminForm({
         </Label>
       </div>
 
+      <div className="flex items-center gap-3">
+        <input
+          id="ps-show-cart"
+          type="checkbox"
+          className="h-4 w-4 accent-primary"
+          checked={Boolean(settings.showCartLinesInModal)}
+          disabled={!settings.enabled}
+          onChange={(e) => setSettings((s) => ({ ...s, showCartLinesInModal: e.target.checked }))}
+        />
+        <Label
+          htmlFor="ps-show-cart"
+          className={cn(
+            "font-black uppercase tracking-widest text-xs cursor-pointer",
+            settings.enabled ? "text-white" : "text-neutral-600 cursor-not-allowed"
+          )}
+        >
+          Kosár tételeinek megjelenítése a modálban (pénztár előtt)
+        </Label>
+      </div>
+
       <div className="space-y-2">
         <Label className="text-neutral-400 text-[10px] font-black uppercase tracking-widest">Modál címe</Label>
         <Input

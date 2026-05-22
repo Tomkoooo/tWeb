@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+import { hasContactFieldValue } from "@/lib/contact-display"
 
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
@@ -27,7 +28,7 @@ const Textarea = React.forwardRef<
   return (
     <textarea
       className={cn(
-        "flex min-h-[80px] w-full rounded-none border border-border bg-surface px-3 py-4 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground transition-colors",
+        "flex min-h-[80px] w-full rounded-none border border-border bg-surface px-3 py-4 text-sm text-foreground outline-none focus:border-primary-foreground/50 placeholder:text-muted-foreground transition-colors",
         className
       )}
       ref={ref}
@@ -57,9 +58,12 @@ interface ContactProps {
 
 export function Contact({ email, phone, address, title, description, sendButtonLabel, nameLabel, emailLabel, messageLabel }: ContactProps) {
   const cms = useCmsEdit()
-  const displayEmail = email ?? "hello@example.com"
-  const displayPhone = phone ?? "+1 (555) 010-2030"
-  const displayAddress = address ?? "123 Placeholder Avenue, Lorem City"
+  const displayEmail = email?.trim() ?? ""
+  const displayPhone = phone?.trim() ?? ""
+  const displayAddress = address?.trim() ?? ""
+  const showPhone = cms.enabled || hasContactFieldValue(displayPhone)
+  const showEmail = cms.enabled || hasContactFieldValue(displayEmail)
+  const showAddress = cms.enabled || hasContactFieldValue(displayAddress)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -108,35 +112,53 @@ export function Contact({ email, phone, address, title, description, sendButtonL
             )}
 
             <div className="space-y-10">
-              <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
-                  <Phone className="w-6 h-6 text-primary" />
+              {showPhone ? (
+                <div className="flex items-center gap-8 group">
+                  <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary-foreground/50 transition-all">
+                    <Phone className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Phone</h4>
+                    {cms.enabled ? (
+                      <EditableTextInline blockType="contact" field="phone" value={displayPhone} className="text-neutral-300 text-lg" placeholder="Telefonszám" />
+                    ) : (
+                      <p className="text-neutral-300 text-lg">{displayPhone}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Phone</h4>
-                  {cms.enabled ? <EditableTextInline blockType="contact" field="phone" value={displayPhone} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayPhone}</p>}
-                </div>
-              </div>
+              ) : null}
 
-              <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
-                  <Mail className="w-6 h-6 text-primary" />
+              {showEmail ? (
+                <div className="flex items-center gap-8 group">
+                  <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary-foreground/50 transition-all">
+                    <Mail className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Email</h4>
+                    {cms.enabled ? (
+                      <EditableTextInline blockType="contact" field="email" value={displayEmail} className="text-neutral-300 text-lg" placeholder="E-mail" />
+                    ) : (
+                      <p className="text-neutral-300 text-lg">{displayEmail}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Email</h4>
-                  {cms.enabled ? <EditableTextInline blockType="contact" field="email" value={displayEmail} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayEmail}</p>}
-                </div>
-              </div>
+              ) : null}
 
-              <div className="flex items-center gap-8 group">
-                <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary/50 transition-all">
-                  <MapPin className="w-6 h-6 text-primary" />
+              {showAddress ? (
+                <div className="flex items-center gap-8 group">
+                  <div className="w-16 h-16 bg-muted/40 flex items-center justify-center border border-border group-hover:border-primary-foreground/50 transition-all">
+                    <MapPin className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Address</h4>
+                    {cms.enabled ? (
+                      <EditableTextInline blockType="contact" field="address" value={displayAddress} className="text-neutral-300 text-lg" placeholder="Cím" />
+                    ) : (
+                      <p className="text-neutral-300 text-lg">{displayAddress}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-foreground font-heading font-bold uppercase tracking-[0.2em] text-sm mb-1">Address</h4>
-                  {cms.enabled ? <EditableTextInline blockType="contact" field="address" value={displayAddress} className="text-neutral-300 text-lg" /> : <p className="text-neutral-300 text-lg">{displayAddress}</p>}
-                </div>
-              </div>
+              ) : null}
             </div>
           </motion.div>
 
@@ -148,8 +170,8 @@ export function Contact({ email, phone, address, title, description, sendButtonL
           >
             <div className="glass-card p-10 md:p-14 relative border-border/40">
               {/* Corner Accents */}
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary-foreground/35" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary-foreground/35" />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -167,10 +189,10 @@ export function Contact({ email, phone, address, title, description, sendButtonL
                           <Input 
                             placeholder="Lorem Ipsum" 
                             {...field} 
-                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary text-foreground placeholder:text-muted-foreground" 
+                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40 text-foreground placeholder:text-muted-foreground" 
                           />
                         </FormControl>
-                        <FormMessage className="text-primary text-xs" />
+                        <FormMessage className="text-primary-foreground text-xs" />
                       </FormItem>
                     )}
                   />
@@ -188,10 +210,10 @@ export function Contact({ email, phone, address, title, description, sendButtonL
                           <Input 
                             placeholder="name@example.com" 
                             {...field} 
-                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary text-foreground placeholder:text-muted-foreground" 
+                            className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40 text-foreground placeholder:text-muted-foreground" 
                           />
                         </FormControl>
-                        <FormMessage className="text-primary text-xs" />
+                        <FormMessage className="text-primary-foreground text-xs" />
                       </FormItem>
                     )}
                   />
@@ -209,10 +231,10 @@ export function Contact({ email, phone, address, title, description, sendButtonL
                           <Textarea 
                             placeholder="Lorem ipsum dolor sit amet..." 
                             {...field} 
-                            className="min-h-[160px] bg-surface border-border rounded-none focus-visible:ring-primary" 
+                            className="min-h-[160px] bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40" 
                           />
                         </FormControl>
-                        <FormMessage className="text-primary text-xs" />
+                        <FormMessage className="text-primary-foreground text-xs" />
                       </FormItem>
                     )}
                   />

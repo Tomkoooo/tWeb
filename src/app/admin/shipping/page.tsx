@@ -10,6 +10,8 @@ import {
 } from "@/actions/admin-checkout"
 import { MethodDialog } from "@/components/admin/MethodDialog"
 import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
+import { cn } from "@/lib/utils"
+import { adminHeadlineAccent, adminValue } from "@/lib/admin-ui"
 
 export default async function AdminShippingPage() {
   await dbConnect()
@@ -20,13 +22,14 @@ export default async function AdminShippingPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            SZÁLLÍTÁSI <span className="text-primary underline decoration-primary/10 underline-offset-8">MÓDOK</span>
+            SZÁLLÍTÁSI <span className={adminHeadlineAccent}>MÓDOK</span>
           </h1>
           <p className="text-neutral-500 font-bold uppercase tracking-widest text-[10px]">Pénztárban választható szállítási lehetőségek kezelése</p>
         </div>
         <MethodDialog 
           title="ÚJ SZÁLLÍTÁSI MÓD" 
           action={createShippingMethod}
+          shippingProviderMode
         >
           <Button variant="krausz" className="h-14 px-8 tracking-[0.2em]">
             <Plus className="w-5 h-5" />
@@ -43,7 +46,12 @@ export default async function AdminShippingPage() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-heading font-black text-white uppercase italic truncate max-w-[200px]">{method.name}</h3>
-                <p className="text-primary font-black text-2xl mt-2">{formatHuf(breakdown.gross)}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mt-1">
+                  {(method.provider === "gls" && "GLS csomagpont") ||
+                    (method.provider === "foxpost" && "Foxpost automata") ||
+                    "Házhozszállítás"}
+                </p>
+                <p className={`${adminValue} font-black text-2xl mt-2`}>{formatHuf(breakdown.gross)}</p>
                 <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">
                   Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
                 </p>
@@ -61,9 +69,10 @@ export default async function AdminShippingPage() {
                 title="MÓD SZERKESZTÉSE" 
                 action={updateShippingMethod.bind(null, method._id.toString())}
                 initialData={method}
+                shippingProviderMode
               >
                 <Button variant="outline" className="grow h-12 border-white/10 text-white hover:bg-white/5 rounded-none uppercase tracking-widest text-[10px] font-black">
-                  <Edit2 className="w-4 h-4 mr-2" /> SZERKESZTÉS
+                  <Edit2 className="w-4 h-4 mr-2 text-white" /> SZERKESZTÉS
                 </Button>
               </MethodDialog>
               <form action={deleteShippingMethod.bind(null, method._id.toString())}>
@@ -79,5 +88,3 @@ export default async function AdminShippingPage() {
     </div>
   )
 }
-
-import { cn } from "@/lib/utils"

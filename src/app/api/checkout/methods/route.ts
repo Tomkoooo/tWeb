@@ -5,14 +5,47 @@ import PaymentMethod from "@/models/PaymentMethod";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { resolveConfiguredGlsShippingMethod } from "@/services/gls-shipping";
-import { GLS_FIXED_SHIPPING_METHOD_ID } from "@/lib/gls";
+import { resolveConfiguredFoxpostShippingMethod } from "@/services/foxpost-shipping";
+import {
+  isFoxpostParcelPickerEnabled,
+  isGlsParcelPickerEnabled,
+} from "@/lib/parcel-feature-flags";
+import { getGlsShippingMethodName } from "@/services/gls-shipping";
+import { getFoxpostShippingMethodName } from "@/services/foxpost-shipping";
+import type { ShippingProviderKind } from "@/models/ShippingMethod";
 
 type CheckoutMethodRow = {
   _id: { toString: () => string };
   name: string;
   grossPrice: number;
   isActive: boolean;
+  provider?: ShippingProviderKind;
 };
+
+type NormalizedShippingMethod = {
+  _id: string;
+  name: string;
+  grossPrice: number;
+  isActive: boolean;
+  provider: ShippingProviderKind;
+  isFixed: boolean;
+};
+
+function isStripeEnvConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+}
+
+function normalizeParcelRow(method: CheckoutMethodRow): NormalizedShippingMethod {
+  const provider = method.provider === "foxpost" ? "foxpost" : "gls";
+  return {
+    _id: method._id.toString(),
+    name: method.name,
+    grossPrice: Number(method.grossPrice || 0),
+    isActive: Boolean(method.isActive),
+    provider,
+    isFixed: false,
+  };
+}
 
 export async function GET(_req: NextRequest) {
   try {
@@ -20,7 +53,10 @@ export async function GET(_req: NextRequest) {
     if (blocked) return blocked;
     const isShopEnabled = await FeatureFlagService.isEnabled("shopPage", true);
     const stripeEnabled = await FeatureFlagService.isEnabled("stripePayments", false);
-    const glsParcelPickerEnabled = await FeatureFlagService.isEnabled("glsParcelPicker", false);
+    const [glsPickerEnabled, foxpostPickerEnabled] = await Promise.all([
+      isGlsParcelPickerEnabled(),
+      isFoxpostParcelPickerEnabled(),
+    ]);
     if (!isShopEnabled) {
       return NextResponse.json(
         { error: "Jelenleg a rendelés leadás szünetel" },
@@ -34,26 +70,72 @@ export async function GET(_req: NextRequest) {
       PaymentMethod.find({ isActive: true }).lean(),
     ]);
 
-    const normalizedShippingMethods = (shippingMethods as CheckoutMethodRow[]).map((method) => ({
-      ...method,
-      _id: method._id.toString(),
-      provider: "standard",
-      isFixed: false,
-    }));
+    const dbRows = shippingMethods as CheckoutMethodRow[];
+    const parcelRows: NormalizedShippingMethod[] = [];
+    const standardRows: NormalizedShippingMethod[] = [];
 
-    if (glsParcelPickerEnabled) {
+    for (const method of dbRows) {
+      const provider = method.provider || "standard";
+
+      if (provider === "gls" && glsPickerEnabled) {
+        parcelRows.push(normalizeParcelRow(method));
+        continue;
+      }
+      if (provider === "foxpost" && foxpostPickerEnabled) {
+        parcelRows.push(normalizeParcelRow(method));
+        continue;
+      }
+      if (provider === "gls" || provider === "foxpost") {
+        continue;
+      }
+
+      if (glsPickerEnabled && method.name === getGlsShippingMethodName()) {
+        continue;
+      }
+      if (foxpostPickerEnabled && method.name === getFoxpostShippingMethodName()) {
+        continue;
+      }
+
+      standardRows.push({
+        _id: method._id.toString(),
+        name: method.name,
+        grossPrice: Number(method.grossPrice || 0),
+        isActive: Boolean(method.isActive),
+        provider: "standard",
+        isFixed: false,
+      });
+    }
+
+    if (glsPickerEnabled && !parcelRows.some((m) => m.provider === "gls")) {
       const configuredGlsMethod = await resolveConfiguredGlsShippingMethod({ requireActive: true });
       if (configuredGlsMethod) {
-        normalizedShippingMethods.unshift({
-          _id: GLS_FIXED_SHIPPING_METHOD_ID,
+        parcelRows.push({
+          _id: configuredGlsMethod.id,
           name: configuredGlsMethod.name,
           grossPrice: configuredGlsMethod.grossPrice,
           isActive: true,
           provider: "gls",
-          isFixed: true,
+          isFixed: false,
         });
       }
     }
+    if (foxpostPickerEnabled && !parcelRows.some((m) => m.provider === "foxpost")) {
+      const configuredFoxpostMethod = await resolveConfiguredFoxpostShippingMethod({
+        requireActive: true,
+      });
+      if (configuredFoxpostMethod) {
+        parcelRows.push({
+          _id: configuredFoxpostMethod.id,
+          name: configuredFoxpostMethod.name,
+          grossPrice: configuredFoxpostMethod.grossPrice,
+          isActive: true,
+          provider: "foxpost",
+          isFixed: false,
+        });
+      }
+    }
+
+    const normalizedShippingMethods = [...parcelRows, ...standardRows];
 
     const normalizedPaymentMethods = (paymentMethods as CheckoutMethodRow[]).map((method) => ({
       ...method,
@@ -76,6 +158,15 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({
       shippingMethods: normalizedShippingMethods,
       paymentMethods: normalizedPaymentMethods,
+      meta: {
+        glsPickerEnabled,
+        foxpostPickerEnabled,
+        stripeEnabled,
+        stripeConfigured: isStripeEnvConfigured(),
+        parcelOnlyShipping: normalizedShippingMethods.every(
+          (m) => m.provider === "gls" || m.provider === "foxpost"
+        ),
+      },
     });
   } catch (error) {
     console.error("Checkout methods GET error:", error);

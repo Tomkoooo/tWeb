@@ -26,7 +26,7 @@ export function ProfilePageView({ variant = "page" }: { variant?: ProfilePageVar
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
       </div>
     )
   }
@@ -52,7 +52,7 @@ export function ProfilePageView({ variant = "page" }: { variant?: ProfilePageVar
 
         <div className="space-y-12">
           <div className="space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">Számlázási Adatok</h3>
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-foreground">Számlázási Adatok</h3>
             <BillingStep
               appearance="light"
               data={formData.billing}
@@ -61,7 +61,7 @@ export function ProfilePageView({ variant = "page" }: { variant?: ProfilePageVar
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">Szállítási Adatok</h3>
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-foreground">Szállítási Adatok</h3>
             <ShippingStep
               appearance="light"
               data={formData.shipping}
@@ -73,7 +73,7 @@ export function ProfilePageView({ variant = "page" }: { variant?: ProfilePageVar
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="h-14 w-full rounded-lg border border-primary bg-primary px-10 font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90 md:w-auto"
+            className="h-14 w-full rounded-lg border border-primary-foreground/35 bg-primary px-10 font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90 md:w-auto"
           >
             {saving ? "Mentés folyamatban..." : "Adatok Mentése"}
           </Button>

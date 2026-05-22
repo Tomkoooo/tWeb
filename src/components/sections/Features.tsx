@@ -84,12 +84,12 @@ export function Features({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.6 }}
-              className="glass-card p-10 group hover:border-primary/40 transition-all duration-500"
+              className="glass-card p-10 group hover:border-primary-foreground/40 transition-all duration-500"
             >
-              <div className="text-primary mb-8 group-hover:scale-110 transition-transform duration-500 origin-left">
+              <div className="text-primary-foreground mb-8 group-hover:scale-110 transition-transform duration-500 origin-left">
                 <DynamicLucideIcon name={feature.icon || "Zap"} className="w-10 h-10" />
               </div>
-              <h3 className="text-foreground text-2xl font-heading font-black mb-4 tracking-tight uppercase group-hover:text-primary transition-colors">
+              <h3 className="text-foreground text-2xl font-heading font-black mb-4 tracking-tight uppercase group-hover:text-primary-foreground transition-colors">
                 {cms.enabled ? (
                   <input
                     value={feature.title}

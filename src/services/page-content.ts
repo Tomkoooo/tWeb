@@ -93,7 +93,7 @@ export class PageContentService {
               pageKey,
               value: JSON.stringify(parsed.data),
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
           )
           doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
         }
@@ -134,7 +134,7 @@ export class PageContentService {
               pageKey,
               value: JSON.stringify(parsed.data),
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
           )
           doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
         }
@@ -190,7 +190,7 @@ export class PageContentService {
           value: JSON.stringify(def.defaultContent),
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     )
     return validated as T
   }
@@ -223,7 +223,7 @@ export class PageContentService {
           },
           $unset: { draftValue: 1 },
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
       )
       return baseline as T
     }
@@ -284,7 +284,7 @@ export class PageContentService {
         },
         $unset: { draftValue: 1 },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     )
     return validated as T
   }

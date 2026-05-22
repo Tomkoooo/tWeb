@@ -46,7 +46,7 @@ export function CtaBlockView({ block }: { block: CtaBlock }) {
             label={block.data.secondaryLabel}
             href={block.data.secondaryHref}
             buttonVariant="outline"
-            className="inline-flex min-h-14 min-w-[10rem] items-center justify-center rounded-full border-2 border-primary/30 bg-transparent px-10 text-base font-semibold text-foreground transition hover:bg-muted"
+            className="inline-flex min-h-14 min-w-[10rem] items-center justify-center rounded-full border-2 border-primary-foreground/30 bg-transparent px-10 text-base font-semibold text-foreground transition hover:bg-muted"
           />
         </div>
       </div>

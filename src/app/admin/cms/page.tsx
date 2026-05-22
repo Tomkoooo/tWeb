@@ -13,7 +13,7 @@ export default async function AdminCmsHub() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-          CMS <span className="text-primary">oldalak</span>
+          CMS <span className="admin-text-accent">oldalak</span>
         </h1>
         <p className="mt-2 text-sm text-neutral-400">
           Sablon: <code className="text-neutral-200">{template.manifest.name}</code>
@@ -25,7 +25,7 @@ export default async function AdminCmsHub() {
           <li key={p.adminSegment}>
             <Link
               href={`/admin/cms/${p.adminSegment}`}
-              className="block rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold uppercase tracking-widest text-white transition hover:border-primary/40 hover:bg-white/10"
+              className="block rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold uppercase tracking-widest text-white transition hover:border-white/30 hover:bg-white/10"
             >
               {p.label}
               <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-neutral-500">

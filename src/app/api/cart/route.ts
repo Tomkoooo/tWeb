@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { items } = await req.json();
-    const cart = await CartService.syncCart(session.user.id, items);
+    const cart = await CartService.replaceCart(session.user.id, items);
     return NextResponse.json(cart);
   } catch (error) {
     console.error("Cart POST error:", error);

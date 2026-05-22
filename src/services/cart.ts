@@ -20,7 +20,8 @@ export class CartService {
     return cart;
   }
 
-  static async syncCart(userId: string, localItems: any[]) {
+  /** Replace server cart with validated client lines (one row per product). */
+  static async replaceCart(userId: string, localItems: any[]) {
     await dbConnect();
     const userObjectId = new mongoose.Types.ObjectId(userId);
     let cart = await Cart.findOne({ user: userObjectId });
@@ -29,32 +30,28 @@ export class CartService {
       cart = new Cart({ user: userObjectId, items: [] });
     }
 
-    // Merge logic: For each local item, add or update in DB
+    const nextItems: ICart["items"] = [];
+
     for (const localItem of localItems) {
-      const productId = localItem.productId || localItem.id;
-      const productObjectId = new mongoose.Types.ObjectId(productId);
-      
-      // Validate product exists and is active/visible
+      const productId = String(localItem.productId || localItem.id);
+      let productObjectId: mongoose.Types.ObjectId;
+      try {
+        productObjectId = new mongoose.Types.ObjectId(productId);
+      } catch {
+        continue;
+      }
+
       const product = await Product.findById(productObjectId);
       if (!product || !product.isActive || !product.isVisible) continue;
 
-      const existingItemIndex = cart.items.findIndex(
-        (item) => item.product.toString() === productId
-      );
-
-      if (existingItemIndex > -1) {
-        // If it exists, we take the larger quantity, but capped at stock
-        const newQty = Math.max(cart.items[existingItemIndex].quantity, localItem.quantity);
-        cart.items[existingItemIndex].quantity = Math.min(newQty, product.stock);
-      } else {
-        // Capped at stock
-        cart.items.push({
-          product: productObjectId,
-          quantity: Math.min(localItem.quantity, product.stock)
-        });
-      }
+      const qty = Math.max(1, Number(localItem.quantity) || 1);
+      nextItems.push({
+        product: productObjectId,
+        quantity: Math.min(qty, product.stock),
+      });
     }
 
+    cart.items = nextItems;
     await cart.save();
     return await cart.populate("items.product");
   }

@@ -14,21 +14,13 @@ It verifies the `Stripe-Signature` header using `STRIPE_WEBHOOK_SECRET`, then ru
 
 Stripe lets each **webhook endpoint** pin an **API version**. Event payloads match that version’s shape.
 
-This project uses the official **`stripe` npm package** without passing a custom `apiVersion` in code (`src/services/stripe.ts`). The library pins a default API version at build time.
+This project pins a single version in code (`STRIPE_API_VERSION` in `src/services/stripe.ts`):
 
-**As of `stripe@20.4.1` in this repo**, that default is:
+`2026-04-22.dahlia`
 
-`2026-02-25.clover`
+**Dashboard:** when you add a webhook endpoint, set **API version** to `2026-04-22.dahlia` (same as `STRIPE_API_VERSION`). Mismatches can cause subtle shape differences in `event.data.object`.
 
-**How to confirm after upgrading `stripe`:**
-
-```bash
-node -e "const Stripe=require('stripe'); console.log(Stripe.API_VERSION)"
-```
-
-This prints the API version string embedded in the installed SDK (no valid secret required).
-
-**Dashboard recommendation:** when you add a webhook endpoint in Stripe, set its API version to **match** the version above (or upgrade your account default and the `stripe` package together so they stay aligned). Mismatches can cause subtle shape differences in `event.data.object`.
+**npm package:** `stripe@^22.1.1` (or newer) ships types for this version. After upgrading `stripe`, confirm `STRIPE_API_VERSION` in `src/services/stripe.ts` still matches your Dashboard webhook endpoints.
 
 ## Step-by-step: Dashboard webhook (test or live)
 
@@ -54,7 +46,7 @@ This prints the API version string embedded in the installed SDK (no valid secre
    | `payment_intent.canceled` | PaymentIntent canceled (e.g. abandoned flow); release hold when session events are delayed |
 
 5. **API version for this endpoint**  
-   In the endpoint creation UI, set **API version** to the same version your `stripe` package uses (see [API version to use](#api-version-to-use) above).
+   In the endpoint creation UI, set **API version** to `2026-04-22.dahlia` (see [API version to use](#api-version-to-use) above).
 
 6. **Create the endpoint**  
    After saving, open the endpoint details.
@@ -86,7 +78,7 @@ This prints the API version string embedded in the installed SDK (no valid secre
 3. **Forward events to your Next dev server**
 
    ```bash
-   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   stripe listen --forward-to localhost:3000/api/stripe/webhook --api-version 2026-04-22.dahlia
    ```
 
 4. **Copy the webhook signing secret** the CLI prints (`whsec_...`) into `STRIPE_WEBHOOK_SECRET` in `.env`. This secret is **different** from the Dashboard endpoint secret for the same path.

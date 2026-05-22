@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface CartItem {
   id: string;
@@ -24,9 +24,12 @@ interface CartState {
   totalItems: number;
   totalPrice: number;
   totalNetPrice: number;
+  /** False until localStorage has been read on the client. */
+  _hasHydrated: boolean;
   addItem: (item: CartItem) => void;
   removeItem: (lineId: string) => void;
   updateQuantity: (lineId: string, quantity: number) => void;
+  replaceItems: (items: CartItem[]) => void;
   clearCart: () => void;
 }
 
@@ -35,8 +38,8 @@ const calculateTotals = (items: CartItem[]) => {
     totalItems: items.reduce((total, item) => total + item.quantity, 0),
     totalPrice: items.reduce((total, item) => total + item.price * item.quantity, 0),
     totalNetPrice: items.reduce((total, item) => total + item.netPrice * item.quantity, 0),
-  }
-}
+  };
+};
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -45,6 +48,7 @@ export const useCartStore = create<CartState>()(
       totalItems: 0,
       totalPrice: 0,
       totalNetPrice: 0,
+      _hasHydrated: false,
 
       addItem: (newItem: CartItem) => {
         const currentItems = get().items;
@@ -80,19 +84,38 @@ export const useCartStore = create<CartState>()(
         const newItems = items.map((i: CartItem) =>
           i.id === lineId ? { ...i, quantity: newQuantity } : i
         );
-        
+
         set({ items: newItems, ...calculateTotals(newItems) });
       },
 
-      clearCart: () => set({ 
-        items: [], 
-        totalItems: 0, 
-        totalPrice: 0, 
-        totalNetPrice: 0 
-      }),
+      replaceItems: (items: CartItem[]) => {
+        set({ items, ...calculateTotals(items) });
+      },
+
+      clearCart: () =>
+        set({
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+          totalNetPrice: 0,
+        }),
     }),
     {
       name: "krausz-cart-storage",
+      storage: createJSONStorage(() => localStorage),
+      skipHydration: true,
+      partialize: (state) => ({
+        items: state.items,
+        totalItems: state.totalItems,
+        totalPrice: state.totalPrice,
+        totalNetPrice: state.totalNetPrice,
+      }),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.error("Cart storage rehydration failed:", error);
+        }
+        useCartStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );

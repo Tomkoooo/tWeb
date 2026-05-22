@@ -30,7 +30,7 @@ export default async function AdminProducts({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Termékek <span className="text-primary underline decoration-primary/10 underline-offset-8">Készlete</span>
+            Termékek <span className="admin-headline-accent">Készlete</span>
           </h1>
           <p className="text-white/40 font-medium italic">Kezelje a bolt árukészletét, árait és kategóriáit.</p>
         </div>
@@ -57,17 +57,17 @@ export default async function AdminProducts({
         
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, active: active === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", active === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", active === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Aktív
             </Button>
           </Link>
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, visible: visible === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", visible === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", visible === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Látható
             </Button>
           </Link>
           <Link href={`/admin/products?${new URLSearchParams({ ...filters, discounted: discounted === 'true' ? '' : 'true' }).toString()}`}>
-            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", discounted === 'true' ? "bg-primary/10 border-primary text-primary" : "border-white/5 text-neutral-500 hover:text-white")}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", discounted === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Akciós
             </Button>
           </Link>
@@ -124,14 +124,14 @@ export default async function AdminProducts({
                   <tr key={product._id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-primary/30 transition-colors">
+                        <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-white/25 transition-colors">
                           <FallbackImage src={mediaImageSrc(product.images?.[0])} alt={product.name} width={56} height={56} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div>
                           <p className="font-heading font-black text-white uppercase tracking-wider text-base">{product.name}</p>
                           <p className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">/{product.slug}</p>
                           {hasVariants ? (
-                            <p className="text-[10px] text-primary font-black tracking-widest uppercase mt-1">
+                            <p className="text-[10px] admin-value font-black tracking-widest uppercase mt-1">
                               {variants.length} variáns
                             </p>
                           ) : null}
@@ -142,7 +142,7 @@ export default async function AdminProducts({
                       <div className="flex flex-col gap-1.5">
                         <span className={cn(
                           "w-fit px-2 py-1 border transition-colors",
-                          product.isActive ? "bg-primary/5 border-primary/20 text-primary" : "bg-white/5 border-white/10 text-neutral-500"
+                          product.isActive ? "bg-white/10 border-white/20 text-white" : "bg-white/5 border-white/10 text-neutral-500"
                         )}>
                           {product.isActive ? "AKTÍV" : "INAKTÍV"}
                         </span>
@@ -180,7 +180,7 @@ export default async function AdminProducts({
                     <td className="px-6 py-6 text-right">
                       <div className="flex justify-end gap-3">
                         <Link href={`/products/${product.slug}`} target="_blank">
-                          <Button variant="ghost" size="icon" className="hover:bg-primary/20 text-neutral-500 hover:text-primary rounded-none border border-transparent hover:border-primary/30 transition-all" title="Megtekintés">
+                          <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/30 transition-all" title="Megtekintés">
                             <ExternalLink className="w-4 h-4" />
                           </Button>
                         </Link>

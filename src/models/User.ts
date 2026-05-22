@@ -18,6 +18,8 @@ export interface IUser extends Document {
     city: string;
     zip: string;
     street: string;
+    email?: string;
+    phone?: string;
   };
   shippingAddress?: {
     name: string;
@@ -26,6 +28,8 @@ export interface IUser extends Document {
     zip: string;
     street: string;
     comment?: string;
+    email?: string;
+    phone?: string;
   };
 }
 
@@ -48,6 +52,8 @@ const UserSchema = new Schema<IUser>(
       city: { type: String },
       zip: { type: String },
       street: { type: String },
+      email: { type: String },
+      phone: { type: String },
     },
     shippingAddress: {
       name: { type: String },
@@ -56,6 +62,8 @@ const UserSchema = new Schema<IUser>(
       zip: { type: String },
       street: { type: String },
       comment: { type: String },
+      email: { type: String },
+      phone: { type: String },
     },
   },
   { 

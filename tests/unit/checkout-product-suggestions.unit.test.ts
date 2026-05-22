@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { pickCheapestInStockVariantId, shuffleInPlace } from "@/services/checkout-product-suggestions"
+import { shuffleInPlace } from "@/services/checkout-product-suggestions"
+import { pickCheapestInStockVariantId } from "@/lib/checkout-suggestion-product"
 
 describe("pickCheapestInStockVariantId", () => {
   it("returns undefined when no in-stock variants", () => {

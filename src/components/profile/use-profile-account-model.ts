@@ -6,14 +6,29 @@ import { useSession, signOut } from "next-auth/react"
 import { toast } from "sonner"
 
 const defaultForm = () => ({
-  billing: { type: "personal" as const, name: "", taxNumber: "", zip: "", city: "", street: "" },
+  billing: {
+    type: "personal" as const,
+    name: "",
+    taxNumber: "",
+    country: "",
+    countryCode: "HU",
+    zip: "",
+    city: "",
+    street: "",
+    email: "",
+    phone: "",
+  },
   shipping: {
     isSameAsBilling: true,
     name: "",
+    country: "",
+    countryCode: "HU",
     zip: "",
     city: "",
     street: "",
     comment: "",
+    email: "",
+    phone: "",
   },
   newsletterSubscribed: false,
 })

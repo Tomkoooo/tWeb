@@ -13,6 +13,7 @@ import {
   type CategoryTreeNode,
 } from "@/lib/storefront-footer-data"
 import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
+import { storefrontCatalogFilters } from "@/lib/storefront-catalog"
 export async function generateMetadata({
   searchParams,
 }: {
@@ -109,8 +110,7 @@ export default async function ShopPage({
     category: params.category,
     isDiscounted: params.discounted === "true",
     sort: params.sort || "newest",
-    isActive: true,
-    isVisible: true,
+    ...storefrontCatalogFilters(),
   }
 
   const [paginationResult, categoriesResult, contentDoc] =

@@ -55,7 +55,7 @@ export default function ShopFeedbackPage() {
   if (status === "loading") {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
       </div>
     )
   }
@@ -68,7 +68,7 @@ export default function ShopFeedbackPage() {
 
       <div className="space-y-8 rounded-xl border border-border bg-card p-8 shadow-sm">
         <div>
-          <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-primary">
+          <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-primary-foreground">
             Mennyire voltál elégedett a vásárlásoddal?
           </h3>
           <p className="mb-6 text-sm font-medium text-muted-foreground">
@@ -83,7 +83,7 @@ export default function ShopFeedbackPage() {
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
                 className={`h-12 w-12 cursor-pointer transition-colors ${
-                  star <= (hoveredRating || rating) ? "fill-primary text-primary" : "text-muted-foreground/50"
+                  star <= (hoveredRating || rating) ? "fill-primary text-primary-foreground" : "text-muted-foreground/50"
                 }`}
               />
             ))}
@@ -105,7 +105,7 @@ export default function ShopFeedbackPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="h-14 w-full rounded-lg border border-primary bg-primary font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90"
+              className="h-14 w-full rounded-lg border border-primary-foreground/35 bg-primary font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90"
             >
               {loading ? "Küldés folyamatban..." : "Értékelés beküldése"}
             </Button>

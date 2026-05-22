@@ -50,7 +50,7 @@ export async function uploadLegalDocument(key: string, formData: FormData) {
       fileName: filename,
       uploadedAt: new Date(),
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   if (existing?.fileName && existing.fileName !== filename) {

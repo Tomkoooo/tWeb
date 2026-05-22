@@ -99,17 +99,17 @@ export function Navbar({
   const centerNav = cmsChromePreview ? (
     <nav
       aria-label="Menü előnézet (nem kattintható)"
-      className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex"
+      className="hidden items-center justify-center gap-8 lg:flex xl:gap-14"
     >
       {navLinks.map((link) => (
         <span key={link.name} className={cn(linkClass, "relative cursor-default")}>
           {link.name}
-          <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-primary/40" aria-hidden />
+          <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-primary-foreground/40" aria-hidden />
         </span>
       ))}
     </nav>
   ) : (
-    <nav className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex">
+    <nav className="hidden items-center justify-center gap-8 lg:flex xl:gap-14">
       {navLinks.map((link) => (
         <Link
           key={link.name}
@@ -117,7 +117,7 @@ export function Navbar({
           className="group relative whitespace-nowrap text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground transition-colors hover:text-foreground"
         >
           {link.name}
-          <span className="absolute -bottom-2 left-0 h-[2px] w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+          <span className="absolute -bottom-2 left-0 h-[2px] w-0 bg-primary-foreground transition-all duration-300 group-hover:w-full" />
         </Link>
       ))}
     </nav>
@@ -156,7 +156,7 @@ export function Navbar({
             className="group relative h-10 w-10 p-0 hover:bg-transparent"
           >
             <Link href="/cart">
-              <ShoppingCart className="h-6 w-6 text-foreground transition-colors group-hover:text-primary" />
+              <ShoppingCart className="h-6 w-6 text-foreground transition-colors group-hover:text-primary-foreground" />
               <CartCountBadge />
             </Link>
           </Button>
@@ -177,7 +177,7 @@ export function Navbar({
               <Link
                 key={link.name}
                 href={link.href}
-                className="font-heading text-3xl font-black uppercase tracking-widest text-foreground transition-colors hover:text-primary"
+                className="font-heading text-3xl font-black uppercase tracking-widest text-foreground transition-colors hover:text-primary-foreground"
               >
                 {link.name}
               </Link>
@@ -199,8 +199,8 @@ export function Navbar({
   )
 
   const bar = (
-    <div className="container mx-auto flex items-center">
-      <div className="flex-none">
+    <div className="container mx-auto grid grid-cols-[auto_1fr_auto] items-center gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6">
+      <div className="min-w-0 justify-self-start">
         {cmsChromePreview ? (
           <div className="pointer-events-none flex items-center select-none">{logoBlock}</div>
         ) : (
@@ -210,9 +210,9 @@ export function Navbar({
         )}
       </div>
 
-      {centerNav}
+      <div className="hidden min-w-0 justify-self-center lg:block">{centerNav}</div>
 
-      {actions}
+      <div className="justify-self-end">{actions}</div>
     </div>
   )
 

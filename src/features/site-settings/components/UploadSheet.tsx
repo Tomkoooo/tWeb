@@ -4,37 +4,11 @@ import { useCallback, useMemo, useState } from "react"
 import Cropper from "react-easy-crop"
 import { Check, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react"
 import getCroppedImg from "@/lib/crop-utils"
-
-type AspectPreset = {
-  id: string
-  label: string
-  aspect: number | null
-}
-
-function buildAspectPresets(recommendedAspect?: number): AspectPreset[] {
-  const presets: AspectPreset[] = [
-    { id: "square", label: "Négyzet 1:1", aspect: 1 },
-    { id: "landscape", label: "16:9", aspect: 16 / 9 },
-    { id: "wide", label: "21:9", aspect: 21 / 9 },
-    { id: "portrait", label: "3:4", aspect: 3 / 4 },
-    { id: "logo", label: "Logó", aspect: 512 / 160 },
-    { id: "custom", label: "Egyéni", aspect: -1 },
-  ]
-  if (recommendedAspect && Number.isFinite(recommendedAspect)) {
-    presets.unshift({ id: "recommended", label: "Javasolt", aspect: recommendedAspect })
-  }
-  presets.push({ id: "full", label: "Teljes kép", aspect: null })
-  return presets
-}
-
-function defaultFlexiblePresetId(presets: AspectPreset[]) {
-  return (
-    presets.find((p) => p.id === "recommended")?.id ??
-    presets.find((p) => p.id === "logo")?.id ??
-    presets[0]?.id ??
-    "square"
-  )
-}
+import {
+  buildAspectPresets,
+  defaultFlexiblePresetId,
+  type AspectPreset,
+} from "@/components/admin/admin-image-crop"
 
 export function UploadSheet({
   onUploaded,
@@ -212,7 +186,7 @@ export function UploadSheet({
                       onClick={() => selectPreset(preset.id)}
                       className={`px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
                         selectedPresetId === preset.id
-                          ? "border-primary text-white bg-primary/20"
+                          ? "border-primary-foreground/35 text-white bg-primary/20"
                           : "border-white/15 text-neutral-400 hover:border-white/30"
                       }`}
                     >
@@ -279,7 +253,7 @@ export function UploadSheet({
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
                       <span>Nagyítás</span>
-                      <span className="text-primary">{Math.round(zoom * 100)}%</span>
+                      <span className="text-primary-foreground">{Math.round(zoom * 100)}%</span>
                     </div>
                     <div className="flex items-center gap-4">
                       <ZoomOut className="w-4 h-4 text-neutral-600" />
@@ -298,7 +272,7 @@ export function UploadSheet({
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
                       <span>Forgatás</span>
-                      <span className="text-primary">{rotation}°</span>
+                      <span className="text-primary-foreground">{rotation}°</span>
                     </div>
                     <div className="flex items-center gap-4">
                       <RotateCcw className="w-4 h-4 text-neutral-600" />

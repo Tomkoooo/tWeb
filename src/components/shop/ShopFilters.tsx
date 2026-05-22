@@ -56,7 +56,7 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="MIT KERESEL?"
-            className="bg-white/5 border-white/5 pl-12 h-14 rounded-none text-[10px] font-bold tracking-[0.2em] text-white placeholder:text-neutral-700 focus-visible:ring-primary"
+            className="bg-white/5 border-white/5 pl-12 h-14 rounded-none text-[10px] font-bold tracking-[0.2em] text-white placeholder:text-neutral-700 focus-visible:ring-primary-foreground/40"
           />
         </form>
       </div>
@@ -98,14 +98,14 @@ export function ShopFilters({ categories }: ShopFiltersProps) {
           className={cn(
             "w-full flex items-center justify-between px-4 py-3 text-[11px] font-black uppercase tracking-widest transition-all border-2",
             isDiscounted 
-              ? "bg-primary/10 border-primary text-primary" 
+              ? "bg-primary/10 border-primary-foreground/35 text-primary-foreground" 
               : "border-white/5 text-neutral-400 hover:text-white hover:border-white/20"
           )}
         >
           Csak Akciós
           <div className={cn(
             "w-4 h-4 border-2 flex items-center justify-center",
-            isDiscounted ? "border-primary bg-primary" : "border-white/20"
+            isDiscounted ? "border-primary-foreground/35 bg-primary" : "border-white/20"
           )}>
             {isDiscounted && <Check className="w-3 h-3 text-white" />}
           </div>

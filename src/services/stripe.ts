@@ -1,5 +1,8 @@
 import Stripe from "stripe";
 
+/** Must match Stripe Dashboard webhook endpoint API version. */
+export const STRIPE_API_VERSION = "2026-04-22.dahlia";
+
 let stripeClient: Stripe | null = null;
 
 export function getStripeClient(): Stripe {
@@ -8,7 +11,7 @@ export function getStripeClient(): Stripe {
   if (!secretKey) {
     throw new Error("Missing STRIPE_SECRET_KEY");
   }
-  stripeClient = new Stripe(secretKey);
+  stripeClient = new Stripe(secretKey, { apiVersion: STRIPE_API_VERSION });
   return stripeClient;
 }
 

@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
+            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary-foreground/50"
             required
           />
         </div>
@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary"
+            className="w-full h-12 bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-primary-foreground/50"
             required
           />
         </div>

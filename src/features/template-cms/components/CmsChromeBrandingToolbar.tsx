@@ -63,7 +63,7 @@ export function CmsChromeBrandingToolbar({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-3 rounded-lg border border-white/10 bg-black/25 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary/90">Navbar / fejléc</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/90">Navbar / fejléc</p>
           <EditableLogo
             src={branding.logoNav}
             alt={branding.brandName}
@@ -78,7 +78,7 @@ export function CmsChromeBrandingToolbar({
         </div>
 
         <div className="space-y-3 rounded-lg border border-white/10 bg-black/25 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary/90">Lábléc</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/90">Lábléc</p>
           <EditableLogo
             src={branding.logoFooter}
             alt={branding.brandName}

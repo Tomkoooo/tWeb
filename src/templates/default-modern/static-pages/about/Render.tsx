@@ -60,7 +60,7 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
               if (!cms.enabled && !(h.title?.trim() || h.body?.trim())) return null
               return (
                 <div key={idx} className="space-y-3 border border-white/10 bg-white/5 p-6">
-                  <p className="font-mono text-xs text-primary">
+                  <p className="font-mono text-xs text-primary-foreground">
                     0{idx + 1}
                   </p>
                   <p className="text-lg font-black uppercase tracking-tight">

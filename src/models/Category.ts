@@ -10,6 +10,8 @@ export interface ICategory extends Document {
     keywords?: string[];
   };
   slug: string;
+  /** Lower = earlier in homepage featured categories row. */
+  featuredListIndex?: number | null;
 }
 
 const CategorySchema = new Schema<ICategory>(
@@ -23,6 +25,7 @@ const CategorySchema = new Schema<ICategory>(
       keywords: [{ type: String }],
     },
     slug: { type: String, required: true, unique: true },
+    featuredListIndex: { type: Number, default: null },
   },
   { timestamps: true }
 );

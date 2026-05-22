@@ -5,6 +5,11 @@ import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
 import { mediaImageSrc } from "@/lib/images"
 import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing"
+import {
+  orderIdsByList,
+  resolveFeaturedCategoryIds,
+  resolveFeaturedProductIds,
+} from "@/lib/featured-products"
 import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
 
 type ProductRating = { rating?: number }
@@ -94,7 +99,14 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
   }
 }
 
-export async function getHomepageRenderDependencies(): Promise<HomepageRenderDependencies> {
+export type HomepageFeaturedResolveOptions = {
+  cmsSelectedProductIds?: string[]
+  maxItems?: number
+}
+
+export async function getHomepageRenderDependencies(
+  options: HomepageFeaturedResolveOptions = {}
+): Promise<HomepageRenderDependencies> {
   const [reviews, isShopPageEnabled, content] = await Promise.all([
     FeedbackService.getHomepageReviews(6),
     FeatureFlagService.isEnabled("shopPage", true),
@@ -105,20 +117,37 @@ export async function getHomepageRenderDependencies(): Promise<HomepageRenderDep
   let categories: Array<{ id: string; name: string; description: string; image: string; slug: string }> = []
 
   if (isShopPageEnabled) {
-    const [categoryData, productData] = await Promise.all([
+    const [categoryData, featuredIds] = await Promise.all([
       CategoryService.getAll(),
-      ProductService.getPaginated(1, 24, { isVisible: true }),
+      resolveFeaturedProductIds({
+        cmsSelectedProductIds: options.cmsSelectedProductIds,
+        maxItems: options.maxItems,
+      }),
     ])
 
-    products = (productData.products as ProductItem[]).map(mapFeaturedProduct)
+    const categoryById = new Map(
+      (categoryData as CategoryItem[]).map((c) => [c._id.toString(), c])
+    )
+    const featuredCategoryIds = await resolveFeaturedCategoryIds(4)
+    categories = featuredCategoryIds
+      .map((id) => categoryById.get(id))
+      .filter((c): c is CategoryItem => Boolean(c))
+      .map((c) => ({
+        id: c._id.toString(),
+        name: c.name,
+        description: c.seo?.description || "Minőségi válogatás",
+        image: mediaImageSrc(c.image),
+        slug: c.slug,
+      }))
 
-    categories = (categoryData.slice(0, 4) as CategoryItem[]).map((c) => ({
-      id: c._id.toString(),
-      name: c.name,
-      description: c.seo?.description || "Minőségi válogatás",
-      image: mediaImageSrc(c.image),
-      slug: c.slug,
-    }))
+    const productRows = await Promise.all(
+      featuredIds.map((id) => ProductService.getById(id))
+    )
+    const ordered = orderIdsByList(
+      featuredIds,
+      productRows.filter(Boolean) as ProductItem[]
+    )
+    products = ordered.map(mapFeaturedProduct)
   }
 
   return {
@@ -127,9 +156,9 @@ export async function getHomepageRenderDependencies(): Promise<HomepageRenderDep
     reviews,
     company: {
       name: content.brand_name || "Company name",
-      address: content.contact_address || "Company address",
-      phone: content.contact_phone || "+36...",
-      email: content.contact_email || "hello@example.com",
+      address: content.contact_address || "",
+      phone: content.contact_phone || "",
+      email: content.contact_email || "",
     },
   }
 }

@@ -171,6 +171,8 @@ export class OrderService {
             city: bi.city,
             zip: bi.zip,
             street: bi.street,
+            email: bi.email,
+            phone: bi.phone,
           },
           shippingAddress: {
             name: ship.name,
@@ -179,6 +181,8 @@ export class OrderService {
             zip: ship.zip,
             street: ship.street,
             comment: ship.comment,
+            email: ship.email,
+            phone: ship.phone,
           },
         },
       });

@@ -125,7 +125,7 @@ export function ProductCard({ product }: ProductCardProps) {
               key={i}
               className={cn(
                 "w-3 h-3",
-                i < Math.round(ratingValue) ? "fill-accent text-primary" : "text-white/20"
+                i < Math.round(ratingValue) ? "fill-accent text-primary-foreground" : "text-white/20"
               )}
             />
           ))}
@@ -135,7 +135,7 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Content Section */}
       <div className="p-6 flex flex-col grow">
         <Link href={`/products/${product.slug}`} className="block mb-2">
-          <h4 className="text-white text-lg font-heading font-black tracking-tighter group-hover:text-primary transition-colors line-clamp-2 uppercase">
+          <h4 className="text-white text-lg font-heading font-black tracking-tighter group-hover:text-primary-foreground transition-colors line-clamp-2 uppercase">
             {product.name}
           </h4>
         </Link>
@@ -143,7 +143,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto pt-4 flex flex-col gap-4">
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-black text-white">
-              {formatHuf(finalPrice)}<span className="text-xs font-black text-primary">{requiresVariantSelection ? "-tól" : ""}</span>
+              {formatHuf(finalPrice)}<span className="text-xs font-black text-primary-foreground">{requiresVariantSelection ? "-tól" : ""}</span>
             </span>
             {maxDiscount > 0 && (
               <span className="text-sm font-bold text-neutral-500 line-through">
@@ -159,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Button 
               onClick={handleAddToCart}
               disabled={shopEnabled === false}
-              className="w-full bg-primary border border-primary text-white hover:bg-primary/90 hover:border-primary/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
+              className="w-full bg-primary border border-primary-foreground/35 text-white hover:bg-primary/90 hover:border-primary-foreground/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               <ShoppingCart className="w-4 h-4" />
               {requiresVariantSelection ? "Variáns választása" : "Kosárba"}
@@ -167,7 +167,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">
                 Megtekintés
-                <ArrowRight className="w-3 h-3 text-primary" />
+                <ArrowRight className="w-3 h-3 text-primary-foreground" />
               </Button>
             </Link>
           </div>

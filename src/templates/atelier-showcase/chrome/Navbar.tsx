@@ -105,7 +105,7 @@ export function Navbar({
       {navLinks.map((link) => (
         <span key={link.name} className={cn(linkClass, "relative cursor-default")}>
           {link.name}
-          <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-primary/40" aria-hidden />
+          <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-primary-foreground/40" aria-hidden />
         </span>
       ))}
     </nav>
@@ -118,7 +118,7 @@ export function Navbar({
           className="group relative whitespace-nowrap text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground transition-colors hover:text-foreground"
         >
           {link.name}
-          <span className="absolute -bottom-2 left-0 h-[2px] w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+          <span className="absolute -bottom-2 left-0 h-[2px] w-0 bg-primary-foreground transition-all duration-300 group-hover:w-full" />
         </Link>
       ))}
     </nav>
@@ -157,7 +157,7 @@ export function Navbar({
             className="group relative h-10 w-10 p-0 hover:bg-transparent"
           >
             <Link href="/cart">
-              <ShoppingCart className="h-6 w-6 text-foreground transition-colors group-hover:text-primary" />
+              <ShoppingCart className="h-6 w-6 text-foreground transition-colors group-hover:text-primary-foreground" />
               <CartCountBadge />
             </Link>
           </Button>
@@ -178,7 +178,7 @@ export function Navbar({
               <Link
                 key={link.name}
                 href={link.href}
-                className="font-heading text-3xl font-black uppercase tracking-widest text-foreground transition-colors hover:text-primary"
+                className="font-heading text-3xl font-black uppercase tracking-widest text-foreground transition-colors hover:text-primary-foreground"
               >
                 {link.name}
               </Link>

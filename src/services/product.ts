@@ -146,7 +146,7 @@ export class ProductService {
   static async update(id: string, data: Partial<IProduct>) {
     await dbConnect();
     const oldProduct = await Product.findById(id).lean();
-    const product = await Product.findByIdAndUpdate(id, data, { new: true });
+    const product = await Product.findByIdAndUpdate(id, data, { returnDocument: "after" });
     
     if (oldProduct && product) {
       await MediaService.syncUsage(oldProduct.images || [], product.images || []);

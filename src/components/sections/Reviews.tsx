@@ -93,8 +93,8 @@ export function Reviews({
                   transition={{ delay: idx * 0.1 }}
                   className="h-full"
                 >
-                  <div className="glass-card p-12 md:p-16 relative overflow-hidden h-full border-border group hover:border-primary/30 transition-all duration-500">
-                    <Quote className="w-24 h-24 text-primary/10 absolute -top-4 -right-4 transition-transform group-hover:scale-110" />
+                  <div className="glass-card p-12 md:p-16 relative overflow-hidden h-full border-border group hover:border-primary-foreground/30 transition-all duration-500">
+                    <Quote className="w-24 h-24 text-primary-foreground/10 absolute -top-4 -right-4 transition-transform group-hover:scale-110" />
                     
                     <div className="flex gap-1.5 mb-10">
                       {[...Array(5)].map((_, i) => (
@@ -110,7 +110,7 @@ export function Reviews({
                     </p>
 
                     <div className="flex items-center gap-6 border-t border-border/40 pt-10">
-                      <div className="relative w-16 h-16 rounded-none overflow-hidden border-2 border-primary/30">
+                      <div className="relative w-16 h-16 rounded-none overflow-hidden border-2 border-primary-foreground/30">
                         <FallbackImage
                           src={review.avatar}
                           alt={review.name}
@@ -120,7 +120,7 @@ export function Reviews({
                       </div>
                       <div>
                         <h4 className="text-foreground text-xl font-heading font-black tracking-wider uppercase mb-1">{review.name}</h4>
-                        <p className="text-primary text-sm font-black uppercase tracking-[0.2em]">{review.role}</p>
+                        <p className="text-primary-foreground text-sm font-black uppercase tracking-[0.2em]">{review.role}</p>
                       </div>
                     </div>
                   </div>
@@ -129,8 +129,8 @@ export function Reviews({
             ))}
           </CarouselContent>
           <div className="flex justify-center mt-16 gap-6">
-            <CarouselPrevious className="relative left-0 translate-y-0 h-16 w-16 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
-            <CarouselNext className="relative right-0 translate-y-0 h-16 w-16 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary rounded-none" />
+            <CarouselPrevious className="relative left-0 translate-y-0 h-16 w-16 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary-foreground/40 rounded-none" />
+            <CarouselNext className="relative right-0 translate-y-0 h-16 w-16 bg-muted/40 border-border text-foreground hover:bg-primary hover:border-primary-foreground/40 rounded-none" />
           </div>
         </Carousel>
       </div>

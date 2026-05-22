@@ -45,3 +45,7 @@ next-env.d.ts
 /uploads/*
 
 .krausz
+
+# Agent CMS import working files (keep *.example in repo)
+/scripts/imports/customer-copy.txt
+/scripts/imports/payload.json

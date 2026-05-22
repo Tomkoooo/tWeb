@@ -14,7 +14,7 @@ export function FeaturesBlockView({ block }: { block: FeaturesBlock }) {
             const Icon = card.icon && card.icon in ICON_MAP ? ICON_MAP[card.icon as keyof typeof ICON_MAP] : null
             return (
               <article key={idx} className="border border-border bg-muted/30 p-4">
-                {Icon ? <Icon className="mb-2 h-5 w-5 text-primary" /> : null}
+                {Icon ? <Icon className="mb-2 h-5 w-5 text-primary-foreground" /> : null}
                 <h3 className="font-bold text-foreground">{card.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{card.description}</p>
               </article>

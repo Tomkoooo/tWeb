@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest) {
     const user = await User.findOneAndUpdate(
       { _id: existingUser._id },
       updateData,
-      { new: true }
+      { returnDocument: "after" }
     );
 
     return NextResponse.json(user);

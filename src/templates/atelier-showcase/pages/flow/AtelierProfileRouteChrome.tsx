@@ -31,8 +31,8 @@ export function AtelierProfileRouteChrome({ children, shopEnabled: _shopEnabled 
                 className={cn(
                   "shrink-0 rounded-full border px-5 py-2.5 font-serif text-xs font-semibold uppercase tracking-widest transition-colors",
                   active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    ? "border-primary-foreground/35 bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary-foreground/40 hover:text-foreground"
                 )}
               >
                 {label}

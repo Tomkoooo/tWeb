@@ -59,6 +59,26 @@ export interface IOrder extends Document {
     generatedBy?: mongoose.Types.ObjectId;
     lastError?: string;
   };
+  foxpostParcelPoint?: {
+    id: string;
+    name: string;
+    address?: string;
+    zip?: string;
+    city?: string;
+    findme?: string;
+    load?: string;
+  };
+  foxpostShipment?: {
+    clFoxId?: string;
+    refCode?: string;
+    labelUrl?: string;
+    labelDataBase64?: string;
+    labelPageSize?: string;
+    trackingStatus?: string;
+    generatedAt?: Date;
+    generatedBy?: mongoose.Types.ObjectId;
+    lastError?: string;
+  };
   shippingMethod: mongoose.Types.ObjectId;
   paymentMethod: mongoose.Types.ObjectId;
   couponCodes?: string[];
@@ -137,6 +157,26 @@ const OrderSchema = new Schema<IOrder>(
       pin: { type: String },
       labelUrl: { type: String },
       labelDataBase64: { type: String },
+      generatedAt: { type: Date },
+      generatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      lastError: { type: String },
+    },
+    foxpostParcelPoint: {
+      id: { type: String },
+      name: { type: String },
+      address: { type: String },
+      zip: { type: String },
+      city: { type: String },
+      findme: { type: String },
+      load: { type: String },
+    },
+    foxpostShipment: {
+      clFoxId: { type: String },
+      refCode: { type: String },
+      labelUrl: { type: String },
+      labelDataBase64: { type: String },
+      labelPageSize: { type: String },
+      trackingStatus: { type: String },
       generatedAt: { type: Date },
       generatedBy: { type: Schema.Types.ObjectId, ref: "User" },
       lastError: { type: String },
