@@ -155,6 +155,102 @@ describe("checkout-validation unit", () => {
     expect(result.saveAddressToProfile).toBe(false);
   });
 
+  it("persists GLS parcel point for admin-configured shipping method (provider gls)", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    shippingFindOneMock.mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue({
+        _id: { toString: () => "ship_gls_db" },
+        grossPrice: 1490,
+        provider: "gls",
+      }),
+    });
+    const result = await validateAndNormalizeCheckoutInput({
+      items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+      billingInfo: {
+        type: "personal",
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingAddress: {
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingMethod: "507f1f77bcf86cd799439012",
+      paymentMethod: "507f1f77bcf86cd799439013",
+      glsParcelPoint: {
+        id: "gls-point-99",
+        name: "GLS ABC",
+        contact: { postalCode: "4024", city: "Debrecen", address: "Piac u. 1" },
+      },
+    });
+    expect(result.shippingMethod).toBe("ship_gls_db");
+    expect(result.glsParcelPoint?.id).toBe("gls-point-99");
+    expect(result.glsParcelPoint?.name).toBe("GLS ABC");
+    expect(result.foxpostParcelPoint).toBeUndefined();
+    expect(result.shippingAddress.zip).toBe("4024");
+    expect(result.shippingAddress.city).toBe("Debrecen");
+    expect(result.shippingAddress.street).toBe("Piac u. 1");
+    expect(result.shippingAddress.name).toBe("Teszt");
+  });
+
+  it("uses Foxpost automata address on order and keeps automata id", async () => {
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    shippingFindOneMock.mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue({
+        _id: { toString: () => "ship_fox_db" },
+        grossPrice: 990,
+        provider: "foxpost",
+      }),
+    });
+    const result = await validateAndNormalizeCheckoutInput(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingAddress: {
+          name: "Teszt Vevo",
+          zip: "1111",
+          city: "Bp",
+          street: "Otthoni ut 9",
+          email: "vevo@a.com",
+          phone: "+36201234567",
+        },
+        shippingMethod: "507f1f77bcf86cd799439012",
+        paymentMethod: "507f1f77bcf86cd799439013",
+        foxpostParcelPoint: {
+          id: "hu5516",
+          name: "Fox ABC",
+          zip: "4028",
+          city: "Debrecen",
+          address: "Automata utca 5",
+        },
+      },
+      { userId: "507f1f77bcf86cd799439099" }
+    );
+    expect(result.foxpostParcelPoint?.id).toBe("hu5516");
+    expect(result.shippingAddress.zip).toBe("4028");
+    expect(result.shippingAddress.city).toBe("Debrecen");
+    expect(result.shippingAddress.street).toBe("Automata utca 5");
+    expect(result.shippingAddress.name).toBe("Teszt Vevo");
+    expect(result.shippingAddress.email).toBe("vevo@a.com");
+    expect(result.saveAddressToProfile).toBe(false);
+  });
+
   it("validates GLS fixed path and requires parcel point", async () => {
     const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
     await expect(
@@ -234,10 +330,18 @@ describe("checkout-validation unit", () => {
       },
       shippingMethod: "foxpost_fixed",
       paymentMethod: "507f1f77bcf86cd799439013",
-      foxpostParcelPoint: { id: "hu5516", name: "Fox automata" },
+      foxpostParcelPoint: {
+        id: "hu5516",
+        name: "Fox automata",
+        zip: "4028",
+        city: "Debrecen",
+        address: "Automata utca 5",
+      },
     });
     expect(result.shippingMethod).toBe("ship_fox");
     expect(result.foxpostParcelPoint?.id).toBe("hu5516");
+    expect(result.shippingAddress.street).toBe("Automata utca 5");
+    expect(result.shippingAddress.city).toBe("Debrecen");
   });
 
   it("supports stripe fixed payment path", async () => {

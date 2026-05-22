@@ -15,6 +15,10 @@ import {
 } from "@/lib/parcel-feature-flags";
 import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
 import { FOXPOST_FIXED_SHIPPING_METHOD_ID, FoxpostParcelPoint } from "@/lib/foxpost";
+import {
+  buildFoxpostParcelOrderShippingAddress,
+  buildGlsParcelOrderShippingAddress,
+} from "@/lib/parcel-locker-checkout-display";
 import { customerGrossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
 import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
 import {
@@ -435,6 +439,8 @@ export async function validateAndNormalizeCheckoutInput(
       explicitCode: input.foxpostParcelPoint.countryCode.trim(),
       freeText: undefined,
     })
+  } else if (isGlsParcel || isFoxpostParcel) {
+    shippingResolved = billingResolved
   } else {
     shippingResolved = requireResolvedCountry("szállítási", {
       explicitCode: shippingAddress.countryCode?.trim(),
@@ -448,8 +454,43 @@ export async function validateAndNormalizeCheckoutInput(
   const trading = await ShopTradingSettingsService.get()
   assertCountryPolicy(billingResolved.code, shippingResolved.code, trading)
 
+  const parcelShippingContact = {
+    name: shippingAddress.name.trim(),
+    email: shippingAddress.email.trim(),
+    phone: shippingAddress.phone.trim(),
+    comment: shippingAddress.comment?.trim() || undefined,
+  }
+
+  const normalizedShippingAddress =
+    isGlsParcel && input.glsParcelPoint
+      ? buildGlsParcelOrderShippingAddress(
+          parcelShippingContact,
+          input.glsParcelPoint,
+          shippingResolved
+        )
+      : isFoxpostParcel && input.foxpostParcelPoint
+        ? buildFoxpostParcelOrderShippingAddress(
+            parcelShippingContact,
+            input.foxpostParcelPoint,
+            shippingResolved
+          )
+        : {
+            name: shippingAddress.name.trim(),
+            country: shippingResolved.label,
+            countryCode: shippingResolved.code,
+            zip: shippingAddress.zip.trim(),
+            city: shippingAddress.city.trim(),
+            street: shippingAddress.street.trim(),
+            comment: shippingAddress.comment?.trim() || undefined,
+            email: shippingAddress.email.trim(),
+            phone: shippingAddress.phone.trim(),
+          }
+
   const saveAddressToProfile =
-    Boolean(options?.userId) && input.saveAddressToProfile !== false
+    Boolean(options?.userId) &&
+    input.saveAddressToProfile !== false &&
+    !isGlsParcel &&
+    !isFoxpostParcel
 
   return {
     items: normalizedItems,
@@ -465,20 +506,10 @@ export async function validateAndNormalizeCheckoutInput(
       email: billingInfo.email.trim(),
       phone: billingInfo.phone.trim(),
     },
-    shippingAddress: {
-      name: shippingAddress.name.trim(),
-      country: shippingResolved.label,
-      countryCode: shippingResolved.code,
-      zip: shippingAddress.zip.trim(),
-      city: shippingAddress.city.trim(),
-      street: shippingAddress.street.trim(),
-      comment: shippingAddress.comment?.trim() || undefined,
-      email: shippingAddress.email.trim(),
-      phone: shippingAddress.phone.trim(),
-    },
+    shippingAddress: normalizedShippingAddress,
     shippingMethod: resolvedShippingMethodId,
     paymentMethod: paymentMethodId,
-    glsParcelPoint: isGlsFixed
+    glsParcelPoint: isGlsParcel
       ? {
           id: ensureString(input.glsParcelPoint?.id, "glsParcelPoint.id"),
           name: ensureString(input.glsParcelPoint?.name, "glsParcelPoint.name"),
@@ -494,7 +525,7 @@ export async function validateAndNormalizeCheckoutInput(
             : undefined,
         }
       : undefined,
-    foxpostParcelPoint: isFoxpostFixed
+    foxpostParcelPoint: isFoxpostParcel
       ? {
           id: ensureString(input.foxpostParcelPoint?.id, "foxpostParcelPoint.id"),
           name: ensureString(input.foxpostParcelPoint?.name, "foxpostParcelPoint.name"),

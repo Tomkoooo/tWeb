@@ -4,15 +4,16 @@ import {
   getOrderById,
   resendOrderInvoiceEmail,
   updateOrderInvoiceData,
-  updateOrderStatus,
   uploadManualInvoicePdf,
 } from "@/actions/admin-orders"
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar, CheckCircle2 } from "lucide-react"
+import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
+import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar } from "lucide-react"
 import {
   OrderParcelPanel,
   orderHasParcelShipping,
 } from "@/components/admin/OrderParcelPanel"
 import { getOrderParcelProvider, getOrderShippingTypeLabel } from "@/lib/parcel-locker"
+import { getOrderParcelDeliveryDisplay } from "@/lib/parcel-locker-checkout-display"
 import {
   isFoxpostParcelManagerEnabled,
   isGlsParcelManagerEnabled,
@@ -34,6 +35,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
   ])
   const parcelManagerEnabled = glsManagerEnabled || foxpostManagerEnabled
   const parcelProvider = order ? getOrderParcelProvider(order) : null
+  const parcelDelivery = order ? getOrderParcelDeliveryDisplay(order) : null
   const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
 
   if (!order) {
@@ -46,14 +48,6 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
       </div>
     )
   }
-
-  const statuses = [
-    { value: "pending", label: "FÜGGŐBEN", color: "amber" },
-    { value: "processing", label: "FELDOLGOZÁS", color: "blue" },
-    { value: "shipped", label: "SZÁLLÍTVA", color: "purple" },
-    { value: "delivered", label: "KÉZBESÍTVE", color: "emerald" },
-    { value: "cancelled", label: "TÖRÖLVE", color: "rose" }
-  ]
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -105,27 +99,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Állapot Frissítése
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {statuses.map((status) => (
-                <form key={status.value} action={async () => {
-                  "use server"
-                  await updateOrderStatus(order._id.toString(), status.value)
-                }}>
-                  <Button 
-                    variant="ghost" 
-                    className={cn(
-                      "w-full h-14 rounded-none border text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                      order.status === status.value 
-                        ? `border-${status.color}-500 bg-${status.color}-500/20 text-${status.color}-500 shadow-lg shadow-${status.color}-500/10` 
-                        : "border-white/5 text-neutral-500 hover:text-white hover:bg-white/5"
-                    )}
-                  >
-                    {order.status === status.value && <CheckCircle2 className="w-3 h-3 mr-2" />}
-                    {status.label}
-                  </Button>
-                </form>
-              ))}
-            </div>
+            <OrderStatusButtons
+              orderId={order._id.toString()}
+              currentStatus={order.status}
+            />
             {orderHasParcelShipping(order) ||
             order.glsLabel?.parcelNumber ||
             order.glsLabel?.lastError ||
@@ -335,14 +312,51 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <MapPin className="w-5 h-5 admin-icon-accent" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Szállítási Cím</p>
-                  <p className="text-white font-bold uppercase italic">{order.shippingAddress.name}</p>
-                  <p className="text-neutral-400 text-sm mt-1">{order.shippingAddress.zip} {order.shippingAddress.city}</p>
-                  <p className="text-neutral-400 text-sm">{order.shippingAddress.street}</p>
-                  {order.shippingAddress.comment && (
-                    <div className="mt-4 p-3 bg-black/40 border-l-2 border-white/30 text-neutral-400 text-xs italic">
-                      &quot;{order.shippingAddress.comment}&quot;
-                    </div>
+                  {parcelDelivery ? (
+                    <>
+                      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">
+                        {parcelDelivery.title}
+                      </p>
+                      {parcelDelivery.lines.map((line) => (
+                        <p key={line} className="text-neutral-400 text-sm mt-1 first:mt-0">
+                          {line}
+                        </p>
+                      ))}
+                      {parcelDelivery.idLine ? (
+                        <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest mt-2">
+                          {parcelDelivery.idLine}
+                        </p>
+                      ) : null}
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">
+                          Kapcsolattartó
+                        </p>
+                        <p className="text-white font-bold uppercase italic">{order.shippingAddress.name}</p>
+                        <p className="text-neutral-500 text-xs mt-1">{order.shippingAddress.phone}</p>
+                        <p className="text-neutral-500 text-xs">{order.shippingAddress.email}</p>
+                        {order.shippingAddress.comment ? (
+                          <div className="mt-3 p-3 bg-black/40 border-l-2 border-white/30 text-neutral-400 text-xs italic">
+                            &quot;{order.shippingAddress.comment}&quot;
+                          </div>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">
+                        Szállítási Cím
+                      </p>
+                      <p className="text-white font-bold uppercase italic">{order.shippingAddress.name}</p>
+                      <p className="text-neutral-400 text-sm mt-1">
+                        {order.shippingAddress.zip} {order.shippingAddress.city}
+                      </p>
+                      <p className="text-neutral-400 text-sm">{order.shippingAddress.street}</p>
+                      {order.shippingAddress.comment ? (
+                        <div className="mt-4 p-3 bg-black/40 border-l-2 border-white/30 text-neutral-400 text-xs italic">
+                          &quot;{order.shippingAddress.comment}&quot;
+                        </div>
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>
@@ -362,13 +376,13 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                       <Truck className="w-3.5 h-3.5" />
                       <span className="text-xs font-black uppercase tracking-tight">
                         Szállítás:{" "}
-                        {order.glsParcelPoint?.name
-                          ? `GLS Csomagpont (${order.glsParcelPoint.name})`
-                          : order.foxpostParcelPoint?.name
-                            ? `Foxpost (${order.foxpostParcelPoint.name})`
-                            : getOrderShippingTypeLabel(order) === "Standard"
-                              ? "Futár"
-                              : getOrderShippingTypeLabel(order)}
+                        {parcelDelivery?.providerLabel
+                          ? parcelDelivery.lines[0]
+                            ? `${parcelDelivery.providerLabel} — ${parcelDelivery.lines[0]}`
+                            : parcelDelivery.providerLabel
+                          : getOrderShippingTypeLabel(order) === "Standard"
+                            ? "Futár"
+                            : getOrderShippingTypeLabel(order)}
                       </span>
                     </div>
                   </div>

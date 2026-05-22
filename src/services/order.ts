@@ -4,6 +4,7 @@ import Product from "@/models/Product";
 import Cart from "@/models/Cart";
 import User from "@/models/User";
 import mongoose from "mongoose";
+import { logMailer } from "@/lib/mailer-log";
 import { MailerService } from "./mailer";
 import { FeatureFlagService } from "./feature-flags";
 import { InvoicingSzamlazzService } from "./invoicing-szamlazz";
@@ -201,36 +202,76 @@ export class OrderService {
   }
 
   private static async sendOrderConfirmation(order: any, orderData: any) {
+    const orderId = String(order._id);
+    const logBase = { flow: "order_confirmation", orderId };
+
     try {
       const populatedOrder = await Order.findById(order._id).populate("user");
-      const customerEmail = populatedOrder.user?.email || orderData.billingInfo?.email;
-      const customerName = populatedOrder.user?.name || orderData.shippingAddress?.name;
+      const userEmail = populatedOrder?.user?.email;
+      const billingEmail = orderData.billingInfo?.email;
+      const customerEmail = userEmail || billingEmail;
+      const emailSource = userEmail ? "user" : billingEmail ? "billingInfo" : "none";
+      const customerName = populatedOrder?.user?.name || orderData.shippingAddress?.name;
 
-      if (customerEmail) {
-        await MailerService.sendEmail({
-          to: customerEmail,
-          templateType: "order_confirmation",
-          data: {
-            orderNumber: formatOrderNumber(order._id),
-            customerName,
-            totalAmount: order.total.toLocaleString("hu-HU"),
-            shippingAddress: `${order.shippingAddress.zip} ${order.shippingAddress.city}, ${order.shippingAddress.street}`,
-            items: order.items
-              .map((i: any) => `${i.name}${i.variantLabel ? ` [${i.variantLabel}]` : ""} (${i.quantity}x)`)
-              .join(", ")
-          }
+      if (!customerEmail) {
+        logMailer("warn", "order_confirmation_skipped", {
+          ...logBase,
+          reason: "no_customer_email",
+          hadUser: Boolean(populatedOrder?.user),
         });
+        return;
       }
+
+      logMailer("info", "order_confirmation_attempt", {
+        ...logBase,
+        emailSource,
+        templateType: "order_confirmation",
+      });
+
+      await MailerService.sendEmail({
+        to: customerEmail,
+        templateType: "order_confirmation",
+        logContext: logBase,
+        data: {
+          orderNumber: formatOrderNumber(order._id),
+          customerName,
+          totalAmount: order.total.toLocaleString("hu-HU"),
+          shippingAddress: `${order.shippingAddress.zip} ${order.shippingAddress.city}, ${order.shippingAddress.street}`,
+          items: order.items
+            .map((i: any) => `${i.name}${i.variantLabel ? ` [${i.variantLabel}]` : ""} (${i.quantity}x)`)
+            .join(", "),
+        },
+      });
+
+      logMailer("info", "order_confirmation_sent", logBase);
     } catch (emailError) {
-      console.error("Failed to send order confirmation email:", emailError);
+      logMailer("error", "order_confirmation_failed", {
+        ...logBase,
+        note: "Order was already saved; only email delivery failed.",
+        error:
+          emailError instanceof Error
+            ? { message: emailError.message, name: emailError.name }
+            : { message: String(emailError) },
+      });
     }
   }
 
   private static async tryIssueInvoice(_order: any) {
     const order = _order as any;
+    const orderId = String(order._id);
+    const logBase = { flow: "szamlazz_invoice", orderId };
+
     try {
       const invoicingEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false);
-      if (!invoicingEnabled) return;
+      if (!invoicingEnabled) {
+        logMailer("info", "invoice_issue_skipped", {
+          ...logBase,
+          reason: "szamlazzInvoicing_flag_off",
+        });
+        return;
+      }
+
+      logMailer("info", "invoice_issue_attempt", logBase);
 
       order.invoiceMode = "automatic";
       order.invoiceStatus = "pending";
@@ -246,18 +287,34 @@ export class OrderService {
       }
       await order.save();
 
+      logMailer("info", "invoice_issue_success", {
+        ...logBase,
+        invoiceId: result.invoiceId,
+      });
       await this.sendInvoiceEmail(order, "invoice_sent", "A számla csatolmányban elérhető.");
     } catch (error: any) {
+      const errMessage = error?.message || "Ismeretlen számlázási hiba";
       order.invoiceStatus = "failed";
-      order.invoiceLastError = error?.message || "Ismeretlen számlázási hiba";
+      order.invoiceLastError = errMessage;
       await order.save();
-      try {
-        await this.sendInvoiceEmail(order, "invoice_issue", "A számla automatikus kiállítása nem sikerült.");
-      } catch (customerMailErr) {
-        console.error("Failed to send invoice issue customer email:", customerMailErr);
-      }
+
+      logMailer("warn", "invoice_issue_failed", {
+        ...logBase,
+        errorMessage: errMessage,
+        nextSteps: "customer_invoice_issue_email_and_shop_alert",
+      });
+
+      logMailer("info", "invoice_issue_customer_notice_attempt", {
+        ...logBase,
+        templateType: "invoice_issue",
+      });
+      await this.sendInvoiceEmail(
+        order,
+        "invoice_issue",
+        "A számla automatikus kiállítása nem sikerült. Hamarosan manuálisan küldjük."
+      );
+
       await sendInvoiceErrorShopAlert(order._id, error);
-      console.error("Invoice hook check failed:", error);
     }
   }
 
@@ -271,7 +328,14 @@ export class OrderService {
 
       const customerEmail = (order as any).user?.email || order.billingInfo?.email;
       const customerName = (order as any).user?.name || order.shippingAddress?.name;
-      if (!customerEmail) return;
+      const logBase = { flow: "invoice_email", orderId, templateType };
+      if (!customerEmail) {
+        logMailer("warn", "invoice_email_skipped", {
+          ...logBase,
+          reason: "no_customer_email",
+        });
+        return;
+      }
 
       let attachments: { filename: string; content: Buffer; contentType?: string }[] | undefined;
       if (templateType === "invoice_sent") {
@@ -294,6 +358,7 @@ export class OrderService {
       await MailerService.sendEmail({
         to: customerEmail,
         templateType,
+        logContext: logBase,
         data: {
           customerName,
           orderNumber: formatOrderNumber(orderId),
@@ -308,7 +373,15 @@ export class OrderService {
         await order.save();
       }
     } catch (error) {
-      console.error("Failed to send invoice email:", error);
+      logMailer("error", "invoice_email_failed", {
+        flow: "invoice_email",
+        orderId: String(orderInput._id || ""),
+        templateType,
+        error:
+          error instanceof Error
+            ? { message: error.message, name: error.name }
+            : { message: String(error) },
+      });
     }
   }
 }

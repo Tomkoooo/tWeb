@@ -1,3 +1,4 @@
+import { logMailer, serializeMailerError } from "@/lib/mailer-log";
 import { MailerService } from "@/services/mailer";
 import { resolveShopOpsAlertEmail } from "@/services/shop-ops-alert-email";
 
@@ -132,9 +133,10 @@ export async function sendOrderPlacementErrorShopAlert(ctx: OrderPlacementAlertC
   try {
     const to = await resolveShopOpsAlertEmail();
     if (!to) {
-      console.error(
-        "Order placement error alert skipped: set ShopContent contact_email or env INVOICE_ERROR_ALERT_EMAIL."
-      );
+      logMailer("warn", "order_placement_alert_skipped", {
+        reason: "no_shop_ops_email",
+        hint: "Set ShopContent contact_email or INVOICE_ERROR_ALERT_EMAIL",
+      });
       return;
     }
     const bodies = buildOrderPlacementErrorEmailBodies(ctx);
@@ -143,8 +145,13 @@ export async function sendOrderPlacementErrorShopAlert(ctx: OrderPlacementAlertC
       subject: "ORDER PLACEMENT ERROR",
       html: bodies.html,
       text: bodies.text,
+      logContext: { flow: "order_placement_error_alert", orderId: ctx.orderId },
     });
   } catch (e) {
-    console.error("Failed to send order placement error alert email:", e);
+    logMailer("error", "order_placement_alert_failed", {
+      flow: "order_placement_error_alert",
+      orderId: ctx.orderId,
+      error: serializeMailerError(e),
+    });
   }
 }

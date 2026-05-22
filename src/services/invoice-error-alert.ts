@@ -1,5 +1,6 @@
 import Order from "@/models/Order";
 import { formatOrderNumber } from "@/lib/order-number";
+import { logMailer, serializeMailerError } from "@/lib/mailer-log";
 import { MailerService } from "@/services/mailer";
 import { resolveShopOpsAlertEmail } from "@/services/shop-ops-alert-email";
 
@@ -178,15 +179,19 @@ export async function sendInvoiceErrorShopAlert(orderId: unknown, error: unknown
   try {
     const to = await resolveShopOpsAlertEmail();
     if (!to) {
-      console.error(
-        "Invoice error alert skipped: set ShopContent contact_email or env INVOICE_ERROR_ALERT_EMAIL."
-      );
+      logMailer("warn", "invoice_error_alert_skipped", {
+        reason: "no_shop_ops_email",
+        orderId: String(orderId),
+      });
       return;
     }
 
     const order = await Order.findById(orderId).populate("paymentMethod shippingMethod user").lean();
     if (!order) {
-      console.error("Invoice error alert skipped: order not found for id", String(orderId));
+      logMailer("warn", "invoice_error_alert_skipped", {
+        reason: "order_not_found",
+        orderId: String(orderId),
+      });
       return;
     }
 
@@ -196,8 +201,13 @@ export async function sendInvoiceErrorShopAlert(orderId: unknown, error: unknown
       subject: "INVOICE ERROR",
       html: bodies.html,
       text: bodies.text,
+      logContext: { flow: "invoice_error_alert", orderId: String(orderId) },
     });
   } catch (e) {
-    console.error("Failed to send invoice error alert email:", e);
+    logMailer("error", "invoice_error_alert_failed", {
+      flow: "invoice_error_alert",
+      orderId: String(orderId),
+      error: serializeMailerError(e),
+    });
   }
 }

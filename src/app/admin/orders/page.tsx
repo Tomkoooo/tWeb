@@ -8,6 +8,7 @@ import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 import { getOrderShippingTypeLabel, orderNeedsParcelLabel } from "@/lib/parcel-locker"
+import { getOrderDeliveryLocationHint } from "@/lib/parcel-locker-checkout-display"
 
 type AdminOrdersSearchParams = Promise<{
   q?: string
@@ -160,7 +161,9 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
                           <User className="w-3 h-3 admin-icon-accent" />
                           <span className="font-bold text-white uppercase tracking-tight italic">{order.billingInfo.name}</span>
                         </div>
-                        <span className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">{order.shippingAddress.city}</span>
+                        <span className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">
+                          {getOrderDeliveryLocationHint(order)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-6">

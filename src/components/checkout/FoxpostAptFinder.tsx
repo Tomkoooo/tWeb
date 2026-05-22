@@ -38,7 +38,7 @@ function mapSelectionToParcelPoint(apt: FoxpostApmSelection): FoxpostParcelPoint
   return {
     id,
     name,
-    address: apt.address?.trim() || undefined,
+    address: apt.address?.trim() || apt.street?.trim() || undefined,
     zip: apt.zip?.trim() || undefined,
     city: apt.city?.trim() || undefined,
     findme: apt.findme?.trim() || undefined,

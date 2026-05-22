@@ -179,6 +179,8 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | `EMAIL_FROM` | Optional | Sender address used by transactional mail. | `no-reply@shop.example.com` |
 | `EMAIL_FROM_NAME` | Optional | Display name in the inbox “From” field (order mails, newsletters, password reset). | `My Shop Name` |
 
+**Mailer logs (Vercel / server):** search runtime logs for the prefix `[mailer]`. Events are JSON lines, e.g. `send_start`, `send_success`, `send_failed`, `smtp_env_incomplete`, `order_confirmation_skipped`. SMTP passwords are never logged; `to` addresses are masked. Optional `MAILER_VERIFY_SMTP=1` runs nodemailer `verify()` before send (slower, good for debugging). Optional `MAILER_LOG_STACK=1` includes stack traces on errors in any environment.
+
 ### Stripe (enable payments/webhooks)
 
 | Variable | Required | Purpose | Example |
