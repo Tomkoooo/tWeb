@@ -14,6 +14,7 @@ export type CheckoutShippingMethodRow = {
   isActive: boolean;
   provider?: ShippingProviderKind;
   isFixed?: boolean;
+  descriptionHtml?: string;
 };
 
 export function isParcelProvider(method: { provider?: string; isFixed?: boolean }): boolean {

@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { useClickAway } from "react-use"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
+import { buildProductListingLines } from "@/lib/product-variants"
+import { listingPriceSummary } from "@/lib/pricing"
 
 interface LiveSearchProps {
   className?: string
@@ -101,9 +103,10 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                   ? product.variants.filter((variant: any) => variant.isActive !== false)
                   : []
                 const needsVariantSelection = Boolean(product.requireVariantSelection) && variants.length > 0
-                const minNetPrice = needsVariantSelection
-                  ? Math.min(...variants.map((variant: any) => Number(variant.netPrice || product.netPrice) || product.netPrice))
-                  : product.netPrice
+                const { unitGross: fromGross } = listingPriceSummary(
+                  buildProductListingLines(product),
+                  product.vatPercent
+                )
                 return (
                   <button
                     key={product._id}
@@ -122,7 +125,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                       <p className="text-xs font-black text-foreground uppercase truncate tracking-widest">{product.name}</p>
                       <p className="text-[10px] font-bold text-primary-foreground mt-1">
                         {needsVariantSelection ? "Tól " : ""}
-                        {minNetPrice.toLocaleString("hu-HU")} FT
+                        {fromGross.toLocaleString("hu-HU")} FT
                       </p>
                     </div>
                     <ArrowRight className="w-4 h-4 text-neutral-700" />

@@ -1,37 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
+import { useUserOrders } from "@/hooks/useUserOrders"
 
-export default function OrdersPage() {
-  const { status } = useSession()
-  const router = useRouter()
-  const [orders, setOrders] = React.useState<any[]>([])
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login")
-      return
-    }
-
-    if (status === "authenticated") {
-      fetch("/api/user/orders")
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setOrders(data)
-          }
-        })
-        .finally(() => setLoading(false))
-    }
-  }, [status, router])
+function OrdersPageContent() {
+  const searchParams = useSearchParams()
+  const recentCheckout = searchParams.get("recent") === "1"
+  const { orders, loading } = useUserOrders()
 
   if (loading) {
     return (
@@ -42,8 +23,9 @@ export default function OrdersPage() {
   }
 
   const ongoingStatuses = ["pending", "processing", "shipped"]
-  const ongoingOrders = orders.filter((o) => ongoingStatuses.includes(o.status))
-  const completedOrders = orders.filter((o) => !ongoingStatuses.includes(o.status))
+  const typedOrders = orders as Array<{ _id: string; status?: string; createdAt: string; items: unknown[] }>
+  const ongoingOrders = typedOrders.filter((o) => ongoingStatuses.includes(o.status ?? ""))
+  const completedOrders = typedOrders.filter((o) => !ongoingStatuses.includes(o.status ?? ""))
 
   const OrderCard = ({ order }: { order: any }) => {
     const breakdown = totalsBreakdownForOrderSnapshot(order)
@@ -97,6 +79,10 @@ export default function OrdersPage() {
         Rendeléseim
       </h2>
 
+      {recentCheckout && orders.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground">Rendelés rögzítése folyamatban…</p>
+      ) : null}
+
       {orders.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-20 text-center">
           <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Nincsenek még rendeléseid.</p>
@@ -127,5 +113,19 @@ export default function OrdersPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function OrdersPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+        </div>
+      }
+    >
+      <OrdersPageContent />
+    </React.Suspense>
   )
 }

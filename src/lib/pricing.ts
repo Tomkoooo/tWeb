@@ -161,6 +161,80 @@ export function totalsBreakdownForOrderSnapshot(order: {
   }
 }
 
+export type ListingPriceLine = {
+  netPrice: number
+  discount?: number
+  grossPrice?: number | null
+}
+
+/** Infer VAT % from merchant-entered net + gross pair (e.g. 1930 → 2026 ⇒ 5%). */
+export function impliedVatPercentFromNetGross(netPrice: number, grossPrice: number): number | null {
+  const net = roundHuf(netPrice)
+  const gross = roundHuf(grossPrice)
+  if (net <= 0 || gross <= net) return null
+  const pct = Math.round((gross / net - 1) * 100)
+  if (pct < 0 || pct > 100) return null
+  return pct
+}
+
+/** VAT for a catalog line: stored gross+net pair wins, else product-level rate. */
+export function listingLineVatPercent(line: ListingPriceLine, productVatPercent?: number): number {
+  const storedGross = line.grossPrice
+  if (storedGross != null && Number.isFinite(storedGross) && storedGross > 0) {
+    const implied = impliedVatPercentFromNetGross(line.netPrice, storedGross)
+    if (implied != null) return implied
+  }
+  return clampVatPercent(productVatPercent)
+}
+
+/** Customer-facing gross for a catalog/search line (respects stored gross). */
+export function listingCustomerGross(line: ListingPriceLine, vatPercent?: number): number {
+  const pct = listingLineVatPercent(line, vatPercent)
+  return customerGrossFromNetWithDiscount(
+    Number(line.netPrice || 0),
+    Number(line.discount || 0),
+    pct,
+    line.grossPrice
+  )
+}
+
+/** Lowest "from" price across variant (or single) lines for shop grids and cards. */
+export function listingPriceSummary(lines: ListingPriceLine[], vatPercent?: number) {
+  if (lines.length === 0) {
+    const pct = clampVatPercent(vatPercent)
+    return {
+      unitGross: 0,
+      unitNet: 0,
+      unitVat: 0,
+      vatPercent: pct,
+      maxDiscount: 0,
+      compareGross: 0,
+    }
+  }
+  const priced = lines.map((line) => {
+    const pct = listingLineVatPercent(line, vatPercent)
+    const gross = listingCustomerGross(line, vatPercent)
+    return { line, pct, gross }
+  })
+  const cheapest = priced.reduce((min, row) => (row.gross < min.gross ? row : min))
+  const unitGross = cheapest.gross
+  const maxDiscount = Math.max(...lines.map((line) => Number(line.discount || 0)))
+  const breakdown = priceBreakdownFromGross(unitGross, 1, cheapest.pct)
+  const compareGross = customerUnitGross(
+    Number(cheapest.line.netPrice || 0),
+    cheapest.pct,
+    cheapest.line.grossPrice
+  )
+  return {
+    unitGross,
+    unitNet: breakdown.unitNet,
+    unitVat: breakdown.unitVat,
+    vatPercent: cheapest.pct,
+    maxDiscount,
+    compareGross,
+  }
+}
+
 export function formatHuf(value: number): string {
   return `${roundHuf(value).toLocaleString("hu-HU")} FT`
 }

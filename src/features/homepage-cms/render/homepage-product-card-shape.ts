@@ -9,6 +9,8 @@ export function homepageFeaturedToProductDetail(p: HomePageFeaturedProduct): Rec
     slug: p.slug,
     netPrice: p.netPrice,
     discount: p.discount,
+    vatPercent: p.vatPercent,
+    grossPrice: p.grossPrice,
     stock: p.stock,
     images: p.images,
     requireVariantSelection: p.requireVariantSelection,

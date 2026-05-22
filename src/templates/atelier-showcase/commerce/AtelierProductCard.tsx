@@ -10,8 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
-import { getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross, clampVatPercent } from "@/lib/pricing"
+import { buildProductListingLines, getActiveVariants, hasVariants } from "@/lib/product-variants"
+import { formatHuf, listingPriceSummary } from "@/lib/pricing"
 import { useCartStore } from "@/store/useCartStore"
 
 /**
@@ -28,20 +28,16 @@ export function AtelierProductCard({ product }: { product: unknown }) {
   const variantProduct = hasVariants(p)
   const requiresVariantSelection = Boolean(p.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(p)
-  const minNetPrice =
-    requiresVariantSelection && activeVariants.length > 0
-      ? Math.min(
-          ...activeVariants.map((v: { netPrice?: number; discount?: number }) => v.netPrice || p.netPrice)
-        )
-      : p.netPrice
-  const maxDiscount =
-    requiresVariantSelection && activeVariants.length > 0
-      ? Math.max(...activeVariants.map((v: { netPrice?: number; discount?: number }) => v.discount || 0))
-      : p.discount || 0
-
-  const vatPct = clampVatPercent(p.vatPercent)
-  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount, vatPct)
-  const breakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
+  const listingLines = buildProductListingLines(p)
+  const showFromPrice = variantProduct && activeVariants.length > 1
+  const {
+    unitGross: finalPrice,
+    unitNet,
+    unitVat,
+    vatPercent: vatPct,
+    maxDiscount,
+    compareGross,
+  } = listingPriceSummary(listingLines, p.vatPercent)
   const ratingValue = typeof p.rating === "number" ? p.rating : 0
 
   React.useEffect(() => {
@@ -127,7 +123,7 @@ export function AtelierProductCard({ product }: { product: unknown }) {
             ) : null}
           </div>
           <p className="mt-2 font-serif text-[10px] uppercase tracking-widest text-muted-foreground">
-            Nettó {formatHuf(breakdown.unitNet)} · ÁFA {breakdown.vatPercent}%
+            Nettó {formatHuf(unitNet)} · ÁFA {vatPct}%
           </p>
         </div>
 
@@ -135,12 +131,12 @@ export function AtelierProductCard({ product }: { product: unknown }) {
           <div>
             <p className="font-serif text-xl font-semibold text-foreground">
               {formatHuf(finalPrice)}
-              {requiresVariantSelection ? (
+              {showFromPrice ? (
                 <span className="ml-1 text-xs font-normal text-muted-foreground">tól</span>
               ) : null}
             </p>
             {maxDiscount > 0 ? (
-              <p className="font-serif text-sm text-muted-foreground line-through">{formatHuf(netToGross(minNetPrice))}</p>
+              <p className="font-serif text-sm text-muted-foreground line-through">{formatHuf(compareGross)}</p>
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">

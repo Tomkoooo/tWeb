@@ -31,5 +31,6 @@ export async function resolveConfiguredFoxpostShippingMethod(options?: { require
     name: method.name,
     grossPrice: Number(method.grossPrice || 0),
     isActive: Boolean(method.isActive),
+    descriptionHtml: String(method.descriptionHtml || "").trim() || undefined,
   };
 }

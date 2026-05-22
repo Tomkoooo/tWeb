@@ -30,5 +30,6 @@ export async function resolveConfiguredGlsShippingMethod(options?: { requireActi
     name: method.name,
     grossPrice: Number(method.grossPrice || 0),
     isActive: Boolean(method.isActive),
+    descriptionHtml: String(method.descriptionHtml || "").trim() || undefined,
   };
 }

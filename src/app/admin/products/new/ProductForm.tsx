@@ -10,10 +10,11 @@ import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields"
 import { createProduct, updateProduct, deleteProduct } from "@/actions/admin-products"
 import { cn } from "@/lib/utils"
-import { formatHuf, netToGross } from "@/lib/pricing"
+import { netToGross } from "@/lib/pricing"
 import { useAdminPricePair } from "@/hooks/useAdminPricePair"
 import {
   deriveProductLevelFromVariants,
+  normalizeAdminVariants,
   type AdminVariantRow,
 } from "@/lib/admin-product-variants"
 
@@ -43,7 +44,14 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
   const [requireVariantSelection, setRequireVariantSelection] = useState(
     Boolean(initialData?.requireVariantSelection)
   )
-  const [editorVariants, setEditorVariants] = useState<AdminVariantRow[]>(initialData?.variants || [])
+  const [editorVariants, setEditorVariants] = useState<AdminVariantRow[]>(() =>
+    normalizeAdminVariants(
+      initialData?.variants || [],
+      initialNet,
+      Number(initialData?.vatPercent ?? 27),
+      initialGross
+    )
+  )
 
   const mandatoryVariants = variantsEnabled && requireVariantSelection
   const optionalVariants = variantsEnabled && !requireVariantSelection
@@ -241,7 +249,8 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
 
           <ProductVariantsEditor
             initialOptions={initialData?.variantOptions || []}
-            initialVariants={initialData?.variants || []}
+            initialVariants={editorVariants}
+            variants={editorVariants}
             defaultNetPrice={productPrice.netPrice}
             defaultGrossPrice={productPrice.grossPrice}
             vatPercent={vatPercent}
@@ -254,35 +263,14 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             onVariantsChange={setEditorVariants}
           />
 
-          {mandatoryVariants && (
-            <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-4">
-              <div className="flex items-center gap-3 text-white">
-                <div className="w-1.5 h-6 admin-section-marker" />
-                <h2 className="text-xl font-heading font-black italic uppercase tracking-wider">TERMÉK SZINTŰ ÖSSZESÍTŐ</h2>
-              </div>
-              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-                Kötelező variánsnál az árak és készlet a variánsokból számolódnak. ÁFA a variáns blokkban állítható.
-              </p>
-              <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                <div>
-                  <dt>Bruttó (alap variáns)</dt>
-                  <dd className="text-white text-sm mt-1">{formatHuf(summaryGross)}</dd>
-                </div>
-                <div>
-                  <dt>Összes készlet</dt>
-                  <dd className="text-white text-sm mt-1">{derivedFromVariants.stock} DB</dd>
-                </div>
-                <div>
-                  <dt>Max kedvezmény</dt>
-                  <dd className="text-white text-sm mt-1">{derivedFromVariants.discount}%</dd>
-                </div>
-              </dl>
+          {mandatoryVariants ? (
+            <>
               <input type="hidden" name="netPrice" value={derivedFromVariants.netPrice} />
               <input type="hidden" name="grossPrice" value={submitGrossPrice} />
               <input type="hidden" name="stock" value={derivedFromVariants.stock} />
               <input type="hidden" name="discount" value={derivedFromVariants.discount} />
-            </div>
-          )}
+            </>
+          ) : null}
 
           <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
             <div className="flex items-center gap-3 text-white">

@@ -10,6 +10,7 @@ import NewsletterCampaign, {
   NewsletterTopic,
 } from "@/models/NewsletterCampaign";
 import { requireAdmin } from "@/lib/admin-auth";
+import { formatEmailFromHeader } from "@/lib/email-from";
 import FeatureFlag from "@/models/FeatureFlag";
 
 type Recipient = {
@@ -174,7 +175,7 @@ export async function sendNewsletterCampaign(campaignId: string) {
   try {
     const recipients = await getRecipients(campaign.audience);
     const transporter = await getTransporter();
-    const from = `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`;
+    const from = formatEmailFromHeader();
 
     let successCount = 0;
     let failureCount = 0;

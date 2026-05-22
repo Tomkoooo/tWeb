@@ -23,6 +23,7 @@ import type { TradingLimits } from "@/components/checkout/CheckoutCountryPicker"
 import {
   isFoxpostParcelShippingMethod,
   isGlsParcelShippingMethod,
+  isParcelShippingMethod,
   offersOnlyParcelLockerShipping,
 } from "@/lib/shipping-providers"
 import { useCartStore, type CartItem } from "@/store/useCartStore"
@@ -270,6 +271,21 @@ export function useCheckoutWizardModel(
   const selectedShipping = availableMethods?.shippingMethods?.find(
     (m: any) => m._id === formData.methods.shippingMethod
   )
+
+  const parcelLockerSummary = React.useMemo(() => {
+    if (
+      !selectedShipping ||
+      !isParcelShippingMethod(formData.methods.shippingMethod, selectedShipping)
+    ) {
+      return null
+    }
+    return {
+      methodName: selectedShipping.name as string,
+      descriptionHtml: selectedShipping.descriptionHtml as string | undefined,
+      glsParcelPoint: formData.methods.glsParcelPoint,
+      foxpostParcelPoint: formData.methods.foxpostParcelPoint,
+    }
+  }, [selectedShipping, formData.methods])
   const selectedPayment = availableMethods?.paymentMethods?.find(
     (m: any) => m._id === formData.methods.paymentMethod
   )
@@ -564,6 +580,7 @@ export function useCheckoutWizardModel(
             cartItems={items}
             totalPrice={totals.subtotal}
             isAuthenticated={Boolean(session?.user)}
+            parcelLocker={parcelLockerSummary}
           />
         )
       default:
@@ -579,6 +596,7 @@ export function useCheckoutWizardModel(
     stepAppearance,
     totals.subtotal,
     tradingLimits,
+    parcelLockerSummary,
   ])
 
   return {

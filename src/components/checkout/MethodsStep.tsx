@@ -15,6 +15,7 @@ import {
   isParcelShippingMethod,
 } from "@/lib/shipping-providers"
 import { FoxpostAptFinder } from "@/components/checkout/FoxpostAptFinder"
+import { CheckoutRichHtml } from "@/components/checkout/CheckoutRichHtml"
 import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 import {
   type CheckoutStepAppearance,
@@ -40,6 +41,7 @@ type CheckoutMethodItem = {
   isActive: boolean
   provider?: string
   isFixed?: boolean
+  descriptionHtml?: string
 }
 
 type CheckoutMethodsResponse = {
@@ -175,29 +177,37 @@ export function MethodsStep({
           {shippingList.map((method) => {
             const breakdown = totalsBreakdownFromGross(method.grossPrice)
             const isParcel = isParcelShippingMethod(method._id, method)
+            const isSelected = data.shippingMethod === method._id
+            const parcelHtml = isParcel ? method.descriptionHtml : undefined
             return (
-              <button
-                key={method._id}
-                type="button"
-                onClick={() => handleMethodChange("shippingMethod", method._id)}
-                className={cxMethodCard(a, data.shippingMethod === method._id)}
-              >
-                <div>
-                  <p className={cxMethodTitle(a)}>{method.name}</p>
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {isParcel
-                      ? "Csomagpont / automata — a térképen válaszd ki az átvételi helyet"
-                      : "Házhozszállítás várható ideje: 1-3 munkanap"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
-                  </p>
-                  {data.shippingMethod === method._id && <Check className="ml-auto mt-1 h-4 w-4 text-primary-foreground" />}
-                </div>
-              </button>
+              <div key={method._id} className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleMethodChange("shippingMethod", method._id)}
+                  className={cxMethodCard(a, isSelected)}
+                >
+                  <div className="min-w-0 text-left">
+                    <p className={cxMethodTitle(a)}>{method.name}</p>
+                    {!isSelected || !parcelHtml ? (
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {isParcel
+                          ? "Csomagpont / automata — a térképen válaszd ki az átvételi helyet"
+                          : "Házhozszállítás várható ideje: 1-3 munkanap"}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="text-right">
+                    <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                    </p>
+                    {isSelected && <Check className="ml-auto mt-1 h-4 w-4 text-primary-foreground" />}
+                  </div>
+                </button>
+                {isSelected && parcelHtml ? (
+                  <CheckoutRichHtml html={parcelHtml} appearance={a} className="px-1 text-left" />
+                ) : null}
+              </div>
             )
           })}
         </div>
@@ -211,6 +221,7 @@ export function MethodsStep({
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               GLS csomagpont kiválasztása kötelező
             </p>
+            <CheckoutRichHtml html={selectedShippingRow?.descriptionHtml} appearance={a} />
             {glsMapOpen ? (
               <div className={cxGlsBox(a)}>
                 {React.createElement("gls-dpm", {
@@ -264,6 +275,7 @@ export function MethodsStep({
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Foxpost csomagautomata kiválasztása kötelező
             </p>
+            <CheckoutRichHtml html={selectedShippingRow?.descriptionHtml} appearance={a} />
             <FoxpostAptFinder
               appearance={a}
               selected={data.foxpostParcelPoint}

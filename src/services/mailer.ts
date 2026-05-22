@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import handlebars from "handlebars";
 import dbConnect from "@/lib/db";
+import { formatEmailFromHeader } from "@/lib/email-from";
 import EmailTemplate from "@/models/EmailTemplate";
 
 export interface MailOptions {
@@ -53,7 +54,7 @@ export const MailerService = {
     const transporter = await this.getTransporter();
 
     const info = await transporter.sendMail({
-      from: `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
+      from: formatEmailFromHeader(),
       to,
       subject: compiledSubject,
       html: compiledBody,
@@ -67,7 +68,7 @@ export const MailerService = {
   async sendSystemHtmlEmail({ to, subject, html, text }: SystemHtmlMailOptions) {
     const transporter = await this.getTransporter();
     return transporter.sendMail({
-      from: `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
+      from: formatEmailFromHeader(),
       to,
       subject,
       html,

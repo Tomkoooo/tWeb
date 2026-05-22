@@ -273,3 +273,11 @@ h6 {
 .storefront-link-accent:hover {
   color: var(--secondary-foreground);
 }
+
+/* Checkout rich HTML: do not inherit global heading uppercase on injected markup */
+.checkout-rich-html,
+.checkout-rich-html * {
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--font-sans);
+}

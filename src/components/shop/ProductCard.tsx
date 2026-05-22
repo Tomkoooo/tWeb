@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
-import { getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, grossFromNetWithDiscount, netToGross, priceBreakdownFromGross, clampVatPercent } from "@/lib/pricing"
+import { buildProductListingLines, getActiveVariants, hasVariants } from "@/lib/product-variants"
+import { formatHuf, listingPriceSummary } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 
@@ -28,18 +28,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const variantProduct = hasVariants(product)
   const requiresVariantSelection = Boolean(product.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(product)
-  const minNetPrice =
-    requiresVariantSelection && activeVariants.length > 0
-      ? Math.min(...activeVariants.map((variant: any) => variant.netPrice || product.netPrice))
-      : product.netPrice
-  const maxDiscount =
-    requiresVariantSelection && activeVariants.length > 0
-      ? Math.max(...activeVariants.map((variant: any) => variant.discount || 0))
-      : product.discount || 0
-
-  const vatPct = clampVatPercent(product.vatPercent)
-  const finalPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount, vatPct)
-  const breakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
+  const listingLines = buildProductListingLines(product)
+  const showFromPrice = variantProduct && activeVariants.length > 1
+  const {
+    unitGross: finalPrice,
+    unitNet,
+    unitVat,
+    vatPercent: vatPct,
+    maxDiscount,
+    compareGross,
+  } = listingPriceSummary(listingLines, product.vatPercent)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
   React.useEffect(() => {
@@ -143,16 +141,16 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto pt-4 flex flex-col gap-4">
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-black text-white">
-              {formatHuf(finalPrice)}<span className="text-xs font-black text-primary-foreground">{requiresVariantSelection ? "-tól" : ""}</span>
+              {formatHuf(finalPrice)}<span className="text-xs font-black text-primary-foreground">{showFromPrice ? "-tól" : ""}</span>
             </span>
             {maxDiscount > 0 && (
               <span className="text-sm font-bold text-neutral-500 line-through">
-                {formatHuf(netToGross(minNetPrice))}
+                {formatHuf(compareGross)}
               </span>
             )}
           </div>
           <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-            Nettó {formatHuf(breakdown.unitNet)} · ÁFA {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)
+            Nettó {formatHuf(unitNet)} · ÁFA {formatHuf(unitVat)} ({vatPct}%)
           </p>
 
           <div className="flex flex-col gap-2">

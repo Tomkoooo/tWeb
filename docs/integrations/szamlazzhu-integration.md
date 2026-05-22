@@ -33,6 +33,7 @@ Mail settings (existing app requirements):
 - `EMAIL_USER`
 - `EMAIL_PASS`
 - `EMAIL_FROM`
+- `EMAIL_FROM_NAME` (inbox display name for app-sent mail; default `Krausz Barkácsmester`)
 
 ## Behavior
 

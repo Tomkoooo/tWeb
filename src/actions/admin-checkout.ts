@@ -17,10 +17,11 @@ export async function createShippingMethod(formData: FormData) {
   const providerRaw = (formData.get("provider") as string) || "standard";
   const provider =
     providerRaw === "gls" || providerRaw === "foxpost" ? providerRaw : "standard";
+  const descriptionHtml = String(formData.get("descriptionHtml") || "").trim();
 
   try {
     await dbConnect();
-    await ShippingMethod.create({ name, grossPrice, isActive, provider });
+    await ShippingMethod.create({ name, grossPrice, isActive, provider, descriptionHtml });
   } catch (error) {
     console.error("Error creating shipping method:", error);
   }
@@ -36,10 +37,11 @@ export async function updateShippingMethod(id: string, formData: FormData) {
   const providerRaw = (formData.get("provider") as string) || "standard";
   const provider =
     providerRaw === "gls" || providerRaw === "foxpost" ? providerRaw : "standard";
+  const descriptionHtml = String(formData.get("descriptionHtml") || "").trim();
 
   try {
     await dbConnect();
-    await ShippingMethod.findByIdAndUpdate(id, { name, grossPrice, isActive, provider });
+    await ShippingMethod.findByIdAndUpdate(id, { name, grossPrice, isActive, provider, descriptionHtml });
   } catch (error) {
     console.error("Error updating shipping method:", error);
   }

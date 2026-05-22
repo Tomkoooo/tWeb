@@ -8,6 +8,7 @@ import User from "@/models/User";
 import Order from "@/models/Order";
 import PasswordResetToken from "@/models/PasswordResetToken";
 import { requireAdmin } from "@/lib/admin-auth";
+import { formatEmailFromHeader } from "@/lib/email-from";
 import { hashPassword, sha256Hex } from "@/lib/password";
 
 type UserRole = "ADMIN" | "USER";
@@ -280,7 +281,7 @@ export async function sendAdminPasswordReset(userId: string) {
   const transporter = await getTransporter();
 
   await transporter.sendMail({
-    from: `"Krausz Barkácsmester" <${process.env.EMAIL_FROM || "no-reply@krausz.hu"}>`,
+    from: formatEmailFromHeader(),
     to: user.email,
     subject: "Jelszó visszaállítás",
     html: `

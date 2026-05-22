@@ -63,6 +63,24 @@ export function getVariantLabel(variant: VariantShape): string {
   return parts.join(" / ") || variant.id;
 }
 
+export function buildProductListingLines(product: ProductShape) {
+  const activeVariants = getActiveVariants(product)
+  if (activeVariants.length > 0) {
+    return activeVariants.map((variant) => ({
+      netPrice: Number(variant.netPrice ?? product.netPrice) || product.netPrice,
+      discount: variant.discount,
+      grossPrice: variant.grossPrice,
+    }))
+  }
+  return [
+    {
+      netPrice: product.netPrice,
+      discount: product.discount,
+      grossPrice: product.grossPrice,
+    },
+  ]
+}
+
 export function resolveProductView(product: ProductShape, variantId?: string | null) {
   const selectedVariant = getVariantById(product, variantId);
   const activeVariants = getActiveVariants(product);

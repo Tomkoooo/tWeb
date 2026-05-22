@@ -134,7 +134,7 @@ export default function CheckoutSuccessPage() {
                   </Button>
                 </Link>
                 {orderId ? (
-                  <Link href={`/profile/orders/${orderId}`} className="grow sm:grow-0">
+                  <Link href={`/profile/orders/${orderId}?recent=1`} className="grow sm:grow-0">
                     <Button
                       variant="outline"
                       className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none"
@@ -143,7 +143,7 @@ export default function CheckoutSuccessPage() {
                     </Button>
                   </Link>
                 ) : (
-                  <Link href="/profile/orders" className="grow sm:grow-0">
+                  <Link href="/profile/orders?recent=1" className="grow sm:grow-0">
                     <Button
                       variant="outline"
                       className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none"
@@ -154,7 +154,7 @@ export default function CheckoutSuccessPage() {
                 )}
               </div>
               <Link
-                href="/profile/orders"
+                href="/profile/orders?recent=1"
                 className="text-neutral-500 hover:text-neutral-300 text-sm font-bold uppercase tracking-widest transition-colors inline-block mb-8"
               >
                 Összes rendeléseim →

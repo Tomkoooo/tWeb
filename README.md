@@ -177,6 +177,7 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | `EMAIL_USER` | Optional | SMTP username. | `apikey` |
 | `EMAIL_PASS` | Optional | SMTP password/token. | `***` |
 | `EMAIL_FROM` | Optional | Sender address used by transactional mail. | `no-reply@shop.example.com` |
+| `EMAIL_FROM_NAME` | Optional | Display name in the inbox “From” field (order mails, newsletters, password reset). | `My Shop Name` |
 
 ### Stripe (enable payments/webhooks)
 

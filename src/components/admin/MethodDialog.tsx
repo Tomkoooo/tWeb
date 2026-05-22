@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { RichTextEditor } from "@/components/admin/RichTextEditor"
 
 interface MethodDialogProps {
   children: React.ReactNode
@@ -32,6 +33,15 @@ export function MethodDialog({
   const [open, setOpen] = React.useState(false)
   const [isActive, setIsActive] = React.useState(initialData?.isActive ?? true)
   const [provider, setProvider] = React.useState(initialData?.provider ?? "standard")
+  const [descriptionHtml, setDescriptionHtml] = React.useState(initialData?.descriptionHtml ?? "")
+  const showParcelDescription = provider === "gls" || provider === "foxpost"
+
+  React.useEffect(() => {
+    if (!open) return
+    setIsActive(initialData?.isActive ?? true)
+    setProvider(initialData?.provider ?? "standard")
+    setDescriptionHtml(initialData?.descriptionHtml ?? "")
+  }, [open, initialData])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -80,6 +90,21 @@ export function MethodDialog({
               className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
             />
           </div>
+          {showParcelDescription ? (
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                Leírás a pénztárban (HTML)
+              </Label>
+              <p className="text-[10px] text-neutral-500 leading-relaxed">
+                Megjelenik, ha a vásárló ezt a csomagpontos / automatás szállítást választja (összegzés lépésen is).
+              </p>
+              <RichTextEditor value={descriptionHtml} onChange={setDescriptionHtml} />
+              <input type="hidden" name="descriptionHtml" value={descriptionHtml} />
+            </div>
+          ) : (
+            <input type="hidden" name="descriptionHtml" value="" />
+          )}
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Bruttó Ár (FT)</Label>
             <Input 

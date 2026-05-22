@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { useRouter, useParams } from "next/navigation"
+import { useUserOrderDetail } from "@/hooks/useUserOrderDetail"
 import Link from "next/link"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
@@ -15,29 +16,11 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 
 export default function OrderDetailPage() {
-  const { status, data: session } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const params = useParams()
   const orderId = params.id as string
-
-  const [order, setOrder] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login")
-      return
-    }
-
-    if (status === "authenticated" && orderId) {
-      fetch(`/api/user/orders/${orderId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data.error) setOrder(data)
-        })
-        .finally(() => setLoading(false))
-    }
-  }, [status, router, orderId])
+  const { order: orderRaw, loading } = useUserOrderDetail(orderId)
+  const order = orderRaw as any
 
   if (loading) {
     return (

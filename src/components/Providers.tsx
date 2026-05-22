@@ -5,7 +5,7 @@ import { CartSync } from "./cart/CartSync"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus>
       <CartSync />
       {children}
     </SessionProvider>

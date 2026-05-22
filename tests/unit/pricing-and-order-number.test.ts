@@ -6,6 +6,8 @@ import {
   deriveNetFromGross,
   grossFromNetWithDiscount,
   grossToNet,
+  impliedVatPercentFromNetGross,
+  listingPriceSummary,
   netToGross,
   priceBreakdownFromGross,
   totalsBreakdownFromGross,
@@ -33,6 +35,28 @@ describe("pricing helpers", () => {
     expect(customerUnitGross(1930, 5, 2026)).toBe(2026);
     expect(deriveNetFromGross(2026, 5)).toBe(1930);
     expect(customerGrossFromNetWithDiscount(1930, 0, 5, 2026)).toBe(2026);
+  });
+
+  it("uses stored variant gross for listing from-price (not 27% on net)", () => {
+    const summary = listingPriceSummary(
+      [
+        { netPrice: 1930, grossPrice: 2026 },
+        { netPrice: 2933, grossPrice: 3080 },
+      ],
+      5
+    );
+    expect(summary.unitGross).toBe(2026);
+    expect(summary.unitNet).toBe(1930);
+    expect(summary.vatPercent).toBe(5);
+    expect(grossFromNetWithDiscount(1930, 0, 27)).toBe(2451);
+  });
+
+  it("infers VAT from stored net+gross when product vatPercent is still 27", () => {
+    expect(impliedVatPercentFromNetGross(1930, 2026)).toBe(5);
+    const summary = listingPriceSummary([{ netPrice: 1930, grossPrice: 2026 }], 27);
+    expect(summary.unitGross).toBe(2026);
+    expect(summary.vatPercent).toBe(5);
+    expect(summary.unitNet).toBe(1930);
   });
 
   it("returns line and total VAT breakdowns", () => {

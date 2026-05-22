@@ -9,6 +9,7 @@ import {
   type FoxpostParcelPoint,
 } from "@/lib/foxpost"
 import { resolveApmDestinationId } from "@/lib/parcel-locker"
+import { CheckoutRichHtml } from "@/components/checkout/CheckoutRichHtml"
 import { cxGlsBox, type CheckoutStepAppearance } from "@/components/checkout/checkout-appearance"
 
 type FoxpostAptFinderProps = {
@@ -113,9 +114,11 @@ export function FoxpostAptFinder({
           <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
             {selected.zip || ""} {selected.city || ""} {selected.address || ""}
           </p>
-          {selected.findme ? (
-            <p className="mt-1 text-[10px] text-muted-foreground">{selected.findme}</p>
-          ) : null}
+          <CheckoutRichHtml
+            html={selected.findme}
+            appearance={appearance}
+            className="mt-2 text-xs"
+          />
         </div>
       ) : (
         <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground">

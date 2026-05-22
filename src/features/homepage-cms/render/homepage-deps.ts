@@ -4,7 +4,7 @@ import { FeedbackService } from "@/services/feedback"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
 import { mediaImageSrc } from "@/lib/images"
-import { grossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing"
+import { listingPriceSummary } from "@/lib/pricing"
 import {
   orderIdsByList,
   resolveFeaturedCategoryIds,
@@ -17,6 +17,7 @@ type ProductVariant = {
   id: string
   attributes?: Record<string, string>
   netPrice?: number
+  grossPrice?: number
   discount?: number
   stock?: number
   isActive?: boolean
@@ -40,6 +41,7 @@ type ProductItem = {
   requireVariantSelection?: boolean
   netPrice: number
   discount?: number
+  grossPrice?: number
   images?: string[]
   category?: ProductCategory
   stock?: number
@@ -52,20 +54,21 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
   const allVariants = Array.isArray(p.variants) ? p.variants : []
   const effectiveVariants = allVariants.filter((v) => v.isActive !== false)
   const hasVariants = allVariants.length > 0
-  const needsVariantPricing =
-    Boolean(p.requireVariantSelection) &&
+  const listingLines =
     effectiveVariants.length > 0
-
-  const minNet = needsVariantPricing
-    ? Math.min(
-        ...effectiveVariants.map((v) => Number(v.netPrice ?? p.netPrice) || p.netPrice)
-      )
-    : p.netPrice
-  const maxDiscount = needsVariantPricing
-    ? Math.max(...effectiveVariants.map((v) => Number(v.discount || 0) || 0))
-    : Number(p.discount || 0) || 0
-
-  const gross = grossFromNetWithDiscount(minNet, maxDiscount, clampVatPercent(p.vatPercent))
+      ? effectiveVariants.map((v) => ({
+          netPrice: Number(v.netPrice ?? p.netPrice) || p.netPrice,
+          discount: Number(v.discount || 0) || 0,
+          grossPrice: v.grossPrice,
+        }))
+      : [
+          {
+            netPrice: p.netPrice,
+            discount: Number(p.discount || 0) || 0,
+            grossPrice: p.grossPrice,
+          },
+        ]
+  const { unitGross: gross, maxDiscount } = listingPriceSummary(listingLines, p.vatPercent)
   const rootStock =
     typeof p.stock === "number" && Number.isFinite(p.stock) ? p.stock : 100
 
@@ -84,11 +87,14 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
     category: p.category?.name || "Kategória",
     netPrice: p.netPrice,
     discount: Number(p.discount || 0) || 0,
+    vatPercent: p.vatPercent,
+    grossPrice: p.grossPrice,
     images: (p.images || []).map((img) => mediaImageSrc(img)),
     stock: rootStock,
     variants: allVariants.map((v) => ({
       id: v.id,
       netPrice: v.netPrice ?? p.netPrice,
+      grossPrice: v.grossPrice,
       discount: v.discount,
       stock: v.stock,
       isActive: v.isActive,

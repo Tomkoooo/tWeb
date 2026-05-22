@@ -8,6 +8,8 @@ export interface IShippingMethod extends Document {
   isActive: boolean;
   /** Links admin pricing to checkout parcel picker (GLS map / Foxpost APT). */
   provider: ShippingProviderKind;
+  /** Optional HTML shown at checkout when this method is selected (parcel locker instructions). */
+  descriptionHtml?: string;
 }
 
 const ShippingMethodSchema = new Schema<IShippingMethod>(
@@ -20,6 +22,7 @@ const ShippingMethodSchema = new Schema<IShippingMethod>(
       enum: ["standard", "gls", "foxpost"],
       default: "standard",
     },
+    descriptionHtml: { type: String, default: "" },
   },
   { timestamps: true }
 );

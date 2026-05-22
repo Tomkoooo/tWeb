@@ -5,7 +5,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-auth";
-import { deriveProductLevelFromVariants } from "@/lib/admin-product-variants";
+import {
+  deriveProductLevelFromVariants,
+  resolveVariantNetPrice,
+} from "@/lib/admin-product-variants";
 
 type VariantOptionInput = { name: string; values: string[] };
 type VariantInput = {
@@ -66,7 +69,7 @@ function sanitizeVariants(
         .join("-") ||
       `variant-${index + 1}`;
     const baseId = slugify(identitySource) || `variant-${index + 1}`;
-    const netPrice = Number(variant.netPrice ?? fallbackNetPrice) || 0;
+    const netPrice = resolveVariantNetPrice(variant.netPrice, fallbackNetPrice);
     const grossRaw = Number(variant.grossPrice);
     const grossPrice =
       Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined;

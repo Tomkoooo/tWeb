@@ -13,6 +13,21 @@ import {
   cxSummaryMuted,
   cxSummaryStrong,
 } from "@/components/checkout/checkout-appearance"
+import { CheckoutRichHtml } from "@/components/checkout/CheckoutRichHtml"
+import type { FoxpostParcelPoint } from "@/lib/foxpost"
+import type { GlsParcelPoint } from "@/lib/gls"
+import {
+  formatFoxpostParcelPointLines,
+  formatGlsParcelPointLines,
+  foxpostParcelPointFindmeHtml,
+} from "@/lib/parcel-locker-checkout-display"
+
+export type ParcelLockerSummaryPreview = {
+  methodName: string
+  descriptionHtml?: string
+  glsParcelPoint?: GlsParcelPoint | null
+  foxpostParcelPoint?: FoxpostParcelPoint | null
+}
 
 interface SummaryStepProps {
   data: any
@@ -23,6 +38,8 @@ interface SummaryStepProps {
   appearance?: CheckoutStepAppearance
   /** When true, show opt-in to store billing/shipping on the user profile after order (default on in wizard). */
   isAuthenticated?: boolean
+  /** Set when GLS / Foxpost locker shipping is selected — shown instead of home address. */
+  parcelLocker?: ParcelLockerSummaryPreview | null
 }
 
 export function SummaryStep({
@@ -32,6 +49,7 @@ export function SummaryStep({
   totalPrice,
   appearance = "dark",
   isAuthenticated = false,
+  parcelLocker = null,
 }: SummaryStepProps) {
   const a = appearance
   const [couponCode, setCouponCode] = React.useState("")
@@ -171,7 +189,37 @@ export function SummaryStep({
               Szállítási információk
             </p>
             <div className={cxSummaryMuted(a)}>
-              {data.shipping.isSameAsBilling ? (
+              {parcelLocker ? (
+                <div className="space-y-3">
+                  <p className={cxSummaryStrong(a)}>{parcelLocker.methodName}</p>
+                  <CheckoutRichHtml html={parcelLocker.descriptionHtml} appearance={a} />
+                  {parcelLocker.glsParcelPoint ? (
+                    <div className="space-y-1 border border-border/60 bg-muted/20 p-3 text-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        GLS csomagpont
+                      </p>
+                      {formatGlsParcelPointLines(parcelLocker.glsParcelPoint).map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                  ) : null}
+                  {parcelLocker.foxpostParcelPoint ? (
+                    <div className="space-y-1 border border-border/60 bg-muted/20 p-3 text-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Foxpost automata
+                      </p>
+                      {formatFoxpostParcelPointLines(parcelLocker.foxpostParcelPoint).map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                      <CheckoutRichHtml
+                        html={foxpostParcelPointFindmeHtml(parcelLocker.foxpostParcelPoint)}
+                        appearance={a}
+                        className="text-xs"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : data.shipping.isSameAsBilling ? (
                 <>
                   <p className={cxSummaryStrong(a)}>{data.billing.name}</p>
                   <p>

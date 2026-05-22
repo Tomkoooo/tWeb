@@ -50,11 +50,14 @@ export type HomePageFeaturedProduct = {
   requireVariantSelection: boolean
   netPrice: number
   discount: number
+  vatPercent?: number
+  grossPrice?: number
   images: string[]
   stock: number
   variants: Array<{
     id: string
     netPrice: number
+    grossPrice?: number
     discount?: number
     stock?: number
     isActive?: boolean

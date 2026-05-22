@@ -9,20 +9,28 @@ import { deriveNetFromGross, netToGross } from "@/lib/pricing";
 import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields";
 import { AdminFormField, ADMIN_METRICS_ROW_CLASS } from "@/components/admin/AdminFormField";
 import { useAdminPricePair } from "@/hooks/useAdminPricePair";
-import type { AdminVariantRow } from "@/lib/admin-product-variants";
+import {
+  deriveVariantGrossBounds,
+  normalizeAdminVariants,
+  resolveVariantGrossPrice,
+  variantGrossForDisplay,
+  type AdminVariantRow,
+} from "@/lib/admin-product-variants";
+import { formatHuf } from "@/lib/pricing";
 
 type VariantOption = { name: string; values: string[] };
 
 type Props = {
   initialOptions?: VariantOption[];
   initialVariants?: AdminVariantRow[];
+  variants: AdminVariantRow[];
   defaultNetPrice: number;
   defaultGrossPrice?: number;
   initialRequireVariantSelection?: boolean;
   vatPercent: number;
   onVatChange: (vat: number) => void;
   onModeChange?: (mode: { enabled: boolean; requireVariantSelection: boolean }) => void;
-  onVariantsChange?: (variants: AdminVariantRow[]) => void;
+  onVariantsChange: (variants: AdminVariantRow[]) => void;
 };
 
 function cartesianProduct(optionGroups: Array<{ name: string; values: string[] }>) {
@@ -58,6 +66,7 @@ function attributesToLabel(attributes: Record<string, string>) {
 export function ProductVariantsEditor({
   initialOptions = [],
   initialVariants = [],
+  variants,
   defaultNetPrice,
   defaultGrossPrice,
   initialRequireVariantSelection = false,
@@ -66,6 +75,11 @@ export function ProductVariantsEditor({
   onModeChange,
   onVariantsChange,
 }: Props) {
+  const setVariants = (
+    updater: AdminVariantRow[] | ((prev: AdminVariantRow[]) => AdminVariantRow[])
+  ) => {
+    onVariantsChange(typeof updater === "function" ? updater(variants) : updater);
+  };
   const [enabled, setEnabled] = useState(initialVariants.length > 0 || initialOptions.length > 0);
   const [requireVariantSelection, setRequireVariantSelection] = useState(
     Boolean(initialRequireVariantSelection)
@@ -75,42 +89,44 @@ export function ProductVariantsEditor({
       ? initialOptions.map((option) => ({ name: option.name, valuesText: option.values.join(", ") }))
       : [{ name: "", valuesText: "" }]
   );
-  const [variants, setVariants] = useState<AdminVariantRow[]>(
-    initialVariants.map((variant, index) => {
-      const net = Number(variant.netPrice ?? defaultNetPrice) || 0;
-      return {
-        ...variant,
-        id: variant.id || `variant-${index + 1}`,
-        netPrice: net,
-        grossPrice:
-          variant.grossPrice != null && variant.grossPrice > 0
-            ? Number(variant.grossPrice)
-            : netToGross(net, vatPercent),
-        discount: Number(variant.discount ?? 0) || 0,
-        stock: Number(variant.stock ?? 0) || 0,
-        isActive: variant.isActive !== false,
-        isDefault: Boolean(variant.isDefault),
-        seo: {
-          title: variant.seo?.title || "",
-          description: variant.seo?.description || "",
-          keywords: variant.seo?.keywords || [],
-        },
-      };
-    })
-  );
-
   const bulkPrice = useAdminPricePair(defaultNetPrice, vatPercent, defaultGrossPrice);
   const [bulkDiscount, setBulkDiscount] = useState(0);
   const [bulkStock, setBulkStock] = useState(0);
-  const [activeVariantId, setActiveVariantId] = useState<string>(initialVariants?.[0]?.id || "");
+  const [activeVariantId, setActiveVariantId] = useState<string>(
+    () =>
+      initialVariants.find((v) => v.isDefault)?.id ||
+      initialVariants[0]?.id ||
+      variants.find((v) => v.isDefault)?.id ||
+      variants[0]?.id ||
+      ""
+  );
 
   useEffect(() => {
     onModeChange?.({ enabled, requireVariantSelection });
   }, [enabled, requireVariantSelection, onModeChange]);
 
   useEffect(() => {
-    if (enabled) onVariantsChange?.(variants);
-  }, [variants, enabled, onVariantsChange]);
+    if (variants.length === 0) {
+      if (activeVariantId) setActiveVariantId("");
+      return;
+    }
+    if (!variants.some((v) => v.id === activeVariantId)) {
+      setActiveVariantId(variants.find((v) => v.isDefault)?.id || variants[0]?.id || "");
+    }
+  }, [variants, activeVariantId]);
+
+  const grossBounds = useMemo(
+    () => deriveVariantGrossBounds(variants, vatPercent),
+    [variants, vatPercent]
+  );
+  const totalStock = useMemo(
+    () => variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0),
+    [variants]
+  );
+  const maxDiscount = useMemo(
+    () => Math.max(0, ...variants.map((v) => Number(v.discount) || 0)),
+    [variants]
+  );
 
   const normalizedOptions = useMemo(() => {
     const grouped = new Map<string, Set<string>>();
@@ -441,12 +457,21 @@ export function ProductVariantsEditor({
                       </div>
                     </div>
 
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      Bruttó ezen a variánson:{" "}
+                      <span className="text-white">
+                        {formatHuf(variantGrossForDisplay(activeVariant, vatPercent))}
+                      </span>
+                    </p>
+
                     <div className={ADMIN_METRICS_ROW_CLASS}>
                       <AdminPricePairFields
                         netPrice={activeVariant.netPrice}
-                        grossPrice={
-                          activeVariant.grossPrice ?? netToGross(activeVariant.netPrice, vatPercent)
-                        }
+                        grossPrice={resolveVariantGrossPrice(
+                          activeVariant,
+                          vatPercent,
+                          defaultGrossPrice
+                        )}
                         vatPercent={vatPercent}
                         onNetChange={(net) =>
                           updateVariantPrices(activeVariant.id, {
@@ -614,6 +639,38 @@ export function ProductVariantsEditor({
                   </div>
                 ) : null}
               </div>
+
+              {requireVariantSelection && variants.length > 0 ? (
+                <div className="border border-white/10 bg-black/30 p-4 space-y-3">
+                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                    Összes variáns — összesítő
+                  </p>
+                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                    Az árak variánsonként szerkeszthetők fent. Itt az összes aktív variáns
+                    készlete és ártartománya látszik.
+                  </p>
+                  <dl className="grid grid-cols-2 md:grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                    <div>
+                      <dt>Bruttó tartomány</dt>
+                      <dd className="text-white text-sm mt-1">
+                        {grossBounds.min <= 0 && grossBounds.max <= 0
+                          ? "—"
+                          : grossBounds.min === grossBounds.max
+                            ? formatHuf(grossBounds.min)
+                            : `${formatHuf(grossBounds.min)} – ${formatHuf(grossBounds.max)}`}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Összes készlet</dt>
+                      <dd className="text-white text-sm mt-1">{totalStock} DB</dd>
+                    </div>
+                    <div>
+                      <dt>Max kedvezmény</dt>
+                      <dd className="text-white text-sm mt-1">{maxDiscount}%</dd>
+                    </div>
+                  </dl>
+                </div>
+              ) : null}
             </>
           ) : (
             <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">

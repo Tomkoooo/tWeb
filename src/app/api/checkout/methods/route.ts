@@ -20,6 +20,7 @@ type CheckoutMethodRow = {
   grossPrice: number;
   isActive: boolean;
   provider?: ShippingProviderKind;
+  descriptionHtml?: string;
 };
 
 type NormalizedShippingMethod = {
@@ -29,6 +30,7 @@ type NormalizedShippingMethod = {
   isActive: boolean;
   provider: ShippingProviderKind;
   isFixed: boolean;
+  descriptionHtml?: string;
 };
 
 function isStripeEnvConfigured(): boolean {
@@ -44,6 +46,7 @@ function normalizeParcelRow(method: CheckoutMethodRow): NormalizedShippingMethod
     isActive: Boolean(method.isActive),
     provider,
     isFixed: false,
+    descriptionHtml: String(method.descriptionHtml || "").trim() || undefined,
   };
 }
 
@@ -103,6 +106,7 @@ export async function GET(_req: NextRequest) {
         isActive: Boolean(method.isActive),
         provider: "standard",
         isFixed: false,
+        descriptionHtml: String(method.descriptionHtml || "").trim() || undefined,
       });
     }
 
@@ -116,6 +120,7 @@ export async function GET(_req: NextRequest) {
           isActive: true,
           provider: "gls",
           isFixed: false,
+          descriptionHtml: configuredGlsMethod.descriptionHtml,
         });
       }
     }
@@ -131,6 +136,7 @@ export async function GET(_req: NextRequest) {
           isActive: true,
           provider: "foxpost",
           isFixed: false,
+          descriptionHtml: configuredFoxpostMethod.descriptionHtml,
         });
       }
     }
