@@ -4,12 +4,21 @@ import {
   serializeContactEmails,
   type ContactEmailEntry,
 } from "@/lib/contact-emails"
+import {
+  parseInvoiceErrorAlertEmailsFromShopContent,
+  serializeInvoiceErrorAlertEmails,
+} from "@/lib/invoice-error-alert-emails"
 import { ShopContentService } from "@/services/shop-content"
 
 export class ContactEmailsService {
   static async list(): Promise<ContactEmailEntry[]> {
     const content = await ShopContentService.getAll()
     return parseContactEmailsFromShopContent(content)
+  }
+
+  static async listInvoiceErrorAlertEmails(): Promise<string[]> {
+    const content = await ShopContentService.getAll()
+    return parseInvoiceErrorAlertEmailsFromShopContent(content)
   }
 
   static async save(entries: ContactEmailEntry[]): Promise<ContactEmailEntry[]> {
@@ -33,5 +42,19 @@ export class ContactEmailsService {
       "contact"
     )
     return normalized
+  }
+
+  static async saveInvoiceErrorAlertEmails(emails: string[]): Promise<string[]> {
+    const normalized = emails
+      .map((email) => email.trim())
+      .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+
+    await dbConnect()
+    await ShopContentService.update(
+      "invoice_error_alert_emails",
+      serializeInvoiceErrorAlertEmails(normalized),
+      "contact"
+    )
+    return [...new Set(normalized)]
   }
 }

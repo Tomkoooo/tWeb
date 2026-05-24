@@ -3,11 +3,13 @@ import { CategoryService } from "@/services/category"
 import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 import Link from "next/link"
-import { FeatureFlagService } from "@/services/feature-flags"
+import { getCachedFeatureFlag } from "@/lib/cached-storefront"
+import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { ShopContentService } from "@/services/shop-content"
 import { TemplateService } from "@/services/template"
 import { PageContentService } from "@/services/page-content"
-import { getActiveChrome } from "@/lib/active-chrome"
+
+export const revalidate = 60
 import {
   resolveStorefrontFooterContact,
   type CategoryTreeNode,
@@ -67,9 +69,11 @@ export default async function ShopPage({
     sort?: string
   }>
 }) {
-  const isShopPageEnabled = await FeatureFlagService.isEnabled("shopPage", true)
-  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
-    await getActiveChrome()
+  const isShopPageEnabled = await getCachedFeatureFlag("shopPage", true)
+  const {
+    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    footerHydration,
+  } = await getStorefrontChromeBundle()
   const shopPageDef = template.pages.shop
   const shopRaw = await PageContentService.get(template.manifest.id, "page:shop").catch(
     () => shopPageDef.defaultContent
@@ -168,6 +172,8 @@ export default async function ShopPage({
         contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
+        newsletterEnabled={footerHydration.newsletterEnabled}
+        legalLinks={footerHydration.legalLinks}
       />
     </>
   )

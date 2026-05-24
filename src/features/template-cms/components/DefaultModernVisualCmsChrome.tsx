@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { TopBar } from "@/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
+import type { TemplateModule } from "@/templates/types"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { ContactEmailEntry } from "@/lib/contact-emails"
@@ -23,8 +24,8 @@ type FooterCategory = { id: string; name: string; slug: string; depth: number }
 export type VisualCmsChromeCtx = {
   /** Fullscreen review uses desktop width; inline edit uses DevicePreview device. */
   mode: "edit" | "review"
-  Navbar: (typeof TEMPLATE_REGISTRY)["default-modern"]["chrome"]["Navbar"]
-  Footer: (typeof TEMPLATE_REGISTRY)["default-modern"]["chrome"]["Footer"]
+  Navbar: TemplateModule["chrome"]["Navbar"]
+  Footer: TemplateModule["chrome"]["Footer"]
   branding: Branding
   footerSettings: FooterSettings
   themeSettings: ThemeTokens
@@ -100,7 +101,7 @@ export function DefaultModernVisualCmsChrome({
     return () => window.removeEventListener("keydown", onKey)
   }, [reviewOpen])
 
-  const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const NavbarCmp = mod.chrome.Navbar
   const FooterCmp = mod.chrome.Footer
 

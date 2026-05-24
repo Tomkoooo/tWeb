@@ -12,7 +12,7 @@ import {
   publishTemplatePageContent,
 } from "@/features/template-cms/api/template-page-client-api"
 import { FlowRouteInteractivePreview } from "@/features/flow-cms/FlowRouteInteractivePreview"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import type { FlowRouteKey } from "@/templates/types"
 import type { FooterSettings } from "@/services/footer-settings"
@@ -57,7 +57,7 @@ export function FlowShellVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const flowDef = mod.flowPages![flowRoute]!
   const FlowShellPreviewPassthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>
   const Wrapper = flowDef.Wrapper ?? FlowShellPreviewPassthrough

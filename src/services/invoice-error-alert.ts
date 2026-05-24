@@ -2,7 +2,7 @@ import Order from "@/models/Order";
 import { formatOrderNumber } from "@/lib/order-number";
 import { logMailer, serializeMailerError } from "@/lib/mailer-log";
 import { MailerService } from "@/services/mailer";
-import { resolveShopOpsAlertEmail } from "@/services/shop-ops-alert-email";
+import { resolveInvoiceErrorAlertEmails } from "@/services/shop-ops-alert-email";
 
 function escapeHtml(s: string): string {
   return s
@@ -173,12 +173,12 @@ export function buildInvoiceErrorEmailBodies(order: Record<string, any>, error: 
 }
 
 /**
- * Email the shop contact (ShopContent `contact_email`, or `INVOICE_ERROR_ALERT_EMAIL`) when invoicing fails.
+ * Email CMS invoice-error recipients (or shop contact / `INVOICE_ERROR_ALERT_EMAIL`) when invoicing fails.
  */
 export async function sendInvoiceErrorShopAlert(orderId: unknown, error: unknown) {
   try {
-    const to = await resolveShopOpsAlertEmail();
-    if (!to) {
+    const recipients = await resolveInvoiceErrorAlertEmails();
+    if (recipients.length === 0) {
       logMailer("warn", "invoice_error_alert_skipped", {
         reason: "no_shop_ops_email",
         orderId: String(orderId),
@@ -197,7 +197,7 @@ export async function sendInvoiceErrorShopAlert(orderId: unknown, error: unknown
 
     const bodies = buildInvoiceErrorEmailBodies(order as Record<string, any>, error);
     await MailerService.sendSystemHtmlEmail({
-      to,
+      to: recipients.join(", "),
       subject: "INVOICE ERROR",
       html: bodies.html,
       text: bodies.text,

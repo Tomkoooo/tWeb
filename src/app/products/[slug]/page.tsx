@@ -3,7 +3,9 @@ import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import { resolveProductView } from "@/lib/product-variants"
 import { mediaImageSrc } from "@/lib/images"
-import { getActiveChrome } from "@/lib/active-chrome"
+import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
+
+export const revalidate = 60
 import { PageContentService } from "@/services/page-content"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
@@ -42,8 +44,10 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const { slug } = await params
   const query = await searchParams
   const selectedVariantId = typeof query.variant === "string" ? query.variant : undefined
-  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
-    await getActiveChrome()
+  const {
+    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    footerHydration,
+  } = await getStorefrontChromeBundle()
 
   const [product, pdpContent, footerData] = await Promise.all([
     ProductService.getBySlug(slug),
@@ -79,6 +83,8 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
         contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
+        newsletterEnabled={footerHydration.newsletterEnabled}
+        legalLinks={footerHydration.legalLinks}
       />
     </main>
   )

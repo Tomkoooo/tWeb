@@ -2,11 +2,15 @@ import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 import { NextResponse } from "next/server"
 import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
+import {
+  getCachedMaintenanceEnabled,
+  setCachedMaintenanceEnabled,
+} from "@/lib/maintenance-flag-cache"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
 
-async function isMaintenanceEnabled(origin: string) {
+async function fetchMaintenanceEnabled(origin: string): Promise<boolean> {
   try {
     const response = await fetch(`${origin}/api/feature-flags/maintenance`, {
       cache: "no-store",
@@ -20,11 +24,21 @@ async function isMaintenanceEnabled(origin: string) {
     }
 
     const payload = await response.json()
-    return payload.enabled === true
+    const enabled = payload.enabled === true
+    setCachedMaintenanceEnabled(enabled)
+    return enabled
   } catch (error) {
     console.error("Maintenance flag fetch error:", error)
     return false
   }
+}
+
+async function isMaintenanceEnabled(origin: string): Promise<boolean> {
+  const cached = getCachedMaintenanceEnabled()
+  if (cached !== null) {
+    return cached
+  }
+  return fetchMaintenanceEnabled(origin)
 }
 
 export default auth(async (req) => {
@@ -35,7 +49,6 @@ export default auth(async (req) => {
   const isNextInternal = pathname.startsWith("/_next")
   const isStaticAsset = pathname === "/favicon.ico" || PUBLIC_FILE_REGEX.test(pathname)
 
-  // Temporary diagnostics for intermittent OAuth callback origin mismatches.
   if (isGoogleCallback) {
     const host = req.headers.get("host")
     const forwardedHost = req.headers.get("x-forwarded-host")
@@ -75,10 +88,6 @@ export default auth(async (req) => {
     }
   }
 
-  // Defense in depth: clear the template-preview cookie when the request is
-  // not authenticated as ADMIN. The activate/preview API only sets it for
-  // admins, but if the session changes the cookie should not leak preview
-  // chrome to a regular visitor.
   const previewCookie = req.cookies.get("wse_template_preview")
   if (previewCookie && !isAdminUser) {
     const response = NextResponse.next()

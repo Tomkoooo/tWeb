@@ -3,6 +3,7 @@ import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 
 const schema = z.object({
   brandName: z.string().min(1).optional(),
@@ -21,5 +22,6 @@ export async function PUT(request: Request) {
   const payload = schema.parse(await request.json())
   const updated = await BrandingSettingsService.update(payload)
   revalidatePath("/", "layout")
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.branding)
   return NextResponse.json(updated)
 }

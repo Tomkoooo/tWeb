@@ -13,7 +13,7 @@ import { hasContactFieldValue } from "@/lib/contact-display"
 import type { ContactEmailEntry } from "@/lib/contact-emails"
 
 type LegalLink = {
-  key: "impresszum" | "terms" | "gdpr"
+  key: string
   title: string
   href: string
 }
@@ -35,6 +35,10 @@ interface FooterProps {
   cmsEditable?: boolean
   onSettingsChange?: (next: FooterSettings) => void
   shopEnabled?: boolean
+  /** SSR from cached feature flag — skips client fetch when set. */
+  newsletterEnabled?: boolean
+  /** SSR from cached legal docs — skips client fetch when set. */
+  legalLinks?: LegalLink[]
 }
 
 export function Footer({
@@ -49,29 +53,10 @@ export function Footer({
   cmsEditable = false,
   onSettingsChange,
   shopEnabled = true,
+  newsletterEnabled: newsletterEnabledProp,
+  legalLinks: legalLinksProp,
 }: FooterProps) {
-  const [resolvedBrand, setResolvedBrand] = React.useState({ brandName, logoSrc })
-  React.useEffect(() => {
-    setResolvedBrand({ brandName, logoSrc })
-  }, [brandName, logoSrc])
-  React.useEffect(() => {
-    let cancelled = false
-    fetch("/api/site/branding")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return
-        setResolvedBrand({
-          brandName: data.brandName || brandName,
-          logoSrc: data.logoFooter || logoSrc,
-        })
-      })
-      .catch(() => {
-        // keep prop/default fallback
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [brandName, logoSrc])
+  const resolvedBrand = { brandName, logoSrc }
 
   const socialIconMap = {
     facebook: Facebook,
@@ -113,8 +98,12 @@ export function Footer({
   const [newsletterEmail, setNewsletterEmail] = React.useState("")
   const [newsletterLoading, setNewsletterLoading] = React.useState(false)
   const [newsletterSubscribed, setNewsletterSubscribed] = React.useState(false)
-  const [newsletterEnabled, setNewsletterEnabled] = React.useState(false)
-  const [legalLinks, setLegalLinks] = React.useState<LegalLink[]>([])
+  const [newsletterEnabledState, setNewsletterEnabledState] = React.useState(
+    newsletterEnabledProp ?? false
+  )
+  const [legalLinksState, setLegalLinksState] = React.useState<LegalLink[]>(legalLinksProp ?? [])
+  const newsletterEnabled = newsletterEnabledProp ?? newsletterEnabledState
+  const legalLinks = legalLinksProp ?? legalLinksState
 
   React.useEffect(() => {
     if (session?.user?.email) {
@@ -123,18 +112,19 @@ export function Footer({
   }, [session?.user?.email])
 
   React.useEffect(() => {
+    if (newsletterEnabledProp !== undefined) return
     const loadNewsletterFeature = async () => {
       try {
         const response = await fetch("/api/feature-flags/newsletter")
         if (!response.ok) return
         const data = await response.json()
-        setNewsletterEnabled(Boolean(data.enabled))
+        setNewsletterEnabledState(Boolean(data.enabled))
       } catch {
-        setNewsletterEnabled(false)
+        setNewsletterEnabledState(false)
       }
     }
     loadNewsletterFeature()
-  }, [])
+  }, [newsletterEnabledProp])
 
   React.useEffect(() => {
     const loadSubscription = async () => {
@@ -159,18 +149,19 @@ export function Footer({
   }, [session?.user, newsletterEnabled])
 
   React.useEffect(() => {
+    if (legalLinksProp !== undefined) return
     const loadLegalLinks = async () => {
       try {
         const response = await fetch("/api/legal-docs")
         if (!response.ok) return
         const data = await response.json()
-        setLegalLinks(data)
+        setLegalLinksState(data)
       } catch {
         // Silent fail in footer, links are optional until admin uploads docs
       }
     }
     loadLegalLinks()
-  }, [])
+  }, [legalLinksProp])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })

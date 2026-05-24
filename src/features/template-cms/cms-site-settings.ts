@@ -28,7 +28,7 @@ export const CMS_SITE_SETTINGS_SECTIONS: Array<{
   {
     id: "contact",
     label: "Kapcsolat e-mailek",
-    description: "Egyetlen forrás az összes megjelenő e-mailhez és az űrlap címzettjeihez.",
+    description: "Megjelenő e-mailek, űrlap címzettek, számlázási hiba értesítések.",
   },
 ]
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 import { requireAdmin } from "@/lib/admin-auth"
 import { FooterSettingsService } from "@/services/footer-settings"
 
@@ -36,5 +37,6 @@ export async function PUT(request: Request) {
   const updated = await FooterSettingsService.update(payload)
   revalidatePath("/")
   revalidatePath("/products/[slug]", "page")
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.footer)
   return NextResponse.json(updated)
 }

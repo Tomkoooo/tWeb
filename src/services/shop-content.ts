@@ -28,6 +28,7 @@ export type ShopContentKey =
   | "shop_seo_description"
   | "contact_email"
   | "contact_emails"
+  | "invoice_error_alert_emails"
   | "contact_phone"
   | "contact_address";
 

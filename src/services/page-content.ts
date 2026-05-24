@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db"
 import TemplateContent from "@/models/TemplateContent"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, loadTemplateModule } from "@/templates/registry"
 import { findPageDefinition } from "@/templates/resolve-page-definition"
 import { HomepageCmsService } from "@/services/homepage-cms"
 import { insertMissingHomepageBlocks } from "@/features/homepage-cms/utils/insert-missing-homepage-blocks"
@@ -12,13 +12,16 @@ import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-s
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import type { PageDefinition } from "@/templates/types"
 
-function findPageDefinitionByTemplateId(
+async function findPageDefinitionByTemplateId(
   templateId: string,
   pageKey: string
-): PageDefinition<unknown> | null {
-  const template = TEMPLATE_REGISTRY[templateId]
-  if (!template) return null
-  return findPageDefinition(template, pageKey)
+): Promise<PageDefinition<unknown> | null> {
+  try {
+    const template = await loadTemplateModule(templateId || FALLBACK_TEMPLATE_ID)
+    return findPageDefinition(template, pageKey)
+  } catch {
+    return null
+  }
 }
 
 function parseWithDef<T>(
@@ -77,7 +80,7 @@ export class PageContentService {
   static async get<T = unknown>(templateId: string, pageKey: string): Promise<T> {
     await dbConnect()
     let doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
-    const def = findPageDefinitionByTemplateId(templateId, pageKey)
+    const def = await findPageDefinitionByTemplateId(templateId, pageKey)
 
     if (!doc && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
       const legacy = await HomepageCmsService.getPublished()
@@ -118,7 +121,7 @@ export class PageContentService {
   static async getDraft<T = unknown>(templateId: string, pageKey: string): Promise<T> {
     await dbConnect()
     let doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
-    const def = findPageDefinitionByTemplateId(templateId, pageKey)
+    const def = await findPageDefinitionByTemplateId(templateId, pageKey)
 
     if (!doc && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
       const legacy = await HomepageCmsService.getPublished()
@@ -171,7 +174,7 @@ export class PageContentService {
     value: T,
     updatedBy?: string
   ): Promise<T> {
-    const def = findPageDefinitionByTemplateId(templateId, pageKey)
+    const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
       throw new Error(
         `Cannot save draft: no page definition for templateId='${templateId}' pageKey='${pageKey}'.`
@@ -200,7 +203,7 @@ export class PageContentService {
     pageKey: string,
     publishedBy?: string
   ): Promise<T> {
-    const def = findPageDefinitionByTemplateId(templateId, pageKey)
+    const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
       throw new Error(
         `Cannot publish: no page definition for templateId='${templateId}' pageKey='${pageKey}'.`
@@ -264,7 +267,7 @@ export class PageContentService {
     value: T,
     updatedBy?: string
   ): Promise<T> {
-    const def = findPageDefinitionByTemplateId(templateId, pageKey)
+    const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
       throw new Error(
         `Cannot save: no page definition for templateId='${templateId}' pageKey='${pageKey}'.`

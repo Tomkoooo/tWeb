@@ -21,9 +21,16 @@ export function Footer({
   address,
   categories,
   footerSettings,
+  newsletterEnabled,
+  legalLinks,
   cmsEditable,
   onSettingsChange,
-}: FooterChromeProps & { cmsEditable?: boolean; onSettingsChange?: (next: FooterSettings) => void | Promise<void> }) {
+}: FooterChromeProps & {
+  newsletterEnabled?: boolean
+  legalLinks?: Array<{ key: string; title: string; href: string }>
+  cmsEditable?: boolean
+  onSettingsChange?: (next: FooterSettings) => void | Promise<void>
+}) {
   return (
     <DefaultModernFooterImpl
       brandName={brandName}
@@ -35,6 +42,8 @@ export function Footer({
       address={address}
       categories={categories}
       settings={footerSettings}
+      newsletterEnabled={newsletterEnabled}
+      legalLinks={legalLinks}
       cmsEditable={cmsEditable}
       onSettingsChange={onSettingsChange}
     />

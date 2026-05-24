@@ -135,7 +135,7 @@ export async function sendOrderPlacementErrorShopAlert(ctx: OrderPlacementAlertC
     if (!to) {
       logMailer("warn", "order_placement_alert_skipped", {
         reason: "no_shop_ops_email",
-        hint: "Set ShopContent contact_email or INVOICE_ERROR_ALERT_EMAIL",
+        hint: "Set CMS contact emails or INVOICE_ERROR_ALERT_EMAIL",
       });
       return;
     }

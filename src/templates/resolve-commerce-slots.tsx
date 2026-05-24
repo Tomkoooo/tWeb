@@ -73,6 +73,6 @@ export function resolveCommerceProductDetailForId(
 ): ComponentType<ProductDetailSlotProps> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const reg = require("@/templates/registry") as typeof import("@/templates/registry")
-  const mod = reg.TEMPLATE_REGISTRY[templateId] ?? reg.TEMPLATE_REGISTRY[reg.FALLBACK_TEMPLATE_ID]
+  const mod = reg.getTemplateById(templateId)
   return resolveCommerceProductDetail(mod)
 }

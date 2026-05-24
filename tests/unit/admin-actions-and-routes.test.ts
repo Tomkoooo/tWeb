@@ -6,6 +6,7 @@ const authMock = vi.fn();
 const revalidatePathMock = vi.fn();
 const dbConnectMock = vi.fn();
 const featureFindOneAndUpdateMock = vi.fn();
+const featureFindOneMock = vi.fn();
 const featureFindMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const orderFindMock = vi.fn();
@@ -23,12 +24,20 @@ const paymentDeleteMock = vi.fn();
 const couponCreateMock = vi.fn();
 const couponDeleteMock = vi.fn();
 
-vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
+const revalidateTagMock = vi.fn();
+vi.mock("next/cache", () => ({
+  revalidatePath: revalidatePathMock,
+  revalidateTag: revalidateTagMock,
+}));
 vi.mock("@/lib/admin-auth", () => ({ requireAdmin: requireAdminMock }));
 vi.mock("@/auth", () => ({ auth: authMock }));
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
 vi.mock("@/models/FeatureFlag", () => ({
-  default: { findOneAndUpdate: featureFindOneAndUpdateMock, find: featureFindMock },
+  default: {
+    findOneAndUpdate: featureFindOneAndUpdateMock,
+    findOne: featureFindOneMock,
+    find: featureFindMock,
+  },
 }));
 vi.mock("@/services/gls", () => ({
   GlsService: { createLabelForOrder: glsCreateLabelMock },
@@ -64,6 +73,7 @@ describe("admin actions and routes", () => {
     vi.clearAllMocks();
     requireAdminMock.mockResolvedValue({});
     authMock.mockResolvedValue({ user: { role: "ADMIN", id: "507f1f77bcf86cd799439011" } });
+    featureFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue(null) });
     featureFindMock.mockReturnValue({ sort: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }) });
     orderFindMock.mockReturnValue({ sort: vi.fn().mockResolvedValue([]) });
     orderFindByIdMock.mockResolvedValue({

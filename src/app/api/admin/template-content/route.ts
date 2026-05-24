@@ -4,7 +4,7 @@ import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
 import { PageContentService } from "@/services/page-content"
-import { TEMPLATE_REGISTRY } from "@/templates/registry"
+import { getTemplateById } from "@/templates/registry"
 
 const pageKeySchema = z.string().min(1).max(120)
 const templateIdSchema = z.string().min(1)
@@ -69,7 +69,7 @@ function revalidateForPage(pageKey: string) {
 }
 
 async function guardTemplate(templateId: string): Promise<Response | null> {
-  if (!TEMPLATE_REGISTRY[templateId]) {
+  if (!getTemplateById(templateId)) {
     return NextResponse.json(
       { ok: false, error: `Unknown template id '${templateId}'` },
       { status: 400 }
@@ -170,7 +170,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   await requireAdmin()
   const body = resetSchema.parse(await request.json())
-  if (!TEMPLATE_REGISTRY[body.templateId]) {
+  if (!getTemplateById(body.templateId)) {
     return NextResponse.json(
       { ok: false, error: `Unknown template id '${body.templateId}'` },
       { status: 400 }

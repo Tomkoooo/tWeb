@@ -1,4 +1,4 @@
-import { getActiveChrome } from "@/lib/active-chrome"
+import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 
 /**
@@ -10,8 +10,10 @@ export default async function StorefrontFlowShell({
 }: {
   children: React.ReactNode
 }) {
-  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
-    await getActiveChrome()
+  const {
+    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    footerHydration,
+  } = await getStorefrontChromeBundle()
   const footerData = await resolveStorefrontFooterContact(template)
 
   return (
@@ -33,6 +35,8 @@ export default async function StorefrontFlowShell({
         contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
+        newsletterEnabled={footerHydration.newsletterEnabled}
+        legalLinks={footerHydration.legalLinks}
       />
     </div>
   )

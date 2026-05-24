@@ -1,9 +1,12 @@
 import { resolveSiteContactChannels } from "@/lib/site-contact"
-import { CategoryService } from "@/services/category"
 import { ProductService } from "@/services/product"
 import { FeedbackService } from "@/services/feedback"
-import { FeatureFlagService } from "@/services/feature-flags"
-import { ShopContentService } from "@/services/shop-content"
+import {
+  getCachedShopContent,
+  getCachedCategories,
+  getCachedCategoryTree,
+  getCachedFeatureFlag,
+} from "@/lib/cached-storefront"
 import { mediaImageSrc } from "@/lib/images"
 import { listingPriceSummary } from "@/lib/pricing"
 import {
@@ -12,6 +15,8 @@ import {
   resolveFeaturedProductIds,
 } from "@/lib/featured-products"
 import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
+import type { ShopContentSnapshot } from "@/lib/storefront-footer-data"
+import type { CategoryTreeNode } from "@/lib/storefront-footer-data"
 
 type ProductRating = { rating?: number }
 type ProductVariant = {
@@ -50,6 +55,11 @@ type ProductItem = {
 }
 
 export type HomepageRenderDependencies = Omit<HomePageDeps, "templateId">
+
+export type HomepageDepsInternal = HomepageRenderDependencies & {
+  shopContentSnapshot: ShopContentSnapshot
+  categoryTreeSnapshot: CategoryTreeNode[]
+}
 
 function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
   const allVariants = Array.isArray(p.variants) ? p.variants : []
@@ -113,24 +123,23 @@ export type HomepageFeaturedResolveOptions = {
 
 export async function getHomepageRenderDependencies(
   options: HomepageFeaturedResolveOptions = {}
-): Promise<HomepageRenderDependencies> {
-  const [reviews, isShopPageEnabled, content] = await Promise.all([
+): Promise<HomepageDepsInternal> {
+  const [reviews, isShopPageEnabled, content, categoryTree, categoryData] = await Promise.all([
     FeedbackService.getHomepageReviews(6),
-    FeatureFlagService.isEnabled("shopPage", true),
-    ShopContentService.getAll(),
+    getCachedFeatureFlag("shopPage", true),
+    getCachedShopContent(),
+    getCachedCategoryTree(),
+    getCachedCategories(),
   ])
 
   let products: HomePageFeaturedProduct[] = []
   let categories: Array<{ id: string; name: string; description: string; image: string; slug: string }> = []
 
   if (isShopPageEnabled) {
-    const [categoryData, featuredIds] = await Promise.all([
-      CategoryService.getAll(),
-      resolveFeaturedProductIds({
-        cmsSelectedProductIds: options.cmsSelectedProductIds,
-        maxItems: options.maxItems,
-      }),
-    ])
+    const featuredIds = await resolveFeaturedProductIds({
+      cmsSelectedProductIds: options.cmsSelectedProductIds,
+      maxItems: options.maxItems,
+    })
 
     const categoryById = new Map(
       (categoryData as CategoryItem[]).map((c) => [c._id.toString(), c])
@@ -147,9 +156,7 @@ export async function getHomepageRenderDependencies(
         slug: c.slug,
       }))
 
-    const productRows = await Promise.all(
-      featuredIds.map((id) => ProductService.getById(id))
-    )
+    const productRows = await ProductService.getByIds(featuredIds)
     const ordered = orderIdsByList(
       featuredIds,
       productRows.filter(Boolean) as ProductItem[]
@@ -171,5 +178,7 @@ export async function getHomepageRenderDependencies(
       email: channels.primaryEmail,
       contactEmails: channels.emails,
     },
+    shopContentSnapshot: content,
+    categoryTreeSnapshot: categoryTree as CategoryTreeNode[],
   }
 }

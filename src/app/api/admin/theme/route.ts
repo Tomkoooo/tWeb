@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth"
 import { TemplateService } from "@/services/template"
 import { ThemeService } from "@/services/theme"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 
 const hex = z.string().regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/)
 
@@ -42,6 +43,7 @@ export async function PUT(request: Request) {
   const payload = themeSchema.parse(await request.json())
   const updated = await ThemeService.saveFullThemeForTemplate(template, payload)
   revalidatePath("/", "layout")
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.theme)
   return NextResponse.json(updated)
 }
 
@@ -51,5 +53,6 @@ export async function DELETE() {
   const template = await TemplateService.getDbActive()
   const merged = await ThemeService.getMergedForTemplate(template)
   revalidatePath("/", "layout")
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.theme)
   return NextResponse.json(merged)
 }

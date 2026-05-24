@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
+import { setCachedMaintenanceEnabled } from "@/lib/maintenance-flag-cache";
 import dbConnect from "@/lib/db";
 import FeatureFlag from "@/models/FeatureFlag";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -141,4 +143,8 @@ export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
   );
 
   revalidatePath("/admin/info");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.flags);
+  if (flagKey === "maintenanceMode") {
+    setCachedMaintenanceEnabled(enabled);
+  }
 }

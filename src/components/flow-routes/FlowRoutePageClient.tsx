@@ -1,12 +1,23 @@
 "use client"
 
 import * as React from "react"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import dynamic from "next/dynamic"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import type { FlowRouteKey } from "@/templates/types"
-import { CartPageView } from "@/app/cart/CartPageView"
-import { CheckoutPageView } from "@/app/checkout/CheckoutPageView"
-import { ProfilePageView } from "@/app/profile/ProfilePageView"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+
+const CartPageView = dynamic(
+  () => import("@/app/cart/CartPageView").then((m) => ({ default: m.CartPageView })),
+  { ssr: true }
+)
+const CheckoutPageView = dynamic(
+  () => import("@/app/checkout/CheckoutPageView").then((m) => ({ default: m.CheckoutPageView })),
+  { ssr: true }
+)
+const ProfilePageView = dynamic(
+  () => import("@/app/profile/ProfilePageView").then((m) => ({ default: m.ProfilePageView })),
+  { ssr: true }
+)
 
 type Variant = "page" | "embedded"
 
@@ -45,7 +56,7 @@ export function FlowRoutePageClient({
     }
   }, [])
 
-  const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const RouteMain = mod.flowPages?.[flowRoute]?.RouteMain
 
   if (RouteMain && shopEnabled === null) {

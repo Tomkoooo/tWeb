@@ -8,11 +8,14 @@ import { redirect } from "next/navigation"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { isShopEnabled } from "@/lib/features/shop"
+import { listAllTemplates } from "@/templates/registry"
+
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  await listAllTemplates()
   const session = await auth()
   const [branding, newsletterEnabled, glsParcelPickerEnabled, stripePaymentsEnabled] =
     await Promise.all([

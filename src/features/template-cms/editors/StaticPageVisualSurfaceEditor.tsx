@@ -11,7 +11,7 @@ import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import type { StaticPageDeps } from "@/templates/types"
 import type { FooterSettings } from "@/services/footer-settings"
@@ -61,7 +61,7 @@ export function StaticPageVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const def = mod.staticPages[slug]
   if (!def)
     throw new Error(`Static page '${slug}' is not registered on template '${mod.manifest.id}'`)

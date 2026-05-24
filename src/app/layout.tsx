@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-export const dynamic = "force-dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SeoSettingsService } from "@/services/seo-settings";
-import { BrandingSettingsService } from "@/services/branding-settings";
-import { getEffectiveThemeBase, ThemeService } from "@/services/theme";
-import { TemplateService } from "@/services/template";
+import {
+  getRequestSeoSettings,
+  getRequestBrandingSettings,
+  getRequestActiveTemplateInfo,
+  getCachedThemeForTemplate,
+} from "@/lib/cached-storefront";
 import { readPreviewTemplateId } from "@/services/template-preview";
-import { getTemplateById } from "@/templates/registry";
+import { getTemplateByIdAsync, loadTemplateModule } from "@/templates/registry";
+import { getEffectiveThemeBase } from "@/services/theme";
 import { themeTokensToCssVars } from "@/lib/theme-css-vars";
 
 const geistSans = Geist({
@@ -30,7 +32,7 @@ function toAbsoluteUrl(value: string, fallbackBase: string): string {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [seo, branding] = await Promise.all([SeoSettingsService.get(), BrandingSettingsService.get()]);
+  const [seo, branding] = await Promise.all([getRequestSeoSettings(), getRequestBrandingSettings()]);
   const envBase = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const canonicalBase = seo.canonicalBaseUrl || envBase;
   let metadataBase: URL;
@@ -77,19 +79,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [seo, activeInfo, previewTemplateId] = await Promise.all([
-    SeoSettingsService.get(),
-    TemplateService.getActiveInfo(),
+    getRequestSeoSettings(),
+    getRequestActiveTemplateInfo(),
     readPreviewTemplateId(),
   ]);
-  const dbActiveTemplate = getTemplateById(activeInfo.templateId);
-  // Only when previewing a *different* template than the DB active one: use that
-  // template's packaged palette without shop overrides (overrides are keyed to
-  // the DB-active baseline). Same-template preview + normal visits use merged.
+  const dbActiveTemplate = await getTemplateByIdAsync(activeInfo.templateId);
   const isPreviewingDifferentTemplate =
     previewTemplateId != null && previewTemplateId !== activeInfo.templateId;
   const theme = isPreviewingDifferentTemplate
-    ? getEffectiveThemeBase(getTemplateById(previewTemplateId))
-    : await ThemeService.getMergedForTemplate(dbActiveTemplate);
+    ? getEffectiveThemeBase(await loadTemplateModule(previewTemplateId))
+    : await getCachedThemeForTemplate(dbActiveTemplate);
   const themeVars = themeTokensToCssVars(theme);
 
   return (
@@ -103,4 +102,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

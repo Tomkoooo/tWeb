@@ -14,17 +14,26 @@ function newEntry(): ContactEmailEntry {
   }
 }
 
-export function ContactEmailsEditor({ initial }: { initial: ContactEmailEntry[] }) {
+export function ContactEmailsEditor({
+  initial,
+  initialInvoiceErrorAlertEmails,
+}: {
+  initial: ContactEmailEntry[]
+  initialInvoiceErrorAlertEmails: string[]
+}) {
   const [entries, setEntries] = useState<ContactEmailEntry[]>(
     initial.length > 0 ? initial : [newEntry()]
+  )
+  const [invoiceAlertEmails, setInvoiceAlertEmails] = useState<string[]>(
+    initialInvoiceErrorAlertEmails.length > 0 ? initialInvoiceErrorAlertEmails : [""]
   )
   const [saving, setSaving] = useState(false)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <p className="text-sm text-neutral-400 max-w-2xl">
         Ez az egyetlen hely, ahonnan a weboldal e-mail címeit veszi (kapcsolat szekció, lábléc, űrlap). Több
-        cím esetén a látogató kiválaszthatja a címzettet. Az első cím az üzleti értesítések alapértelmezettje.
+        cím esetén a látogató kiválaszthatja a címzettet.
       </p>
 
       <div className="space-y-3">
@@ -88,29 +97,103 @@ export function ContactEmailsEditor({ initial }: { initial: ContactEmailEntry[] 
           <Plus className="w-4 h-4 mr-2" />
           Új e-mail
         </Button>
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-white/10">
+        <div className="space-y-2">
+          <h3 className="text-sm font-black uppercase tracking-wider text-white">
+            Számlázási hiba értesítések
+          </h3>
+          <p className="text-sm text-neutral-400 max-w-2xl">
+            Ide érkeznek az automatikus számlázás sikertelen próbálkozásairól küldött „INVOICE ERROR” levelek.
+            Üres lista esetén az első kapcsolati e-mail (vagy a környezeti{" "}
+            <code className="text-neutral-500">INVOICE_ERROR_ALERT_EMAIL</code>) marad az alapértelmezett.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {invoiceAlertEmails.map((email, index) => (
+            <div
+              key={`invoice-alert-${index}`}
+              className="grid gap-3 md:grid-cols-[1fr_auto] items-end bg-white/5 border border-amber-500/20 p-4"
+            >
+              <label className="space-y-1 block">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-400">E-mail cím</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) =>
+                    setInvoiceAlertEmails((prev) =>
+                      prev.map((row, idx) => (idx === index ? event.target.value : row))
+                    )
+                  }
+                  placeholder="szamlazas@example.com"
+                  className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={invoiceAlertEmails.length <= 1}
+                onClick={() =>
+                  setInvoiceAlertEmails((prev) => prev.filter((_, idx) => idx !== index))
+                }
+                className="h-10 rounded-none border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
+                aria-label="Értesítési e-mail törlése"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setInvoiceAlertEmails((prev) => [...prev, ""])}
+          className="rounded-none border-white/20 text-white hover:bg-white/10 h-11 font-black uppercase tracking-widest text-[10px]"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Új számlázási értesítő
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-3 pt-2">
         <Button
           type="button"
           disabled={saving}
           onClick={async () => {
             const valid = entries.filter((row) => row.email.trim())
             if (valid.length === 0) {
-              toast.error("Legalább egy érvényes e-mail cím szükséges.")
+              toast.error("Legalább egy érvényes kapcsolati e-mail cím szükséges.")
               return
             }
+            const validInvoiceAlerts = invoiceAlertEmails
+              .map((row) => row.trim())
+              .filter((row) => row.length > 0)
             setSaving(true)
             try {
               const response = await fetch("/api/admin/contact-emails", {
                 method: "PUT",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({ entries: valid }),
+                body: JSON.stringify({
+                  entries: valid,
+                  invoiceErrorAlertEmails: validInvoiceAlerts,
+                }),
               })
               if (!response.ok) {
                 toast.error("Mentés sikertelen.")
                 return
               }
-              const data = (await response.json()) as { entries: ContactEmailEntry[] }
+              const data = (await response.json()) as {
+                entries: ContactEmailEntry[]
+                invoiceErrorAlertEmails: string[]
+              }
               setEntries(data.entries.length > 0 ? data.entries : [newEntry()])
-              toast.success("Kapcsolati e-mailek mentve.")
+              setInvoiceAlertEmails(
+                data.invoiceErrorAlertEmails.length > 0 ? data.invoiceErrorAlertEmails : [""]
+              )
+              toast.success("Kapcsolat és számlázási értesítések mentve.")
             } catch {
               toast.error("Mentés sikertelen.")
             } finally {

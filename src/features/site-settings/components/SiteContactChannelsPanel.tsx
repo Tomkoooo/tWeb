@@ -6,9 +6,10 @@ import { ContactEmailsService } from "@/services/contact-emails"
 
 /** Admin: where each contact channel is configured (emails = single source of truth). */
 export async function SiteContactChannelsPanel() {
-  const [shopContent, contactEmails] = await Promise.all([
+  const [shopContent, contactEmails, invoiceErrorAlertEmails] = await Promise.all([
     ShopContentService.getAll(),
     ContactEmailsService.list(),
+    ContactEmailsService.listInvoiceErrorAlertEmails(),
   ])
   const channels = resolveSiteContactChannels(shopContent)
 
@@ -34,6 +35,24 @@ export async function SiteContactChannelsPanel() {
           </ul>
         ) : (
           <p className="text-amber-200/90 text-xs">Még nincs e-mail cím — add hozzá alább.</p>
+        )}
+      </div>
+
+      <div className="space-y-2 pt-2 border-t border-white/10">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-amber-300/90">
+          Számlázási hiba értesítések
+        </h3>
+        {invoiceErrorAlertEmails.length > 0 ? (
+          <ul className="space-y-1 text-neutral-300">
+            {invoiceErrorAlertEmails.map((email) => (
+              <li key={email}>{email}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-neutral-500 text-xs">
+            Nincs külön cím — automatikus számlázási hibáknál az első kapcsolati e-mail (vagy{" "}
+            <code className="text-neutral-600">INVOICE_ERROR_ALERT_EMAIL</code>) kapja az üzenetet.
+          </p>
         )}
       </div>
 

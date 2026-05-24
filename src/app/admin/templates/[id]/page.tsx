@@ -15,7 +15,7 @@ export default async function TemplateDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const template = TemplateService.getById(id)
+  const template = await TemplateService.getById(id)
   if (!template) notFound()
 
   const [activeInfo, savedPages, previewTemplateId] = await Promise.all([

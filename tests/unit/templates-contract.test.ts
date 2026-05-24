@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { TEMPLATE_REGISTRY, FALLBACK_TEMPLATE_ID } from "@/templates/registry"
+import { describe, expect, it, beforeAll } from "vitest"
+import { listAllTemplates, FALLBACK_TEMPLATE_ID } from "@/templates/registry"
 import { listEditablePages } from "@/templates/cms-pages"
 import {
   DEFAULT_TEMPLATE_SURFACES,
@@ -7,19 +7,27 @@ import {
   assertValidStaticPageSlug,
   type FlowRouteKey,
 } from "@/templates/types"
+import type { TemplateModule } from "@/templates/types"
 
 const FLOW_ROUTE_KEYS: FlowRouteKey[] = ["cart", "checkout", "profile"]
 
+let templates: TemplateModule[] = []
+
+beforeAll(async () => {
+  templates = await listAllTemplates()
+})
+
 describe("Template registry contract", () => {
   it("registers at least one template", () => {
-    expect(Object.keys(TEMPLATE_REGISTRY).length).toBeGreaterThan(0)
+    expect(templates.length).toBeGreaterThan(0)
   })
 
   it("includes the fallback template id", () => {
-    expect(TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]).toBeDefined()
+    expect(templates.some((t) => t.manifest.id === FALLBACK_TEMPLATE_ID)).toBe(true)
   })
 
-  for (const [id, template] of Object.entries(TEMPLATE_REGISTRY)) {
+  for (const template of templates) {
+    const id = template.manifest.id
     describe(`template '${id}'`, () => {
       it("manifest id matches registry key", () => {
         expect(template.manifest.id).toBe(id)

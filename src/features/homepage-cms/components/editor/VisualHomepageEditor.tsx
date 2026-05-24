@@ -17,7 +17,7 @@ import { saveHomepageDraft } from "@/features/homepage-cms/api/draft-client"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { Breadcrumb } from "@/features/homepage-cms/components/editor/Breadcrumb"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { ThemeTokens } from "@/services/theme"
@@ -86,7 +86,7 @@ export function VisualHomepageEditor({
     [snapshot.blocks, selectedBlockId]
   )
 
-  const templateModule = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const templateModule = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const allowedHomepageBlockTypes = useMemo(
     () => resolveAllowedHomepageBlockTypes(templateModule.pages.home),
     [templateModule]

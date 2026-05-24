@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
 import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-schema"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
@@ -47,6 +48,7 @@ export class HomepageCmsService {
     await ShopContentService.update(PUBLISHED_KEY, JSON.stringify(draft), SECTION)
     await revalidatePath("/")
     revalidateStorefrontSitemap()
+    revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.homepage, STOREFRONT_CACHE_TAGS.shopContent)
     return draft
   }
 

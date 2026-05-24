@@ -29,6 +29,7 @@ type Props = {
   initialBranding: CmsBrandingToolbarState
   initialFooter: FooterSettings
   initialContactEmails: ContactEmailEntry[]
+  initialInvoiceErrorAlertEmails: string[]
 }
 
 export function CmsSiteSettingsClient({
@@ -41,6 +42,7 @@ export function CmsSiteSettingsClient({
   initialBranding,
   initialFooter,
   initialContactEmails,
+  initialInvoiceErrorAlertEmails,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -117,7 +119,12 @@ export function CmsSiteSettingsClient({
             </div>
           ) : null}
           {section === "footer" ? <FooterEditor initial={initialFooter} /> : null}
-          {section === "contact" ? <ContactEmailsEditor initial={initialContactEmails} /> : null}
+          {section === "contact" ? (
+            <ContactEmailsEditor
+              initial={initialContactEmails}
+              initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
+            />
+          ) : null}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 import dbConnect from "@/lib/db";
 import LegalDocument, { LegalDocumentKey } from "@/models/LegalDocument";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -59,4 +60,5 @@ export async function uploadLegalDocument(key: string, formData: FormData) {
 
   revalidatePath("/admin/info");
   revalidatePath("/");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.legal);
 }

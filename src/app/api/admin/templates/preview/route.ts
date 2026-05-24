@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
-import { TEMPLATE_REGISTRY } from "@/templates/registry"
+import { getTemplateById } from "@/templates/registry"
 import { TEMPLATE_PREVIEW_COOKIE } from "@/services/template-preview"
 
 const previewBodySchema = z.object({
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return response
   }
 
-  if (!TEMPLATE_REGISTRY[body.templateId]) {
+  if (!getTemplateById(body.templateId)) {
     return NextResponse.json(
       { ok: false, error: `Unknown template id '${body.templateId}'` },
       { status: 400 }

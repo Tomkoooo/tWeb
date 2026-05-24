@@ -10,7 +10,7 @@ import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import type { PdpContent } from "@/templates/default-modern/pages/pdp/schema"
 import type { PdpPageDeps } from "@/templates/types"
@@ -55,7 +55,7 @@ export function PdpVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY[FALLBACK_TEMPLATE_ID]
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
   const PdpRender = mod.pages.pdp.Render
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(

@@ -47,11 +47,7 @@ export function Navbar({
 }: NavbarProps) {
   const navLinks = shopEnabled ? ALL_NAV_LINKS : ALL_NAV_LINKS.filter((l) => !("shopOnly" in l))
   const [isScrolled, setIsScrolled] = React.useState(false)
-  const [resolvedBrand, setResolvedBrand] = React.useState({ brandName, logoSrc })
-
-  React.useEffect(() => {
-    setResolvedBrand({ brandName, logoSrc })
-  }, [brandName, logoSrc])
+  const resolvedBrand = { brandName, logoSrc }
 
   React.useEffect(() => {
     if (cmsChromePreview) return
@@ -61,26 +57,6 @@ export function Navbar({
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [cmsChromePreview])
-
-  React.useEffect(() => {
-    if (cmsChromePreview) return
-    let cancelled = false
-    fetch("/api/site/branding")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return
-        setResolvedBrand({
-          brandName: data.brandName || brandName,
-          logoSrc: data.logoNav || logoSrc,
-        })
-      })
-      .catch(() => {
-        // keep prop/default fallback
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [brandName, logoSrc, cmsChromePreview])
 
   const logoBlock = (
     <div className="relative h-10 w-40 sm:h-12 sm:w-48 lg:h-14 lg:w-56">

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
+import Product from "@/models/Product";
+import ShippingMethod from "@/models/ShippingMethod";
+import PaymentMethod from "@/models/PaymentMethod";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 import { prepareUserOrdersAccess } from "@/lib/user-orders-query";
 
@@ -17,7 +20,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
     await dbConnect();
-    
+    void Product;
+    void ShippingMethod;
+    void PaymentMethod;
+
     const order = await Order.findOne({
       _id: id,
       ...access.filter,

@@ -91,17 +91,21 @@ async function resolveFromShopSettings(
     );
     const perCat =
       settings.perCategoryLimit > 0 ? settings.perCategoryLimit : limit;
-    const result: string[] = [];
-
-    for (const categoryId of categoryIds) {
-      if (result.length >= limit) break;
-      const products = await Product.find({
-        category: categoryId,
-        isVisible: true,
+    const perCategoryRows = await Promise.all(
+      categoryIds.map(async (categoryId) => {
+        const products = await Product.find({
+          category: categoryId,
+          isVisible: true,
+        })
+          .select("_id featuredListIndex createdAt")
+          .lean();
+        return sortByFeaturedListIndex(products as WithFeaturedIndex[]);
       })
-        .select("_id featuredListIndex createdAt")
-        .lean();
-      const sorted = sortByFeaturedListIndex(products as WithFeaturedIndex[]);
+    );
+
+    const result: string[] = [];
+    for (let i = 0; i < categoryIds.length && result.length < limit; i++) {
+      const sorted = perCategoryRows[i];
       const take = Math.min(perCat, limit - result.length);
       for (const p of sorted.slice(0, take)) {
         result.push(p._id.toString());

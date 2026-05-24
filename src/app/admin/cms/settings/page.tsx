@@ -20,12 +20,13 @@ export default async function CmsSiteSettingsPage({
   const section = parseCmsSiteSettingsSection(sectionParam)
 
   const dbActiveTemplate = await TemplateService.getDbActive()
-  const [theme, seo, branding, footer, contactEmails] = await Promise.all([
+  const [theme, seo, branding, footer, contactEmails, invoiceErrorAlertEmails] = await Promise.all([
     ThemeService.getMergedForTemplate(dbActiveTemplate),
     SeoSettingsService.get(),
     BrandingSettingsService.get(),
     FooterSettingsService.get(),
     ContactEmailsService.list(),
+    ContactEmailsService.listInvoiceErrorAlertEmails(),
   ])
 
   const themeResetBaseline = getEffectiveThemeBase(dbActiveTemplate)
@@ -46,6 +47,7 @@ export default async function CmsSiteSettingsPage({
         initialBranding={branding}
         initialFooter={footer}
         initialContactEmails={contactEmails}
+        initialInvoiceErrorAlertEmails={invoiceErrorAlertEmails}
       />
     </Suspense>
   )

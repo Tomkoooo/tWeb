@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth"
 import { SeoSettingsService } from "@/services/seo-settings"
 import { revalidatePath } from "next/cache"
 import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 
 const schema = z.object({
   siteTitle: z.string().optional(),
@@ -28,5 +29,6 @@ export async function PUT(request: Request) {
   const updated = await SeoSettingsService.update(payload)
   revalidatePath("/", "layout")
   revalidateStorefrontSitemap()
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.seo)
   return NextResponse.json(updated)
 }

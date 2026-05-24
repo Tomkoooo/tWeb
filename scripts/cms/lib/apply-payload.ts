@@ -1,4 +1,4 @@
-import { TEMPLATE_REGISTRY } from "@/templates/registry"
+import { loadTemplateModule } from "@/templates/registry"
 import { findPageDefinition } from "@/templates/resolve-page-definition"
 import { PageContentService } from "@/services/page-content"
 import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-schema"
@@ -24,15 +24,8 @@ export type ApplyImportResult = {
   }>
 }
 
-function assertTemplate(templateId: string) {
-  const template = TEMPLATE_REGISTRY[templateId]
-  if (!template) {
-    const known = Object.keys(TEMPLATE_REGISTRY).join(", ")
-    throw new Error(
-      `Unknown templateId="${templateId}". Registered templates: ${known}`
-    )
-  }
-  return template
+async function assertTemplate(templateId: string) {
+  return loadTemplateModule(templateId)
 }
 
 function mergePageContent<T extends Record<string, unknown>>(
@@ -124,16 +117,13 @@ export async function applyCmsImportPayload(
   options: ApplyImportOptions
 ): Promise<ApplyImportResult> {
   const { templateId, payload, dryRun = false } = options
-  assertTemplate(templateId)
+  const template = await assertTemplate(templateId)
 
   const shouldPublish = payload.publish
   const pages: ApplyImportResult["pages"] = []
 
   for (const page of payload.pages) {
-    const def = findPageDefinition(
-      TEMPLATE_REGISTRY[templateId],
-      page.pageKey
-    )
+    const def = findPageDefinition(template, page.pageKey)
     if (!def) {
       throw new Error(
         `No page definition for templateId="${templateId}" pageKey="${page.pageKey}".`
@@ -142,7 +132,7 @@ export async function applyCmsImportPayload(
 
     const isHomepage =
       page.pageKey === "page:home" &&
-      TEMPLATE_REGISTRY[templateId].pages.home.cmsPageKind === "homepage-blocks"
+      template.pages.home.cmsPageKind === "homepage-blocks"
 
     let next: unknown
     if (isHomepage) {

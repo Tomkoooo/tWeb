@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
     }
 
     await dbConnect();
+    void Product;
+    void ShippingMethod;
+    void PaymentMethod;
+
     const orders = await Order.find(access.filter)
       .populate("items.product")
       .populate("shippingMethod")

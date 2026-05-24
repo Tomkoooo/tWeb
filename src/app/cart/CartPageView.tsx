@@ -21,6 +21,8 @@ import { Separator } from "@/components/ui/separator"
 import { formatHuf, priceBreakdownFromGross, totalsFromMixedVatLines, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+import { CartLineOrderabilityMessage } from "@/components/cart/CartLineOrderabilityMessage"
+import { useCartLineIssues } from "@/hooks/useCartLineIssues"
 
 export type CartPageVariant = "page" | "embedded"
 
@@ -34,6 +36,7 @@ export function CartPageView({
 }) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalItems } = useCartStore()
+  const { issues, hasIssues } = useCartLineIssues(items)
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)
@@ -200,6 +203,7 @@ export function CartPageView({
                               -{item.discount}% KEDVEZMÉNY
                             </p>
                           ) : null}
+                          <CartLineOrderabilityMessage message={issues[item.id]} />
                           <div className="mt-4 inline-flex items-center border border-border bg-muted/50 p-1">
                             <Button
                               variant="ghost"
@@ -312,9 +316,15 @@ export function CartPageView({
                 </div>
               </div>
 
+              {hasIssues ? (
+                <p className="mb-4 text-sm font-semibold text-red-600 dark:text-red-400">
+                  A kosárban nem rendelhető tételek vannak. Javítsd vagy távolítsd el őket a pénztár előtt.
+                </p>
+              ) : null}
+
               <Button
                 type="button"
-                disabled={checkoutSuggestionsLoading}
+                disabled={checkoutSuggestionsLoading || hasIssues}
                 className="group h-20 w-full overflow-hidden bg-primary text-xl font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/80 btn-krausz"
                 onClick={() => void beginCheckout()}
               >

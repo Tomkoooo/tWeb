@@ -1,4 +1,4 @@
-import { TEMPLATE_REGISTRY } from "@/templates/registry"
+import { loadTemplateModule } from "@/templates/registry"
 import { findPageDefinition } from "@/templates/resolve-page-definition"
 import { listEditablePages } from "@/templates/cms-pages"
 import { PageContentService } from "@/services/page-content"
@@ -156,13 +156,7 @@ function summarizeSurfaceContent(content: unknown): unknown {
 export async function buildCmsInspectReport(
   templateId: string
 ): Promise<CmsInspectReport> {
-  const template = TEMPLATE_REGISTRY[templateId]
-  if (!template) {
-    const known = Object.keys(TEMPLATE_REGISTRY).join(", ")
-    throw new Error(
-      `Unknown templateId="${templateId}". Registered templates: ${known}`
-    )
-  }
+  const template = await loadTemplateModule(templateId)
 
   const dbActive = (await TemplateService.getActiveInfo()).templateId
   const shopEnabled = isShopEnabled()

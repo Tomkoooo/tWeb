@@ -322,6 +322,8 @@ export interface TemplateModule {
       address?: string
       categories?: Array<{ id: string; name: string; slug: string; depth: number }>
       footerSettings?: FooterSettings
+      newsletterEnabled?: boolean
+      legalLinks?: Array<{ key: string; title: string; href: string }>
       /** Homepage CMS may enable inline footer legal links when the template footer supports it. */
       cmsEditable?: boolean
       onSettingsChange?: (next: FooterSettings) => void | Promise<void>

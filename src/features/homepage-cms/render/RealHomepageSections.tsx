@@ -1,6 +1,11 @@
 "use client"
 
-import { Hero } from "@/components/sections/Hero"
+import dynamic from "next/dynamic"
+
+const Hero = dynamic(
+  () => import("@/components/sections/Hero").then((m) => ({ default: m.Hero })),
+  { ssr: true }
+)
 import { Story } from "@/components/sections/Story"
 import { Shop } from "@/components/sections/Shop"
 import { Features } from "@/components/sections/Features"

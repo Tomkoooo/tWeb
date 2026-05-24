@@ -138,7 +138,10 @@ ProductSchema.pre("validate", function () {
 });
 
 
-const Product: Model<IProduct> = 
+ProductSchema.index({ isVisible: 1, category: 1, createdAt: -1 });
+ProductSchema.index({ isVisible: 1, createdAt: -1 });
+
+const Product: Model<IProduct> =
   mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);
 
 export default Product;

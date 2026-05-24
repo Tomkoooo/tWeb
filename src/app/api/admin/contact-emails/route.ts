@@ -12,17 +12,26 @@ const entrySchema = z.object({
 
 const schema = z.object({
   entries: z.array(entrySchema),
+  invoiceErrorAlertEmails: z.array(z.string().email()).optional(),
 })
 
 export async function GET() {
   await requireAdmin()
-  return NextResponse.json({ entries: await ContactEmailsService.list() })
+  const [entries, invoiceErrorAlertEmails] = await Promise.all([
+    ContactEmailsService.list(),
+    ContactEmailsService.listInvoiceErrorAlertEmails(),
+  ])
+  return NextResponse.json({ entries, invoiceErrorAlertEmails })
 }
 
 export async function PUT(request: Request) {
   await requireAdmin()
-  const { entries } = schema.parse(await request.json())
+  const { entries, invoiceErrorAlertEmails } = schema.parse(await request.json())
   const saved = await ContactEmailsService.save(entries)
+  const savedInvoiceAlerts =
+    invoiceErrorAlertEmails !== undefined ?
+      await ContactEmailsService.saveInvoiceErrorAlertEmails(invoiceErrorAlertEmails)
+    : await ContactEmailsService.listInvoiceErrorAlertEmails()
   revalidatePath("/", "layout")
-  return NextResponse.json({ entries: saved })
+  return NextResponse.json({ entries: saved, invoiceErrorAlertEmails: savedInvoiceAlerts })
 }

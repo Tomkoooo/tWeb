@@ -13,6 +13,8 @@ import {
   useCheckoutWithSuggestions,
   type CheckoutSuggestionsDialogPresentation,
 } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
+import { CartLineOrderabilityMessage } from "@/components/cart/CartLineOrderabilityMessage"
+import { useCartLineIssues } from "@/hooks/useCartLineIssues"
 
 const ITEMS_PER_PAGE = 5
 
@@ -35,6 +37,7 @@ const ATELIER_CHECKOUT_SUGGESTION_PRESENTATION: CheckoutSuggestionsDialogPresent
 export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRouteMainProps) {
   const embedded = variant === "embedded"
   const { items, removeItem, updateQuantity, totalItems } = useCartStore()
+  const { issues, hasIssues } = useCartLineIssues(items)
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions({
     dialogPresentation: ATELIER_CHECKOUT_SUGGESTION_PRESENTATION,
   })
@@ -134,6 +137,7 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
                   {item.variantLabel ? (
                     <p className="mt-1 font-serif text-xs uppercase tracking-widest text-primary-foreground">{item.variantLabel}</p>
                   ) : null}
+                  <CartLineOrderabilityMessage message={issues[item.id]} className="font-serif font-medium" />
                   <div className="mt-4 inline-flex items-center overflow-hidden rounded-full border border-border">
                     <Button
                       type="button"
@@ -206,9 +210,14 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
               <span>{formatHuf(totalBreakdown.gross)}</span>
             </div>
           </div>
+          {hasIssues ? (
+            <p className="mt-4 text-sm font-medium text-red-600 dark:text-red-400">
+              Nem rendelhető tételek vannak a kosárban.
+            </p>
+          ) : null}
           <Button
             type="button"
-            disabled={checkoutSuggestionsLoading}
+            disabled={checkoutSuggestionsLoading || hasIssues}
             className="mt-6 h-12 w-full rounded-full bg-primary font-serif text-sm uppercase tracking-widest text-primary-foreground"
             onClick={() => void beginCheckout()}
           >
@@ -226,7 +235,7 @@ export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRoute
           </div>
           <Button
             type="button"
-            disabled={checkoutSuggestionsLoading}
+            disabled={checkoutSuggestionsLoading || hasIssues}
             className="rounded-full bg-primary px-6 font-serif text-primary-foreground"
             onClick={() => void beginCheckout()}
           >

@@ -1,7 +1,7 @@
 "use client"
 
 import type { HomepageBlock } from "@/features/homepage-cms/types/block-types"
-import { getView } from "@/features/homepage-cms/registry/block-registry"
+import { getView } from "@/features/homepage-cms/registry/block-registry-views"
 
 type Props = {
   blocks: HomepageBlock[]

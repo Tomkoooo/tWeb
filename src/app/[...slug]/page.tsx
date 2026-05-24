@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { getActiveChrome } from "@/lib/active-chrome"
+import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
+
+export const revalidate = 60
 import { PageContentService } from "@/services/page-content"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 
@@ -30,8 +33,10 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
 export default async function StaticTemplatePage({ params }: StaticPageProps) {
   const { slug } = await params
   const slugStr = slug.join("/")
-  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } =
-    await getActiveChrome()
+  const {
+    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    footerHydration,
+  } = await getStorefrontChromeBundle()
 
   const def = template.staticPages[slugStr]
   if (!def) {
@@ -63,6 +68,8 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
         contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
+        newsletterEnabled={footerHydration.newsletterEnabled}
+        legalLinks={footerHydration.legalLinks}
       />
     </>
   )

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const resolveShopOpsAlertEmailMock = vi.fn();
+const resolveInvoiceErrorAlertEmailsMock = vi.fn();
 const findByIdChain = {
   populate: vi.fn().mockReturnThis(),
   lean: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock("@/models/Order", () => ({
   default: { findById: orderFindByIdMock },
 }));
 vi.mock("@/services/shop-ops-alert-email", () => ({
-  resolveShopOpsAlertEmail: () => resolveShopOpsAlertEmailMock(),
+  resolveInvoiceErrorAlertEmails: () => resolveInvoiceErrorAlertEmailsMock(),
 }));
 vi.mock("@/services/mailer", () => ({
   MailerService: { sendSystemHtmlEmail: sendSystemHtmlEmailMock },
@@ -21,7 +21,7 @@ vi.mock("@/services/mailer", () => ({
 describe("sendInvoiceErrorShopAlert", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resolveShopOpsAlertEmailMock.mockResolvedValue("ops@shop.test");
+    resolveInvoiceErrorAlertEmailsMock.mockResolvedValue(["ops@shop.test"]);
     sendSystemHtmlEmailMock.mockResolvedValue({ messageId: "x" });
     delete process.env.INVOICE_ERROR_ALERT_EMAIL;
   });
@@ -73,8 +73,28 @@ describe("sendInvoiceErrorShopAlert", () => {
     expect(arg.text).toContain("billing@acme.test");
   });
 
+  it("sends to all configured invoice alert recipients", async () => {
+    resolveInvoiceErrorAlertEmailsMock.mockResolvedValue([
+      "inv1@shop.test",
+      "inv2@shop.test",
+    ]);
+    findByIdChain.lean.mockResolvedValue({
+      _id: "o1",
+      billingInfo: { name: "B", email: "b@test", zip: "1", city: "c", street: "s" },
+      shippingAddress: { name: "S", email: "s@test", zip: "1", city: "c", street: "x" },
+      items: [],
+    });
+
+    const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");
+    await sendInvoiceErrorShopAlert("o1", new Error("x"));
+
+    expect(sendSystemHtmlEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "inv1@shop.test, inv2@shop.test" })
+    );
+  });
+
   it("uses resolved ops email from env/CMS path (fallback inbox)", async () => {
-    resolveShopOpsAlertEmailMock.mockResolvedValue("fallback@shop.test");
+    resolveInvoiceErrorAlertEmailsMock.mockResolvedValue(["fallback@shop.test"]);
     findByIdChain.lean.mockResolvedValue({
       _id: "o1",
       billingInfo: { name: "B", email: "b@test", zip: "1", city: "c", street: "s" },
@@ -91,7 +111,7 @@ describe("sendInvoiceErrorShopAlert", () => {
   });
 
   it("skips send when no recipient is configured", async () => {
-    resolveShopOpsAlertEmailMock.mockResolvedValue("");
+    resolveInvoiceErrorAlertEmailsMock.mockResolvedValue([]);
     findByIdChain.lean.mockResolvedValue({ _id: "o1", billingInfo: {}, shippingAddress: {}, items: [] });
 
     const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");

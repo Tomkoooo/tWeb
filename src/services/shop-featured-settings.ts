@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 import ShopFeaturedSetting, {
   type FeaturedProductsMode,
   type IShopFeaturedSetting,
@@ -59,6 +60,7 @@ export class ShopFeaturedSettingsService {
       { upsert: true, returnDocument: "after" }
     );
     revalidatePath("/");
+    revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.products, STOREFRONT_CACHE_TAGS.homepage);
     return merged;
   }
 }
