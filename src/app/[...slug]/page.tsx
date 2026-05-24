@@ -6,6 +6,7 @@ import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 export const revalidate = 60
 import { PageContentService } from "@/services/page-content"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
+import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
 
 type StaticPageProps = {
   params: Promise<{ slug: string[] }>
@@ -18,11 +19,15 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
   const def = template.staticPages[slugStr]
   if (!def) return {}
   try {
-    const content = await PageContentService.get<{
-      meta?: { seoTitle?: string; seoDescription?: string }
-    }>(template.manifest.id, `page:${slugStr}`)
+    const [content, shopName] = await Promise.all([
+      PageContentService.get<{
+        meta?: { seoTitle?: string; seoDescription?: string }
+      }>(template.manifest.id, `page:${slugStr}`),
+      getStorefrontShopName(),
+    ])
+    const seoTitle = content?.meta?.seoTitle?.trim()
     return {
-      title: content?.meta?.seoTitle || undefined,
+      title: seoTitle ? withStorefrontPageTitle(seoTitle, shopName) : undefined,
       description: content?.meta?.seoDescription || undefined,
     }
   } catch {

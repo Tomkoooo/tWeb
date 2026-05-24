@@ -16,6 +16,8 @@ import {
 } from "@/lib/storefront-footer-data"
 import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
 import { storefrontCatalogFilters } from "@/lib/storefront-catalog"
+import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -23,9 +25,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { q, category } = await searchParams
   const template = await TemplateService.getActive()
-  const [content, shopPageContent] = await Promise.all([
+  const [content, shopPageContent, shopName] = await Promise.all([
     ShopContentService.getAll(),
     PageContentService.get(template.manifest.id, "page:shop").catch(() => null),
+    getStorefrontShopName(),
   ])
 
   type ShopSeo = { meta?: { seoTitle?: string; seoDescription?: string } }
@@ -33,21 +36,21 @@ export async function generateMetadata({
   const baseTitle =
     shopMeta?.meta?.seoTitle ||
     content.shop_seo_title ||
-    "Webshop | Krausz Barkácsmester"
+    withStorefrontPageTitle("Webshop", shopName)
   const baseDescription =
     shopMeta?.meta?.seoDescription ||
     content.shop_seo_description ||
-    "Válogasson prémium szerszámaink és ipari gépeink közül. Krausz - A minőség garanciája."
+    `Válogasson prémium termékeink közül a ${shopName} webshopban.`
 
   let title = baseTitle
   let description = baseDescription
 
   if (q) {
-    title = `Keresés: ${q} | Krausz Barkácsmester`
+    title = withStorefrontPageTitle(`Keresés: ${q}`, shopName)
   } else if (category) {
     const cat = await CategoryService.getById(category)
     if (cat) {
-      title = `${cat.name} | Krausz Barkácsmester`
+      title = withStorefrontPageTitle(cat.name, shopName)
       description = cat.seo?.description || description
     }
   }

@@ -4,6 +4,7 @@ import { Metadata } from "next"
 import { resolveProductView } from "@/lib/product-variants"
 import { mediaImageSrc } from "@/lib/images"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
+import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
 
 export const revalidate = 60
 import { PageContentService } from "@/services/page-content"
@@ -12,16 +13,21 @@ export async function generateMetadata({ params, searchParams }: ProductPageProp
   const { slug } = await params
   const query = await searchParams
   const selectedVariantId = typeof query.variant === "string" ? query.variant : null
-  const product = await ProductService.getBySlug(slug)
+  const [product, shopName] = await Promise.all([
+    ProductService.getBySlug(slug),
+    getStorefrontShopName(),
+  ])
 
-  if (!product) return { title: "Termék nem található" }
+  if (!product) {
+    return { title: withStorefrontPageTitle("Termék nem található", shopName) }
+  }
   const view = resolveProductView(product as never, selectedVariantId)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://krauszbarkacs.hu"
   const canonicalUrl = `${appUrl}/products/${product.slug}`
   const openGraphImage = view.images?.[0] || product.images?.[0]
 
   return {
-    title: `${view.seo.title || product.name} | Krausz Barkács`,
+    title: withStorefrontPageTitle(view.seo.title || product.name, shopName),
     description: view.seo.description || product.description.substring(0, 160),
     keywords: view.seo.keywords?.join(", "),
     openGraph: {
