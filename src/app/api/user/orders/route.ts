@@ -6,21 +6,20 @@ import Product from "@/models/Product"; // needed to populate products
 import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
-import { resolveAuthenticatedUserId } from "@/lib/auth-session-user";
-import mongoose from "mongoose";
+import { prepareUserOrdersAccess } from "@/lib/user-orders-query";
 
 export async function GET(req: NextRequest) {
   try {
     const blocked = shopCommerceBlockedResponse();
     if (blocked) return blocked;
     const session = await auth();
-    const userId = await resolveAuthenticatedUserId(session);
-    if (!userId) {
+    const access = await prepareUserOrdersAccess(session);
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
-    const orders = await Order.find({ user: new mongoose.Types.ObjectId(userId) })
+    const orders = await Order.find(access.filter)
       .populate("items.product")
       .populate("shippingMethod")
       .populate("paymentMethod")

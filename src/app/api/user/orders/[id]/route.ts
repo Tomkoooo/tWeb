@@ -3,16 +3,15 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
-import { resolveAuthenticatedUserId } from "@/lib/auth-session-user";
-import mongoose from "mongoose";
+import { prepareUserOrdersAccess } from "@/lib/user-orders-query";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const blocked = shopCommerceBlockedResponse();
     if (blocked) return blocked;
     const session = await auth();
-    const userId = await resolveAuthenticatedUserId(session);
-    if (!userId) {
+    const access = await prepareUserOrdersAccess(session);
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -21,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     
     const order = await Order.findOne({
       _id: id,
-      user: new mongoose.Types.ObjectId(userId),
+      ...access.filter,
     })
       .populate("items.product")
       .populate("shippingMethod")

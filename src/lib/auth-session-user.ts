@@ -1,4 +1,5 @@
 import type { Session } from "next-auth"
+import mongoose from "mongoose"
 import dbConnect from "@/lib/db"
 import User from "@/models/User"
 
@@ -9,7 +10,7 @@ export async function resolveAuthenticatedUserId(
   if (!session?.user) return null
 
   const fromSession = session.user.id?.trim()
-  if (fromSession) return fromSession
+  if (fromSession && mongoose.Types.ObjectId.isValid(fromSession)) return fromSession
 
   const email = session.user.email?.trim()
   if (!email) return null

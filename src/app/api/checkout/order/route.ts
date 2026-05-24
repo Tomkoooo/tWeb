@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { resolveAuthenticatedUserId } from "@/lib/auth-session-user";
 import { OrderService } from "@/services/order";
 import { FeatureFlagService } from "@/services/feature-flags";
 import {
@@ -10,7 +11,8 @@ import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  
+  const checkoutUserId = await resolveAuthenticatedUserId(session);
+
   try {
     const commerceBlocked = shopCommerceBlockedResponse();
     if (commerceBlocked) return commerceBlocked;
@@ -31,10 +33,10 @@ export async function POST(req: NextRequest) {
     }
 
     const validatedOrderData = await validateAndNormalizeCheckoutInput(payload, {
-      userId: session?.user?.id,
+      userId: checkoutUserId ?? undefined,
       allowStripeFixed: false,
     });
-    const order = await OrderService.createOrder(validatedOrderData, session?.user?.id);
+    const order = await OrderService.createOrder(validatedOrderData, checkoutUserId ?? undefined);
     const orderId = String(order._id);
 
     return NextResponse.json({

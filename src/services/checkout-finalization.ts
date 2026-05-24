@@ -2,7 +2,28 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
 import Order from "@/models/Order";
+import User from "@/models/User";
+import { normalizeOrderEmail } from "@/lib/order-guest-access";
 import { OrderService } from "@/services/order";
+
+async function resolveUserIdForFinalization(
+  tempUserId: string | undefined,
+  billingEmail: string | undefined
+): Promise<string | undefined> {
+  if (tempUserId) return tempUserId;
+  const normalized = billingEmail ? normalizeOrderEmail(billingEmail) : "";
+  if (!normalized) return undefined;
+
+  const user = await User.findOne({
+    $expr: {
+      $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$email", ""] } } } }, normalized],
+    },
+  })
+    .select("_id")
+    .lean();
+
+  return user?._id?.toString();
+}
 
 export class CheckoutFinalizationService {
   static async finalizeFromTempOrder(tempOrderId: string) {
@@ -49,9 +70,13 @@ export class CheckoutFinalizationService {
     }
 
     try {
+      const checkoutUserId = await resolveUserIdForFinalization(
+        locked.user?.toString(),
+        locked.checkoutData?.billingInfo?.email
+      );
       const createdOrder = await OrderService.createOrderFromCheckoutData(
         locked.checkoutData,
-        locked.user?.toString(),
+        checkoutUserId,
         { enforceShopEnabled: false, skipStockDecrement: true }
       );
 

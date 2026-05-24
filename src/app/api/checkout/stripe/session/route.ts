@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { auth } from "@/auth";
+import { resolveAuthenticatedUserId } from "@/lib/auth-session-user";
 import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
 import { FeatureFlagService } from "@/services/feature-flags";
@@ -36,6 +37,7 @@ type StripeCheckoutLineItem = {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
+  const checkoutUserId = await resolveAuthenticatedUserId(session);
 
   try {
     const commerceBlocked = shopCommerceBlockedResponse();
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const payload = await req.json();
     const validatedOrderData = await validateAndNormalizeCheckoutInput(payload, {
-      userId: session?.user?.id,
+      userId: checkoutUserId ?? undefined,
       allowStripeFixed: true,
     });
     if (validatedOrderData.paymentProvider !== "stripe") {
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
     const provisionalExpires = reservationEndsAt(now, ttlMs);
 
     const tempOrder = await TempOrder.create({
-      user: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
+      user: checkoutUserId ? new mongoose.Types.ObjectId(checkoutUserId) : undefined,
       checkoutData: validatedOrderData,
       paymentProvider: "stripe",
       status: "created",
@@ -153,7 +155,7 @@ export async function POST(req: NextRequest) {
         client_reference_id: tempOrderIdStr,
         metadata: {
           tempOrderId: tempOrderIdStr,
-          userId: session?.user?.id || "",
+          userId: checkoutUserId || "",
         },
         payment_intent_data: {
           metadata: {

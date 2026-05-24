@@ -13,8 +13,14 @@ const orderExistsMock = vi.fn();
 const productExistsMock = vi.fn();
 const reviewUpsertMock = vi.fn();
 const feedbackUpsertMock = vi.fn();
+const linkGuestOrdersToUserMock = vi.fn();
 
 vi.mock("@/auth", () => ({ auth: authMock }));
+vi.mock("@/services/order-guest-access", () => ({
+  OrderGuestAccessService: {
+    linkGuestOrdersToUser: (...args: unknown[]) => linkGuestOrdersToUserMock(...args),
+  },
+}));
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
 vi.mock("@/models/User", () => ({
   default: {
@@ -38,10 +44,16 @@ vi.mock("@/models/ShopFeedback", () => ({ default: { findOneAndUpdate: feedbackU
 describe("user api routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ user: { id: "u1", email: "u@test.hu" } });
-    userFindByIdMock.mockReturnValue({ lean: vi.fn().mockResolvedValue({ _id: "u1", newsletterSubscribed: false }) });
-    userFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue({ _id: "u1", newsletterSubscribed: false }) });
-    userFindOneAndUpdateMock.mockResolvedValue({ _id: "u1" });
+    linkGuestOrdersToUserMock.mockResolvedValue(0);
+    const testUserId = "507f1f77bcf86cd799439011";
+    authMock.mockResolvedValue({ user: { id: testUserId, email: "u@test.hu" } });
+    userFindByIdMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({ _id: testUserId, newsletterSubscribed: false }),
+    });
+    userFindOneMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({ _id: testUserId, newsletterSubscribed: false }),
+    });
+    userFindOneAndUpdateMock.mockResolvedValue({ _id: testUserId });
     orderFindMock.mockResolvedValue([]);
     orderFindOneMock.mockReturnValue({
       populate: vi.fn().mockReturnThis(),
@@ -90,6 +102,7 @@ describe("user api routes", () => {
     const { GET } = await import("@/app/api/user/orders/route");
     const res = await GET(createJsonRequest("http://localhost/api/user/orders", "GET"));
     expect(res.status).toBe(200);
+    expect(linkGuestOrdersToUserMock).toHaveBeenCalledWith("507f1f77bcf86cd799439011", "u@test.hu");
   });
 
   it("returns one order detail", async () => {
