@@ -76,7 +76,7 @@ export function Navbar({
   const centerNav = cmsChromePreview ? (
     <nav
       aria-label="Menü előnézet (nem kattintható)"
-      className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex"
+      className="hidden min-w-0 items-center justify-center gap-6 lg:flex xl:gap-14"
     >
       {navLinks.map((link) => (
         <span key={link.name} className={cn(linkClass, "relative cursor-default")}>
@@ -86,7 +86,7 @@ export function Navbar({
       ))}
     </nav>
   ) : (
-    <nav className="mx-12 hidden flex-1 items-center justify-center gap-8 xl:gap-14 lg:flex">
+    <nav className="hidden min-w-0 items-center justify-center gap-6 lg:flex xl:gap-14">
       {navLinks.map((link) => (
         <Link
           key={link.name}
@@ -115,14 +115,14 @@ export function Navbar({
       </span>
     </div>
   ) : (
-    <div className="flex flex-none items-center gap-6 lg:gap-10">
+    <div className="flex min-w-0 flex-none items-center gap-4 lg:gap-6 xl:gap-10">
       {shopEnabled ? (
         <>
-          <div className="hidden lg:block">
+          <div className="hidden min-w-0 shrink lg:block">
             {NavbarSearch ? (
-              <NavbarSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+              <NavbarSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
             ) : (
-              <LiveSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+              <LiveSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
             )}
           </div>
 
@@ -148,7 +148,11 @@ export function Navbar({
             <Menu className="h-8 w-8 text-foreground" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full border-border bg-background sm:max-w-md">
+        <SheetContent
+          side="right"
+          className="w-full border-border bg-background sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div className="mt-20 flex flex-col gap-10 px-6">
             {navLinks.map((link) => (
               <Link
@@ -176,8 +180,8 @@ export function Navbar({
   )
 
   const bar = (
-    <div className="container mx-auto flex items-center">
-      <div className="flex-none">
+    <div className="container mx-auto grid grid-cols-[auto_1fr_auto] items-center gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6">
+      <div className="min-w-0 justify-self-start">
         {cmsChromePreview ? (
           <div className="pointer-events-none flex items-center select-none">{logoBlock}</div>
         ) : (
@@ -187,9 +191,9 @@ export function Navbar({
         )}
       </div>
 
-      {centerNav}
+      <div className="hidden min-w-0 justify-self-center lg:block">{centerNav}</div>
 
-      {actions}
+      <div className="min-w-0 justify-self-end">{actions}</div>
     </div>
   )
 

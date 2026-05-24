@@ -85,7 +85,7 @@ export function Navbar({
       ))}
     </nav>
   ) : (
-    <nav className="hidden items-center justify-center gap-8 lg:flex xl:gap-14">
+    <nav className="hidden min-w-0 items-center justify-center gap-6 lg:flex xl:gap-14">
       {navLinks.map((link) => (
         <Link
           key={link.name}
@@ -114,14 +114,14 @@ export function Navbar({
       </span>
     </div>
   ) : (
-    <div className="flex flex-none items-center gap-6 lg:gap-10">
+    <div className="flex min-w-0 flex-none items-center gap-4 lg:gap-6 xl:gap-10">
       {shopEnabled ? (
         <>
-          <div className="hidden lg:block">
+          <div className="hidden min-w-0 shrink lg:block">
             {NavbarSearch ? (
-              <NavbarSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+              <NavbarSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
             ) : (
-              <LiveSearch className="w-48 transition-all duration-300 focus-within:w-64 lg:w-40 xl:w-48" />
+              <LiveSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
             )}
           </div>
 
@@ -147,7 +147,11 @@ export function Navbar({
             <Menu className="h-8 w-8 text-foreground" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full border-border bg-background-dark sm:max-w-md">
+        <SheetContent
+          side="right"
+          className="w-full border-border bg-background-dark sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div className="mt-20 flex flex-col gap-10 px-6">
             {navLinks.map((link) => (
               <Link
@@ -188,7 +192,7 @@ export function Navbar({
 
       <div className="hidden min-w-0 justify-self-center lg:block">{centerNav}</div>
 
-      <div className="justify-self-end">{actions}</div>
+      <div className="min-w-0 justify-self-end">{actions}</div>
     </div>
   )
 

@@ -23,13 +23,14 @@ export function UserNav() {
 
   if (!session) {
     return (
-      <Button 
+      <Button
         onClick={() => signIn("google")}
-        variant="ghost" 
-        className="text-xs font-black text-foreground hover:text-primary-foreground hover:bg-transparent tracking-[0.2em] uppercase px-0"
+        variant="ghost"
+        aria-label="Bejelentkezés"
+        className="px-0 text-xs font-black uppercase tracking-[0.2em] text-foreground hover:bg-transparent hover:text-primary-foreground"
       >
-        <LogIn className="w-5 h-5 mr-2 sm:hidden" />
-        <span className="hidden sm:inline">Bejelentkezés</span>
+        <LogIn className="h-5 w-5 shrink-0 xl:mr-2" aria-hidden />
+        <span className="hidden xl:inline">Bejelentkezés</span>
       </Button>
     )
   }
