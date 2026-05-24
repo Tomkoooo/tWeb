@@ -117,10 +117,33 @@ export function totalsFromMixedVatLines(
   }
 }
 
+/** Highest VAT % among cart/order lines (for shipping/payment fee allocation on invoices). */
+export function highestCartVatPercent(
+  items: Array<{ vatPercent?: number }>,
+  fallback = DEFAULT_VAT_PERCENT
+): number {
+  if (!items.length) return fallback
+  return Math.max(...items.map((i) => clampVatPercent(i.vatPercent ?? fallback)))
+}
+
+/** Net/VAT split for a fee gross at the cart's highest product VAT rate. */
+export function feeLineBreakdownFromGross(
+  gross: number,
+  cartItems: Array<{ vatPercent?: number }>
+) {
+  const bd = priceBreakdownFromGross(gross, 1, highestCartVatPercent(cartItems))
+  return {
+    gross: bd.lineGross,
+    net: bd.lineNet,
+    vat: bd.lineVat,
+    vatPercent: bd.vatPercent,
+  }
+}
+
 /**
  * Net / VAT split for a completed order: goods lines use stored per-line `vatPercent` and post-discount
  * gross is inferred the same way as checkout (scale line gross by `total - fees` vs `subtotal`).
- * Shipping and payment fee lines use the standard shop rate (27%).
+ * Shipping and payment fee lines use the cart's highest product VAT %.
  */
 export function totalsBreakdownForOrderSnapshot(order: {
   items: Array<{ price: number; quantity: number; vatPercent?: number }>
@@ -142,15 +165,16 @@ export function totalsBreakdownForOrderSnapshot(order: {
       vatPercent: clampVatPercent(i.vatPercent ?? DEFAULT_VAT_PERCENT),
     }))
   )
+  const feeVat = highestCartVatPercent(order.items)
   let net = mixed.net
   let vat = mixed.vat
   if (sf > 0) {
-    const s = priceBreakdownFromGross(sf, 1, DEFAULT_VAT_PERCENT)
+    const s = priceBreakdownFromGross(sf, 1, feeVat)
     net += s.lineNet
     vat += s.lineVat
   }
   if (pf > 0) {
-    const p = priceBreakdownFromGross(pf, 1, DEFAULT_VAT_PERCENT)
+    const p = priceBreakdownFromGross(pf, 1, feeVat)
     net += p.lineNet
     vat += p.lineVat
   }

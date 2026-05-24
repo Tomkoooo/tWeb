@@ -56,11 +56,24 @@ Mail settings (existing app requirements):
    - invoice status marked failed with error message
    - issue email sent (`invoice_issue`)
 
+## Invoice line items
+
+Automatic invoices include:
+
+- All order product lines (`grossUnitPrice` + per-line `vat` from the order snapshot).
+- **Szállítás** when `shippingFee > 0`.
+- **Fizetési kezelési díj** when `paymentFee > 0`.
+
+Shipping and payment fees are stored as **gross** on the order. On the invoice they use the **highest product VAT %** in the cart (e.g. only 5% products → fees at 5%; mixed 5% and 27% → fees at 27%). Net and ÁFA on each fee line are derived from that gross via `szamlazz.js` (`grossUnitPrice` + `vat`).
+
+The Számlázz **rendelésszám** (`orderNumber`) is the 6-character display code (`formatOrderNumber`, same as admin and customer emails), not the full MongoDB `_id`.
+
 ## Download strategy
 
-1. Try provider fetch using `getInvoiceData({ invoiceId or orderNumber, pdf: true })`.
-2. If provider fetch fails, load PDF from the `Media` collection via `invoicePdfFileName` (same storage as admin uploads).
-3. If neither available: return 404.
+1. Try provider fetch using `getInvoiceData({ invoiceId or orderNumber, pdf: true })` with the short display order number.
+2. If that fails, retry with the full MongoDB id (legacy invoices issued before short order numbers).
+3. If provider fetch still fails, load PDF from the `Media` collection via `invoicePdfFileName` (same storage as admin uploads).
+4. If neither available: return 404.
 
 ## Endpoints
 

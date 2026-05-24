@@ -5,7 +5,8 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { motion } from "framer-motion"
-import { CheckCircle, Loader2, AlertTriangle, ArrowRight } from "lucide-react"
+import { CheckCircle, AlertTriangle, ArrowRight } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/useCartStore"
 import { formatOrderNumberLabel } from "@/lib/order-number"
@@ -138,7 +139,7 @@ function CheckoutSuccessPageContent() {
           <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-10">
             {status === "processing" ? (
               <div className="w-full h-full bg-primary/20 rounded-full flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-primary-foreground animate-spin" />
+                <LoadingSpinner size="xl" />
               </div>
             ) : status === "error" ? (
               <div className="w-full h-full bg-amber-500/15 rounded-full flex items-center justify-center">
@@ -246,7 +247,7 @@ export default function CheckoutSuccessPage() {
     <React.Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center bg-black pt-40">
-          <Loader2 className="h-10 w-10 animate-spin text-primary-foreground" />
+          <LoadingSpinner size="lg" />
         </main>
       }
     >

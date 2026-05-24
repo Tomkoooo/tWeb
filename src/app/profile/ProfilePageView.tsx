@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { BillingStep } from "@/components/checkout/BillingStep"
 import { ShippingStep } from "@/components/checkout/ShippingStep"
 import { useProfileAccountModel } from "@/components/profile/use-profile-account-model"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 export type ProfilePageVariant = "page" | "embedded"
 
@@ -26,7 +27,7 @@ export function ProfilePageView({ variant = "page" }: { variant?: ProfilePageVar
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+        <LoadingSpinner />
       </div>
     )
   }

@@ -372,7 +372,8 @@ export class OrderService {
       if (templateType === "invoice_sent") {
         const invoicePdf = await InvoicingSzamlazzService.downloadInvoicePdf({
           invoiceId: order.invoiceId,
-          orderNumber: orderId,
+          orderNumber: formatOrderNumber(orderId),
+          legacyOrderNumber: orderId,
           fallbackFileName: order.invoicePdfFileName,
         });
         if (invoicePdf) {

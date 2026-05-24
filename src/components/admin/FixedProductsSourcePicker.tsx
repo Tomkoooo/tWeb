@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ChevronDown, ChevronUp, Edit2, Loader2, Plus, Search, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Edit2, Plus, Search, Trash2 } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { useClickAway } from "react-use"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -149,7 +150,7 @@ export function FixedProductsSourcePicker({
             autoComplete="off"
           />
           {searching ? (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-highlight" />
+            <LoadingSpinner size="xs" className="absolute right-3 top-1/2 -translate-y-1/2" />
           ) : null}
         </div>
 

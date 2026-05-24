@@ -15,6 +15,7 @@ import {
   isParcelShippingMethod,
 } from "@/lib/shipping-providers"
 import { FoxpostAptFinder } from "@/components/checkout/FoxpostAptFinder"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import {
   cxParcelPickerTrigger,
   ParcelLockerMapDialog,
@@ -162,7 +163,7 @@ export function MethodsStep({
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-t-2 border-primary-foreground/35" />
+        <LoadingSpinner />
       </div>
     )
   }

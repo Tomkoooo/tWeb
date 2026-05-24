@@ -7,6 +7,7 @@ import { authLoginPath } from "@/lib/auth-redirect"
 import { toast } from "sonner"
 import { Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 export default function ShopFeedbackPage() {
   const { status } = useSession()
@@ -56,7 +57,7 @@ export default function ShopFeedbackPage() {
   if (status === "loading") {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+        <LoadingSpinner />
       </div>
     )
   }

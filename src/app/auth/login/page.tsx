@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 function LoginPageContent() {
   const searchParams = useSearchParams()
@@ -45,7 +46,7 @@ export default function LoginPage() {
     <React.Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center pt-32">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+          <LoadingSpinner />
         </main>
       }
     >

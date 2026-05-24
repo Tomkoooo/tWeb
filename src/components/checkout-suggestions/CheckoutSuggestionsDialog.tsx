@@ -20,6 +20,7 @@ import { shouldOpenCheckoutSuggestionsModal } from "@/lib/checkout-suggestions-m
 import { checkoutSuggestionToCartItem } from "@/lib/checkout-suggestion-cart"
 import { suggestionLineInCart } from "@/lib/checkout-suggestion-product"
 import { CheckoutSuggestionProductRow } from "@/components/checkout-suggestions/CheckoutSuggestionProductRow"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 /** Optional Tailwind (or arbitrary) classes for templates to restyle the checkout suggestions modal. */
 export type CheckoutSuggestionsDialogPresentation = {
@@ -102,7 +103,7 @@ export function CheckoutSuggestionsDialog({
 
         {loading ? (
           <div className="flex flex-1 items-center justify-center py-12" aria-busy="true">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
+            <LoadingSpinner />
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-6">

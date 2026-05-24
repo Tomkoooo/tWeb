@@ -14,6 +14,7 @@ import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 export default function OrderDetailPage() {
   const { data: session } = useSession()
@@ -25,7 +26,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-t-2 border-primary-foreground/35 border-solid rounded-full animate-spin"></div>
+        <LoadingSpinner />
       </div>
     )
   }

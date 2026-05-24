@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Save, CheckCircle2, Loader2 } from "lucide-react"
+import { Save, CheckCircle2 } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { updateShopContent } from "@/actions/admin-cms"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -53,7 +54,7 @@ export function CMSForm({ children, action: submitAction }: CMSFormProps) {
           >
             {isPending ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <LoadingSpinner size="sm" />
                 MENTÉS FOLYAMATBAN...
               </>
             ) : (

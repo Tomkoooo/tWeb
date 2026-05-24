@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Search, ArrowRight, Loader2 } from "lucide-react"
+import { Search, ArrowRight } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -90,7 +91,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
           )}
         />
         {isLoading && (
-          <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground animate-spin" />
+          <LoadingSpinner size="xs" className="absolute right-4 top-1/2 -translate-y-1/2" />
         )}
       </form>
 

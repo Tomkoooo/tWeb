@@ -16,6 +16,7 @@ import {
   totalsFromMixedVatLines,
   clampVatPercent,
   DEFAULT_VAT_PERCENT,
+  highestCartVatPercent,
 } from "@/lib/pricing"
 import { getCountryDisplayName, formatAllowedCountriesList, normalizeIso2 } from "@/lib/country-codes"
 import { checkoutPrefillFromUserProfile } from "@/lib/checkout-profile-prefill"
@@ -325,15 +326,18 @@ export function useCheckoutWizardModel(
         vatPercent: clampVatPercent(i.vatPercent ?? DEFAULT_VAT_PERCENT),
       }))
     )
+    const feeVat = highestCartVatPercent(
+      items.map((i: CartItem) => ({ vatPercent: i.vatPercent }))
+    )
     let net = mixed.net
     let vat = mixed.vat
     if (shippingFee > 0) {
-      const s = priceBreakdownFromGross(shippingFee, 1, DEFAULT_VAT_PERCENT)
+      const s = priceBreakdownFromGross(shippingFee, 1, feeVat)
       net += s.lineNet
       vat += s.lineVat
     }
     if (paymentFee > 0) {
-      const p = priceBreakdownFromGross(paymentFee, 1, DEFAULT_VAT_PERCENT)
+      const p = priceBreakdownFromGross(paymentFee, 1, feeVat)
       net += p.lineNet
       vat += p.lineVat
     }

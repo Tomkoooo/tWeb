@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
-import { Upload, X, Loader2, GripVertical, Star, StarOff } from "lucide-react"
+import { Upload, X, GripVertical, Star, StarOff } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ImageCropper } from "./ImageCropper"
@@ -175,7 +176,7 @@ export function MultiImageUpload({
 
         <label className="relative aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-primary/40 transition-all">
           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2">
-            {uploading ? <Loader2 className="w-5 h-5 text-highlight animate-spin" /> : <Upload className="w-5 h-5 text-neutral-600" />}
+            {uploading ? <LoadingSpinner size="xs" /> : <Upload className="w-5 h-5 text-neutral-600" />}
           </div>
           <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Képek hozzáadása</span>
           <input type="file" className="hidden" onChange={handleUpload} accept="image/*" multiple />

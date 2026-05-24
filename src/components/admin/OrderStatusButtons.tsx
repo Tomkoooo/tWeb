@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { toast } from "sonner"
 import { updateOrderStatus } from "@/actions/admin-orders"
 import { Button } from "@/components/ui/button"
@@ -75,7 +76,7 @@ export function OrderStatusButtons({ orderId, currentStatus }: OrderStatusButton
           role="status"
           aria-live="polite"
         >
-          <Loader2 className="w-3.5 h-3.5 animate-spin admin-icon-accent" />
+          <LoadingSpinner size="xs" className="shrink-0" />
           Állapot mentése…
         </p>
       ) : null}
@@ -104,7 +105,7 @@ export function OrderStatusButtons({ orderId, currentStatus }: OrderStatusButton
               )}
             >
               {isLoadingThis ? (
-                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin shrink-0" />
+                <LoadingSpinner size="xs" className="mr-2 shrink-0" />
               ) : isActive ? (
                 <CheckCircle2 className="w-3 h-3 mr-2 shrink-0" />
               ) : null}

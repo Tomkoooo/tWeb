@@ -20,6 +20,7 @@ import {
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 import { authLoginPath } from "@/lib/auth-redirect"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 export default function GuestOrderDetailPage() {
   const params = useParams()
@@ -52,7 +53,7 @@ export default function GuestOrderDetailPage() {
     return (
       <main className="min-h-screen bg-background pt-32 pb-20 px-6">
         <div className="container mx-auto flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+          <LoadingSpinner />
         </div>
       </main>
     )

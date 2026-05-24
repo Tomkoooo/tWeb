@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
-import { InvoicingSzamlazzService } from "@/services/invoicing-szamlazz";
+import { formatOrderNumber } from "@/lib/order-number";
+import { InvoicingSzamlazzService, invoiceDownloadParamsForOrder } from "@/services/invoicing-szamlazz";
 import { OrderGuestAccessService } from "@/services/order-guest-access";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,16 +32,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  const pdfBuffer = await InvoicingSzamlazzService.downloadInvoicePdf({
-    invoiceId: (order as { invoiceId?: string }).invoiceId,
-    orderNumber: String(order._id),
-    fallbackFileName: (order as { invoicePdfFileName?: string }).invoicePdfFileName,
-  });
+  const pdfBuffer = await InvoicingSzamlazzService.downloadInvoicePdf(
+    invoiceDownloadParamsForOrder(order as { _id: unknown; invoiceId?: string; invoicePdfFileName?: string })
+  );
   if (!pdfBuffer) {
     return NextResponse.json({ error: "Invoice PDF not found" }, { status: 404 });
   }
 
-  const invoiceId = String((order as { invoiceId?: string }).invoiceId || `invoice-${String(order._id).slice(-6)}`);
+  const invoiceId = String(
+    (order as { invoiceId?: string }).invoiceId || `invoice-${formatOrderNumber(order._id)}`
+  );
   const pdfBody = Uint8Array.from(pdfBuffer);
 
   return new NextResponse(pdfBody, {

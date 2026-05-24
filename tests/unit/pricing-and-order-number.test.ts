@@ -4,12 +4,15 @@ import {
   customerGrossFromNetWithDiscount,
   customerUnitGross,
   deriveNetFromGross,
+  feeLineBreakdownFromGross,
   grossFromNetWithDiscount,
   grossToNet,
+  highestCartVatPercent,
   impliedVatPercentFromNetGross,
   listingPriceSummary,
   netToGross,
   priceBreakdownFromGross,
+  totalsBreakdownForOrderSnapshot,
   totalsBreakdownFromGross,
 } from "@/lib/pricing";
 
@@ -75,5 +78,37 @@ describe("pricing helpers", () => {
       gross: 1524,
       vatPercent: 27,
     });
+  });
+
+  it("highestCartVatPercent picks max line rate with empty-cart fallback", () => {
+    expect(highestCartVatPercent([{ vatPercent: 5 }])).toBe(5);
+    expect(highestCartVatPercent([{ vatPercent: 5 }, { vatPercent: 27 }])).toBe(27);
+    expect(highestCartVatPercent([])).toBe(27);
+  });
+
+  it("feeLineBreakdownFromGross keeps brutto but shifts net/vat with cart VAT", () => {
+    const at5 = feeLineBreakdownFromGross(1000, [{ vatPercent: 5 }]);
+    const at27 = feeLineBreakdownFromGross(1000, [{ vatPercent: 27 }]);
+    expect(at5.gross).toBe(1000);
+    expect(at27.gross).toBe(1000);
+    expect(at5.net).toBeGreaterThan(at27.net);
+    expect(at5.vat).toBeLessThan(at27.vat);
+    expect(at5.vatPercent).toBe(5);
+    expect(at27.vatPercent).toBe(27);
+  });
+
+  it("totalsBreakdownForOrderSnapshot applies highest cart VAT to shipping fee", () => {
+    const breakdown = totalsBreakdownForOrderSnapshot({
+      items: [{ price: 2026, quantity: 1, vatPercent: 5 }],
+      subtotal: 2026,
+      shippingFee: 1000,
+      paymentFee: 0,
+      total: 3026,
+    });
+    const feeOnly = feeLineBreakdownFromGross(1000, [{ vatPercent: 5 }]);
+    const goods = priceBreakdownFromGross(2026, 1, 5);
+    expect(breakdown.net).toBe(goods.lineNet + feeOnly.net);
+    expect(breakdown.vat).toBe(goods.lineVat + feeOnly.vat);
+    expect(breakdown.gross).toBe(3026);
   });
 });

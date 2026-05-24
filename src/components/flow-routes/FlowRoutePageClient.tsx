@@ -6,6 +6,7 @@ import type { FlowRouteKey } from "@/templates/types"
 import { CartPageView } from "@/app/cart/CartPageView"
 import { CheckoutPageView } from "@/app/checkout/CheckoutPageView"
 import { ProfilePageView } from "@/app/profile/ProfilePageView"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 type Variant = "page" | "embedded"
 
@@ -50,7 +51,7 @@ export function FlowRoutePageClient({
   if (RouteMain && shopEnabled === null) {
     return variant === "embedded" ? (
       <div className="flex justify-center py-12" aria-busy="true">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
+        <LoadingSpinner />
       </div>
     ) : (
       <p className="sr-only">Betöltés</p>

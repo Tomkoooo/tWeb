@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Upload, X, Loader2 } from "lucide-react"
+import { Upload, X } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Button } from "@/components/ui/button"
 import { ImageCropper } from "./ImageCropper"
 import { FallbackImage } from "@/components/common/FallbackImage"
@@ -101,7 +102,7 @@ export function ImageUpload({
 
         {uploading && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-highlight animate-spin" />
+            <LoadingSpinner size="md" />
           </div>
         )}
       </div>

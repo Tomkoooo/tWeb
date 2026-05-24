@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import {
   Buyer,
   Client,
@@ -11,6 +10,8 @@ import {
 } from "szamlazz.js";
 import { IOrder } from "@/models/Order";
 import { loadInvoicePdf, persistInvoicePdf } from "@/lib/invoice-pdf-storage";
+import { formatOrderNumber } from "@/lib/order-number";
+import { highestCartVatPercent } from "@/lib/pricing";
 
 type InvoiceIssueResult = {
   invoiceId: string;
@@ -18,6 +19,67 @@ type InvoiceIssueResult = {
   netTotal?: string;
   grossTotal?: string;
 };
+
+export type InvoiceLineDescriptor = {
+  label: string;
+  quantity: number;
+  unit: string;
+  vat: number;
+  grossUnitPrice: number;
+};
+
+/** Pure line list for Számlázz (testable without API client). */
+export function describeInvoiceLines(order: Pick<IOrder, "items" | "shippingFee" | "paymentFee">): InvoiceLineDescriptor[] {
+  const feeVat = highestCartVatPercent(order.items);
+  const productLines: InvoiceLineDescriptor[] = order.items.map((line) => {
+    const quantity = parseNumber(line.quantity) || 1;
+    const grossUnitPrice = parseNumber(line.price);
+    const vat = Math.round(parseNumber(line.vatPercent ?? 27));
+    return {
+      label: line.variantLabel ? `${line.name} [${line.variantLabel}]` : line.name,
+      quantity,
+      unit: "db",
+      vat,
+      grossUnitPrice,
+    };
+  });
+  const feeLines: InvoiceLineDescriptor[] = [];
+  const shippingFee = parseNumber(order.shippingFee);
+  if (shippingFee > 0) {
+    feeLines.push({
+      label: "Szállítás",
+      quantity: 1,
+      unit: "db",
+      vat: feeVat,
+      grossUnitPrice: shippingFee,
+    });
+  }
+  const paymentFee = parseNumber(order.paymentFee);
+  if (paymentFee > 0) {
+    feeLines.push({
+      label: "Fizetési kezelési díj",
+      quantity: 1,
+      unit: "db",
+      vat: feeVat,
+      grossUnitPrice: paymentFee,
+    });
+  }
+  return [...productLines, ...feeLines];
+}
+
+export function invoiceDownloadParamsForOrder(order: {
+  _id: unknown;
+  invoiceId?: string;
+  invoicePdfFileName?: string;
+}) {
+  const legacyOrderNumber = String(order._id);
+  return {
+    invoiceId: order.invoiceId,
+    orderNumber: formatOrderNumber(order._id),
+    legacyOrderNumber,
+    fallbackFileName: order.invoicePdfFileName,
+  };
+}
 
 function parseNumber(input: unknown): number {
   const n = Number(input ?? 0);
@@ -82,18 +144,16 @@ export class InvoicingSzamlazzService {
   }
 
   private static buildItems(order: IOrder) {
-    return order.items.map((line) => {
-      const quantity = parseNumber(line.quantity) || 1;
-      const grossUnitPrice = parseNumber(line.price);
-      const pct = Math.round(parseNumber((line as unknown as { vatPercent?: number }).vatPercent ?? 27))
-      return new Item({
-        label: line.variantLabel ? `${line.name} [${line.variantLabel}]` : line.name,
-        quantity,
-        unit: "db",
-        vat: pct,
-        grossUnitPrice,
-      });
-    });
+    return describeInvoiceLines(order).map(
+      (line) =>
+        new Item({
+          label: line.label,
+          quantity: line.quantity,
+          unit: line.unit,
+          vat: line.vat,
+          grossUnitPrice: line.grossUnitPrice,
+        })
+    );
   }
 
   /** Persist invoice PDF in Mongo (same as admin/media uploads — no local disk). */
@@ -110,7 +170,7 @@ export class InvoicingSzamlazzService {
       seller: this.buildSeller(),
       buyer: this.buildBuyer(order),
       items: this.buildItems(order),
-      orderNumber: order._id.toString(),
+      orderNumber: formatOrderNumber(order._id),
     });
 
     const response = await client.issueInvoice(invoice);
@@ -133,9 +193,10 @@ export class InvoicingSzamlazzService {
     };
   }
 
-  static async downloadInvoicePdf(params: { invoiceId?: string; orderNumber?: string; fallbackFileName?: string }) {
-    const client = this.getClient(false);
-
+  private static async fetchPdfFromProvider(
+    client: Client,
+    params: { invoiceId?: string; orderNumber?: string }
+  ): Promise<Buffer | null> {
     try {
       const result = await client.getInvoiceData({
         invoiceId: params.invoiceId,
@@ -147,7 +208,33 @@ export class InvoicingSzamlazzService {
         return maybePdf;
       }
     } catch {
-      // Fallback handled below.
+      // Try alternate order number or fallback below.
+    }
+    return null;
+  }
+
+  static async downloadInvoicePdf(params: {
+    invoiceId?: string;
+    orderNumber?: string;
+    /** Full MongoDB id for invoices issued before short order numbers. */
+    legacyOrderNumber?: string;
+    fallbackFileName?: string;
+  }) {
+    const client = this.getClient(false);
+    const orderNumbers = [
+      params.orderNumber,
+      params.legacyOrderNumber &&
+      params.legacyOrderNumber !== params.orderNumber
+        ? params.legacyOrderNumber
+        : undefined,
+    ].filter((n): n is string => Boolean(n?.trim()));
+
+    for (const orderNumber of orderNumbers) {
+      const pdf = await this.fetchPdfFromProvider(client, {
+        invoiceId: params.invoiceId,
+        orderNumber,
+      });
+      if (pdf) return pdf;
     }
 
     if (params.fallbackFileName) {

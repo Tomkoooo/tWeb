@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2, Save, Loader2 } from "lucide-react"
+import { Plus, Trash2, Save } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -357,7 +358,7 @@ export function ProductSuggestionsAdminForm({
           disabled={saving}
           onClick={() => void save()}
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+          {saving ? <LoadingSpinner size="xs" className="mr-2 shrink-0" /> : <Save className="w-4 h-4 mr-2" />}
           Mentés
         </Button>
         {message ? <span className={cn("text-sm", message === "Elmentve." ? "text-emerald-400" : "text-rose-400")}>{message}</span> : null}

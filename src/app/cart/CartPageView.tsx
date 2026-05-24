@@ -20,6 +20,7 @@ import { useCartStore, type CartItem } from "@/store/useCartStore"
 import { Separator } from "@/components/ui/separator"
 import { formatHuf, priceBreakdownFromGross, totalsFromMixedVatLines, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 export type CartPageVariant = "page" | "embedded"
 
@@ -99,7 +100,7 @@ export function CartPageView({
       <main className={shell}>
         {embedded ? (
           <div className="flex justify-center py-12" aria-busy="true">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-foreground/35 border-t-transparent" />
+            <LoadingSpinner />
           </div>
         ) : (
           <p className="sr-only">Betöltés</p>

@@ -8,6 +8,7 @@ import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 import { useUserOrders } from "@/hooks/useUserOrders"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
 function OrdersPageContent() {
   const searchParams = useSearchParams()
@@ -17,7 +18,7 @@ function OrdersPageContent() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -121,7 +122,7 @@ export default function OrdersPage() {
     <React.Suspense
       fallback={
         <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-primary-foreground/35 border-t-transparent" />
+          <LoadingSpinner />
         </div>
       }
     >
