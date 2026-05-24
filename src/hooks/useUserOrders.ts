@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { authLoginPath } from "@/lib/auth-redirect"
 
 type LoadResult = {
   orders: unknown[]
@@ -57,7 +58,11 @@ export function useUserOrders() {
 
   React.useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/login")
+      const path =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/profile/orders"
+      router.push(authLoginPath(path))
       return
     }
 

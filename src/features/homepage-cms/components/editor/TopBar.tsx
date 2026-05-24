@@ -46,7 +46,7 @@ export function TopBar({
           Előnézet
         </button>
         <button type="button" onClick={onOpenSettings} className="px-3 h-9 border border-violet-400/60 text-violet-200 text-xs uppercase">
-          Beállítások
+          Weboldal beállítások
         </button>
         <button type="button" onClick={onPublish} className="px-3 h-9 bg-green-600 text-white text-xs uppercase">
           Közzététel

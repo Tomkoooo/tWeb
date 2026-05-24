@@ -155,11 +155,7 @@ export function RealHomepageSections({
       />
       {contact ? (
         <Contact
-          email={
-            isVisible(contact, "email")
-              ? resolveContactDisplayField(contact.email, dependencies.company.email)
-              : ""
-          }
+          contactEmails={dependencies.siteContact.emails}
           phone={
             isVisible(contact, "phone")
               ? resolveContactDisplayField(contact.phone, dependencies.company.phone)

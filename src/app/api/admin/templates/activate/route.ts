@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
 import { TEMPLATE_PREVIEW_COOKIE } from "@/services/template-preview"
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   const template = await TemplateService.activate(body.templateId, session.user?.email ?? undefined)
 
   revalidatePath("/", "layout")
+  revalidateStorefrontSitemap()
 
   const response = NextResponse.json({
     ok: true,

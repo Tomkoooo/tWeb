@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import type { FooterSettings } from "@/services/footer-settings"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { hasContactFieldValue } from "@/lib/contact-display"
+import type { ContactEmailEntry } from "@/lib/contact-emails"
 
 type LegalLink = {
   key: "impresszum" | "terms" | "gdpr"
@@ -21,6 +22,7 @@ interface FooterProps {
   brandName?: string
   logoSrc?: string
   email?: string
+  contactEmails?: ContactEmailEntry[]
   phone?: string
   address?: string
   categories?: Array<{
@@ -39,6 +41,7 @@ export function Footer({
   brandName = "Generic Webshop",
   logoSrc = "/generic-logo.svg",
   email = "",
+  contactEmails = [],
   phone = "",
   address = "",
   categories = [],
@@ -374,10 +377,27 @@ export function Footer({
                   <span className="text-base font-medium">{phone || (cmsEditable ? "—" : "")}</span>
                 </li>
               ) : null}
-              {hasContactFieldValue(email) || cmsEditable ? (
-                <li className="flex items-center gap-5 text-neutral-400">
-                  <Mail className="w-6 h-6 text-primary-foreground shrink-0" />
-                  <span className="text-base font-medium uppercase tracking-tighter">{email || (cmsEditable ? "—" : "")}</span>
+              {contactEmails.length > 0 || hasContactFieldValue(email) || cmsEditable ? (
+                <li className="flex items-start gap-5 text-neutral-400">
+                  <Mail className="w-6 h-6 text-primary-foreground shrink-0 mt-0.5" />
+                  {contactEmails.length > 1 ? (
+                    <ul className="space-y-2 text-base font-medium">
+                      {contactEmails.map((entry) => (
+                        <li key={entry.id} className="uppercase tracking-tighter">
+                          <span className="text-neutral-500 text-xs normal-case tracking-normal block mb-0.5">
+                            {entry.label}
+                          </span>
+                          <a href={`mailto:${entry.email}`} className="hover:text-primary-foreground transition-colors">
+                            {entry.email}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-base font-medium uppercase tracking-tighter">
+                      {contactEmails[0]?.email || email || (cmsEditable ? "—" : "")}
+                    </span>
+                  )}
                 </li>
               ) : null}
             </ul>

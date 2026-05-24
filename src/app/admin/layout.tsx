@@ -1,5 +1,4 @@
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
-import { AdminTemplateSessionBar } from "@/components/admin/AdminTemplateSessionBar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,10 +8,6 @@ import { redirect } from "next/navigation"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { isShopEnabled } from "@/lib/features/shop"
-import { readPreviewTemplateId } from "@/services/template-preview"
-import { TemplateService } from "@/services/template"
-import { getTemplateById } from "@/templates/registry"
-
 export default async function AdminLayout({
   children,
 }: {
@@ -41,15 +36,6 @@ export default async function AdminLayout({
   if (session.user.role !== "ADMIN") {
     redirect("/")
   }
-
-  const [activeInfo, previewTemplateId] = await Promise.all([
-    TemplateService.getActiveInfo(),
-    readPreviewTemplateId(),
-  ])
-  const dbActiveName = getTemplateById(activeInfo.templateId).manifest.name
-  const previewTemplateName = previewTemplateId
-    ? getTemplateById(previewTemplateId).manifest.name
-    : null
 
   return (
     <div className="admin-shell min-h-screen bg-[#0A0A0B] text-white">
@@ -90,14 +76,7 @@ export default async function AdminLayout({
       </aside>
 
       <main className="lg:ml-72 min-h-screen">
-        <div className="px-6 py-8 md:px-10 md:py-12 max-w-7xl mx-auto">
-          <AdminTemplateSessionBar
-            dbActiveName={dbActiveName}
-            previewTemplateId={previewTemplateId}
-            previewTemplateName={previewTemplateName}
-          />
-          {children}
-        </div>
+        <div className="px-6 py-8 md:px-10 md:py-12 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   )

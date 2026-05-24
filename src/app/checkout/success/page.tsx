@@ -3,23 +3,48 @@
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { motion } from "framer-motion"
 import { CheckCircle, Loader2, AlertTriangle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/useCartStore"
 import { formatOrderNumberLabel } from "@/lib/order-number"
+import { guestOrderPath } from "@/lib/order-guest-access"
+import { authLoginPath } from "@/lib/auth-redirect"
 
-export default function CheckoutSuccessPage() {
+function buildOrderViewHref(
+  orderId: string,
+  guestToken: string | null,
+  isAuthenticated: boolean
+): string {
+  if (isAuthenticated) return `/profile/orders/${orderId}?recent=1`
+  if (guestToken) return guestOrderPath(orderId, guestToken)
+  return authLoginPath(`/profile/orders/${orderId}?recent=1`)
+}
+
+function buildOrdersListHref(guestToken: string | null, isAuthenticated: boolean): string {
+  if (isAuthenticated) return "/profile/orders?recent=1"
+  if (guestToken) return authLoginPath("/profile/orders")
+  return authLoginPath("/profile/orders")
+}
+
+function CheckoutSuccessPageContent() {
   const searchParams = useSearchParams()
+  const { status: sessionStatus } = useSession()
   const tempOrderId = searchParams.get("tempOrderId")
   const sessionId = searchParams.get("session_id")
-  const clearCart = useCartStore((state: any) => state.clearCart)
+  const initialOrderId = searchParams.get("orderId")
+  const initialGuestToken = searchParams.get("guestToken")
+  const clearCart = useCartStore((state: { clearCart: () => void }) => state.clearCart)
   const [status, setStatus] = React.useState<"processing" | "success" | "error">(() => {
     if (!tempOrderId) return "success"
     if (!sessionId) return "error"
     return "processing"
   })
-  const [orderId, setOrderId] = React.useState<string | null>(null)
+  const [orderId, setOrderId] = React.useState<string | null>(initialOrderId)
+  const [guestToken, setGuestToken] = React.useState<string | null>(initialGuestToken)
+
+  const isAuthenticated = sessionStatus === "authenticated"
 
   React.useEffect(() => {
     if (!tempOrderId) return
@@ -43,6 +68,7 @@ export default function CheckoutSuccessPage() {
         if (data?.finalized) {
           clearCart()
           if (data.orderId) setOrderId(data.orderId)
+          if (data.guestAccessToken) setGuestToken(data.guestAccessToken)
           setStatus("success")
           return
         }
@@ -75,6 +101,31 @@ export default function CheckoutSuccessPage() {
   }, [tempOrderId, sessionId, clearCart])
 
   const isStripeFlow = Boolean(tempOrderId)
+  const orderViewHref = orderId ? buildOrderViewHref(orderId, guestToken, isAuthenticated) : null
+  const ordersListHref = buildOrdersListHref(guestToken, isAuthenticated)
+  const followUpCopy = isAuthenticated
+    ? "A rendelés állapotáról e-mail értesítést kapsz, és a profilodban követheted a rendelésed állapotát."
+    : "A rendelés állapotáról e-mail értesítést kapsz. A visszaigazoló e-mailben találod a rendelés megtekintéséhez szükséges linket; később ugyanazzal az e-mail címmel bejelentkezve a fiókodhoz is hozzárendelheted."
+
+  const successActions = (
+    <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch mb-8">
+      <Link href="/shop" className="grow sm:grow-0">
+        <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none">
+          Vissza a webshopba
+        </Button>
+      </Link>
+      {orderId && orderViewHref ? (
+        <Link href={orderViewHref} className="grow sm:grow-0">
+          <Button
+            variant="outline"
+            className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none"
+          >
+            Rendelés megtekintése
+          </Button>
+        </Link>
+      ) : null}
+    </div>
+  )
 
   return (
     <main className="min-h-screen bg-black pt-40 pb-20 px-6">
@@ -120,45 +171,22 @@ export default function CheckoutSuccessPage() {
                 <span className="text-emerald-400 font-black">Sikeres fizetés,</span> a rendelésed azonosítója:
               </p>
               {orderId ? (
-                <p className="text-white font-mono text-xl tracking-tight mb-8 break-all px-2">{formatOrderNumberLabel(orderId)}</p>
+                <p className="text-white font-mono text-xl tracking-tight mb-8 break-all px-2">
+                  {formatOrderNumberLabel(orderId)}
+                </p>
               ) : (
-                <p className="text-neutral-500 text-sm mb-8">Az azonosító pillanatokon belül megjelenik a profilodban.</p>
+                <p className="text-neutral-500 text-sm mb-8">Az azonosító pillanatokon belül megjelenik.</p>
               )}
-              <p className="text-neutral-400 text-base mb-10 max-w-lg mx-auto font-medium leading-relaxed">
-                A rendelés állapotáról e-mail értesítést kapsz, és a profilodban követheted a rendelésed állapotát.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch mb-8">
-                <Link href="/shop" className="grow sm:grow-0">
-                  <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none">
-                    Vissza a webshopba
-                  </Button>
+              <p className="text-neutral-400 text-base mb-10 max-w-lg mx-auto font-medium leading-relaxed">{followUpCopy}</p>
+              {successActions}
+              {isAuthenticated ? (
+                <Link
+                  href={ordersListHref}
+                  className="text-neutral-500 hover:text-neutral-300 text-sm font-bold uppercase tracking-widest transition-colors inline-block mb-8"
+                >
+                  Összes rendeléseim →
                 </Link>
-                {orderId ? (
-                  <Link href={`/profile/orders/${orderId}?recent=1`} className="grow sm:grow-0">
-                    <Button
-                      variant="outline"
-                      className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none"
-                    >
-                      Rendelés megtekintése
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/profile/orders?recent=1" className="grow sm:grow-0">
-                    <Button
-                      variant="outline"
-                      className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none"
-                    >
-                      Rendeléseim
-                    </Button>
-                  </Link>
-                )}
-              </div>
-              <Link
-                href="/profile/orders?recent=1"
-                className="text-neutral-500 hover:text-neutral-300 text-sm font-bold uppercase tracking-widest transition-colors inline-block mb-8"
-              >
-                Összes rendeléseim →
-              </Link>
+              ) : null}
             </>
           )}
 
@@ -167,16 +195,15 @@ export default function CheckoutSuccessPage() {
               <h1 className="text-4xl md:text-5xl font-heading font-black text-white mb-6 uppercase tracking-tighter italic">
                 KÖSZÖNJÜK A <span className="text-emerald-400">RENDELÉST!</span>
               </h1>
-              <p className="text-neutral-400 text-lg mb-12 max-w-md mx-auto font-medium leading-relaxed">
-                Rendelésedet rögzítettük és hamarosan feldolgozzuk. A visszaigazolást elküldtük az e-mail címedre.
+              {orderId ? (
+                <p className="text-white font-mono text-lg tracking-tight mb-6 break-all px-2">
+                  {formatOrderNumberLabel(orderId)}
+                </p>
+              ) : null}
+              <p className="text-neutral-400 text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed">
+                Rendelésedet rögzítettük és hamarosan feldolgozzuk. {followUpCopy}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/shop">
-                  <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 h-16 px-10 font-black uppercase tracking-widest text-xs rounded-none">
-                    Vissza a webshopba
-                  </Button>
-                </Link>
-              </div>
+              {successActions}
             </>
           )}
 
@@ -211,5 +238,19 @@ export default function CheckoutSuccessPage() {
         </motion.div>
       </div>
     </main>
+  )
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-black pt-40">
+          <Loader2 className="h-10 w-10 animate-spin text-primary-foreground" />
+        </main>
+      }
+    >
+      <CheckoutSuccessPageContent />
+    </React.Suspense>
   )
 }

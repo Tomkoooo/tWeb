@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import Product, { IProduct } from "@/models/Product";
 import "@/models/Category";
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap";
 import { MediaService } from "./media";
 import Review from "@/models/Review"; // Ensure Review is registered
 
@@ -140,6 +141,7 @@ export class ProductService {
     }
 
     revalidatePath("/admin/products");
+    revalidateStorefrontSitemap();
     return product;
   }
 
@@ -153,6 +155,7 @@ export class ProductService {
     }
 
     revalidatePath("/admin/products");
+    revalidateStorefrontSitemap();
     return product;
   }
 
@@ -166,6 +169,7 @@ export class ProductService {
       await Product.findByIdAndDelete(id);
     }
     revalidatePath("/admin/products");
+    revalidateStorefrontSitemap();
     return product;
   }
 }

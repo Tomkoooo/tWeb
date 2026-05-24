@@ -10,7 +10,11 @@ import {
 } from "@/lib/foxpost"
 import { resolveApmDestinationId } from "@/lib/parcel-locker"
 import { CheckoutRichHtml } from "@/components/checkout/CheckoutRichHtml"
-import { cxGlsBox, type CheckoutStepAppearance } from "@/components/checkout/checkout-appearance"
+import {
+  cxParcelPickerTrigger,
+  ParcelLockerMapDialog,
+} from "@/components/checkout/ParcelLockerMapDialog"
+import { type CheckoutStepAppearance } from "@/components/checkout/checkout-appearance"
 
 type FoxpostAptFinderProps = {
   selected?: FoxpostParcelPoint | null
@@ -55,10 +59,10 @@ export function FoxpostAptFinder({
   const onSelectRef = React.useRef(onSelect)
   onSelectRef.current = onSelect
   const hasSelection = Boolean(selected?.id)
-  const [mapOpen, setMapOpen] = React.useState(!hasSelection)
+  const [dialogOpen, setDialogOpen] = React.useState(!hasSelection)
 
   React.useEffect(() => {
-    if (!hasSelection) setMapOpen(true)
+    if (!hasSelection) setDialogOpen(true)
   }, [hasSelection])
 
   React.useEffect(() => {
@@ -71,7 +75,7 @@ export function FoxpostAptFinder({
         const point = mapSelectionToParcelPoint(apt)
         if (point) {
           onSelectRef.current(point)
-          setMapOpen(false)
+          setDialogOpen(false)
         }
       } catch {
         // ignore non-JSON messages from the iframe
@@ -84,16 +88,22 @@ export function FoxpostAptFinder({
 
   return (
     <div className="space-y-4">
-      {mapOpen ? (
-        <div className={cn(cxGlsBox(appearance), "overflow-hidden")}>
+      <ParcelLockerMapDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="Foxpost csomagautomata választása"
+        description="Válaszd ki az automátát a térképen. A kiválasztás után a párbeszédablak bezárul."
+        appearance={appearance}
+      >
+        {dialogOpen ? (
           <iframe
             title="Foxpost csomagautomata választó"
             src={FOXPOST_APT_FINDER_URL}
-            className="h-full w-full border-0"
+            className="h-full min-h-[50dvh] w-full border-0"
             loading="lazy"
           />
-        </div>
-      ) : null}
+        ) : null}
+      </ParcelLockerMapDialog>
       {hasSelection && selected ? (
         <div
           className={cn(
@@ -125,13 +135,13 @@ export function FoxpostAptFinder({
           Még nem választottál Foxpost csomagautomatát.
         </p>
       )}
-      {hasSelection && !mapOpen ? (
+      {!dialogOpen ? (
         <button
           type="button"
-          onClick={() => setMapOpen(true)}
-          className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground underline-offset-2 hover:underline"
+          onClick={() => setDialogOpen(true)}
+          className={cxParcelPickerTrigger(appearance)}
         >
-          Másik Foxpost automata választása
+          {hasSelection ? "Másik Foxpost automata választása" : "Foxpost automata kiválasztása a térképen"}
         </button>
       ) : null}
     </div>

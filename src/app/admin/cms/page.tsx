@@ -2,6 +2,7 @@ import Link from "next/link"
 import { TemplateService } from "@/services/template"
 import { listEditablePages } from "@/templates/cms-pages"
 import { isShopEnabled } from "@/lib/features/shop"
+import { CMS_SITE_SETTINGS_SECTIONS } from "@/features/template-cms/cms-site-settings"
 
 export const dynamic = "force-dynamic"
 
@@ -10,31 +11,73 @@ export default async function AdminCmsHub() {
   const pages = listEditablePages(template, isShopEnabled())
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-          CMS <span className="admin-text-accent">oldalak</span>
+          CMS <span className="admin-text-accent">áttekintés</span>
         </h1>
-        <p className="mt-2 text-sm text-neutral-400">
-          Sablon: <code className="text-neutral-200">{template.manifest.name}</code>
+        <p className="mt-2 text-sm text-neutral-400 max-w-2xl">
+          Oldalanként szerkesztheted a tartalmat, vagy a webshop szintű beállításokat (téma, SEO, márka)
+          egy helyen.
         </p>
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {pages.map((p) => (
-          <li key={p.adminSegment}>
-            <Link
-              href={`/admin/cms/${p.adminSegment}`}
-              className="block rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold uppercase tracking-widest text-white transition hover:border-white/30 hover:bg-white/10"
-            >
-              {p.label}
-              <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-neutral-500">
-                {p.pageKey} · {p.category}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <section className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-black uppercase tracking-wider text-white">Weboldal beállítások</h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              Nem oldal-specifikus — az egész sablonra érvényes ({template.manifest.name}).
+            </p>
+          </div>
+          <Link
+            href="/admin/templates"
+            className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+          >
+            Sablonok kezelése →
+          </Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {CMS_SITE_SETTINGS_SECTIONS.map((item) => (
+            <li key={item.id}>
+              <Link
+                href={`/admin/cms/settings?section=${item.id}`}
+                className="block h-full rounded-lg border border-violet-500/20 bg-violet-500/5 px-4 py-4 transition hover:border-violet-400/40 hover:bg-violet-500/10"
+              >
+                <span className="text-sm font-bold uppercase tracking-widest text-violet-100">
+                  {item.label}
+                </span>
+                <span className="mt-2 block text-xs font-normal normal-case tracking-normal text-neutral-400">
+                  {item.description}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="space-y-4 pt-4 border-t border-white/10">
+        <h2 className="text-lg font-black uppercase tracking-wider text-white">Oldalak szerkesztése</h2>
+        <p className="text-xs text-neutral-500">
+          Válassz egy oldalt a vizuális szerkesztőhöz. A főoldal blokkos CMS; a többi oldal sablon JSON
+          felületet használ.
+        </p>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {pages.map((p) => (
+            <li key={p.adminSegment}>
+              <Link
+                href={`/admin/cms/${p.adminSegment}`}
+                className="block rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold uppercase tracking-widest text-white transition hover:border-white/30 hover:bg-white/10"
+              >
+                {p.label}
+                <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-neutral-500">
+                  {p.pageKey} · {p.category}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }

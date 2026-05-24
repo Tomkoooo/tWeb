@@ -3,6 +3,7 @@ import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
 import { SeoSettingsService } from "@/services/seo-settings"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
 
 const schema = z.object({
   siteTitle: z.string().optional(),
@@ -26,5 +27,6 @@ export async function PUT(request: Request) {
   const payload = schema.parse(await request.json())
   const updated = await SeoSettingsService.update(payload)
   revalidatePath("/", "layout")
+  revalidateStorefrontSitemap()
   return NextResponse.json(updated)
 }

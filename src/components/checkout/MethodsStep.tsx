@@ -15,11 +15,14 @@ import {
   isParcelShippingMethod,
 } from "@/lib/shipping-providers"
 import { FoxpostAptFinder } from "@/components/checkout/FoxpostAptFinder"
+import {
+  cxParcelPickerTrigger,
+  ParcelLockerMapDialog,
+} from "@/components/checkout/ParcelLockerMapDialog"
 import { CheckoutRichHtml } from "@/components/checkout/CheckoutRichHtml"
 import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 import {
   type CheckoutStepAppearance,
-  cxGlsBox,
   cxMethodCard,
   cxMethodPrice,
   cxMethodTitle,
@@ -72,7 +75,7 @@ export function MethodsStep({
   const [loading, setLoading] = React.useState(true)
   const [glsElement, setGlsElement] = React.useState<HTMLElement | null>(null)
   const hasGlsPoint = Boolean(data.glsParcelPoint?.id)
-  const [glsMapOpen, setGlsMapOpen] = React.useState(!hasGlsPoint)
+  const [glsDialogOpen, setGlsDialogOpen] = React.useState(!hasGlsPoint)
 
   React.useEffect(() => {
     if (initialMethods) {
@@ -97,7 +100,7 @@ export function MethodsStep({
   }, [initialMethods])
 
   React.useEffect(() => {
-    if (!hasGlsPoint) setGlsMapOpen(true)
+    if (!hasGlsPoint) setGlsDialogOpen(true)
   }, [hasGlsPoint])
 
   const shippingList = methods?.shippingMethods ?? []
@@ -106,6 +109,10 @@ export function MethodsStep({
   const isGlsSelected = isGlsParcelShippingMethod(data.shippingMethod, selectedShippingRow)
   const isFoxpostSelected = isFoxpostParcelShippingMethod(data.shippingMethod, selectedShippingRow)
   const stripeConfigured = Boolean(methods?.meta?.stripeConfigured)
+
+  React.useEffect(() => {
+    if (!isGlsSelected) setGlsDialogOpen(false)
+  }, [isGlsSelected])
 
   const handleMethodChange = (type: "shippingMethod" | "paymentMethod", id: string) => {
     if (type === "shippingMethod") {
@@ -143,7 +150,7 @@ export function MethodsStep({
       const detail = (event as CustomEvent<GlsParcelPoint>).detail
       if (!detail?.id || !detail?.name) return
       onChange({ ...data, glsParcelPoint: detail })
-      setGlsMapOpen(false)
+      setGlsDialogOpen(false)
     }
 
     glsElement.addEventListener("change", handleParcelPointChange)
@@ -161,7 +168,7 @@ export function MethodsStep({
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 sm:space-y-12">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Truck className="h-5 w-5 text-primary-foreground" />
@@ -196,12 +203,16 @@ export function MethodsStep({
                       </p>
                     ) : null}
                   </div>
-                  <div className="text-right">
-                    <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
-                    </p>
-                    {isSelected && <Check className="ml-auto mt-1 h-4 w-4 text-primary-foreground" />}
+                  <div className="flex w-full shrink-0 items-end justify-between gap-2 sm:block sm:w-auto sm:text-right">
+                    <div>
+                      <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                      </p>
+                    </div>
+                    {isSelected ? (
+                      <Check className="h-4 w-4 shrink-0 text-primary-foreground sm:ml-auto sm:mt-1" />
+                    ) : null}
                   </div>
                 </button>
                 {isSelected && parcelHtml ? (
@@ -222,15 +233,22 @@ export function MethodsStep({
               GLS csomagpont kiválasztása kötelező
             </p>
             <CheckoutRichHtml html={selectedShippingRow?.descriptionHtml} appearance={a} />
-            {glsMapOpen ? (
-              <div className={cxGlsBox(a)}>
-                {React.createElement("gls-dpm", {
-                  country: "hu",
-                  id: "checkout-gls-map",
-                  ref: (el: HTMLElement | null) => setGlsElement(el),
-                })}
-              </div>
-            ) : null}
+            <ParcelLockerMapDialog
+              open={glsDialogOpen}
+              onOpenChange={setGlsDialogOpen}
+              title="GLS csomagpont választása"
+              description="Válaszd ki a csomagpontot a térképen. A kiválasztás után a párbeszédablak bezárul."
+              appearance={a}
+            >
+              {glsDialogOpen
+                ? React.createElement("gls-dpm", {
+                    country: "hu",
+                    id: "checkout-gls-map",
+                    className: "block h-full min-h-[50dvh] w-full",
+                    ref: (el: HTMLElement | null) => setGlsElement(el),
+                  })
+                : null}
+            </ParcelLockerMapDialog>
             {hasGlsPoint && data.glsParcelPoint ? (
               <div
                 className={cn(
@@ -254,13 +272,13 @@ export function MethodsStep({
             ) : (
               <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground">Még nem választottál GLS csomagpontot.</p>
             )}
-            {hasGlsPoint && !glsMapOpen ? (
+            {!glsDialogOpen ? (
               <button
                 type="button"
-                onClick={() => setGlsMapOpen(true)}
-                className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground underline-offset-2 hover:underline"
+                onClick={() => setGlsDialogOpen(true)}
+                className={cxParcelPickerTrigger(a)}
               >
-                Másik GLS pont választása
+                {hasGlsPoint ? "Másik GLS pont választása" : "GLS csomagpont kiválasztása a térképen"}
               </button>
             ) : null}
           </div>
@@ -307,18 +325,22 @@ export function MethodsStep({
                 onClick={() => handleMethodChange("paymentMethod", method._id)}
                 className={cxMethodCard(a, data.paymentMethod === method._id)}
               >
-                <div>
+                <div className="min-w-0 text-left">
                   <p className={cxMethodTitle(a)}>{method.name}</p>
                   <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Kezelési költséggel együtt
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
-                  </p>
-                  {data.paymentMethod === method._id && <Check className="ml-auto mt-1 h-4 w-4 text-primary-foreground" />}
+                <div className="flex w-full shrink-0 items-end justify-between gap-2 sm:block sm:w-auto sm:text-right">
+                  <div>
+                    <p className={cxMethodPrice(a)}>{formatHuf(breakdown.gross)}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+                    </p>
+                  </div>
+                  {data.paymentMethod === method._id ? (
+                    <Check className="h-4 w-4 shrink-0 text-primary-foreground sm:ml-auto sm:mt-1" />
+                  ) : null}
                 </div>
               </button>
             )

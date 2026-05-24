@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         status: tempOrder.status,
         finalized: true,
         orderId: tempOrder.finalizedOrderId.toString(),
+        guestAccessToken: tempOrder.guestAccessToken ?? null,
         lastError: null,
       });
     }
@@ -116,6 +117,7 @@ export async function GET(req: NextRequest) {
       status: latest?.status ?? tempOrder.status,
       finalized,
       orderId,
+      guestAccessToken: latest?.guestAccessToken ?? null,
       lastError: latest?.lastError ?? null,
     });
   } catch (error: any) {

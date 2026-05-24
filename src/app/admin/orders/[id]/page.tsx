@@ -114,7 +114,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                 </h3>
                 {!parcelManagerEnabled ? (
                   <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                    A csomag/címke kezelő ki van kapcsolva (Webshop beállítások → GLS / Foxpost).
+                    A csomag/címke kezelő ki van kapcsolva (Beállítások → feature flag-ek).
                   </p>
                 ) : null}
                 {parcelProvider === "gls" ? (

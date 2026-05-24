@@ -134,69 +134,67 @@ export function Shop({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
-          {categories.map((category, idx) => (
-            <motion.div
-              key={category.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="relative group h-[400px] overflow-hidden border border-white/5"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  const lbIndex = categoryLightboxItems.findIndex(
-                    (item) =>
-                      item.alt === (category.name || "Kategória") &&
-                      item.src === mediaImageSrc(category.image)
-                  )
-                  if (lbIndex >= 0) categoryLightbox.openAt(lbIndex)
-                }}
-                className="absolute inset-0 z-1 cursor-zoom-in"
-                aria-label={`${category.name} kép nagyítása`}
-              />
-              <FallbackImage
-                src={category.image}
-                alt={category.name}
-                fill
-                unoptimized
-                className="pointer-events-none object-cover transition-transform duration-1000 opacity-60 group-hover:scale-110 group-hover:opacity-100"
-              />
-              <MediaZoomButton
-                onClick={() => {
-                  const lbIndex = categoryLightboxItems.findIndex(
-                    (item) =>
-                      item.alt === (category.name || "Kategória") &&
-                      item.src === mediaImageSrc(category.image)
-                  )
-                  if (lbIndex >= 0) categoryLightbox.openAt(lbIndex)
-                }}
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent" />
-              <div className="absolute inset-0 p-10 flex flex-col justify-end items-start text-left">
-                <h3 className="text-3xl font-heading font-black text-foreground mb-3 tracking-tighter uppercase">
-                  {category.name}
-                </h3>
-                <p className="text-neutral-300 text-sm mb-6 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 line-clamp-2">
-                  {category.description}
-                </p>
+          {categories.map((category, idx) => {
+            const openCategoryLightbox = () => {
+              const lbIndex = categoryLightboxItems.findIndex(
+                (item) =>
+                  item.alt === (category.name || "Kategória") &&
+                  item.src === mediaImageSrc(category.image)
+              )
+              if (lbIndex >= 0) categoryLightbox.openAt(lbIndex)
+            }
+            const categoryHref = cms.enabled ? "#" : `/shop?category=${category.id}`
+
+            return (
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="relative group h-[400px] overflow-hidden border border-white/5"
+              >
                 <Link
-                  href={cms.enabled ? "#" : `/shop?category=${category.id}`}
+                  href={categoryHref}
                   onClick={(event) => {
                     if (cms.enabled) event.preventDefault()
                   }}
-                >
-                  <Button
-                    size="sm"
-                    className="bg-primary hover:bg-primary text-white opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 btn-krausz px-6 h-10 font-black"
+                  className="absolute inset-0 z-0 block"
+                  aria-label={`${category.name} kategória megnyitása`}
+                />
+                <FallbackImage
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  unoptimized
+                  className="pointer-events-none object-cover transition-transform duration-1000 opacity-60 group-hover:scale-110 group-hover:opacity-100"
+                />
+                {category.image ? (
+                  <MediaZoomButton
+                    className="max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                    onClick={openCategoryLightbox}
+                  />
+                ) : null}
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 z-10 p-10 flex flex-col justify-end items-start text-left">
+                  <h3 className="text-3xl font-heading font-black text-foreground mb-3 tracking-tighter uppercase">
+                    {category.name}
+                  </h3>
+                  <p className="text-neutral-300 text-sm mb-6 line-clamp-2 max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all max-md:translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 duration-500">
+                    {category.description}
+                  </p>
+                  <span
+                    className={cn(
+                      "inline-flex items-center bg-primary text-white btn-krausz px-6 h-10 text-sm font-black",
+                      "max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all max-md:translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 duration-500"
+                    )}
                   >
                     EXPLORE <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          ))}
+                  </span>
+                </div>
+              </motion.div>
+            )
+          })}
         </div>
 
         <div className="space-y-16 py-10 border-t border-white/5">

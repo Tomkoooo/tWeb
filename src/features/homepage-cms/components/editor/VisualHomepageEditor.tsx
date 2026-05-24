@@ -17,14 +17,10 @@ import { saveHomepageDraft } from "@/features/homepage-cms/api/draft-client"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { Breadcrumb } from "@/features/homepage-cms/components/editor/Breadcrumb"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { SeoEditor } from "@/features/site-settings/components/SeoEditor"
 import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import type { FooterSettings } from "@/services/footer-settings"
-import type { SeoSettings } from "@/services/seo-settings"
-import { ThemeEditor } from "@/features/theme/components/ThemeEditor"
 import type { ThemeTokens } from "@/services/theme"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CmsEditProvider } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import type { HomePageDeps } from "@/templates/types"
 import type { HomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
@@ -42,10 +38,7 @@ type Props = {
     logoHero: string
   }
   initialFooter: FooterSettings
-  initialSeo: SeoSettings
   initialTheme: ThemeTokens
-  /** Template palette baseline for theme reset UX (matches /admin/theme). */
-  themeResetBaseline: ThemeTokens
   dependencies: HomepageRenderDependencies
 }
 
@@ -55,19 +48,14 @@ export function VisualHomepageEditor({
   initialSnapshot,
   initialBranding,
   initialFooter,
-  initialSeo,
   initialTheme,
-  themeResetBaseline,
   dependencies,
 }: Props) {
   const router = useRouter()
   const [branding, setBranding] = useState(initialBranding)
-  const [seoSettings, setSeoSettings] = useState(initialSeo)
   const [themeSettings, setThemeSettings] = useState(initialTheme)
   const [footerSettings, setFooterSettings] = useState(initialFooter)
   const [reviewOpen, setReviewOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<"theme" | "seo">("theme")
   const {
     snapshot,
     selectedBlockId,
@@ -135,11 +123,10 @@ export function VisualHomepageEditor({
     const block = snapshot.blocks.find((item) => item.type === "contact" && item.enabled !== false)
     const data = block?.data as { email?: string; phone?: string; address?: string } | undefined
     return {
-      email: resolveContactDisplayField(data?.email, dependencies.company.email),
       phone: resolveContactDisplayField(data?.phone, dependencies.company.phone),
       address: resolveContactDisplayField(data?.address, dependencies.company.address),
     }
-  }, [dependencies.company.address, dependencies.company.email, dependencies.company.phone, snapshot.blocks])
+  }, [dependencies.company.address, dependencies.company.phone, snapshot.blocks])
 
   const homePageDeps = useMemo(
     (): HomePageDeps => ({ ...dependencies, templateId }),
@@ -210,7 +197,7 @@ export function VisualHomepageEditor({
           }
         }}
         onReview={() => setReviewOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => router.push("/admin/cms/settings?section=theme")}
         onPublish={async () => {
           try {
             await saveHomepageDraft(snapshot, templateId)
@@ -353,7 +340,7 @@ export function VisualHomepageEditor({
                     slug: category.slug,
                     depth: 0,
                   }))}
-                  email={contactData.email}
+                  contactEmails={dependencies.siteContact.emails}
                   phone={contactData.phone}
                   address={contactData.address}
                 />
@@ -362,40 +349,6 @@ export function VisualHomepageEditor({
           </div>
         </div>
       </div>
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>CMS Beállítások</DialogTitle>
-            <DialogDescription>Téma és SEO beállítások egy helyen.</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSettingsTab("theme")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
-            >
-              Téma
-            </button>
-            <button
-              type="button"
-              onClick={() => setSettingsTab("seo")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
-            >
-              SEO
-            </button>
-          </div>
-          {settingsTab === "theme" ? (
-            <ThemeEditor
-              initial={themeSettings}
-              resetBaseline={themeResetBaseline}
-              onSaved={setThemeSettings}
-              resetHelpText="Reset uses the active template baseline (same as clearing overrides on /admin/theme)."
-            />
-          ) : (
-            <SeoEditor initial={seoSettings} onSaved={setSeoSettings} />
-          )}
-        </DialogContent>
-      </Dialog>
       {reviewOpen ? (
         <div className="fixed inset-0 z-200 bg-black overflow-y-auto">
           <div className="sticky top-0 z-210 px-4 py-3 border-b border-white/10 bg-black/95 backdrop-blur flex items-center justify-between">
@@ -446,7 +399,7 @@ export function VisualHomepageEditor({
                 slug: category.slug,
                 depth: 0,
               }))}
-              email={contactData.email}
+              contactEmails={dependencies.siteContact.emails}
               phone={contactData.phone}
               address={contactData.address}
             />

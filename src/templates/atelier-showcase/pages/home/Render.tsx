@@ -7,6 +7,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
     <div className="bg-background pb-16 pt-36 text-foreground md:pt-40">
       <HomepageRenderer
         blocks={content.blocks}
+        siteContact={deps.siteContact}
         reviews={deps.reviews}
         products={deps.products.map((p) => ({
           id: p.id,

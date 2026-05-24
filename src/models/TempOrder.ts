@@ -22,6 +22,8 @@ export interface ITempOrder extends Document {
   expiresAt: Date;
   /** Wall-clock end of inventory hold (aligned with Stripe Checkout expires_at + buffer). */
   reservationExpiresAt?: Date;
+  /** One-time guest view token returned on Stripe success (not stored on Order). */
+  guestAccessToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +45,7 @@ const TempOrderSchema = new Schema<ITempOrder>(
     lastError: { type: String },
     expiresAt: { type: Date, required: true, index: true },
     reservationExpiresAt: { type: Date, index: true, sparse: true },
+    guestAccessToken: { type: String },
   },
   { timestamps: true }
 );

@@ -521,7 +521,11 @@ export function useCheckoutWizardModel(
           toast.error("Nem sikerült átirányítani a Stripe fizetéshez.")
         } else {
           clearCart()
-          router.push("/checkout/success")
+          const successParams = new URLSearchParams()
+          if (payload?.orderId) successParams.set("orderId", String(payload.orderId))
+          if (payload?.guestAccessToken) successParams.set("guestToken", String(payload.guestAccessToken))
+          const qs = successParams.toString()
+          router.push(qs ? `/checkout/success?${qs}` : "/checkout/success")
         }
       } else {
         const err = await res.json()

@@ -13,9 +13,7 @@ type Props = {
   previewTemplateName: string | null
 }
 
-/**
- * Shown on every admin page: explains DB vs preview and offers a one-click exit from preview.
- */
+/** Shown on CMS and template admin pages: DB active template vs admin preview session. */
 export function AdminTemplateSessionBar({
   dbActiveName,
   previewTemplateId,

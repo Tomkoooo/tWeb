@@ -85,7 +85,9 @@ export function useProfileAccountModel(options: { variant?: "page" | "embedded" 
         setLoading(false)
         return
       }
-      router.push("/auth/login")
+      router.push(
+        `/auth/login?${new URLSearchParams({ callbackUrl: "/profile" }).toString()}`
+      )
       return
     }
 

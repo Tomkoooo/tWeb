@@ -1,3 +1,4 @@
+import { resolveSiteContactChannels } from "@/lib/site-contact"
 import { CategoryService } from "@/services/category"
 import { ProductService } from "@/services/product"
 import { FeedbackService } from "@/services/feedback"
@@ -156,15 +157,19 @@ export async function getHomepageRenderDependencies(
     products = ordered.map(mapFeaturedProduct)
   }
 
+  const channels = resolveSiteContactChannels(content)
+
   return {
     products,
     categories,
     reviews,
+    siteContact: channels,
     company: {
       name: content.brand_name || "Company name",
-      address: content.contact_address || "",
-      phone: content.contact_phone || "",
-      email: content.contact_email || "",
+      address: channels.address,
+      phone: channels.phone,
+      email: channels.primaryEmail,
+      contactEmails: channels.emails,
     },
   }
 }

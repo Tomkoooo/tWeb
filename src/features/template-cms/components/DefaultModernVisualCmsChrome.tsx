@@ -5,14 +5,11 @@ import { useRouter } from "next/navigation"
 import { TopBar } from "@/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { SeoEditor } from "@/features/site-settings/components/SeoEditor"
 import { FALLBACK_TEMPLATE_ID, TEMPLATE_REGISTRY } from "@/templates/registry"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import type { FooterSettings } from "@/services/footer-settings"
-import type { SeoSettings } from "@/services/seo-settings"
+import type { ContactEmailEntry } from "@/lib/contact-emails"
 import type { ThemeTokens } from "@/services/theme"
-import { ThemeEditor } from "@/features/theme/components/ThemeEditor"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 type Branding = {
   brandName: string
@@ -41,9 +38,7 @@ export function DefaultModernVisualCmsChrome({
   reviewTitle,
   branding: initialBranding,
   initialFooter,
-  initialSeo,
   initialTheme,
-  themeResetBaseline,
   dirty,
   canUndo,
   canRedo,
@@ -53,6 +48,7 @@ export function DefaultModernVisualCmsChrome({
   onPublish,
   onDiscard,
   contactEmail,
+  contactEmails,
   contactPhone,
   contactAddress,
   footerCategories,
@@ -64,9 +60,7 @@ export function DefaultModernVisualCmsChrome({
   reviewTitle: string
   branding: Branding
   initialFooter: FooterSettings
-  initialSeo: SeoSettings
   initialTheme: ThemeTokens
-  themeResetBaseline: ThemeTokens
   dirty: boolean
   canUndo: boolean
   canRedo: boolean
@@ -76,6 +70,7 @@ export function DefaultModernVisualCmsChrome({
   onPublish: () => Promise<void>
   onDiscard: () => Promise<void>
   contactEmail: string
+  contactEmails: ContactEmailEntry[]
   contactPhone: string
   contactAddress: string
   footerCategories: FooterCategory[]
@@ -85,12 +80,9 @@ export function DefaultModernVisualCmsChrome({
   const router = useRouter()
   const [branding, setBranding] = useState(initialBranding)
   const [footerSettings, setFooterSettings] = useState(initialFooter)
-  const [seoSettings, setSeoSettings] = useState(initialSeo)
   const [themeSettings, setThemeSettings] = useState(initialTheme)
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop")
   const [reviewOpen, setReviewOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<"theme" | "seo">("theme")
 
   useEffect(() => {
     setThemeSettings(initialTheme)
@@ -142,6 +134,7 @@ export function DefaultModernVisualCmsChrome({
         }
         categories={footerCategories}
         email={contactEmail}
+        contactEmails={contactEmails}
         phone={contactPhone}
         address={contactAddress}
       />
@@ -185,7 +178,7 @@ export function DefaultModernVisualCmsChrome({
         onRedo={onRedo}
         onSave={onSaveDraft}
         onReview={() => setReviewOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => router.push("/admin/cms/settings?section=theme")}
         onPublish={onPublish}
         onDiscard={onDiscard}
         onExit={() => router.push("/admin/cms")}
@@ -207,41 +200,6 @@ export function DefaultModernVisualCmsChrome({
           </DevicePreview>
         </div>
       </div>
-
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>CMS Beállítások</DialogTitle>
-            <DialogDescription>Téma és SEO.</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSettingsTab("theme")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "theme" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
-            >
-              Téma
-            </button>
-            <button
-              type="button"
-              onClick={() => setSettingsTab("seo")}
-              className={`px-3 h-9 border text-xs uppercase ${settingsTab === "seo" ? "border-primary-foreground/35 text-white" : "border-white/20 text-neutral-300"}`}
-            >
-              SEO
-            </button>
-          </div>
-          {settingsTab === "theme" ? (
-            <ThemeEditor
-              initial={themeSettings}
-              resetBaseline={themeResetBaseline}
-              onSaved={setThemeSettings}
-              resetHelpText="Reset uses the active template baseline."
-            />
-          ) : (
-            <SeoEditor initial={seoSettings} onSaved={setSeoSettings} />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {reviewOpen ? (
         <div className="fixed inset-0 z-200 bg-black overflow-y-auto">

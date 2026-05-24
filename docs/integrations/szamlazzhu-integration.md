@@ -7,7 +7,7 @@ This project supports feature-flagged automatic invoicing through `szamlazz.js` 
 - Feature flag: `szamlazzInvoicing`
 - Auto issue trigger: after successful payment and order creation
 - Auto email: invoice PDF attached when available
-- User/Admin download: secure invoice endpoints with provider-first fetch and local fallback
+- User/Admin download: secure invoice endpoints with provider-first fetch and MongoDB-stored PDF fallback (no `uploads/` folder — Vercel-safe)
 - Manual admin mode: invoice number edit, optional metadata, optional PDF upload
 
 ## Environment variables
@@ -59,7 +59,7 @@ Mail settings (existing app requirements):
 ## Download strategy
 
 1. Try provider fetch using `getInvoiceData({ invoiceId or orderNumber, pdf: true })`.
-2. If provider fetch fails, use local fallback (`invoicePdfFileName`) if available.
+2. If provider fetch fails, load PDF from the `Media` collection via `invoicePdfFileName` (same storage as admin uploads).
 3. If neither available: return 404.
 
 ## Endpoints

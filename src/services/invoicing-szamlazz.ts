@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
 import {
   Buyer,
@@ -12,6 +10,7 @@ import {
   Seller,
 } from "szamlazz.js";
 import { IOrder } from "@/models/Order";
+import { loadInvoicePdf, persistInvoicePdf } from "@/lib/invoice-pdf-storage";
 
 type InvoiceIssueResult = {
   invoiceId: string;
@@ -23,17 +22,6 @@ type InvoiceIssueResult = {
 function parseNumber(input: unknown): number {
   const n = Number(input ?? 0);
   return Number.isFinite(n) ? n : 0;
-}
-
-function getUploadDir(): string {
-  return path.join(process.cwd(), "uploads");
-}
-
-function ensureUploadDir() {
-  const uploadDir = getUploadDir();
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
 }
 
 function mapPaymentMethod(order: IOrder) {
@@ -108,12 +96,9 @@ export class InvoicingSzamlazzService {
     });
   }
 
+  /** Persist invoice PDF in Mongo (same as admin/media uploads — no local disk). */
   private static async savePdfBuffer(pdfBuffer: Buffer, orderId: string): Promise<string> {
-    ensureUploadDir();
-    const fileName = `invoice-${orderId}-${crypto.randomUUID()}.pdf`;
-    const target = path.join(getUploadDir(), fileName);
-    fs.writeFileSync(target, pdfBuffer);
-    return fileName;
+    return persistInvoicePdf(pdfBuffer, orderId);
   }
 
   static async issueInvoice(order: IOrder): Promise<InvoiceIssueResult> {
@@ -166,10 +151,8 @@ export class InvoicingSzamlazzService {
     }
 
     if (params.fallbackFileName) {
-      const fallbackPath = path.join(getUploadDir(), params.fallbackFileName);
-      if (fs.existsSync(fallbackPath)) {
-        return fs.readFileSync(fallbackPath);
-      }
+      const fromDb = await loadInvoicePdf(params.fallbackFileName);
+      if (fromDb) return fromDb;
     }
 
     return null;

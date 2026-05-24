@@ -50,13 +50,34 @@ export async function seedEmailTemplates() {
           </div>
 
           <p>Amint csomagja útra kel, újabb értesítést küldünk.</p>
+
+          {{#if orderViewUrl}}
+          <p style="margin: 28px 0 12px;">
+            <a href="{{orderViewUrl}}" style="display:inline-block;background:#FF5500;color:white;padding:12px 18px;text-decoration:none;font-weight:bold;">Rendelés megtekintése</a>
+          </p>
+          <p style="font-size: 13px; color: #666;">Vendég vásárlás esetén a fenti linkkel bármikor megnyithatod a rendelésed. Ha később Google-fiókkal regisztrálsz ugyanazzal az e-mail címmel, a rendelés automatikusan megjelenik a profilodban.</p>
+          {{#if linkToAccountUrl}}
+          <p style="margin-top: 16px;">
+            <a href="{{linkToAccountUrl}}" style="color:#FF5500;font-weight:bold;">Rendelés hozzárendelése fiókhoz</a>
+          </p>
+          {{/if}}
+          {{/if}}
           
           <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
           <p style="font-size: 12px; color: #999;">Krausz Barkácsmester - Minőség a mestereknek.</p>
         </div>
       `,
       description: "Vásárló kapja meg sikeres rendelés után.",
-      variables: ["orderNumber", "customerName", "totalAmount", "items", "shippingAddress"]
+      variables: [
+        "orderNumber",
+        "customerName",
+        "totalAmount",
+        "items",
+        "shippingAddress",
+        "orderViewUrl",
+        "linkToAccountUrl",
+        "isGuestOrder",
+      ]
     },
     {
       type: "order_status_change",

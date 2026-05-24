@@ -122,6 +122,13 @@ export default async function AdminInfoPage() {
           );
         })}
       </div>
+
+      <p className="pt-4 text-[10px] font-black uppercase tracking-widest text-neutral-600">
+        Dev:{" "}
+        <Link href="/admin/dev/spinners" className="admin-link-accent hover:underline">
+          Loading spinner preview
+        </Link>
+      </p>
     </div>
   );
 }

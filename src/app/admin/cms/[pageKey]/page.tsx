@@ -11,6 +11,7 @@ import { ShopVisualSurfaceEditor } from "@/features/template-cms/editors/ShopVis
 import { StaticPageVisualSurfaceEditor } from "@/features/template-cms/editors/StaticPageVisualSurfaceEditor"
 import { PdpVisualSurfaceEditor } from "@/features/template-cms/editors/PdpVisualSurfaceEditor"
 import { FlowShellVisualSurfaceEditor } from "@/features/template-cms/editors/FlowShellVisualSurfaceEditor"
+import { AdminCmsPageNav } from "@/components/admin/AdminCmsPageNav"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { FooterSettingsService } from "@/services/footer-settings"
@@ -85,10 +86,6 @@ export default async function CmsPageEditor({
                   block.data.phone,
                   dependencies.company.phone
                 ),
-                email: resolveContactDisplayField(
-                  block.data.email,
-                  dependencies.company.email
-                ),
               },
             }
           : block
@@ -103,17 +100,25 @@ export default async function CmsPageEditor({
 
     return (
       <div className="space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-              CMS: {entry.label}
-            </h1>
-            <p className="text-xs text-neutral-500">
-              Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
-              <span className="ml-2 admin-text-accent">· Blokkos főoldal</span>
-            </p>
+        <header className="flex flex-col gap-4">
+          <Link
+            href="/admin/cms"
+            className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white w-fit"
+          >
+            ← CMS áttekintés
+          </Link>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tight text-white">
+                CMS: {entry.label}
+              </h1>
+              <p className="text-xs text-neutral-500">
+                Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
+                <span className="ml-2 admin-text-accent">· Blokkos főoldal</span>
+              </p>
+            </div>
+            <AdminCmsPageNav editablePages={editablePages} activeSegment={pageKey} />
           </div>
-          <AdminCmsTabs editablePages={editablePages} activeSegment={pageKey} />
         </header>
 
         <CmsTemplatePageClient
@@ -123,9 +128,7 @@ export default async function CmsPageEditor({
           initialSnapshot={hydratedSnapshot}
           initialBranding={branding}
           initialFooter={footer}
-          initialSeo={seo}
           initialTheme={theme}
-          themeResetBaseline={themeResetBaseline}
           dependencies={dependencies}
         />
       </div>
@@ -269,35 +272,6 @@ export default async function CmsPageEditor({
   }
 }
 
-function AdminCmsTabs({
-  editablePages,
-  activeSegment,
-}: {
-  editablePages: ReturnType<typeof listEditablePages>
-  activeSegment: string
-}) {
-  return (
-    <nav className="flex flex-wrap gap-2">
-      {editablePages.map((p) => {
-        const isActive = p.adminSegment === activeSegment
-        return (
-          <Link
-            key={p.adminSegment}
-            href={`/admin/cms/${p.adminSegment}`}
-            className={
-              isActive
-                ? "rounded-md bg-primary px-3 py-1.5 text-xs font-black uppercase tracking-widest text-white"
-                : "rounded-md border border-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-white"
-            }
-          >
-            {p.label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
-}
-
 function SurfacePageLayout({
   label,
   subtitle,
@@ -317,15 +291,23 @@ function SurfacePageLayout({
 }) {
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white">CMS: {label}</h1>
-          <p className="text-xs text-neutral-500">
-            Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
-            <span className="ml-2 admin-text-accent">· {subtitle}</span>
-          </p>
+      <header className="flex flex-col gap-4">
+        <Link
+          href="/admin/cms"
+          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white w-fit"
+        >
+          ← CMS áttekintés
+        </Link>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tight text-white">CMS: {label}</h1>
+            <p className="text-xs text-neutral-500">
+              Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
+              <span className="ml-2 admin-text-accent">· {subtitle}</span>
+            </p>
+          </div>
+          <AdminCmsPageNav editablePages={editablePages} activeSegment={pageKey} />
         </div>
-        <AdminCmsTabs editablePages={editablePages} activeSegment={pageKey} />
       </header>
 
       <div>{children}</div>

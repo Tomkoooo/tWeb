@@ -37,13 +37,13 @@ export function cxSectionHeading(appearance: CheckoutStepAppearance) {
 
 export function cxTypeToggleShell(appearance: CheckoutStepAppearance) {
   return appearance === "light"
-    ? "flex gap-1 rounded-lg border border-border bg-muted/50 p-1"
-    : "flex gap-1 rounded-none border border-border bg-muted/40 p-1 w-fit max-w-full"
+    ? "flex w-full max-w-full gap-1 rounded-lg border border-border bg-muted/50 p-1"
+    : "flex w-full max-w-full gap-1 rounded-none border border-border bg-muted/40 p-1 sm:w-fit"
 }
 
 export function cxTypeToggleBtn(appearance: CheckoutStepAppearance, active: boolean) {
   return cn(
-    "px-4 py-2 text-[10px] font-semibold uppercase tracking-widest transition-all rounded-md",
+    "min-w-0 flex-1 px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-widest transition-all rounded-md sm:flex-none sm:px-4",
     appearance === "light"
       ? active
         ? "bg-primary text-primary-foreground shadow-sm"
@@ -56,7 +56,9 @@ export function cxTypeToggleBtn(appearance: CheckoutStepAppearance, active: bool
 
 export function cxMethodCard(appearance: CheckoutStepAppearance, selected: boolean) {
   return cn(
-    "p-6 border-2 text-left transition-all duration-300 flex items-center justify-between group rounded-lg",
+    "w-full min-w-0 gap-3 border-2 p-4 text-left transition-all duration-300",
+    "flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-6",
+    "group rounded-lg",
     appearance === "light"
       ? selected
         ? "border-secondary bg-secondary/30 shadow-sm"

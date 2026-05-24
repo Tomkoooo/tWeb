@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { authLoginPath } from "@/lib/auth-redirect"
 import { toast } from "sonner"
 import { Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,7 +19,7 @@ export default function ShopFeedbackPage() {
 
   React.useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/login")
+      router.push(authLoginPath("/profile/feedback"))
     }
   }, [status, router])
 

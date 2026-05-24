@@ -49,6 +49,7 @@ export default async function LandingPage() {
         footerSettings={footerSettings}
         shopEnabled={shopEnabled}
         email={footerData.email}
+        contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
       />

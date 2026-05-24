@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
 import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-schema"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import { getDefaultHomepageSnapshot } from "@/features/homepage-cms/utils/default-snapshot"
@@ -45,6 +46,7 @@ export class HomepageCmsService {
     const draft = await this.getDraft()
     await ShopContentService.update(PUBLISHED_KEY, JSON.stringify(draft), SECTION)
     await revalidatePath("/")
+    revalidateStorefrontSitemap()
     return draft
   }
 

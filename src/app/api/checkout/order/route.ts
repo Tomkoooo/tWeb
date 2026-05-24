@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
       allowStripeFixed: false,
     });
     const order = await OrderService.createOrder(validatedOrderData, session?.user?.id);
-    
-    return NextResponse.json({ 
-      success: true, 
-      orderId: order._id 
+    const orderId = String(order._id);
+
+    return NextResponse.json({
+      success: true,
+      orderId,
+      guestAccessToken: order.guestAccessToken ?? null,
     });
   } catch (error: any) {
     console.error("Order POST error:", error);

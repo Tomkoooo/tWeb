@@ -59,6 +59,7 @@ export class CheckoutFinalizationService {
         $set: {
           status: "finalized",
           finalizedOrderId: createdOrder._id,
+          guestAccessToken: createdOrder.guestAccessToken,
           lastError: undefined,
         },
       });

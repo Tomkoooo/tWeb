@@ -30,6 +30,7 @@ export default async function StorefrontFlowShell({
         categories={footerData.categories}
         footerSettings={footerSettings}
         email={footerData.email}
+        contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
       />

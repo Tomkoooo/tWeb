@@ -16,7 +16,7 @@ export function TradingLimitsContactNote({ limits, kind, appearance = "dark" }: 
       ? limits?.invoicingAllowedCountryCodes
       : limits?.shippingAllowedCountryCodes
 
-  if (!restricted || !codes?.length) return null
+  if (!restricted || !codes?.length || codes.length === 1) return null
 
   const list = formatAllowedCountriesList(codes)
   const isLight = appearance === "light"

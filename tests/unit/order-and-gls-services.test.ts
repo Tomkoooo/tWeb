@@ -50,6 +50,12 @@ vi.mock("@/services/order-placement-error-alert", () => ({
 vi.mock("@/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: flagEnabledMock },
 }));
+vi.mock("@/services/order-guest-access", () => ({
+  OrderGuestAccessService: {
+    createForOrder: vi.fn().mockResolvedValue("abc123guesttoken"),
+    buildViewUrl: vi.fn().mockReturnValue("http://localhost/orders/guest/o1?token=abc"),
+  },
+}));
 vi.mock("@/services/inventory-reservation", () => ({
   decrementCheckoutLineStock: (...args: unknown[]) => decrementCheckoutLineStockMock(...args),
   InventoryReservationError: class InventoryReservationError extends Error {

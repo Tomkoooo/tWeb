@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
 import { PageContentService } from "@/services/page-content"
@@ -64,6 +65,7 @@ function revalidateForPage(pageKey: string) {
   for (const path of pageKeyToPaths(pageKey)) {
     revalidatePath(path, "layout")
   }
+  revalidateStorefrontSitemap()
 }
 
 async function guardTemplate(templateId: string): Promise<Response | null> {

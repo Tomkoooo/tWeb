@@ -75,7 +75,7 @@ export function MethodDialog({
               </select>
               <p className="text-[10px] text-neutral-500 leading-relaxed">
                 GLS/Foxpost típusnál a pénztárban megjelenik a választó; az ár itt állítható. A GLS/Foxpost
-                kapcsolókat a Webshop → GLS / Foxpost menüben kapcsold be.
+                kapcsolókat a Beállítások menüben kapcsold be.
               </p>
             </div>
           ) : null}

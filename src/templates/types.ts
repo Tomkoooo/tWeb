@@ -4,6 +4,9 @@ import { THEME_TOKEN_KEYS } from "@/lib/theme-token-keys"
 import type { ThemeTokens } from "@/services/theme"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { ProductDetailEditorial } from "@/app/products/[slug]/ProductDetail"
+import type { SiteContact, SiteContactEntry } from "@/lib/site-contact"
+
+export type { SiteContact, SiteContactEntry }
 
 export type RestyledPage = "home" | "shop" | "pdp"
 
@@ -86,11 +89,15 @@ export type HomePageDeps = {
     image: string
     slug: string
   }>
+  /** Admin-managed contact channels (e-mails, phone, address). Prefer this in new template code. */
+  siteContact: SiteContact
   company: {
     name: string
     address: string
     phone: string
     email: string
+    /** @deprecated Use `siteContact.emails` */
+    contactEmails: SiteContactEntry[]
   }
 }
 
@@ -310,6 +317,7 @@ export interface TemplateModule {
     Navbar: ComponentType<ChromeProps>
     Footer: ComponentType<ChromeProps & {
       email?: string
+      contactEmails?: Array<{ id: string; label: string; email: string }>
       phone?: string
       address?: string
       categories?: Array<{ id: string; name: string; slug: string; depth: number }>

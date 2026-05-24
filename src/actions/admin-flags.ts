@@ -130,12 +130,6 @@ export async function getAdminFeatureFlags() {
   return JSON.parse(JSON.stringify(flags));
 }
 
-export async function getShopParcelFeatureFlags() {
-  const flags = await getAdminFeatureFlags();
-  const keys = new Set(["glsParcelPicker", "glsParcelManager", "foxpostParcelPicker", "foxpostParcelManager"]);
-  return flags.filter((f: { key: string }) => keys.has(f.key));
-}
-
 export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
   await requireAdmin();
   await dbConnect();
@@ -147,5 +141,4 @@ export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
   );
 
   revalidatePath("/admin/info");
-  revalidatePath("/admin/shop/flags");
 }

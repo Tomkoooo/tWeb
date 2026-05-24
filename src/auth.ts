@@ -3,6 +3,7 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import clientPromise from "@/lib/mongodb"
 import { authConfig } from "./auth.config"
 import { maybeBootstrapAdmin } from "@/lib/bootstrap-admin"
+import { OrderGuestAccessService } from "@/services/order-guest-access"
 
 const trustHost = process.env.AUTH_TRUST_HOST
   ? process.env.AUTH_TRUST_HOST === "true"
@@ -61,6 +62,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       console.error("[auth][error]", errorCode, metadata)
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      const userId = user.id?.trim()
+      const email = user.email?.trim()
+      if (!userId || !email) return
+      try {
+        await OrderGuestAccessService.linkGuestOrdersToUser(userId, email)
+      } catch (error) {
+        console.error("[auth] link guest orders failed", error)
+      }
     },
   },
   callbacks: {

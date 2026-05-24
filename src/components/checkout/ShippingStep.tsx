@@ -53,7 +53,7 @@ export function ShippingStep({
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 sm:space-y-10">
       <TradingLimitsContactNote limits={tradingLimits} kind="shipping" appearance={a} />
 
       <button type="button" onClick={toggleSameAsBilling} className="group flex cursor-pointer items-center gap-4">

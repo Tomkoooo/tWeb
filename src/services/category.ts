@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/db";
 import Category, { ICategory } from "@/models/Category";
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap";
 import { MediaService } from "./media";
 
 export class CategoryService {
@@ -23,6 +24,7 @@ export class CategoryService {
     }
 
     revalidatePath("/admin/categories");
+    revalidateStorefrontSitemap();
     return category;
   }
 
@@ -39,6 +41,7 @@ export class CategoryService {
     }
 
     revalidatePath("/admin/categories");
+    revalidateStorefrontSitemap();
     return category;
   }
 
@@ -52,6 +55,7 @@ export class CategoryService {
       await Category.findByIdAndDelete(id);
     }
     revalidatePath("/admin/categories");
+    revalidateStorefrontSitemap();
     return category;
   }
 

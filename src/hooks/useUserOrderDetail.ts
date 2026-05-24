@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { authLoginPath } from "@/lib/auth-redirect"
 
 async function fetchOrder(orderId: string) {
   const res = await fetch(`/api/user/orders/${orderId}`, {
@@ -37,7 +38,11 @@ export function useUserOrderDetail(orderId: string) {
 
   React.useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/login")
+      const path =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : `/profile/orders/${orderId}`
+      router.push(authLoginPath(path))
       return
     }
 

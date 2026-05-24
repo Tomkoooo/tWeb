@@ -1,3 +1,5 @@
+import type { ContactEmailEntry } from "@/lib/contact-emails"
+import { resolveSiteContactChannels } from "@/lib/site-contact"
 import { CategoryService } from "@/services/category"
 import { ShopContentService } from "@/services/shop-content"
 import { PageContentService } from "@/services/page-content"
@@ -54,7 +56,7 @@ export function flattenCategoryTreeForFooter(
   })
 }
 
-type PublishedContact = { email?: string; phone?: string; address?: string }
+type PublishedContact = { phone?: string; address?: string }
 
 /**
  * Footer categories + contact lines for storefront routes (homepage, static pages, cart, etc.).
@@ -65,6 +67,7 @@ export async function resolveStorefrontFooterContact(
 ): Promise<{
   categories: FooterCategoryItem[]
   email: string
+  contactEmails: ContactEmailEntry[]
   phone: string
   address: string
 }> {
@@ -102,10 +105,16 @@ export async function resolveStorefrontFooterContact(
     }
   }
 
+  const channels = resolveSiteContactChannels(shopContent, {
+    phone: publishedContact.phone,
+    address: publishedContact.address,
+  })
+
   return {
     categories,
-    email: publishedContact.email || shopContent.contact_email || "",
-    phone: publishedContact.phone || shopContent.contact_phone || "",
-    address: publishedContact.address || shopContent.contact_address || "",
+    contactEmails: channels.emails,
+    email: channels.emailsDisplay,
+    phone: channels.phone,
+    address: channels.address,
   }
 }

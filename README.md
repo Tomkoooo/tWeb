@@ -223,7 +223,7 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 
 ### GLS / Foxpost parcel locker (optional)
 
-Enable the four flags under **Admin → Webshop beállítások → GLS / Foxpost** (`/admin/shop/flags`): GLS/Foxpost **picker** (checkout) and **manager** (admin labels). Full setup: [`docs/integrations/parcel-locker-gls-foxpost.md`](docs/integrations/parcel-locker-gls-foxpost.md).
+Enable the four GLS/Foxpost flags under **Admin → Beállítások** (`/admin/info`): **picker** (checkout) and **manager** (admin labels). Full setup: [`docs/integrations/parcel-locker-gls-foxpost.md`](docs/integrations/parcel-locker-gls-foxpost.md).
 
 Create active shipping methods named `GLS Csomagpont` and/or `Foxpost Csomagautomata` (or override `GLS_SHIPPING_METHOD_NAME` / `FOXPOST_SHIPPING_METHOD_NAME`).
 

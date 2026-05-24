@@ -61,7 +61,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
   const embedded = variant === "embedded"
   const shell = embedded
     ? "min-h-0 bg-transparent py-4"
-    : "min-h-screen w-full bg-gradient-to-b from-muted/30 to-background px-4 pb-24 pt-36 md:px-10 md:pt-40"
+    : "min-h-screen w-full bg-gradient-to-b from-muted/30 to-background px-3 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-36 md:px-10 md:pt-40"
 
   const summary = (
     <aside className="w-full shrink-0 rounded-2xl border border-border bg-card p-6 shadow-lg lg:max-w-sm">
@@ -157,7 +157,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
           </div>
         </div>
       ) : (
-        <div className="mx-auto max-w-6xl px-1 md:px-2">
+        <div className="mx-auto w-full max-w-6xl">
           <nav className="mb-10 overflow-x-auto pb-1" aria-label="Pénztár lépések">
             <ol className="flex min-w-0 gap-0 border-b border-border">
               {steps.map((step, i) => {
@@ -192,15 +192,17 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                 <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{steps[currentStep]?.title}</h1>
               </header>
 
-              <div className="rounded-2xl border border-border bg-background/80 p-5 shadow-sm md:p-8">{renderStep()}</div>
+              <div className="rounded-2xl border border-border bg-background/80 p-4 shadow-sm sm:p-6 md:p-8">
+                {renderStep()}
+              </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
+              <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  className="rounded-full border-border bg-transparent font-serif text-sm text-foreground hover:bg-muted hover:text-foreground"
+                  className="h-11 w-full rounded-full border-border bg-transparent font-serif text-sm text-foreground hover:bg-muted hover:text-foreground sm:h-auto sm:w-auto"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Vissza
@@ -210,7 +212,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                     type="button"
                     onClick={handleSubmitOrder}
                     disabled={isSubmitting}
-                    className="rounded-full border border-primary-foreground/35 bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
+                    className="h-11 w-full rounded-full border border-primary-foreground/35 bg-primary px-6 font-serif text-sm text-primary-foreground hover:bg-primary/90 sm:h-auto sm:w-auto sm:px-8"
                   >
                     {isSubmitting ? "Küldés…" : "Megrendelés"}
                   </Button>
@@ -218,7 +220,7 @@ export function AtelierCheckoutExperience({ shopEnabled, variant = "page" }: Flo
                   <Button
                     type="button"
                     onClick={nextStep}
-                    className="rounded-full border border-primary-foreground/35 bg-primary px-8 font-serif text-sm text-primary-foreground hover:bg-primary/90"
+                    className="h-11 w-full rounded-full border border-primary-foreground/35 bg-primary px-6 font-serif text-sm text-primary-foreground hover:bg-primary/90 sm:h-auto sm:w-auto sm:px-8"
                   >
                     Tovább
                     <ChevronRight className="ml-2 h-4 w-4" />

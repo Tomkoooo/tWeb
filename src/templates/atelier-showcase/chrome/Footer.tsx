@@ -1,9 +1,10 @@
 import { Footer as DefaultModernFooterImpl } from "@/components/layout/Footer"
-import type { ChromeProps } from "@/templates/types"
+import type { ChromeProps, SiteContactEntry } from "@/templates/types"
 import type { FooterSettings } from "@/services/footer-settings"
 
 type FooterChromeProps = ChromeProps & {
   email?: string
+  contactEmails?: SiteContactEntry[]
   phone?: string
   address?: string
   categories?: Array<{ id: string; name: string; slug: string; depth: number }>
@@ -15,6 +16,7 @@ export function Footer({
   logoSrc,
   shopEnabled = true,
   email,
+  contactEmails = [],
   phone,
   address,
   categories,
@@ -28,6 +30,7 @@ export function Footer({
       logoSrc={logoSrc}
       shopEnabled={shopEnabled}
       email={email}
+      contactEmails={contactEmails}
       phone={phone}
       address={address}
       categories={categories}

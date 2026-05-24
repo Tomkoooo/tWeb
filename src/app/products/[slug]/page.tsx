@@ -76,6 +76,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
         categories={footerData.categories}
         footerSettings={footerSettings}
         email={footerData.email}
+        contactEmails={footerData.contactEmails}
         phone={footerData.phone}
         address={footerData.address}
       />

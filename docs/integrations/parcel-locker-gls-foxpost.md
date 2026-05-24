@@ -4,7 +4,7 @@ This guide covers what you need to run **GLS parcel point picker**, **Foxpost AP
 
 ## Admin feature flags (Webshop settings)
 
-Open **Admin → Webshop beállítások → GLS / Foxpost** (`/admin/shop/flags`).
+Open **Admin → Beállítások** (`/admin/info`) and toggle the four parcel flags.
 
 | Flag key | What it enables |
 | --- | --- |
@@ -75,7 +75,7 @@ Default name fallback: **`GLS Csomagpont`** (`GLS_SHIPPING_METHOD_NAME` env over
 
 ### GLS checklist
 
-- [ ] `glsParcelPicker` and/or `glsParcelManager` enabled in `/admin/shop/flags`
+- [ ] `glsParcelPicker` and/or `glsParcelManager` enabled in `/admin/info`
 - [ ] Active shipping method in admin with type **GLS csomagpont** (and price set)
 - [ ] MyGLS credentials and pickup address in env
 - [ ] Test checkout: select GLS → pick point → place order
@@ -171,4 +171,4 @@ If managers are off, parcel point data is still shown but label buttons are hidd
 | GLS service | `src/services/gls.ts` |
 | Foxpost service | `src/services/foxpost.ts` |
 | Admin UI | `src/components/admin/OrderParcelPanel.tsx` |
-| Admin flags page | `src/app/admin/shop/flags/page.tsx` |
+| Admin flags (Beállítások) | `src/app/admin/info/page.tsx` |

@@ -31,7 +31,7 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
   const fieldClass = cn(cxInput(a), a === "dark" && "shadow-none dark:bg-transparent")
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 sm:space-y-8">
       <div className={cxTypeToggleShell(a)}>
         <button
           type="button"

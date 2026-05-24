@@ -16,6 +16,11 @@ import {
 } from "@/services/inventory-reservation";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
+import { OrderGuestAccessService } from "@/services/order-guest-access";
+import { buildAuthLoginUrl } from "@/lib/order-guest-access";
+
+export type OrderWithGuestAccess = InstanceType<typeof Order> & { guestAccessToken?: string };
+
 export class OrderService {
   static async createOrder(orderData: any, userId?: string) {
     return this.createOrderFromCheckoutData(orderData, userId, { enforceShopEnabled: true });
@@ -75,11 +80,23 @@ export class OrderService {
       // 3. Clear the cart if user is logged in
       await this.clearUserCart(userId);
 
+      let guestAccessToken: string | undefined;
+      if (!userId) {
+        const guestEmail = orderData.billingInfo?.email?.trim();
+        if (guestEmail) {
+          guestAccessToken = await OrderGuestAccessService.createForOrder(String(order._id), guestEmail);
+        }
+      }
+
       // 4. Trigger side effects after successful persistence
-      await this.sendOrderConfirmation(order, orderData);
+      await this.sendOrderConfirmation(order, orderData, guestAccessToken);
       await this.tryIssueInvoice(order);
 
-      return order;
+      if (guestAccessToken) {
+        (order as OrderWithGuestAccess).guestAccessToken = guestAccessToken;
+      }
+
+      return order as OrderWithGuestAccess;
     } catch (error) {
       await sendOrderPlacementErrorShopAlert({
         error,
@@ -201,7 +218,11 @@ export class OrderService {
     }
   }
 
-  private static async sendOrderConfirmation(order: any, orderData: any) {
+  private static async sendOrderConfirmation(
+    order: any,
+    orderData: any,
+    guestAccessToken?: string
+  ) {
     const orderId = String(order._id);
     const logBase = { flow: "order_confirmation", orderId };
 
@@ -212,6 +233,13 @@ export class OrderService {
       const customerEmail = userEmail || billingEmail;
       const emailSource = userEmail ? "user" : billingEmail ? "billingInfo" : "none";
       const customerName = populatedOrder?.user?.name || orderData.shippingAddress?.name;
+      const isGuestOrder = !populatedOrder?.user && Boolean(guestAccessToken);
+      const orderViewUrl = guestAccessToken
+        ? OrderGuestAccessService.buildViewUrl(orderId, guestAccessToken)
+        : undefined;
+      const linkToAccountUrl = guestAccessToken
+        ? buildAuthLoginUrl(OrderGuestAccessService.buildViewUrl(orderId, guestAccessToken))
+        : undefined;
 
       if (!customerEmail) {
         logMailer("warn", "order_confirmation_skipped", {
@@ -240,6 +268,9 @@ export class OrderService {
           items: order.items
             .map((i: any) => `${i.name}${i.variantLabel ? ` [${i.variantLabel}]` : ""} (${i.quantity}x)`)
             .join(", "),
+          orderViewUrl: orderViewUrl || "",
+          linkToAccountUrl: linkToAccountUrl || "",
+          isGuestOrder,
         },
       });
 

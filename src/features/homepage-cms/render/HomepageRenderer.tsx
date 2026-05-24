@@ -18,10 +18,21 @@ type Props = {
     requireVariantSelection: boolean
   }>
   categories: Array<{ id: string; name: string; description: string; image: string; slug: string }>
-  company: { name: string; address: string; phone: string; email: string }
+  company: {
+    name: string
+    address: string
+    phone: string
+    email: string
+    contactEmails: Array<{ id: string; label: string; email: string }>
+  }
+  siteContact?: {
+    emails: Array<{ id: string; label: string; email: string }>
+    phone: string
+    address: string
+  }
 }
 
-export function HomepageRenderer({ blocks, reviews, products, categories, company }: Props) {
+export function HomepageRenderer({ blocks, reviews, products, categories, company, siteContact }: Props) {
   return (
     <>
       {blocks.filter((block) => block.enabled !== false).map((block) => {
@@ -51,6 +62,7 @@ export function HomepageRenderer({ blocks, reviews, products, categories, compan
           reviews,
           categories,
           company,
+          siteContact,
         } as unknown as Record<string, unknown>
         return <Component key={block.id} {...props} />
       })}

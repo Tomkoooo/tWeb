@@ -108,9 +108,7 @@ export function FlowShellVisualSurfaceEditor({
       reviewTitle={`${flowRoute} előnézet`}
       branding={branding}
       initialFooter={initialFooter}
-      initialSeo={seo}
       initialTheme={theme}
-      themeResetBaseline={themeResetBaseline}
       dirty={dirty}
       canUndo={canUndo}
       canRedo={canRedo}
@@ -144,6 +142,7 @@ export function FlowShellVisualSurfaceEditor({
         }
       }}
       contactEmail={homepageDeps.company.email}
+      contactEmails={homepageDeps.siteContact.emails}
       contactPhone={homepageDeps.company.phone}
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}

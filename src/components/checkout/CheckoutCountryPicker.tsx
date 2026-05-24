@@ -59,18 +59,44 @@ export function CheckoutCountryPicker({
     return pool.map((code) => ({ code, label: getCountryDisplayName(code, "hu-HU") }))
   }, [restriction])
 
+  const singleOption = options.length === 1 ? options[0] : null
+  const showCountrySearch = options.length > 1
+
+  React.useEffect(() => {
+    if (singleOption && valueCode !== singleOption.code) {
+      onChangeCode(singleOption.code)
+    }
+  }, [singleOption, valueCode, onChangeCode])
+
   const [freeInput, setFreeInput] = React.useState("")
   const hints = React.useMemo(() => {
-    if (!freeInput.trim()) return []
+    if (!showCountrySearch || !freeInput.trim()) return []
     const resolved = resolveCountryInput(freeInput).suggestions
     if (restriction && restriction.length > 0) {
       return resolved.filter((h) => restriction.includes(h.code))
     }
     return resolved
-  }, [freeInput, restriction])
+  }, [freeInput, restriction, showCountrySearch])
+
+  if (singleOption) {
+    return (
+      <div className={cn("space-y-2", className)}>
+        <p className={cxLabel(a)}>{label}</p>
+        <p
+          className={cn(
+            "border border-border bg-muted/30 px-3 py-2.5 text-sm font-medium text-foreground",
+            a === "dark" && "border-white/10 bg-white/5"
+          )}
+          id={id}
+        >
+          {singleOption.label}
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn(showCountrySearch ? "space-y-6" : "space-y-2", className)}>
       <div className="space-y-2">
         <label htmlFor={id} className={cxLabel(a)}>
           {label} (ISO)
@@ -93,7 +119,7 @@ export function CheckoutCountryPicker({
             aria-hidden
           />
         </div>
-        {restriction && restriction.length > 0 ? (
+        {restriction && restriction.length > 1 ? (
           <p className="text-[10px] leading-relaxed text-muted-foreground">
             {kind === "billing"
               ? "Ez a bolt csak a felsorolt országoknak állít ki számlát."
@@ -102,38 +128,40 @@ export function CheckoutCountryPicker({
         ) : null}
       </div>
 
-      <div className="space-y-3 border-t border-border pt-6">
-        <p className={cxLabel(a)}>Nem találod? Írd be a nevet vagy a kódot</p>
-        <input
-          type="text"
-          value={freeInput}
-          onChange={(e) => setFreeInput(e.target.value)}
-          placeholder="pl. Ausztria vagy AT"
-          className={cxInput(a)}
-          autoComplete="off"
-        />
-        {hints.length > 0 ? (
-          <ul className="flex flex-wrap gap-2" role="list">
-            {hints.map((h) => (
-              <li key={h.code}>
-                <button
-                  type="button"
-                  className={cn(
-                    "rounded-none border border-border bg-muted/50 px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest",
-                    "text-foreground transition-colors hover:border-primary-foreground/40 hover:bg-muted"
-                  )}
-                  onClick={() => {
-                    onChangeCode(h.code)
-                    setFreeInput("")
-                  }}
-                >
-                  {h.code} — {h.labelHu}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+      {showCountrySearch ? (
+        <div className="space-y-3 border-t border-border pt-6">
+          <p className={cxLabel(a)}>Nem találod? Írd be a nevet vagy a kódot</p>
+          <input
+            type="text"
+            value={freeInput}
+            onChange={(e) => setFreeInput(e.target.value)}
+            placeholder="pl. Ausztria vagy AT"
+            className={cxInput(a)}
+            autoComplete="off"
+          />
+          {hints.length > 0 ? (
+            <ul className="flex flex-wrap gap-2" role="list">
+              {hints.map((h) => (
+                <li key={h.code}>
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-none border border-border bg-muted/50 px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest",
+                      "text-foreground transition-colors hover:border-primary-foreground/40 hover:bg-muted"
+                    )}
+                    onClick={() => {
+                      onChangeCode(h.code)
+                      setFreeInput("")
+                    }}
+                  >
+                    {h.code} — {h.labelHu}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }
