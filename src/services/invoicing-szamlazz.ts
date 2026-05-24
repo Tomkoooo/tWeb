@@ -194,7 +194,7 @@ export class InvoicingSzamlazzService {
   }
 
   private static async fetchPdfFromProvider(
-    client: Client,
+    client: ReturnType<typeof InvoicingSzamlazzService.getClient>,
     params: { invoiceId?: string; orderNumber?: string }
   ): Promise<Buffer | null> {
     try {
