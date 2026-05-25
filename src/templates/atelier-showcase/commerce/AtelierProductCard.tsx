@@ -13,6 +13,7 @@ import { mediaImageSrc } from "@/lib/images"
 import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
 import {
   buildProductListingLines,
+  buildRegularProductListingLines,
   getActiveVariants,
   getLimitedPriceOffer,
   getVariantById,
@@ -52,7 +53,8 @@ export function AtelierProductCard({
       : null
     : getLimitedPriceOffer(p)
   const listingLines = buildProductListingLines(p)
-  const showFromPrice = variantProduct && listingHasPriceRange(listingLines, p.vatPercent)
+  const regularListingLines = buildRegularProductListingLines(p)
+  const showFromPrice = variantProduct && listingHasPriceRange(regularListingLines, p.vatPercent)
   const {
     unitGross: finalPrice,
     unitNet,

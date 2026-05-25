@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
 import {
   buildProductListingLines,
+  buildRegularProductListingLines,
   getActiveVariants,
   getLimitedPriceOffer,
   getVariantById,
@@ -96,7 +97,8 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
       : null
     : getLimitedPriceOffer(product)
   const listingLines = buildProductListingLines(product)
-  const showFromPrice = variantProduct && listingHasPriceRange(listingLines, product.vatPercent)
+  const regularListingLines = buildRegularProductListingLines(product)
+  const showFromPrice = variantProduct && listingHasPriceRange(regularListingLines, product.vatPercent)
   const {
     unitGross: finalPrice,
     unitNet,
