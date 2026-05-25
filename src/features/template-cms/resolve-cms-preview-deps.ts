@@ -15,13 +15,13 @@ export async function getShopCmsPreviewDeps(
     search: undefined as string | undefined,
     category: undefined as string | undefined,
     isDiscounted: false,
-    sort: "newest" as const,
+    sort: "featured" as const,
     isActive: true,
     isVisible: true,
   }
 
   const [paginationResult, categoriesResult] = await Promise.all([
-    ProductService.getPaginated(1, pageSize, filters),
+    ProductService.getStorefrontPaginated(1, pageSize, filters),
     CategoryService.getTree(),
   ])
 

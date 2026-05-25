@@ -8,6 +8,7 @@ import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefron
 import { MediaService } from "./media";
 import Review from "@/models/Review";
 import mongoose from "mongoose";
+import { resolveFeaturedProductIds } from "@/lib/featured-products";
 
 export interface ProductFilters {
   search?: string;
@@ -52,6 +53,82 @@ function normalizeProductForListing(product: Record<string, unknown> | object) {
     __displayStock: number
     createdAt?: string | Date
   }
+}
+
+async function buildProductListingQuery(filters: ProductFilters): Promise<Record<string, unknown>> {
+  const query: Record<string, unknown> = {};
+
+  const search = filters.search?.trim();
+  if (search && search.length >= 2) {
+    query.$text = { $search: search };
+  }
+
+  if (filters.isActive !== undefined) query.isActive = filters.isActive;
+  if (filters.isVisible !== undefined) query.isVisible = filters.isVisible;
+  query.deletedAt = filters.deleted ? { $ne: null } : null;
+
+  if (filters.category) {
+    const { CategoryService } = await import("./category");
+    const categoryIds = await CategoryService.getDescendantIds(filters.category);
+    query.category = { $in: categoryIds };
+  }
+
+  if (filters.isDiscounted) {
+    query.$or = [
+      { hasDiscount: true },
+      { displayMaxDiscount: { $gt: 0 } },
+      { discount: { $gt: 0 } },
+      { "variants.discount": { $gt: 0 } },
+    ];
+  }
+
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    query.displayMinGrossPrice = {
+      ...(filters.minPrice !== undefined ? { $gte: filters.minPrice } : {}),
+      ...(filters.maxPrice !== undefined ? { $lte: filters.maxPrice } : {}),
+    };
+  }
+
+  return query;
+}
+
+function productId(product: Record<string, unknown>): string {
+  const id = product._id as string | { toString(): string } | undefined;
+  return typeof id === "string" ? id : id?.toString() ?? "";
+}
+
+function compareFeaturedListIndex(
+  a: Record<string, unknown> & { createdAt?: string | Date },
+  b: Record<string, unknown> & { createdAt?: string | Date }
+): number {
+  const ai = a.featuredListIndex;
+  const bi = b.featuredListIndex;
+  const aSet = ai != null && Number.isFinite(Number(ai));
+  const bSet = bi != null && Number.isFinite(Number(bi));
+  if (aSet && bSet) return Number(ai) - Number(bi);
+  if (aSet) return -1;
+  if (bSet) return 1;
+  const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+  return bt - at;
+}
+
+function orderByFeaturedSettings<T extends Record<string, unknown> & { createdAt?: string | Date }>(
+  products: T[],
+  featuredIds: string[]
+): T[] {
+  const rank = new Map(featuredIds.map((id, index) => [id, index]));
+  return [...products].sort((a, b) => {
+    const ar = rank.get(productId(a));
+    const br = rank.get(productId(b));
+    const aFeatured = ar !== undefined;
+    const bFeatured = br !== undefined;
+
+    if (aFeatured && bFeatured) return ar - br;
+    if (aFeatured) return -1;
+    if (bFeatured) return 1;
+    return compareFeaturedListIndex(a, b);
+  });
 }
 
 function sortFieldForFilter(sort?: string): Record<string, 1 | -1> {
@@ -105,38 +182,7 @@ export class ProductService {
   static async getPaginated(page: number = 1, limit: number = 10, filters: ProductFilters = {}) {
     await dbConnect();
 
-    const query: Record<string, unknown> = {};
-
-    const search = filters.search?.trim();
-    if (search && search.length >= 2) {
-      query.$text = { $search: search };
-    }
-
-    if (filters.isActive !== undefined) query.isActive = filters.isActive;
-    if (filters.isVisible !== undefined) query.isVisible = filters.isVisible;
-    query.deletedAt = filters.deleted ? { $ne: null } : null;
-
-    if (filters.category) {
-      const { CategoryService } = await import("./category");
-      const categoryIds = await CategoryService.getDescendantIds(filters.category);
-      query.category = { $in: categoryIds };
-    }
-
-    if (filters.isDiscounted) {
-      query.$or = [
-        { hasDiscount: true },
-        { displayMaxDiscount: { $gt: 0 } },
-        { discount: { $gt: 0 } },
-        { "variants.discount": { $gt: 0 } },
-      ];
-    }
-
-    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-      query.displayMinGrossPrice = {
-        ...(filters.minPrice !== undefined ? { $gte: filters.minPrice } : {}),
-        ...(filters.maxPrice !== undefined ? { $lte: filters.maxPrice } : {}),
-      };
-    }
+    const query = await buildProductListingQuery(filters);
 
     const needsInMemoryFilter = false;
 
@@ -195,6 +241,40 @@ export class ProductService {
 
     return {
       products,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: page,
+    };
+  }
+
+  static async getStorefrontPaginated(
+    page: number = 1,
+    limit: number = 10,
+    filters: ProductFilters = {}
+  ) {
+    const sort = filters.sort || "featured";
+    if (sort !== "featured") {
+      return this.getPaginated(page, limit, filters);
+    }
+
+    await dbConnect();
+    const query = await buildProductListingQuery(filters);
+    const [rows, featuredIds] = await Promise.all([
+      Product.find(query)
+        .select(LISTING_SELECT)
+        .populate("category")
+        .lean(),
+      resolveFeaturedProductIds(),
+    ]);
+    const ordered = orderByFeaturedSettings(
+      rows.map((p) => normalizeProductForListing(p)),
+      featuredIds
+    );
+    const total = ordered.length;
+    const skip = (page - 1) * limit;
+
+    return {
+      products: ordered.slice(skip, skip + limit),
       total,
       pages: Math.ceil(total / limit),
       currentPage: page,

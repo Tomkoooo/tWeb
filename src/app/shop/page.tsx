@@ -119,13 +119,13 @@ export default async function ShopPage({
     search: params.q,
     category: params.category,
     isDiscounted: params.discounted === "true",
-    sort: params.sort || "newest",
+    sort: params.sort || "featured",
     ...storefrontCatalogFilters(),
   }
 
   const [paginationResult, categoriesResult, contentDoc] =
     await Promise.all([
-      ProductService.getPaginated(currentPage, limit, filters),
+      ProductService.getStorefrontPaginated(currentPage, limit, filters),
       getRequestCategoryTree(),
       getRequestShopContent(),
     ])

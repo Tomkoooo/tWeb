@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 const sortOptions = [
+  { label: "Kiemelt", value: "featured" },
   { label: "Legújabb", value: "newest" },
   { label: "Ár: növekvő", value: "price-asc" },
   { label: "Ár: csökkenő", value: "price-desc" },
@@ -23,7 +24,7 @@ const sortOptions = [
 export function AtelierShopHeader({ total, q }: { total: number; q?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const currentSort = searchParams.get("sort") || "newest"
+  const currentSort = searchParams.get("sort") || "featured"
 
   const handleSortChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())

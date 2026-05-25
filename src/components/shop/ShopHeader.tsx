@@ -22,6 +22,7 @@ interface ShopHeaderProps {
 }
 
 const sortOptions = [
+  { label: "Kiemelt", value: "featured" },
   { label: "Legújabb", value: "newest" },
   { label: "Ár: Alacsonytól", value: "price-asc" },
   { label: "Ár: Magastól", value: "price-desc" },
@@ -31,7 +32,7 @@ const sortOptions = [
 export function ShopHeader({ total, q }: ShopHeaderProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const currentSort = searchParams.get("sort") || "newest"
+  const currentSort = searchParams.get("sort") || "featured"
 
   const handleSortChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
