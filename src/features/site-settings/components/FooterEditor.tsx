@@ -6,6 +6,12 @@ import type { FooterSettings } from "@/services/footer-settings"
 
 export function FooterEditor({ initial }: { initial: FooterSettings }) {
   const [state, setState] = useState<FooterSettings>(initial)
+  const socialLabels: Record<string, string> = {
+    facebook: "Facebook oldal URL",
+    instagram: "Instagram profil URL",
+    twitter: "Twitter/X URL",
+    youtube: "YouTube csatorna URL",
+  }
 
   return (
     <div className="space-y-6">
@@ -51,8 +57,10 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-widest text-neutral-400">socialLinks</p>
         {state.socialLinks.map((item, index) => (
-          <div key={item.platform} className="grid grid-cols-[120px_1fr_auto] gap-2 items-center">
-            <span className="text-xs uppercase tracking-widest text-neutral-300">{item.platform}</span>
+          <div key={item.platform} className="grid grid-cols-1 gap-2 items-center md:grid-cols-[180px_1fr_auto]">
+            <span className="text-xs uppercase tracking-widest text-neutral-300">
+              {socialLabels[item.platform] || item.platform}
+            </span>
             <input value={item.url} onChange={(event) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, url: event.target.value } : current)) }))} className="h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="https://..." />
             <label className="flex items-center gap-2 text-xs uppercase text-neutral-300">
               <input type="checkbox" checked={item.enabled} onChange={(event) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, enabled: event.target.checked } : current)) }))} />

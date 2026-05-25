@@ -36,11 +36,11 @@ function fromDoc(doc: IShopFeaturedSetting | null): ShopFeaturedSettings {
 export class ShopFeaturedSettingsService {
   static async get(): Promise<ShopFeaturedSettings> {
     await dbConnect();
-    let doc = await ShopFeaturedSetting.findOne({ key: "featured" }).lean();
-    if (!doc) {
-      await ShopFeaturedSetting.create({ key: "featured", ...DEFAULTS });
-      doc = await ShopFeaturedSetting.findOne({ key: "featured" }).lean();
-    }
+    const doc = await ShopFeaturedSetting.findOneAndUpdate(
+      { key: "featured" },
+      { $setOnInsert: { key: "featured", ...DEFAULTS } },
+      { upsert: true, returnDocument: "after", lean: true }
+    );
     return fromDoc(doc as IShopFeaturedSetting | null);
   }
 

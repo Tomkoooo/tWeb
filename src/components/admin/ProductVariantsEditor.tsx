@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Trash2, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +16,13 @@ import {
   type AdminVariantRow,
 } from "@/lib/admin-product-variants";
 import { formatHuf } from "@/lib/pricing";
+import { resetProductLimitedPriceCounters } from "@/actions/admin-products";
 
 type VariantOption = { name: string; values: string[] };
 
 type Props = {
+  productId?: string;
+  isEdit?: boolean;
   initialOptions?: VariantOption[];
   initialVariants?: AdminVariantRow[];
   variants: AdminVariantRow[];
@@ -74,6 +78,8 @@ function parseOptionalNumber(value: string) {
 }
 
 export function ProductVariantsEditor({
+  productId,
+  isEdit = false,
   initialOptions = [],
   initialVariants = [],
   variants,
@@ -85,6 +91,9 @@ export function ProductVariantsEditor({
   onModeChange,
   onVariantsChange,
 }: Props) {
+  const router = useRouter();
+  const [isResettingLimiter, startResetLimiterTransition] = useTransition();
+  const [limiterResetMessage, setLimiterResetMessage] = useState<string | null>(null);
   const setVariants = (
     updater: AdminVariantRow[] | ((prev: AdminVariantRow[]) => AdminVariantRow[])
   ) => {
@@ -179,6 +188,21 @@ export function ProductVariantsEditor({
     activeVariant && !activeVariantUsesBasePrice
       ? numericInputValue(resolveVariantGrossPrice(activeVariant, vatPercent))
       : "";
+  const activeLimited = activeVariant?.limitedPrice || {
+    enabled: false,
+    limitQuantity: 0,
+    netPrice: undefined,
+    grossPrice: undefined,
+    reservedCount: 0,
+    soldCount: 0,
+    claimedCount: 0,
+  };
+  const activeLimitedNetInput = numericInputValue(activeLimited.netPrice);
+  const activeLimitedGrossInput = numericInputValue(activeLimited.grossPrice);
+  const activeLimitedClaimed = Number(activeLimited.claimedCount) || 0;
+  const activeLimitedReserved = Number(activeLimited.reservedCount) || 0;
+  const activeLimitedSold = Number(activeLimited.soldCount) || 0;
+  const activeLimitedRemaining = Math.max(0, Number(activeLimited.limitQuantity || 0) - activeLimitedClaimed);
 
   const updateVariantPrices = (
     variantId: string,
@@ -195,6 +219,65 @@ export function ProductVariantsEditor({
         item.id === variantId ? { ...item, netPrice: defaultNetPrice, grossPrice: undefined } : item
       )
     );
+  };
+
+  const updateVariantLimitedPrice = (
+    variantId: string,
+    patch: Partial<NonNullable<AdminVariantRow["limitedPrice"]>>
+  ) => {
+    setVariants((prev) =>
+      prev.map((item) =>
+        item.id === variantId
+          ? {
+              ...item,
+              limitedPrice: {
+                enabled: false,
+                limitQuantity: 0,
+                reservedCount: 0,
+                soldCount: 0,
+                claimedCount: 0,
+                ...(item.limitedPrice || {}),
+                ...patch,
+              },
+            }
+          : item
+      )
+    );
+  };
+
+  const resetActiveVariantLimiter = (variantId: string) => {
+    if (!productId || isResettingLimiter) return;
+    const confirmed = window.confirm(
+      "Biztosan nullázod ennek a variánsnak a limitált ár számlálóit? A limit és az árak megmaradnak."
+    );
+    if (!confirmed) return;
+    setLimiterResetMessage(null);
+    startResetLimiterTransition(async () => {
+      try {
+        await resetProductLimitedPriceCounters(productId, variantId);
+        setVariants((prev) =>
+          prev.map((item) =>
+            item.id === variantId
+              ? {
+                  ...item,
+                  limitedPrice: {
+                    enabled: false,
+                    limitQuantity: 0,
+                    ...(item.limitedPrice || {}),
+                    reservedCount: 0,
+                    soldCount: 0,
+                    claimedCount: 0,
+                  },
+                }
+              : item
+          )
+        );
+        setLimiterResetMessage("Limit számlálók nullázva.");
+        router.refresh();
+      } catch (error) {
+        setLimiterResetMessage(error instanceof Error ? error.message : "A nullázás sikertelen.");
+      }
+    });
   };
 
   const updateBulkNetPrice = (value: string) => {
@@ -231,6 +314,15 @@ export function ProductVariantsEditor({
           stock: 0,
           isActive: true,
           isDefault: index === 0,
+          limitedPrice: {
+            enabled: false,
+            limitQuantity: 0,
+            netPrice: undefined,
+            grossPrice: undefined,
+            reservedCount: 0,
+            soldCount: 0,
+            claimedCount: 0,
+          },
           sku: "",
           nameOverride: "",
           descriptionOverride: "",
@@ -614,6 +706,101 @@ export function ProductVariantsEditor({
                             Alapár használata
                           </Button>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-white/10 bg-black/30 p-4 space-y-3">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                            Első X darab egyedi ára
+                          </p>
+                          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                            Variánsonként külön limit. A foglalt és eladott darabokat a rendelési folyamat kezeli.
+                          </p>
+                          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                            Maradt: {activeLimitedRemaining} · Felhasználva: {activeLimitedClaimed} · Foglalt:{" "}
+                            {activeLimitedReserved} · Eladott: {activeLimitedSold}
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-neutral-400">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(activeLimited.enabled)}
+                            onChange={(event) =>
+                              updateVariantLimitedPrice(activeVariant.id, { enabled: event.target.checked })
+                            }
+                          />
+                          Bekapcsolva
+                        </label>
+                      </div>
+
+                      {isEdit && productId ? (
+                        <div className="flex flex-col gap-2 border border-white/10 bg-black/20 p-3 md:flex-row md:items-center md:justify-between">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                            Teszt rendelések után itt nullázható csak ennek a variánsnak a limit számlálója.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isResettingLimiter}
+                            onClick={() => resetActiveVariantLimiter(activeVariant.id)}
+                            className="h-10 shrink-0 rounded-none border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                          >
+                            {isResettingLimiter ? "Nullázás..." : "Limit számláló nullázása"}
+                          </Button>
+                        </div>
+                      ) : null}
+                      {limiterResetMessage ? (
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300">
+                          {limiterResetMessage}
+                        </p>
+                      ) : null}
+
+                      <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-3">
+                        <AdminFormField label="Limit (db)">
+                          <Input
+                            type="number"
+                            value={activeLimited.limitQuantity || ""}
+                            onChange={(event) =>
+                              updateVariantLimitedPrice(activeVariant.id, {
+                                limitQuantity: Math.max(0, Math.round(Number(event.target.value) || 0)),
+                              })
+                            }
+                            placeholder="Pl. 412"
+                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          />
+                        </AdminFormField>
+                        <AdminFormField label="Limitált nettó ár (Ft)">
+                          <Input
+                            type="number"
+                            value={activeLimitedNetInput}
+                            onChange={(event) => {
+                              const net = parseOptionalNumber(event.target.value);
+                              updateVariantLimitedPrice(activeVariant.id, {
+                                netPrice: net ?? undefined,
+                                grossPrice: net == null ? undefined : netToGross(net, vatPercent),
+                              });
+                            }}
+                            placeholder="Egyedi nettó"
+                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          />
+                        </AdminFormField>
+                        <AdminFormField label="Limitált bruttó ár (Ft)">
+                          <Input
+                            type="number"
+                            value={activeLimitedGrossInput}
+                            onChange={(event) => {
+                              const gross = parseOptionalNumber(event.target.value);
+                              updateVariantLimitedPrice(activeVariant.id, {
+                                grossPrice: gross ?? undefined,
+                                netPrice: gross == null ? undefined : deriveNetFromGross(gross, vatPercent),
+                              });
+                            }}
+                            placeholder="Egyedi bruttó"
+                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          />
+                        </AdminFormField>
                       </div>
                     </div>
 

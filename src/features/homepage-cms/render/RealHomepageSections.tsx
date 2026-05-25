@@ -150,6 +150,7 @@ export function RealHomepageSections({
       {productGrid ? (
         <Shop
           templateId={dependencies.templateId}
+          shopEnabled={dependencies.shopEnabled}
           categories={dependencies.categories}
           products={dependencies.products}
           title={isVisible(productGrid, "title") ? productGrid.title : ""}

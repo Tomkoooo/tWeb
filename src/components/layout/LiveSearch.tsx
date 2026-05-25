@@ -11,7 +11,7 @@ import { useClickAway } from "react-use"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 import { buildProductListingLines } from "@/lib/product-variants"
-import { listingPriceSummary } from "@/lib/pricing"
+import { listingHasPriceRange, listingPriceSummary } from "@/lib/pricing"
 
 interface LiveSearchProps {
   className?: string
@@ -104,10 +104,9 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                   ? product.variants.filter((variant: any) => variant.isActive !== false)
                   : []
                 const needsVariantSelection = Boolean(product.requireVariantSelection) && variants.length > 0
-                const { unitGross: fromGross } = listingPriceSummary(
-                  buildProductListingLines(product),
-                  product.vatPercent
-                )
+                const listingLines = buildProductListingLines(product)
+                const { unitGross: fromGross } = listingPriceSummary(listingLines, product.vatPercent)
+                const hasPriceRange = listingHasPriceRange(listingLines, product.vatPercent)
                 return (
                   <button
                     key={product._id}
@@ -125,7 +124,7 @@ export function LiveSearch({ className, placeholder = "KERESÉS...", inputClassN
                     <div className="grow min-w-0">
                       <p className="text-xs font-black text-foreground uppercase truncate tracking-widest">{product.name}</p>
                       <p className="text-[10px] font-bold text-primary-foreground mt-1">
-                        {needsVariantSelection ? "Tól " : ""}
+                        {needsVariantSelection && hasPriceRange ? "Tól " : ""}
                         {fromGross.toLocaleString("hu-HU")} FT
                       </p>
                     </div>

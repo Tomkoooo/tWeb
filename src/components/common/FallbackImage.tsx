@@ -34,7 +34,7 @@ function EmptyImageSurface({
     <div
       aria-hidden
       className={cn(
-        "min-h-[4rem] w-full max-w-[20rem] bg-muted/25 ring-1 ring-inset ring-white/15 ring-dashed",
+        "min-h-16 w-full max-w-[20rem] bg-muted/25 ring-1 ring-inset ring-white/15 ring-dashed",
         className
       )}
     />
@@ -49,9 +49,11 @@ export function FallbackImage({
   className,
   fill,
   alt = "",
+  sizes,
   ...props
 }: FallbackImageProps) {
   const raw = typeof src === "string" ? src.trim() : ""
+  const resolvedSizes = sizes ?? (fill ? "(max-width: 768px) 100vw, 33vw" : undefined)
   const [broken, setBroken] = React.useState(false)
   const [currentSrc, setCurrentSrc] = React.useState(() =>
     showFallbackOnError ? raw || fallbackSrc : raw
@@ -76,6 +78,7 @@ export function FallbackImage({
         {...props}
         alt={alt}
         fill={fill}
+        sizes={resolvedSizes}
         className={className}
         src={raw}
         onError={(event) => {
@@ -91,6 +94,7 @@ export function FallbackImage({
       {...props}
       alt={alt}
       fill={fill}
+      sizes={resolvedSizes}
       className={className}
       src={currentSrc}
       onError={(event) => {

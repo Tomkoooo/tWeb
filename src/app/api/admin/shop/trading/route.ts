@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic"
 const bodySchema = z.object({
   shippingAllowedCountryCodes: z.array(z.string()).optional(),
   invoicingAllowedCountryCodes: z.array(z.string()).optional(),
+  maxReservationMinutes: z.number().nullable().optional(),
 })
 
 export async function GET() {
@@ -26,6 +27,7 @@ export async function PUT(req: NextRequest) {
   const next = await ShopTradingSettingsService.update({
     shippingAllowedCountryCodes: parsed.data.shippingAllowedCountryCodes,
     invoicingAllowedCountryCodes: parsed.data.invoicingAllowedCountryCodes,
+    maxReservationMinutes: parsed.data.maxReservationMinutes,
   })
   return NextResponse.json(next)
 }

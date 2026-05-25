@@ -3,6 +3,7 @@ import {
   defineTemplate,
   type TemplateModule,
 } from "@/templates/types"
+import dynamic from "next/dynamic"
 import { atelierShowcaseTheme } from "./theme"
 import { Navbar } from "./chrome/Navbar"
 import { Footer } from "./chrome/Footer"
@@ -14,17 +15,14 @@ import { AtelierProductDetailSlot } from "./commerce/AtelierProductDetailSlot"
 import { homeSchema } from "./pages/home/schema"
 import { homeDefaultContent } from "./pages/home/defaultContent"
 import { HomeRender } from "./pages/home/Render"
-import { HomeEditorPanel } from "./pages/home/EditorPanel"
 
 import { shopSchema } from "./pages/shop/schema"
 import { shopDefaultContent } from "./pages/shop/defaultContent"
 import { ShopRender } from "./pages/shop/Render"
-import { ShopEditorPanel } from "./pages/shop/EditorPanel"
 
 import { pdpSchema } from "./pages/pdp/schema"
 import { pdpDefaultContent } from "./pages/pdp/defaultContent"
 import { PdpRender } from "./pages/pdp/Render"
-import { PdpEditorPanel } from "./pages/pdp/EditorPanel"
 
 import { AtelierCartRouteMain } from "./pages/flow/AtelierCartRouteMain"
 import { AtelierCheckoutRouteMain } from "./pages/flow/AtelierCheckoutRouteMain"
@@ -34,12 +32,20 @@ import { AtelierProfileRouteChrome } from "./pages/flow/AtelierProfileRouteChrom
 import { editorialSchema } from "./static-pages/editorial/schema"
 import { editorialDefaultContent } from "./static-pages/editorial/defaultContent"
 import { EditorialRender } from "./static-pages/editorial/Render"
-import { EditorialEditorPanel } from "./static-pages/editorial/EditorPanel"
 
 import { journalSchema } from "./static-pages/journal/schema"
 import { journalDefaultContent } from "./static-pages/journal/defaultContent"
 import { JournalRender } from "./static-pages/journal/Render"
-import { JournalEditorPanel } from "./static-pages/journal/EditorPanel"
+
+const HomeEditorPanel = dynamic(() => import("./pages/home/EditorPanel").then((m) => m.HomeEditorPanel))
+const ShopEditorPanel = dynamic(() => import("./pages/shop/EditorPanel").then((m) => m.ShopEditorPanel))
+const PdpEditorPanel = dynamic(() => import("./pages/pdp/EditorPanel").then((m) => m.PdpEditorPanel))
+const EditorialEditorPanel = dynamic(() =>
+  import("./static-pages/editorial/EditorPanel").then((m) => m.EditorialEditorPanel)
+)
+const JournalEditorPanel = dynamic(() =>
+  import("./static-pages/journal/EditorPanel").then((m) => m.JournalEditorPanel)
+)
 
 export const atelierShowcase: TemplateModule = defineTemplate({
   manifest: {

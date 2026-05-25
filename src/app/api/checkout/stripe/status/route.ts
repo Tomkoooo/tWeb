@@ -5,6 +5,7 @@ import TempOrder from "@/models/TempOrder";
 import { CheckoutFinalizationService } from "@/services/checkout-finalization";
 import { getStripeClient } from "@/services/stripe";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
+import { confirmPendingReservationsForTempOrder } from "@/services/inventory-reservation";
 
 export const runtime = "nodejs";
 
@@ -103,6 +104,7 @@ export async function GET(req: NextRequest) {
     );
 
     try {
+      await confirmPendingReservationsForTempOrder(tempOrderId);
       await CheckoutFinalizationService.finalizeFromTempOrder(tempOrderId);
     } catch (finalizeErr) {
       console.error("Stripe status GET finalize error:", finalizeErr);

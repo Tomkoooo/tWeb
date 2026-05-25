@@ -2,9 +2,9 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { getActiveChrome } from "@/lib/active-chrome"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
+import { getRequestPageContent } from "@/lib/cached-storefront"
 
 export const revalidate = 60
-import { PageContentService } from "@/services/page-content"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
 
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
   if (!def) return {}
   try {
     const [content, shopName] = await Promise.all([
-      PageContentService.get<{
+      getRequestPageContent<{
         meta?: { seoTitle?: string; seoDescription?: string }
       }>(template.manifest.id, `page:${slugStr}`),
       getStorefrontShopName(),
@@ -49,7 +49,7 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
   }
 
   const [content, footerData] = await Promise.all([
-    PageContentService.get(template.manifest.id, `page:${slugStr}`),
+    getRequestPageContent(template.manifest.id, `page:${slugStr}`),
     resolveStorefrontFooterContact(template),
   ])
   const Render = def.Render

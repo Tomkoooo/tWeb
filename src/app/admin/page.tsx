@@ -21,6 +21,7 @@ type Trend = "up" | "down"
 type KpiCardProps = {
   title: string
   value: string
+  subtitle?: string
   change: number
   trend: Trend
   icon: ComponentType<{ className?: string }>
@@ -40,7 +41,7 @@ type UnreadContactMessage = {
   createdAt: string | Date
 }
 
-async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps) {
+async function KpiCard({ title, value, subtitle, change, trend, icon: Icon }: KpiCardProps) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/30 transition-colors group">
       <div className="flex justify-between items-start mb-4">
@@ -55,6 +56,7 @@ async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps
       <div>
         <h3 className="text-white/40 text-sm font-medium mb-1 uppercase tracking-wider">{title}</h3>
         <p className="text-3xl font-bold">{value}</p>
+        {subtitle ? <p className="mt-2 text-xs font-bold text-neutral-500">{subtitle}</p> : null}
       </div>
     </div>
   )
@@ -102,7 +104,9 @@ export default async function AdminDashboard() {
     kpis: {
       totalRevenue: number
       ordersCount: number
-      activeCustomersCount: number
+      totalCustomersCount: number
+      registeredCustomersCount: number
+      guestCustomersCount: number
       productsCount: number
     }
     recentOrders: RecentOrder[]
@@ -112,7 +116,14 @@ export default async function AdminDashboard() {
   const stats: KpiCardProps[] = [
     { title: "Összes Bevétel", value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`, change: 0, trend: "up", icon: TrendingUp },
     { title: "Összes Rendelés", value: kpis.ordersCount.toString(), change: 0, trend: "up", icon: ShoppingCart },
-    { title: "Aktív Vásárlók", value: kpis.activeCustomersCount.toString(), change: 0, trend: "up", icon: Users },
+    {
+      title: "Összes Vásárló",
+      value: kpis.totalCustomersCount.toString(),
+      subtitle: `Regisztrált: ${kpis.registeredCustomersCount} · Vendég: ${kpis.guestCustomersCount}`,
+      change: 0,
+      trend: "up",
+      icon: Users,
+    },
     { title: "Összes Termék", value: kpis.productsCount.toString(), change: 0, trend: "up", icon: Package },
   ]
 

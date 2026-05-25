@@ -8,6 +8,12 @@ import type { SiteContact, SiteContactEntry } from "@/lib/site-contact"
 
 export type { SiteContact, SiteContactEntry }
 
+export type ProductCardSlotProps = {
+  product: unknown
+  /** Server-derived shop availability; avoids one client API request per card. */
+  shopEnabled?: boolean
+}
+
 export type RestyledPage = "home" | "shop" | "pdp"
 
 /** Optional navbar search UI from `template.commerceSlots.NavbarSearch` (falls back to engine LiveSearch). */
@@ -55,6 +61,15 @@ export type HomePageFeaturedProduct = {
   discount: number
   vatPercent?: number
   grossPrice?: number
+  limitedPrice?: {
+    enabled?: boolean
+    limitQuantity?: number
+    netPrice?: number
+    grossPrice?: number
+    reservedCount?: number
+    soldCount?: number
+    claimedCount?: number
+  }
   images: string[]
   stock: number
   variants: Array<{
@@ -67,6 +82,15 @@ export type HomePageFeaturedProduct = {
     isDefault?: boolean
     attributes?: Record<string, string>
     images?: string[]
+    limitedPrice?: {
+      enabled?: boolean
+      limitQuantity?: number
+      netPrice?: number
+      grossPrice?: number
+      reservedCount?: number
+      soldCount?: number
+      claimedCount?: number
+    }
   }>
 }
 
@@ -91,6 +115,8 @@ export type HomePageDeps = {
   }>
   /** Admin-managed contact channels (e-mails, phone, address). Prefer this in new template code. */
   siteContact: SiteContact
+  /** Server-derived shop availability for product card CTAs. */
+  shopEnabled: boolean
   company: {
     name: string
     address: string
@@ -119,10 +145,12 @@ export type ShopPageDeps = {
    * Omit in admin preview — `ShopRender` falls back to engine `ProductCard`.
    */
   shopRendering?: {
-    ProductCard?: ComponentType<{ product: unknown }>
+    ProductCard?: ComponentType<ProductCardSlotProps>
     /** Optional category / filter chip from `commerceSlots.CategoryPill` (see `resolveCommerceShopRendering`). */
     CategoryPill?: ComponentType<{ label: string; active?: boolean; href?: string }>
   }
+  /** Server-derived shop availability for product card CTAs. */
+  shopEnabled: boolean
 }
 
 /** Where optional PDP editorial copy (eyebrow/title/body + highlight cards) sits relative to the product hero. */
@@ -131,6 +159,7 @@ export type PdpEditorialPlacement = "aboveGrid" | "belowHero"
 export type PdpPageDeps = {
   product: unknown
   selectedVariantId?: string
+  shopEnabled?: boolean
   /** Set by the product route for client-side `commerceSlots.ProductDetail` resolution. */
   templateId: string
 }
@@ -170,6 +199,7 @@ export type FlowProfileRouteChromeProps = {
 export type ProductDetailSlotProps = {
   product: unknown
   initialVariantId?: string
+  shopEnabled?: boolean
   editorial?: ProductDetailEditorial
   introPlacement?: PdpEditorialPlacement
   /** When true, buy box appears in the first column on large screens (gallery second). */
@@ -351,7 +381,7 @@ export interface TemplateModule {
    * Keep props narrow so templates skin UI without owning business logic.
    */
   commerceSlots?: {
-    ProductCard?: ComponentType<{ product: unknown }>
+    ProductCard?: ComponentType<ProductCardSlotProps>
     /** Category/filter chip or pill — optional hook for template-specific shop chroming. */
     CategoryPill?: ComponentType<{ label: string; active?: boolean; href?: string }>
     /** Optional PDP adornment zone (wired when `pages.pdp.Render` adopts it — template-driven). */

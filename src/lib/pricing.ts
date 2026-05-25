@@ -259,6 +259,13 @@ export function listingPriceSummary(lines: ListingPriceLine[], vatPercent?: numb
   }
 }
 
+export function listingHasPriceRange(lines: ListingPriceLine[], vatPercent?: number): boolean {
+  const prices = lines.map((line) => listingCustomerGross(line, vatPercent))
+  if (prices.length < 2) return false
+  const first = prices[0]
+  return prices.some((price) => price !== first)
+}
+
 export function formatHuf(value: number): string {
   return `${roundHuf(value).toLocaleString("hu-HU")} FT`
 }

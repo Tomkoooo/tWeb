@@ -27,7 +27,10 @@ type AdminStatsResult = {
     ordersCount: number;
     nonCancelledOrdersCount: number;
     customersCount: number;
-    activeCustomersCount: number;
+    totalCustomersCount: number;
+    registeredCustomersCount: number;
+    registeredOrderCustomersCount: number;
+    guestCustomersCount: number;
     productsCount: number;
     reviewsCount: number;
     avgOrderValue: number;
@@ -80,9 +83,15 @@ export default async function AdminStatsPage() {
           icon={ShoppingCart}
         />
         <StatCard
-          title="Aktív vásárlók"
-          value={`${kpis.activeCustomersCount}`}
-          subtitle={`Összes regisztrált: ${kpis.customersCount}`}
+          title="Összes vásárló"
+          value={`${kpis.totalCustomersCount}`}
+          subtitle={`Regisztrált vásárlók: ${kpis.registeredOrderCustomersCount} · Vendég vásárlók: ${kpis.guestCustomersCount}`}
+          icon={Users}
+        />
+        <StatCard
+          title="Regisztrált vásárlók"
+          value={`${kpis.registeredCustomersCount}`}
+          subtitle="Vásárlói fiókok (adminok nélkül)"
           icon={Users}
         />
         <StatCard

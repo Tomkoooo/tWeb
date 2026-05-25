@@ -8,7 +8,8 @@ import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots
  */
 export async function getShopCmsPreviewDeps(
   template: TemplateModule,
-  pageSize: number
+  pageSize: number,
+  shopEnabled = true
 ) {
   const filters = {
     search: undefined as string | undefined,
@@ -43,6 +44,7 @@ export async function getShopCmsPreviewDeps(
       page?: number
     },
     shopRendering: resolveCommerceShopRendering(template),
+    shopEnabled,
   }
 }
 

@@ -13,7 +13,9 @@ import {
   decrementCheckoutLineStock,
   InventoryReservationError,
   restoreCheckoutLineStock,
+  type CheckoutStockAllocation,
 } from "@/services/inventory-reservation";
+import { applyCheckoutPriceAllocations } from "@/services/checkout-validation";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
 import { OrderGuestAccessService } from "@/services/order-guest-access";
@@ -46,7 +48,8 @@ export class OrderService {
       if (options?.skipStockDecrement) {
         await this.validateReservedStockStillCoversOrder(orderData);
       } else {
-        await this.validateAndUpdateStockTransactional(orderData);
+        const allocations = await this.validateAndUpdateStockTransactional(orderData);
+        orderData = applyCheckoutPriceAllocations(orderData, allocations);
       }
 
       const {
@@ -136,22 +139,26 @@ export class OrderService {
   }
 
   /** Per-line atomic decrement for non-Stripe checkout (no reservation rows; standalone-Mongo safe). */
-  private static async validateAndUpdateStockTransactional(orderData: any) {
-    const applied: { product: string; variantId?: string; quantity: number }[] = [];
+  private static async validateAndUpdateStockTransactional(orderData: any): Promise<CheckoutStockAllocation[]> {
+    const applied: { product: string; variantId?: string; quantity: number; promoQuantity?: number }[] = [];
+    const allocations: CheckoutStockAllocation[] = [];
     try {
       for (const item of orderData.items) {
         const line = {
           product: String(item.product),
           variantId: item.variantId,
           quantity: item.quantity,
+          promoCounter: "sold" as const,
         };
-        await decrementCheckoutLineStock(undefined, line);
-        applied.push(line);
+        const allocation = await decrementCheckoutLineStock(undefined, line);
+        allocations.push(allocation);
+        applied.push({ ...line, promoQuantity: allocation.promoQuantity });
       }
+      return allocations;
     } catch (e: any) {
       for (const line of applied.reverse()) {
         try {
-          await restoreCheckoutLineStock(line);
+          await restoreCheckoutLineStock({ ...line, promoCounter: "sold" });
         } catch {
           /* best-effort rollback */
         }

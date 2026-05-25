@@ -4,9 +4,12 @@
  * we align defaults so DB reservation and Stripe session stay in sync.
  */
 
+import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
+
 const THIRTY_MIN_MS = 30 * 60 * 1000;
 const DEFAULT_MIN_MS = THIRTY_MIN_MS;
 const DEFAULT_MAX_MS = 60 * 60 * 1000;
+let settingsMaxCache: { value: number | null; expiresAt: number } | null = null;
 
 export function parseEnvMs(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -18,7 +21,33 @@ export function parseEnvMs(name: string, fallback: number): number {
 /** Effective hold duration in ms after clamping. */
 export function clampReservationTtlMs(requestedTtlMs?: number | null): number {
   const minMs = parseEnvMs("RESERVATION_TTL_MIN_MS", DEFAULT_MIN_MS);
-  const maxMs = Math.max(minMs, parseEnvMs("RESERVATION_TTL_MAX_MS", DEFAULT_MAX_MS));
+  const maxMinutes = Number(process.env.RESERVATION_TTL_MAX_MINUTES);
+  const maxFallback = Number.isFinite(maxMinutes) && maxMinutes > 0
+    ? maxMinutes * 60 * 1000
+    : parseEnvMs("RESERVATION_TTL_MAX_MS", DEFAULT_MAX_MS);
+  const maxMs = Math.max(minMs, maxFallback);
+  const requested = requestedTtlMs != null && requestedTtlMs > 0 ? requestedTtlMs : minMs;
+  return Math.min(Math.max(requested, minMs), maxMs);
+}
+
+export async function resolveReservationTtlMs(requestedTtlMs?: number | null): Promise<number> {
+  const minMs = parseEnvMs("RESERVATION_TTL_MIN_MS", DEFAULT_MIN_MS);
+  let maxMs = clampReservationTtlMs(requestedTtlMs ?? undefined);
+  try {
+    const now = Date.now();
+    if (!settingsMaxCache || settingsMaxCache.expiresAt < now) {
+      const settings = await ShopTradingSettingsService.get();
+      settingsMaxCache = {
+        value: settings.maxReservationMinutes,
+        expiresAt: now + 10_000,
+      };
+    }
+    if (settingsMaxCache.value != null) {
+      maxMs = Math.max(minMs, settingsMaxCache.value * 60 * 1000);
+    }
+  } catch {
+    // If settings storage is unavailable, keep env/default clamping.
+  }
   const requested = requestedTtlMs != null && requestedTtlMs > 0 ? requestedTtlMs : minMs;
   return Math.min(Math.max(requested, minMs), maxMs);
 }

@@ -24,7 +24,7 @@ export function ShopRender({
   deps,
 }: RenderProps<ShopContent, ShopPageDeps>) {
   const cms = useSurfaceDocEdit()
-  const { products, categories, total, pages, currentPage, query, shopRendering } = deps
+  const { products, categories, total, pages, currentPage, query, shopRendering, shopEnabled } = deps
   const ProductCardCmp = shopRendering?.ProductCard ?? ProductCard
   const gridClasses = COLUMN_CLASSES[content.productGridColumns]
   const filtersOnTop = content.filtersPosition === "top"
@@ -125,6 +125,7 @@ export function ShopRender({
                     <ProductCardCmp
                       key={String((product._id as { toString(): string }).toString())}
                       product={product as never}
+                      shopEnabled={shopEnabled}
                     />
                   ))}
                 </div>

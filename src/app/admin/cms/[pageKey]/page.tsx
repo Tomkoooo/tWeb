@@ -146,7 +146,7 @@ export default async function CmsPageEditor({
   switch (fullPageKey) {
     case "page:shop": {
       const initialDraft = initialDraftUnknown as ShopContent
-      const shopDeps = await getShopCmsPreviewDeps(template, initialDraft.pageSize)
+      const shopDeps = await getShopCmsPreviewDeps(template, initialDraft.pageSize, shopEnabled)
       return (
         <SurfacePageLayout
           label={entry.label}
@@ -176,7 +176,7 @@ export default async function CmsPageEditor({
 
     case "page:pdp": {
       const product = await getPdpPreviewProduct()
-      const pdpDeps = { product, selectedVariantId: undefined, templateId: template.manifest.id }
+      const pdpDeps = { product, selectedVariantId: undefined, shopEnabled, templateId: template.manifest.id }
       const initialDraft = initialDraftUnknown as PdpContent
       return (
         <SurfacePageLayout

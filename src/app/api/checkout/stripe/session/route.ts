@@ -5,7 +5,7 @@ import { resolveAuthenticatedUserId } from "@/lib/auth-session-user";
 import dbConnect from "@/lib/db";
 import TempOrder from "@/models/TempOrder";
 import { FeatureFlagService } from "@/services/feature-flags";
-import { validateAndNormalizeCheckoutInput } from "@/services/checkout-validation";
+import { applyCheckoutPriceAllocations, validateAndNormalizeCheckoutInput } from "@/services/checkout-validation";
 import { getAppBaseUrl, getStripeClient } from "@/services/stripe";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 import {
@@ -13,7 +13,7 @@ import {
   InventoryReservationError,
   releaseReservationsForTempOrder,
 } from "@/services/inventory-reservation";
-import { clampReservationTtlMs, reservationEndsAt, stripeCheckoutExpiresAtUnix } from "@/services/reservation-ttl";
+import { reservationEndsAt, resolveReservationTtlMs, stripeCheckoutExpiresAtUnix } from "@/services/reservation-ttl";
 import "@/models/Reservation";
 
 export const runtime = "nodejs";
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = await req.json();
-    const validatedOrderData = await validateAndNormalizeCheckoutInput(payload, {
+    let validatedOrderData = await validateAndNormalizeCheckoutInput(payload, {
       userId: checkoutUserId ?? undefined,
       allowStripeFixed: true,
     });
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const now = new Date();
-    const ttlMs = clampReservationTtlMs(null);
+    const ttlMs = await resolveReservationTtlMs(null);
     const provisionalExpires = reservationEndsAt(now, ttlMs);
 
     const tempOrder = await TempOrder.create({
@@ -89,9 +89,13 @@ export async function POST(req: NextRequest) {
     }));
 
     try {
-      const { expiresAt } = await allocateReservationsForStripeTempOrder(tempOrder._id, reserveItems, {
+      const { expiresAt, allocations } = await allocateReservationsForStripeTempOrder(tempOrder._id, reserveItems, {
         serverNow: now,
         requestedTtlMs: null,
+      });
+      validatedOrderData = applyCheckoutPriceAllocations(validatedOrderData, allocations);
+      await TempOrder.findByIdAndUpdate(tempOrder._id, {
+        $set: { checkoutData: validatedOrderData },
       });
 
       const stripe = getStripeClient();

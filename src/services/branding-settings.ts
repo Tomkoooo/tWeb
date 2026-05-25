@@ -18,17 +18,11 @@ const DEFAULTS: BrandingSettings = {
 export class BrandingSettingsService {
   static async get() {
     await dbConnect()
-    let doc = await BrandingSetting.findOne({ key: "branding" }).lean()
-    if (!doc) {
-      await BrandingSetting.create({
-        key: "branding",
-        brandName: DEFAULTS.brandName,
-        logoNav: DEFAULTS.logoNav,
-        logoFooter: DEFAULTS.logoFooter,
-        logoHero: DEFAULTS.logoHero,
-      })
-      doc = await BrandingSetting.findOne({ key: "branding" }).lean()
-    }
+    const doc = await BrandingSetting.findOneAndUpdate(
+      { key: "branding" },
+      { $setOnInsert: { key: "branding", ...DEFAULTS } },
+      { upsert: true, returnDocument: "after", lean: true }
+    )
     return {
       brandName: doc?.brandName || DEFAULTS.brandName,
       logoNav: doc?.logoNav || DEFAULTS.logoNav,

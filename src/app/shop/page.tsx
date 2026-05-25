@@ -3,11 +3,14 @@ import { CategoryService } from "@/services/category"
 import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 import Link from "next/link"
-import { getCachedFeatureFlag } from "@/lib/cached-storefront"
+import {
+  getCachedFeatureFlag,
+  getRequestCategoryTree,
+  getRequestPageContent,
+  getRequestShopContent,
+} from "@/lib/cached-storefront"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
-import { ShopContentService } from "@/services/shop-content"
 import { TemplateService } from "@/services/template"
-import { PageContentService } from "@/services/page-content"
 
 export const revalidate = 60
 import {
@@ -26,8 +29,8 @@ export async function generateMetadata({
   const { q, category } = await searchParams
   const template = await TemplateService.getActive()
   const [content, shopPageContent, shopName] = await Promise.all([
-    ShopContentService.getAll(),
-    PageContentService.get(template.manifest.id, "page:shop").catch(() => null),
+    getRequestShopContent(),
+    getRequestPageContent(template.manifest.id, "page:shop").catch(() => null),
     getStorefrontShopName(),
   ])
 
@@ -78,7 +81,7 @@ export default async function ShopPage({
     footerHydration,
   } = await getStorefrontChromeBundle()
   const shopPageDef = template.pages.shop
-  const shopRaw = await PageContentService.get(template.manifest.id, "page:shop").catch(
+  const shopRaw = await getRequestPageContent(template.manifest.id, "page:shop").catch(
     () => shopPageDef.defaultContent
   )
   const shopContent = shopRaw as typeof shopPageDef.defaultContent
@@ -123,8 +126,8 @@ export default async function ShopPage({
   const [paginationResult, categoriesResult, contentDoc] =
     await Promise.all([
       ProductService.getPaginated(currentPage, limit, filters),
-      CategoryService.getTree(),
-      ShopContentService.getAll(),
+      getRequestCategoryTree(),
+      getRequestShopContent(),
     ])
 
   const products = JSON.parse(JSON.stringify(paginationResult.products))
@@ -163,6 +166,7 @@ export default async function ShopPage({
             page: currentPage,
           },
           shopRendering: resolveCommerceShopRendering(template),
+          shopEnabled: shopEnabled && isShopPageEnabled,
         }}
       />
       <Footer

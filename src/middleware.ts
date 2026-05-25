@@ -2,43 +2,13 @@ import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 import { NextResponse } from "next/server"
 import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
-import {
-  getCachedMaintenanceEnabled,
-  setCachedMaintenanceEnabled,
-} from "@/lib/maintenance-flag-cache"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
 
-async function fetchMaintenanceEnabled(origin: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${origin}/api/feature-flags/maintenance`, {
-      cache: "no-store",
-      headers: {
-        accept: "application/json",
-      },
-    })
-
-    if (!response.ok) {
-      return false
-    }
-
-    const payload = await response.json()
-    const enabled = payload.enabled === true
-    setCachedMaintenanceEnabled(enabled)
-    return enabled
-  } catch (error) {
-    console.error("Maintenance flag fetch error:", error)
-    return false
-  }
-}
-
-async function isMaintenanceEnabled(origin: string): Promise<boolean> {
-  const cached = getCachedMaintenanceEnabled()
-  if (cached !== null) {
-    return cached
-  }
-  return fetchMaintenanceEnabled(origin)
+function isConfiguredMaintenanceEnabled(): boolean {
+  const raw = process.env.MAINTENANCE_MODE ?? process.env.NEXT_PUBLIC_MAINTENANCE_MODE
+  return raw === "1" || raw?.toLowerCase() === "true"
 }
 
 export default auth(async (req) => {
@@ -66,7 +36,7 @@ export default auth(async (req) => {
     return NextResponse.next()
   }
 
-  const maintenanceEnabled = await isMaintenanceEnabled(req.nextUrl.origin)
+  const maintenanceEnabled = isConfiguredMaintenanceEnabled()
   const isAdminUser = req.auth?.user?.role === "ADMIN"
   if (maintenanceEnabled && !isAdminUser) {
     return NextResponse.redirect(new URL("/maintenance", req.nextUrl))

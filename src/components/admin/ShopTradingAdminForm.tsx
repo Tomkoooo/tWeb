@@ -48,6 +48,9 @@ export function parseCountryTokens(raw: string): ParseResult {
 export function ShopTradingAdminForm({ initial }: ShopTradingAdminFormProps) {
   const [shippingText, setShippingText] = React.useState(() => initial.shippingAllowedCountryCodes.join(", "))
   const [invoiceText, setInvoiceText] = React.useState(() => initial.invoicingAllowedCountryCodes.join(", "))
+  const [reservationMinutes, setReservationMinutes] = React.useState(() =>
+    initial.maxReservationMinutes != null ? String(initial.maxReservationMinutes) : ""
+  )
   const [busy, setBusy] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
 
@@ -66,6 +69,7 @@ export function ShopTradingAdminForm({ initial }: ShopTradingAdminFormProps) {
         body: JSON.stringify({
           shippingAllowedCountryCodes: ship.codes,
           invoicingAllowedCountryCodes: inv.codes,
+          maxReservationMinutes: reservationMinutes.trim() ? Number(reservationMinutes) : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -76,6 +80,7 @@ export function ShopTradingAdminForm({ initial }: ShopTradingAdminFormProps) {
       setMessage("Elmentve.")
       setShippingText(data.shippingAllowedCountryCodes.join(", "))
       setInvoiceText(data.invoicingAllowedCountryCodes.join(", "))
+      setReservationMinutes(data.maxReservationMinutes != null ? String(data.maxReservationMinutes) : "")
     } catch {
       setMessage("Hálózati hiba")
     } finally {
@@ -152,6 +157,23 @@ export function ShopTradingAdminForm({ initial }: ShopTradingAdminFormProps) {
             {w}
           </p>
         ))}
+      </section>
+
+      <section className="space-y-3">
+        <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
+          Foglalási idő maximuma
+        </p>
+        <p className="text-sm text-neutral-400">
+          Stripe fizetésnél eddig tartjuk a készletet. Üres mező = env/default beállítás. Stripe miatt minimum 30 perc.
+        </p>
+        <input
+          type="number"
+          min={30}
+          value={reservationMinutes}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReservationMinutes(e.target.value)}
+          className="h-10 w-full max-w-xs rounded-none border border-white/15 bg-black/40 px-3 py-2 font-mono text-sm text-white shadow-xs outline-none placeholder:text-neutral-600 focus-visible:border-white/30 focus-visible:ring-1 focus-visible:ring-white/20"
+          placeholder="pl. 60"
+        />
       </section>
 
       <div className="flex flex-wrap items-center gap-4">

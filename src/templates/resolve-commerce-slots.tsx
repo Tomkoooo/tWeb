@@ -3,6 +3,7 @@ import { ProductCard as DefaultProductCard } from "@/components/shop/ProductCard
 import { ProductDetail as DefaultProductDetail } from "@/app/products/[slug]/ProductDetail"
 import type {
   NavbarSearchSlotProps,
+  ProductCardSlotProps,
   ProductDetailSlotProps,
   ShopPageDeps,
   TemplateModule,
@@ -10,7 +11,7 @@ import type {
 
 /** Resolved optional commerce primitives for the active template (defaults preserved). */
 export type ResolvedCommerceSlots = {
-  ProductCard: ComponentType<{ product: unknown }>
+  ProductCard: ComponentType<ProductCardSlotProps>
   ProductDetail: ComponentType<ProductDetailSlotProps>
   CategoryPill?: ComponentType<{ label: string; active?: boolean; href?: string }>
   PdpChrome?: ComponentType<{ product: unknown; children?: ReactNode }>
@@ -22,6 +23,7 @@ function DefaultProductDetailSlot(props: ProductDetailSlotProps) {
     <DefaultProductDetail
       product={props.product as never}
       initialVariantId={props.initialVariantId}
+      shopEnabled={props.shopEnabled}
       editorial={props.editorial}
       introPlacement={props.introPlacement}
     />
@@ -42,7 +44,7 @@ export function resolveCommerceSlots(template: TemplateModule): ResolvedCommerce
 /** Same as `resolveCommerceSlots(template).ProductCard`; kept as a terse import where only the card is needed. */
 export function resolveCommerceProductCard(
   template: TemplateModule
-): ComponentType<{ product: unknown }> {
+): ComponentType<ProductCardSlotProps> {
   return resolveCommerceSlots(template).ProductCard
 }
 

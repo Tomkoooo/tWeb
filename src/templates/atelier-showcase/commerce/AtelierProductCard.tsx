@@ -10,70 +10,108 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
-import { buildProductListingLines, getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, listingPriceSummary } from "@/lib/pricing"
+import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
+import {
+  buildProductListingLines,
+  getActiveVariants,
+  getLimitedPriceOffer,
+  getVariantById,
+  getVariantLabel,
+  hasVariants,
+  resolveProductView,
+} from "@/lib/product-variants"
+import { clampVatPercent, customerGrossFromNetWithDiscount, formatHuf, listingHasPriceRange, listingPriceSummary } from "@/lib/pricing"
 import { useCartStore } from "@/store/useCartStore"
 
 /**
  * Catalogue **row card** (image + copy side-by-side) — unlike engine `ProductCard` portrait glass tile.
  */
-export function AtelierProductCard({ product }: { product: unknown }) {
+export function AtelierProductCard({
+  product,
+  shopEnabled = true,
+}: {
+  product: unknown
+  shopEnabled?: boolean
+}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = product as any
   const [isLoaded, setIsLoaded] = React.useState(false)
-  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
 
   const variantProduct = hasVariants(p)
   const requiresVariantSelection = Boolean(p.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(p)
+  const [selectedVariantId, setSelectedVariantId] = React.useState(
+    () => activeVariants.find((variant) => variant.isDefault)?.id || activeVariants[0]?.id || ""
+  )
+  const selectedVariant = getVariantById(p, selectedVariantId)
+  const limitedOffer = variantProduct
+    ? selectedVariant
+      ? getLimitedPriceOffer(p, selectedVariant.id)
+      : null
+    : getLimitedPriceOffer(p)
   const listingLines = buildProductListingLines(p)
-  const showFromPrice = variantProduct && activeVariants.length > 1
+  const showFromPrice = variantProduct && listingHasPriceRange(listingLines, p.vatPercent)
   const {
     unitGross: finalPrice,
     unitNet,
-    unitVat,
     vatPercent: vatPct,
     maxDiscount,
     compareGross,
   } = listingPriceSummary(listingLines, p.vatPercent)
   const ratingValue = typeof p.rating === "number" ? p.rating : 0
 
-  React.useEffect(() => {
-    const loadAvailability = async () => {
-      try {
-        const res = await fetch("/api/shop/availability")
-        if (!res.ok) {
-          setShopEnabled(false)
-          return
-        }
-        const data = await res.json()
-        setShopEnabled(Boolean(data.enabled))
-      } catch {
-        setShopEnabled(false)
-      }
-    }
-    void loadAvailability()
-  }, [])
-
   const handleAddToCart = () => {
     if (shopEnabled === false) return
-    if (requiresVariantSelection) {
+    if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${p.slug}`)
       return
     }
+    if (selectedVariant) {
+      const productId = p._id.toString()
+      const view = resolveProductView(p, selectedVariant.id)
+      const vatPercent = clampVatPercent(p.vatPercent)
+      addItem({
+        id: `${productId}:${selectedVariant.id}`,
+        productId,
+        variantId: selectedVariant.id,
+        variantLabel: getVariantLabel(selectedVariant),
+        selectedAttributes: selectedVariant.attributes || {},
+        name: view.name,
+        slug: p.slug,
+        price: customerGrossFromNetWithDiscount(
+          Number(view.netPrice || 0),
+          Number(view.discount || 0),
+          vatPercent,
+          view.grossPrice
+        ),
+        image: mediaImageSrc(view.images?.[0]),
+        quantity: 1,
+        stock: view.stock,
+        netPrice: view.netPrice,
+        discount: view.discount,
+        vatPercent,
+      })
+      return
+    }
+    const view = resolveProductView(p)
     addItem({
       id: p._id.toString(),
       productId: p._id.toString(),
-      name: p.name,
+      name: view.name,
       slug: p.slug,
-      price: finalPrice,
-      image: mediaImageSrc(p.images?.[0]),
+      price: customerGrossFromNetWithDiscount(
+        Number(view.netPrice || 0),
+        Number(view.discount || 0),
+        vatPct,
+        view.grossPrice
+      ),
+      image: mediaImageSrc(view.images?.[0]),
       quantity: 1,
-      stock: p.stock,
-      netPrice: p.netPrice,
-      discount: p.discount,
+      stock: view.stock,
+      netPrice: view.netPrice,
+      discount: view.discount,
       vatPercent: vatPct,
     })
   }
@@ -82,7 +120,7 @@ export function AtelierProductCard({ product }: { product: unknown }) {
     <article className="group flex flex-col gap-4 border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-stretch">
       <Link
         href={`/products/${p.slug}`}
-        className="relative block h-44 w-full shrink-0 overflow-hidden bg-muted sm:h-auto sm:w-40 sm:min-w-[10rem]"
+        className="relative block h-44 w-full shrink-0 overflow-hidden bg-muted sm:h-auto sm:w-40 sm:min-w-40"
       >
         {!isLoaded && <Skeleton className="absolute inset-0 z-10 rounded-none" />}
         <FallbackImage
@@ -125,6 +163,12 @@ export function AtelierProductCard({ product }: { product: unknown }) {
           <p className="mt-2 font-serif text-[10px] uppercase tracking-widest text-muted-foreground">
             Nettó {formatHuf(unitNet)} · ÁFA {vatPct}%
           </p>
+          {limitedOffer && !limitedOffer.exhausted ? (
+            <p className="mt-2 font-serif text-[10px] uppercase tracking-widest text-primary">
+              Első {limitedOffer.limitQuantity} db {formatHuf(limitedOffer.promoUnitGross)}, utána{" "}
+              {formatHuf(limitedOffer.regularUnitGross)}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-end sm:justify-between">
@@ -139,20 +183,30 @@ export function AtelierProductCard({ product }: { product: unknown }) {
               <p className="font-serif text-sm text-muted-foreground line-through">{formatHuf(compareGross)}</p>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:items-end">
+            {variantProduct ? (
+              <QuickVariantSelector
+                product={p}
+                selectedVariantId={selectedVariantId}
+                onVariantChange={setSelectedVariantId}
+                chipClassName="rounded-full"
+              />
+            ) : null}
+            <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               size="sm"
               onClick={handleAddToCart}
-              disabled={shopEnabled === false}
+              disabled={shopEnabled === false || (requiresVariantSelection && !selectedVariant)}
               className="rounded-full border-0 bg-primary font-serif text-xs uppercase tracking-wider text-primary-foreground"
             >
               <ShoppingBag className="mr-1.5 h-3.5 w-3.5" />
-              {requiresVariantSelection ? "PDP" : "Kosárba"}
+              {requiresVariantSelection && !selectedVariant ? "Variáns" : "Kosárba"}
             </Button>
             <Button variant="outline" size="sm" asChild className="rounded-full border-border font-serif text-xs uppercase">
               <Link href={`/products/${p.slug}`}>Részletek</Link>
             </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import {
   grossToNet,
   highestCartVatPercent,
   impliedVatPercentFromNetGross,
+  listingHasPriceRange,
   listingPriceSummary,
   netToGross,
   priceBreakdownFromGross,
@@ -52,6 +53,27 @@ describe("pricing helpers", () => {
     expect(summary.unitNet).toBe(1930);
     expect(summary.vatPercent).toBe(5);
     expect(grossFromNetWithDiscount(1930, 0, 27)).toBe(2451);
+  });
+
+  it("only reports a listing price range when active variant customer prices differ", () => {
+    expect(
+      listingHasPriceRange(
+        [
+          { netPrice: 1000, grossPrice: 1270 },
+          { netPrice: 1000, grossPrice: 1270 },
+        ],
+        27
+      )
+    ).toBe(false);
+    expect(
+      listingHasPriceRange(
+        [
+          { netPrice: 1000, grossPrice: 1270 },
+          { netPrice: 1200, grossPrice: 1524 },
+        ],
+        27
+      )
+    ).toBe(true);
   });
 
   it("infers VAT from stored net+gross when product vatPercent is still 27", () => {

@@ -1,7 +1,8 @@
 import dbConnect from "@/lib/db";
 import Product, { IProduct } from "@/models/Product";
 import "@/models/Category";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
+import { cache } from "react";
 import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap";
 import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 import { MediaService } from "./media";
@@ -12,6 +13,7 @@ export interface ProductFilters {
   search?: string;
   isActive?: boolean;
   isVisible?: boolean;
+  deleted?: boolean;
   isDiscounted?: boolean;
   category?: string;
   minPrice?: number;
@@ -57,14 +59,47 @@ function sortFieldForFilter(sort?: string): Record<string, 1 | -1> {
     case "oldest":
       return { createdAt: 1 };
     case "price-asc":
+      return { displayMinGrossPrice: 1, createdAt: -1 };
     case "price-desc":
+      return { displayMinGrossPrice: -1, createdAt: -1 };
     case "discount":
-      return { createdAt: -1 };
+      return { displayMaxDiscount: -1, createdAt: -1 };
     case "newest":
     default:
       return { createdAt: -1 };
   }
 }
+
+const LISTING_SELECT =
+  "name slug images category stock netPrice grossPrice discount limitedPrice vatPercent variantOptions variants requireVariantSelection isActive isVisible deletedAt featuredListIndex displayMinGrossPrice displayMaxDiscount displayTotalStock hasDiscount";
+
+const getCachedProductBySlug = cache(async (slug: string) =>
+  unstable_cache(
+    async () => {
+      await dbConnect();
+      const product = await Product.findOne({ slug, deletedAt: null, $or: [{ isActive: true }, { isVisible: true }] })
+        .populate("category")
+        .lean();
+
+      if (!product) return null;
+
+      const reviews = await Review.find({
+        product: product._id,
+        $or: [{ status: "approved" }, { status: { $exists: false } }],
+      })
+        .populate("user", "name")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return {
+        ...product,
+        reviews,
+      };
+    },
+    ["storefront-product-by-slug", slug],
+    { revalidate: 60, tags: [STOREFRONT_CACHE_TAGS.products] }
+  )()
+);
 
 export class ProductService {
   static async getPaginated(page: number = 1, limit: number = 10, filters: ProductFilters = {}) {
@@ -72,19 +107,14 @@ export class ProductService {
 
     const query: Record<string, unknown> = {};
 
-    if (filters.search) {
-      query.$or = [
-        { name: { $regex: filters.search, $options: "i" } },
-        { description: { $regex: filters.search, $options: "i" } },
-        { "variantOptions.values": { $regex: filters.search, $options: "i" } },
-        { "variants.nameOverride": { $regex: filters.search, $options: "i" } },
-        { "variants.descriptionOverride": { $regex: filters.search, $options: "i" } },
-        { "variants.sku": { $regex: filters.search, $options: "i" } },
-      ];
+    const search = filters.search?.trim();
+    if (search && search.length >= 2) {
+      query.$text = { $search: search };
     }
 
     if (filters.isActive !== undefined) query.isActive = filters.isActive;
     if (filters.isVisible !== undefined) query.isVisible = filters.isVisible;
+    query.deletedAt = filters.deleted ? { $ne: null } : null;
 
     if (filters.category) {
       const { CategoryService } = await import("./category");
@@ -92,18 +122,29 @@ export class ProductService {
       query.category = { $in: categoryIds };
     }
 
-    const needsInMemoryFilter =
-      filters.isDiscounted ||
-      filters.minPrice !== undefined ||
-      filters.maxPrice !== undefined ||
-      filters.sort === "price-asc" ||
-      filters.sort === "price-desc" ||
-      filters.sort === "discount";
+    if (filters.isDiscounted) {
+      query.$or = [
+        { hasDiscount: true },
+        { displayMaxDiscount: { $gt: 0 } },
+        { discount: { $gt: 0 } },
+        { "variants.discount": { $gt: 0 } },
+      ];
+    }
+
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      query.displayMinGrossPrice = {
+        ...(filters.minPrice !== undefined ? { $gte: filters.minPrice } : {}),
+        ...(filters.maxPrice !== undefined ? { $lte: filters.maxPrice } : {}),
+      };
+    }
+
+    const needsInMemoryFilter = false;
 
     if (!needsInMemoryFilter) {
       const skip = (page - 1) * limit;
       const [products, total] = await Promise.all([
         Product.find(query)
+          .select(LISTING_SELECT)
           .populate("category")
           .sort(sortFieldForFilter(filters.sort))
           .skip(skip)
@@ -160,41 +201,27 @@ export class ProductService {
     };
   }
 
-  static async getByIds(ids: string[]) {
+  static async getByIds(ids: string[], options: { includeDeleted?: boolean } = {}) {
     await dbConnect();
     const objectIds = ids.filter((id) => mongoose.isValidObjectId(id));
     if (objectIds.length === 0) return [];
-    const rows = await Product.find({ _id: { $in: objectIds } })
+    const query: Record<string, unknown> = { _id: { $in: objectIds } };
+    if (!options.includeDeleted) query.deletedAt = null;
+    const rows = await Product.find(query)
       .populate("category")
       .lean();
     return rows;
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, options: { includeDeleted?: boolean } = {}) {
     await dbConnect();
-    return await Product.findById(id).populate("category").lean();
+    const query: Record<string, unknown> = { _id: id };
+    if (!options.includeDeleted) query.deletedAt = null;
+    return await Product.findOne(query).populate("category").lean();
   }
 
   static async getBySlug(slug: string) {
-    await dbConnect();
-    const product = await Product.findOne({ slug, $or: [{ isActive: true }, { isVisible: true }] })
-      .populate("category")
-      .lean();
-
-    if (!product) return null;
-
-    const reviews = await Review.find({
-      product: product._id,
-      $or: [{ status: "approved" }, { status: { $exists: false } }],
-    })
-      .populate("user", "name")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return {
-      ...product,
-      reviews,
-    };
+    return getCachedProductBySlug(slug);
   }
 
   static async create(data: Partial<IProduct>) {
@@ -228,16 +255,69 @@ export class ProductService {
 
   static async delete(id: string) {
     await dbConnect();
-    const product = await Product.findById(id);
-    if (product) {
-      if (product.images && product.images.length > 0) {
-        await MediaService.decrementUsage(product.images);
-      }
-      await Product.findByIdAndDelete(id);
-    }
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          deletedAt: new Date(),
+          isActive: false,
+          isVisible: false,
+        },
+      },
+      { returnDocument: "after" }
+    );
     revalidatePath("/admin/products");
     revalidateStorefrontSitemap();
     revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.products);
     return product;
+  }
+
+  static async restore(id: string) {
+    await dbConnect();
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          deletedAt: null,
+          isActive: false,
+          isVisible: false,
+        },
+      },
+      { returnDocument: "after" }
+    );
+    revalidatePath("/admin/products");
+    revalidateStorefrontSitemap();
+    revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.products);
+    return product;
+  }
+
+  static async resetLimitedPriceCounters(id: string, variantId?: string) {
+    await dbConnect();
+    if (variantId) {
+      await Product.updateOne(
+        { _id: id, "variants.id": variantId },
+        {
+          $set: {
+            "variants.$.limitedPrice.claimedCount": 0,
+            "variants.$.limitedPrice.reservedCount": 0,
+            "variants.$.limitedPrice.soldCount": 0,
+          },
+        }
+      );
+    } else {
+      await Product.updateOne(
+        { _id: id },
+        {
+          $set: {
+            "limitedPrice.claimedCount": 0,
+            "limitedPrice.reservedCount": 0,
+            "limitedPrice.soldCount": 0,
+          },
+        }
+      );
+    }
+    revalidatePath("/admin/products");
+    revalidateStorefrontSitemap();
+    revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.products);
   }
 }

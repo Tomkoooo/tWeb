@@ -8,6 +8,7 @@ import Review from "@/models/Review";
 import ShopFeedback from "@/models/ShopFeedback";
 import ContactMessage from "@/models/ContactMessage";
 import { requireAdmin } from "@/lib/admin-auth";
+import { summarizeAdminCustomers } from "@/lib/admin-customers";
 
 type AdminOrder = {
   status: string;
@@ -28,7 +29,7 @@ export async function getAdminStats() {
 
   const [
     ordersRaw,
-    usersCount,
+    customerUsersRaw,
     productsCount,
     reviewsCount,
     shopFeedbackCount,
@@ -37,7 +38,7 @@ export async function getAdminStats() {
   ] =
     await Promise.all([
       Order.find({}).sort({ createdAt: -1 }).lean(),
-      User.countDocuments({}),
+      User.find({ role: "USER" }).select("_id email role").lean(),
       Product.countDocuments({}),
       Review.countDocuments({}),
       ShopFeedback.countDocuments({}),
@@ -74,20 +75,12 @@ export async function getAdminStats() {
 
   const orders = ordersRaw as AdminOrder[];
   const topProductsAgg = topProductsAggRaw as TopProductItem[];
+  const customerSummary = summarizeAdminCustomers(ordersRaw, customerUsersRaw);
 
   const nonCancelledOrders = orders.filter((order) => order.status !== "cancelled");
   const deliveredOrders = orders.filter((order) => order.status === "delivered");
   const totalRevenue = nonCancelledOrders.reduce((sum, order) => sum + (order.total || 0), 0);
   const avgOrderValue = nonCancelledOrders.length ? totalRevenue / nonCancelledOrders.length : 0;
-
-  const customerSet = new Set(
-    nonCancelledOrders
-      .map((order) => {
-        if (!order.user) return null;
-        return typeof order.user === "string" ? order.user : order.user.toString();
-      })
-      .filter(Boolean)
-  );
 
   const monthlyRevenue = Array.from({ length: 6 }).map((_, index) => {
     const date = new Date();
@@ -114,8 +107,12 @@ export async function getAdminStats() {
       ordersCount: orders.length,
       nonCancelledOrdersCount: nonCancelledOrders.length,
       deliveredOrdersCount: deliveredOrders.length,
-      customersCount: usersCount,
-      activeCustomersCount: customerSet.size,
+      customersCount: customerSummary.totalCustomersCount,
+      activeCustomersCount: customerSummary.totalCustomersCount,
+      totalCustomersCount: customerSummary.totalCustomersCount,
+      registeredCustomersCount: customerSummary.registeredCustomersCount,
+      registeredOrderCustomersCount: customerSummary.registeredOrderCustomersCount,
+      guestCustomersCount: customerSummary.guestCustomersCount,
       productsCount,
       reviewsCount: reviewsCount + shopFeedbackCount,
       avgOrderValue,

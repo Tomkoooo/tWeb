@@ -6,6 +6,8 @@ export interface IShopTradingSetting extends Document {
   shippingAllowedCountryCodes: string[];
   /** Uppercase ISO2. Empty array = invoicing OK for any country. */
   invoicingAllowedCountryCodes: string[];
+  /** Optional admin max hold time for pending inventory reservations. */
+  maxReservationMinutes?: number | null;
 }
 
 const ShopTradingSettingSchema = new Schema<IShopTradingSetting>(
@@ -13,6 +15,7 @@ const ShopTradingSettingSchema = new Schema<IShopTradingSetting>(
     key: { type: String, required: true, unique: true, default: "trading" },
     shippingAllowedCountryCodes: [{ type: String, trim: true }],
     invoicingAllowedCountryCodes: [{ type: String, trim: true }],
+    maxReservationMinutes: { type: Number, default: null, min: 30 },
   },
   { timestamps: true }
 );

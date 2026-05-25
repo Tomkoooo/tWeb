@@ -8,6 +8,33 @@ export type MediaFilePayload = {
   buffer: Buffer
   mimeType: string
   size: number
+  etag: string
+  lastModified?: Date
+}
+
+const MEDIA_CACHE_TTL_MS = 1000 * 60 * 5
+const MEDIA_CACHE_MAX_ENTRIES = 100
+const mediaPayloadCache = new Map<string, { expiresAt: number; payload: MediaFilePayload }>()
+
+function getCachedPayload(filename: string): MediaFilePayload | null {
+  const cached = mediaPayloadCache.get(filename)
+  if (!cached) return null
+  if (Date.now() >= cached.expiresAt) {
+    mediaPayloadCache.delete(filename)
+    return null
+  }
+  return cached.payload
+}
+
+function setCachedPayload(filename: string, payload: MediaFilePayload) {
+  if (mediaPayloadCache.size >= MEDIA_CACHE_MAX_ENTRIES) {
+    const oldest = mediaPayloadCache.keys().next().value
+    if (oldest) mediaPayloadCache.delete(oldest)
+  }
+  mediaPayloadCache.set(filename, {
+    expiresAt: Date.now() + MEDIA_CACHE_TTL_MS,
+    payload,
+  })
 }
 
 export class MediaService {
@@ -54,17 +81,26 @@ export class MediaService {
     const safe = path.basename(filename)
     if (!safe || safe !== filename) return null
 
-    const doc = await Media.findOne({ filename: safe }).lean()
+    const cached = getCachedPayload(safe)
+    if (cached) return cached
+
+    const doc = await Media.findOne({ filename: safe })
+      .select("data mimeType size updatedAt")
+      .lean()
     if (!doc) return null
 
     const buffer = mediaBufferFromDoc(doc.data)
     if (!buffer) return null
 
-    return {
+    const payload = {
       buffer,
       mimeType: doc.mimeType || guessMimeFromExt(path.extname(safe)),
       size: buffer.length,
+      etag: `"${safe}-${doc.size || buffer.length}-${new Date(doc.updatedAt).getTime()}"`,
+      lastModified: doc.updatedAt,
     }
+    setCachedPayload(safe, payload)
+    return payload
   }
 
   static async incrementUsage(filenames: string | string[]) {

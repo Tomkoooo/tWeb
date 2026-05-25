@@ -17,7 +17,7 @@ import type { ShopContent } from "./schema"
  */
 export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageDeps>) {
   const cms = useSurfaceDocEdit()
-  const { products, categories, total, pages, currentPage, query, shopRendering } = deps
+  const { products, categories, total, pages, currentPage, query, shopRendering, shopEnabled } = deps
   const ProductCardCmp = shopRendering?.ProductCard ?? ProductCard
   const CategoryPill = shopRendering?.CategoryPill
 
@@ -77,7 +77,7 @@ export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageD
             >
               {(products as Array<Record<string, unknown>>).map((product) => (
                 <div key={String((product._id as { toString(): string }).toString())} className="break-inside-avoid">
-                  <ProductCardCmp product={product as never} />
+                  <ProductCardCmp product={product as never} shopEnabled={shopEnabled} />
                 </div>
               ))}
             </div>

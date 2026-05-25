@@ -5,6 +5,7 @@ import { normalizeIso2 } from "@/lib/country-codes";
 export type ShopTradingSettings = {
   shippingAllowedCountryCodes: string[];
   invoicingAllowedCountryCodes: string[];
+  maxReservationMinutes: number | null;
 };
 
 function normalizeCodeList(raw: unknown): string[] {
@@ -17,21 +18,32 @@ function normalizeCodeList(raw: unknown): string[] {
   return [...out].sort((a, b) => a.localeCompare(b))
 }
 
+function normalizeReservationMinutes(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Math.round(Number(raw));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.max(30, n);
+}
+
 export class ShopTradingSettingsService {
   static async get(): Promise<ShopTradingSettings> {
     await dbConnect();
-    let doc = await ShopTradingSetting.findOne({ key: "trading" }).lean();
-    if (!doc) {
-      await ShopTradingSetting.create({
-        key: "trading",
-        shippingAllowedCountryCodes: [],
-        invoicingAllowedCountryCodes: [],
-      });
-      doc = await ShopTradingSetting.findOne({ key: "trading" }).lean();
-    }
+    const doc = await ShopTradingSetting.findOneAndUpdate(
+      { key: "trading" },
+      {
+        $setOnInsert: {
+          key: "trading",
+          shippingAllowedCountryCodes: [],
+          invoicingAllowedCountryCodes: [],
+          maxReservationMinutes: null,
+        },
+      },
+      { upsert: true, returnDocument: "after", lean: true }
+    );
     return {
       shippingAllowedCountryCodes: normalizeCodeList(doc?.shippingAllowedCountryCodes),
       invoicingAllowedCountryCodes: normalizeCodeList(doc?.invoicingAllowedCountryCodes),
+      maxReservationMinutes: normalizeReservationMinutes(doc?.maxReservationMinutes),
     };
   }
 
@@ -48,6 +60,10 @@ export class ShopTradingSettingsService {
         input.invoicingAllowedCountryCodes !== undefined
           ? normalizeCodeList(input.invoicingAllowedCountryCodes)
           : prev.invoicingAllowedCountryCodes,
+      maxReservationMinutes:
+        input.maxReservationMinutes !== undefined
+          ? normalizeReservationMinutes(input.maxReservationMinutes)
+          : prev.maxReservationMinutes,
     };
 
     await ShopTradingSetting.findOneAndUpdate(
@@ -56,6 +72,7 @@ export class ShopTradingSettingsService {
         $set: {
           shippingAllowedCountryCodes: merged.shippingAllowedCountryCodes,
           invoicingAllowedCountryCodes: merged.invoicingAllowedCountryCodes,
+          maxReservationMinutes: merged.maxReservationMinutes,
         },
       },
       { upsert: true, returnDocument: "after" }

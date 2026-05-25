@@ -1,7 +1,8 @@
 import mongoose, { ClientSession } from "mongoose";
 import Product from "@/models/Product";
 import Reservation from "@/models/Reservation";
-import { clampReservationTtlMs, reservationEndsAt } from "@/services/reservation-ttl";
+import { reservationEndsAt, resolveReservationTtlMs } from "@/services/reservation-ttl";
+import { clampVatPercent, customerGrossFromNetWithDiscount, customerUnitGross } from "@/lib/pricing";
 
 export class InventoryReservationError extends Error {
   constructor(
@@ -17,6 +18,19 @@ export type CheckoutReserveItem = {
   product: string;
   variantId?: string;
   quantity: number;
+  promoQuantity?: number;
+  promoCounter?: "reserved" | "sold";
+};
+
+export type CheckoutStockAllocation = {
+  product: string;
+  variantId?: string;
+  quantity: number;
+  promoQuantity: number;
+  regularQuantity: number;
+  promoUnitPrice?: number;
+  regularUnitPrice?: number;
+  vatPercent?: number;
 };
 
 function sessionOpt(session?: ClientSession | null): { session?: ClientSession } {
@@ -34,13 +48,46 @@ async function syncVariantAggregateStock(
   await Product.updateOne({ _id: productId }, { $set: { stock: sum } }, sessionOpt(session));
 }
 
+function resolveVariantRegularUnitPrice(product: any, variant: any) {
+  const pct = clampVatPercent(product.vatPercent ?? 27);
+  return {
+    unitPrice: customerGrossFromNetWithDiscount(
+      Number(variant.netPrice || 0),
+      Number(variant.discount || 0),
+      pct,
+      variant.grossPrice
+    ),
+    vatPercent: pct,
+  };
+}
+
+function resolveVariantPromoUnitPrice(product: any, variant: any) {
+  const limited = variant?.limitedPrice;
+  if (!limited?.enabled) return null;
+  const limit = Math.max(0, Math.round(Number(limited.limitQuantity || 0)));
+  const claimed = Math.max(0, Math.round(Number(limited.claimedCount || 0)));
+  const remaining = Math.max(0, limit - claimed);
+  const promoNet = Number(limited.netPrice || 0);
+  const promoGross = Number(limited.grossPrice || 0);
+  if (limit <= 0 || remaining <= 0 || (promoNet <= 0 && promoGross <= 0)) return null;
+  const pct = clampVatPercent(product.vatPercent ?? 27);
+  return {
+    remaining,
+    unitPrice:
+      promoGross > 0
+        ? customerUnitGross(promoNet, pct, promoGross)
+        : customerUnitGross(promoNet, pct),
+    vatPercent: pct,
+  };
+}
+
 /**
  * Atomic single-line stock decrement. Optional Mongo session (omit on standalone / memory server).
  */
 export async function decrementCheckoutLineStock(
   session: ClientSession | null | undefined,
   item: CheckoutReserveItem
-): Promise<void> {
+): Promise<CheckoutStockAllocation> {
   const productId = new mongoose.Types.ObjectId(item.product);
   const qty = item.quantity;
   if (!Number.isFinite(qty) || qty < 1) {
@@ -59,69 +106,151 @@ export async function decrementCheckoutLineStock(
 
   if (item.variantId) {
     if (!hasVariants) throw new InventoryReservationError("Érvénytelen variáns");
-    // Use native collection + modifiedCount: Mongoose Query wrappers have been observed to report
-    // misleading results under concurrent arrayFilters updates; losers must not proceed to Reservation.create.
-    const filter = { _id: productId, isActive: true, isVisible: true };
-    const update = { $inc: { "variants.$[v].stock": -qty } };
-    const opts = {
-      ...sessionOpt(session),
-      arrayFilters: [{ "v.id": item.variantId, "v.stock": { $gte: qty } }],
-    };
-    // Mongoose bundles mongodb types that diverge from top-level `mongodb`; avoid cross-package ClientSession friction.
-    const res = await Product.collection.updateOne(filter, update, opts as Parameters<typeof Product.collection.updateOne>[2]);
-    if (res.modifiedCount !== 1) {
-      throw new InventoryReservationError("Nincs elég készlet a kiválasztott variánshoz", "INSUFFICIENT_STOCK");
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const latestQuery = Product.findById(productId);
+      const latest = session ? await latestQuery.session(session).lean() : await latestQuery.lean();
+      const variant = (latest as any)?.variants?.find((v: any) => v.id === item.variantId);
+      if (!latest || !variant || variant.isActive === false) {
+        throw new InventoryReservationError("A kiválasztott variáns nem elérhető");
+      }
+      const regular = resolveVariantRegularUnitPrice(latest, variant);
+      const counter = item.promoCounter;
+      const promo = counter ? resolveVariantPromoUnitPrice(latest, variant) : null;
+      const promoQuantity = promo ? Math.min(qty, promo.remaining) : 0;
+      const inc: Record<string, number> = { "variants.$[v].stock": -qty };
+      const elemMatch: Record<string, unknown> = {
+        id: item.variantId,
+        stock: { $gte: qty },
+        isActive: { $ne: false },
+      };
+      if (promoQuantity > 0 && counter) {
+        inc["variants.$[v].limitedPrice.claimedCount"] = promoQuantity;
+        inc[`variants.$[v].limitedPrice.${counter}Count`] = promoQuantity;
+        elemMatch["limitedPrice.enabled"] = true;
+        elemMatch["limitedPrice.claimedCount"] = {
+          $lte: Math.max(0, Number(variant.limitedPrice?.limitQuantity || 0) - promoQuantity),
+        };
+      }
+      const filter = { _id: productId, isActive: true, isVisible: true, variants: { $elemMatch: elemMatch } };
+      const update = { $inc: inc };
+      const opts = {
+        ...sessionOpt(session),
+        arrayFilters: [{ "v.id": item.variantId, "v.stock": { $gte: qty } }],
+      };
+      // Mongoose bundles mongodb types that diverge from top-level `mongodb`; avoid cross-package ClientSession friction.
+      const res = await Product.collection.updateOne(filter, update, opts as Parameters<typeof Product.collection.updateOne>[2]);
+      if (res.modifiedCount === 1) {
+        await syncVariantAggregateStock(productId, session);
+        return {
+          product: item.product,
+          variantId: item.variantId,
+          quantity: qty,
+          promoQuantity,
+          regularQuantity: qty - promoQuantity,
+          promoUnitPrice: promoQuantity > 0 ? promo?.unitPrice : undefined,
+          regularUnitPrice: regular.unitPrice,
+          vatPercent: regular.vatPercent,
+        };
+      }
     }
-    await syncVariantAggregateStock(productId, session);
-    return;
+    throw new InventoryReservationError("Nincs elég készlet vagy limitált ár a kiválasztott variánshoz", "INSUFFICIENT_STOCK");
   }
 
   if (requireVariantSelection) {
     throw new InventoryReservationError("Válassz variánst a termékhez");
   }
 
-  const updatedRoot = await Product.findOneAndUpdate(
-    { _id: productId, isActive: true, isVisible: true, stock: { $gte: qty } },
-    { $inc: { stock: -qty } },
-    { ...sessionOpt(session), returnDocument: "after" }
-  );
-  if (!updatedRoot) {
-    throw new InventoryReservationError("Nincs elég készlet", "INSUFFICIENT_STOCK");
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const latestQuery = Product.findById(productId);
+    const latest = session ? await latestQuery.session(session).lean() : await latestQuery.lean();
+    if (!latest || !latest.isActive || !latest.isVisible) {
+      throw new InventoryReservationError("A termék már nem elérhető");
+    }
+    const regular = resolveVariantRegularUnitPrice(latest, latest);
+    const counter = item.promoCounter;
+    const promo = counter ? resolveVariantPromoUnitPrice(latest, latest) : null;
+    const promoQuantity = promo ? Math.min(qty, promo.remaining) : 0;
+    const inc: Record<string, number> = { stock: -qty };
+    const filter: Record<string, unknown> = {
+      _id: productId,
+      isActive: true,
+      isVisible: true,
+      stock: { $gte: qty },
+    };
+    if (promoQuantity > 0 && counter) {
+      inc["limitedPrice.claimedCount"] = promoQuantity;
+      inc[`limitedPrice.${counter}Count`] = promoQuantity;
+      filter["limitedPrice.enabled"] = true;
+      filter["limitedPrice.claimedCount"] = {
+        $lte: Math.max(0, Number((latest as { limitedPrice?: { limitQuantity?: number } }).limitedPrice?.limitQuantity || 0) - promoQuantity),
+      };
+    }
+    const updatedRoot = await Product.findOneAndUpdate(filter, { $inc: inc }, { ...sessionOpt(session), returnDocument: "after" });
+    if (updatedRoot) {
+      if (hasVariants) {
+        await syncVariantAggregateStock(productId, session);
+      }
+      return {
+        product: item.product,
+        quantity: qty,
+        promoQuantity,
+        regularQuantity: qty - promoQuantity,
+        promoUnitPrice: promoQuantity > 0 ? promo?.unitPrice : undefined,
+        regularUnitPrice: regular.unitPrice,
+        vatPercent: regular.vatPercent,
+      };
+    }
   }
-
-  if (hasVariants) {
-    await syncVariantAggregateStock(productId, session);
-  }
+  throw new InventoryReservationError("Nincs elég készlet vagy limitált ár", "INSUFFICIENT_STOCK");
 }
 
 async function restoreLineStock(
   session: ClientSession | undefined | null,
   productId: mongoose.Types.ObjectId,
   variantId: string | undefined,
-  qty: number
+  qty: number,
+  promo?: { promoQuantity?: number; promoCounter?: "reserved" | "sold" }
 ) {
   if (variantId) {
+    const promoQuantity = Math.max(0, Math.round(Number(promo?.promoQuantity || 0)));
+    const promoCounter = promo?.promoCounter;
+    const inc: Record<string, number> = { "variants.$[v].stock": qty };
+    if (promoQuantity > 0 && promoCounter) {
+      inc["variants.$[v].limitedPrice.claimedCount"] = -promoQuantity;
+      inc[`variants.$[v].limitedPrice.${promoCounter}Count`] = -promoQuantity;
+    }
     await Product.findOneAndUpdate(
       { _id: productId },
-      { $inc: { "variants.$[v].stock": qty } },
+      { $inc: inc },
       { arrayFilters: [{ "v.id": variantId }], ...sessionOpt(session) }
     );
     await syncVariantAggregateStock(productId, session ?? null);
   } else {
-    await Product.updateOne({ _id: productId }, { $inc: { stock: qty } }, sessionOpt(session));
+    const promoQuantity = Math.max(0, Math.round(Number(promo?.promoQuantity || 0)));
+    const promoCounter = promo?.promoCounter;
+    const inc: Record<string, number> = { stock: qty };
+    if (promoQuantity > 0 && promoCounter) {
+      inc["limitedPrice.claimedCount"] = -promoQuantity;
+      inc[`limitedPrice.${promoCounter}Count`] = -promoQuantity;
+    }
+    await Product.updateOne({ _id: productId }, { $inc: inc }, sessionOpt(session));
   }
 }
 
 /** Undo a successful `decrementCheckoutLineStock` (e.g. multi-line COD rollback). */
 export async function restoreCheckoutLineStock(item: CheckoutReserveItem): Promise<void> {
   const productId = new mongoose.Types.ObjectId(item.product);
-  await restoreLineStock(undefined, productId, item.variantId, item.quantity);
+  await restoreLineStock(undefined, productId, item.variantId, item.quantity, {
+    promoQuantity: item.promoQuantity,
+    promoCounter: item.promoCounter,
+  });
 }
 
 type AppliedLine = {
   productId: mongoose.Types.ObjectId;
   variantId?: string;
   quantity: number;
+  promoQuantity: number;
   reservationId: mongoose.Types.ObjectId;
 };
 
@@ -133,12 +262,13 @@ export async function allocateReservationsForStripeTempOrder(
   tempOrderId: mongoose.Types.ObjectId,
   items: CheckoutReserveItem[],
   options?: { serverNow?: Date; requestedTtlMs?: number | null }
-): Promise<{ expiresAt: Date; ttlMs: number }> {
+): Promise<{ expiresAt: Date; ttlMs: number; allocations: CheckoutStockAllocation[] }> {
   const now = options?.serverNow ?? new Date();
-  const ttlMs = clampReservationTtlMs(options?.requestedTtlMs ?? undefined);
+  const ttlMs = await resolveReservationTtlMs(options?.requestedTtlMs ?? undefined);
   const expiresAt = reservationEndsAt(now, ttlMs);
 
   const applied: AppliedLine[] = [];
+  const allocations: CheckoutStockAllocation[] = [];
 
   try {
     for (const item of items) {
@@ -146,13 +276,17 @@ export async function allocateReservationsForStripeTempOrder(
         throw new InventoryReservationError("Érvénytelen termékazonosító");
       }
       const productId = new mongoose.Types.ObjectId(item.product);
-      await decrementCheckoutLineStock(undefined, item);
+      const allocation = await decrementCheckoutLineStock(undefined, { ...item, promoCounter: "reserved" });
+      allocations.push(allocation);
       const [doc] = await Reservation.create([
         {
           tempOrder: tempOrderId,
           product: productId,
           variantId: item.variantId,
           quantity: item.quantity,
+          promoQuantity: allocation.promoQuantity,
+          promoUnitPrice: allocation.promoUnitPrice,
+          regularUnitPrice: allocation.regularUnitPrice,
           state: "pending",
           expiresAt,
         },
@@ -161,13 +295,17 @@ export async function allocateReservationsForStripeTempOrder(
         productId,
         variantId: item.variantId,
         quantity: item.quantity,
+        promoQuantity: allocation.promoQuantity,
         reservationId: doc._id as mongoose.Types.ObjectId,
       });
     }
-    return { expiresAt, ttlMs };
+    return { expiresAt, ttlMs, allocations };
   } catch (e) {
     for (const a of applied.reverse()) {
-      await restoreLineStock(undefined, a.productId, a.variantId, a.quantity);
+      await restoreLineStock(undefined, a.productId, a.variantId, a.quantity, {
+        promoQuantity: a.promoQuantity,
+        promoCounter: "reserved",
+      });
       await Reservation.deleteOne({ _id: a.reservationId });
     }
     if (e instanceof InventoryReservationError) throw e;
@@ -191,11 +329,16 @@ export async function releaseReservationsForTempOrder(
   const rows = await Reservation.find({ tempOrder: tid, state: { $in: states } }).lean();
   let count = 0;
   for (const r of rows) {
-    await restoreLineStock(undefined, r.product as mongoose.Types.ObjectId, r.variantId, r.quantity);
-    await Reservation.updateOne(
+    const updated = await Reservation.findOneAndUpdate(
       { _id: r._id, state: { $in: states } },
-      { $set: { state: "released" } }
+      { $set: { state: "released" } },
+      { returnDocument: "after" }
     );
+    if (!updated) continue;
+    await restoreLineStock(undefined, r.product as mongoose.Types.ObjectId, r.variantId, r.quantity, {
+      promoQuantity: r.promoQuantity,
+      promoCounter: r.state === "confirmed" ? "sold" : "reserved",
+    });
     count += 1;
   }
   return count;
@@ -204,10 +347,37 @@ export async function releaseReservationsForTempOrder(
 export async function confirmPendingReservationsForTempOrder(tempOrderId: string): Promise<void> {
   if (!mongoose.Types.ObjectId.isValid(tempOrderId)) return;
   const tid = new mongoose.Types.ObjectId(tempOrderId);
-  await Reservation.updateMany(
-    { tempOrder: tid, state: "pending" },
-    { $set: { state: "confirmed" } }
-  );
+  const rows = await Reservation.find({ tempOrder: tid, state: "pending" }).lean();
+  for (const r of rows) {
+    const updated = await Reservation.findOneAndUpdate(
+      { _id: r._id, state: "pending" },
+      { $set: { state: "confirmed" } },
+      { returnDocument: "after" }
+    );
+    if (!updated || !r.promoQuantity) continue;
+    if (r.variantId) {
+      await Product.updateOne(
+        { _id: r.product },
+        {
+          $inc: {
+            "variants.$[v].limitedPrice.reservedCount": -r.promoQuantity,
+            "variants.$[v].limitedPrice.soldCount": r.promoQuantity,
+          },
+        },
+        { arrayFilters: [{ "v.id": r.variantId }] }
+      );
+    } else {
+      await Product.updateOne(
+        { _id: r.product },
+        {
+          $inc: {
+            "limitedPrice.reservedCount": -r.promoQuantity,
+            "limitedPrice.soldCount": r.promoQuantity,
+          },
+        }
+      );
+    }
+  }
 }
 
 export async function markReservationsExpiredForTempOrder(tempOrderId: string): Promise<void> {
@@ -230,7 +400,10 @@ export async function sweepExpiredPendingReservations(now: Date = new Date()): P
       { returnDocument: "after" }
     );
     if (!updated) continue;
-    await restoreLineStock(undefined, r.product as mongoose.Types.ObjectId, r.variantId, r.quantity);
+    await restoreLineStock(undefined, r.product as mongoose.Types.ObjectId, r.variantId, r.quantity, {
+      promoQuantity: r.promoQuantity,
+      promoCounter: "reserved",
+    });
     total += 1;
   }
   return total;

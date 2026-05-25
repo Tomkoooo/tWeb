@@ -39,6 +39,7 @@ export function PdpRender({ content, deps }: RenderProps<PdpContent, PdpPageDeps
       templateId={deps.templateId}
       product={deps.product}
       initialVariantId={deps.selectedVariantId}
+      shopEnabled={deps.shopEnabled}
       editorial={editorial}
       introPlacement={content.introPlacement}
     />

@@ -103,8 +103,63 @@ export type ValidatedCheckoutData = {
   shippingCountryCode: string;
 };
 
+export type CheckoutPriceAllocation = {
+  promoQuantity?: number;
+  regularQuantity?: number;
+  promoUnitPrice?: number;
+  regularUnitPrice?: number;
+};
+
 function roundCurrency(value: number): number {
   return Math.round(value);
+}
+
+export function applyCheckoutPriceAllocations<T extends ValidatedCheckoutData>(
+  data: T,
+  allocations: CheckoutPriceAllocation[]
+): T {
+  const nextItems: CheckoutInputItem[] = [];
+  data.items.forEach((item, index) => {
+    const allocation = allocations[index];
+    const promoQuantity = Math.max(0, Math.round(Number(allocation?.promoQuantity || 0)));
+    const regularQuantity = Math.max(
+      0,
+      Math.round(Number(allocation?.regularQuantity ?? item.quantity - promoQuantity))
+    );
+    if (!allocation || promoQuantity <= 0) {
+      nextItems.push(item);
+      return;
+    }
+    if (promoQuantity > 0) {
+      nextItems.push({
+        ...item,
+        name: `${item.name || "Termék"} - limitált ár`,
+        price: roundCurrency(Number(allocation.promoUnitPrice ?? item.price ?? 0)),
+        quantity: promoQuantity,
+      });
+    }
+    if (regularQuantity > 0) {
+      nextItems.push({
+        ...item,
+        price: roundCurrency(Number(allocation.regularUnitPrice ?? item.price ?? 0)),
+        quantity: regularQuantity,
+      });
+    }
+  });
+
+  const subtotal = roundCurrency(
+    nextItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  );
+  const total = Math.max(
+    0,
+    roundCurrency(subtotal + Number(data.shippingFee || 0) + Number(data.paymentFee || 0) - Number(data.discount || 0))
+  );
+  return {
+    ...data,
+    items: nextItems,
+    subtotal,
+    total,
+  };
 }
 
 function ensureString(value: unknown, field: string): string {

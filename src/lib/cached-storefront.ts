@@ -8,6 +8,7 @@ import { TemplateService } from "@/services/template"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { ShopContentService } from "@/services/shop-content"
 import { CategoryService } from "@/services/category"
+import { PageContentService } from "@/services/page-content"
 import { STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags"
 import type { TemplateModule } from "@/templates/types"
 import dbConnect from "@/lib/db"
@@ -74,6 +75,21 @@ export const getCachedCategories = unstable_cache(
   { revalidate: REVALIDATE_SECONDS, tags: [STOREFRONT_CACHE_TAGS.categories] }
 )
 
+export async function getCachedPageContent<T = unknown>(templateId: string, pageKey: string) {
+  return unstable_cache(
+    async () => PageContentService.get<T>(templateId, pageKey),
+    ["storefront-page-content", templateId, pageKey],
+    {
+      revalidate: REVALIDATE_SECONDS,
+      tags: [
+        STOREFRONT_CACHE_TAGS.homepage,
+        STOREFRONT_CACHE_TAGS.shopContent,
+        STOREFRONT_CACHE_TAGS.template,
+      ],
+    }
+  )()
+}
+
 export type StorefrontLegalLink = {
   key: string
   title: string
@@ -109,3 +125,4 @@ export const getRequestActiveTemplateInfo = cache(getCachedActiveTemplateInfo)
 export const getRequestShopContent = cache(getCachedShopContent)
 export const getRequestCategoryTree = cache(getCachedCategoryTree)
 export const getRequestCategories = cache(getCachedCategories)
+export const getRequestPageContent = cache(getCachedPageContent)

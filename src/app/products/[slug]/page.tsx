@@ -5,9 +5,9 @@ import { resolveProductView } from "@/lib/product-variants"
 import { mediaImageSrc } from "@/lib/images"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
+import { getRequestPageContent } from "@/lib/cached-storefront"
 
 export const revalidate = 60
-import { PageContentService } from "@/services/page-content"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params
@@ -57,7 +57,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
 
   const [product, pdpContent, footerData] = await Promise.all([
     ProductService.getBySlug(slug),
-    PageContentService.get(template.manifest.id, "page:pdp"),
+    getRequestPageContent(template.manifest.id, "page:pdp"),
     resolveStorefrontFooterContact(template),
   ])
 
@@ -77,7 +77,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       />
       <PdpRender
         content={pdpContent}
-        deps={{ product, selectedVariantId, templateId: template.manifest.id }}
+        deps={{ product, selectedVariantId, shopEnabled, templateId: template.manifest.id }}
       />
       <Footer
         brandName={branding.brandName}

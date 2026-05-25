@@ -1,5 +1,5 @@
 import { ProductService, type ProductFilters } from "@/services/product";
-import { Plus, Edit2, Trash2, Search as SearchIcon, AlertCircle, ExternalLink } from "lucide-react";
+import { Plus, Search as SearchIcon, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatHuf, listingPriceSummary } from "@/lib/pricing";
 import { FallbackImage } from "@/components/common/FallbackImage";
 import { mediaImageSrc } from "@/lib/images";
+import { ProductRowActions } from "./ProductRowActions";
 
 type AdminProductVariant = {
   netPrice?: number;
@@ -23,6 +24,7 @@ type AdminProductListRow = {
   images?: string[];
   isActive?: boolean;
   isVisible?: boolean;
+  deletedAt?: string | Date | null;
   stock?: number;
   netPrice: number;
   grossPrice?: number | null;
@@ -35,9 +37,9 @@ type AdminProductListRow = {
 export default async function AdminProducts({ 
   searchParams 
 }: { 
-  searchParams: Promise<{ page?: string; q?: string; active?: string; visible?: string; discounted?: string }> 
+  searchParams: Promise<{ page?: string; q?: string; active?: string; visible?: string; discounted?: string; deleted?: string }> 
 }) {
-  const { page, q, active, visible, discounted } = await searchParams;
+  const { page, q, active, visible, discounted, deleted } = await searchParams;
   const currentPage = parseInt(page || "1");
   
   const filters: ProductFilters = { search: q };
@@ -46,6 +48,7 @@ export default async function AdminProducts({
   if (visible === "true") filters.isVisible = true;
   if (visible === "false") filters.isVisible = false;
   if (discounted === "true") filters.isDiscounted = true;
+  if (deleted === "true") filters.deleted = true;
 
   const { products, total, pages } = await ProductService.getPaginated(currentPage, 10, filters);
   const listProducts = products as unknown as AdminProductListRow[];
@@ -54,6 +57,7 @@ export default async function AdminProducts({
     ...(active ? { active } : {}),
     ...(visible ? { visible } : {}),
     ...(discounted ? { discounted } : {}),
+    ...(deleted ? { deleted } : {}),
   };
 
   return (
@@ -102,6 +106,11 @@ export default async function AdminProducts({
               Akciós
             </Button>
           </Link>
+          <Link href={`/admin/products?${new URLSearchParams({ ...currentParams, deleted: deleted === 'true' ? '' : 'true' }).toString()}`}>
+            <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", deleted === 'true' ? "border-rose-500/40 bg-rose-500/10 text-rose-300" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
+              Töröltek
+            </Button>
+          </Link>
           {Object.values(currentParams).some(v => v !== undefined && v !== "") && (
             <Link href="/admin/products">
               <Button variant="ghost" size="sm" className="h-12 px-4 text-rose-500 hover:text-rose-400 hover:bg-rose-500/5 font-black uppercase tracking-widest text-[10px]">
@@ -139,6 +148,7 @@ export default async function AdminProducts({
               ) : (
                 listProducts.map((product) => {
                     const productId = product._id.toString()
+                    const isDeleted = Boolean(product.deletedAt)
                     const stock = Number(product.stock ?? 0)
                     const variants = Array.isArray(product.variants)
                       ? product.variants.filter((variant) => variant.isActive !== false)
@@ -162,7 +172,7 @@ export default async function AdminProducts({
                     const grossPrice = priceSummary.unitGross
                     const maxDiscount = priceSummary.maxDiscount
                     return (
-                  <tr key={productId} className="hover:bg-white/5 transition-colors group">
+                  <tr key={productId} className={cn("hover:bg-white/5 transition-colors group", isDeleted && "opacity-60")}>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-white/25 transition-colors">
@@ -171,6 +181,11 @@ export default async function AdminProducts({
                         <div>
                           <p className="font-heading font-black text-white uppercase tracking-wider text-base">{product.name}</p>
                           <p className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">/{product.slug}</p>
+                          {isDeleted ? (
+                            <p className="text-[10px] text-rose-400 font-black tracking-widest uppercase mt-1">
+                              Törölve
+                            </p>
+                          ) : null}
                           {hasVariants ? (
                             <p className="text-[10px] admin-value font-black tracking-widest uppercase mt-1">
                               {variants.length} variáns
@@ -219,21 +234,12 @@ export default async function AdminProducts({
                       </div>
                     </td>
                     <td className="px-6 py-6 text-right">
-                      <div className="flex justify-end gap-3">
-                        <Link href={`/products/${product.slug}`} target="_blank">
-                          <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/30 transition-all" title="Megtekintés">
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/products/${productId}`}>
-                          <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/10 transition-all" title="Szerkesztés">
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button variant="ghost" size="icon" className="hover:bg-rose-500/10 text-neutral-500 hover:text-rose-500 rounded-none border border-transparent hover:border-rose-500/20 transition-all" title="Törlés">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <ProductRowActions
+                        productId={productId}
+                        productName={product.name}
+                        productSlug={product.slug}
+                        isDeleted={isDeleted}
+                      />
                     </td>
                   </tr>
                     )
@@ -248,7 +254,7 @@ export default async function AdminProducts({
       {pages > 1 && (
         <div className="flex justify-center gap-2">
           {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-            <Link key={p} href={`/admin/products?page=${p}${q ? `&q=${q}` : ''}`}>
+            <Link key={p} href={`/admin/products?${new URLSearchParams({ ...currentParams, page: String(p) }).toString()}`}>
               <Button 
                 variant={p === currentPage ? "default" : "ghost"}
                 className={p === currentPage ? "bg-primary text-white" : "text-white/40"}

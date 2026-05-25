@@ -3,6 +3,7 @@ import {
   defineTemplate,
   type TemplateModule,
 } from "@/templates/types"
+import dynamic from "next/dynamic"
 import { defaultModernTheme } from "./theme"
 import { Navbar } from "./chrome/Navbar"
 import { Footer } from "./chrome/Footer"
@@ -10,17 +11,14 @@ import { Footer } from "./chrome/Footer"
 import { homeSchema } from "./pages/home/schema"
 import { homeDefaultContent } from "./pages/home/defaultContent"
 import { HomeRender } from "./pages/home/Render"
-import { HomeEditorPanel } from "./pages/home/EditorPanel"
 
 import { shopSchema } from "./pages/shop/schema"
 import { shopDefaultContent } from "./pages/shop/defaultContent"
 import { ShopRender } from "./pages/shop/Render"
-import { ShopEditorPanel } from "./pages/shop/EditorPanel"
 
 import { pdpSchema } from "./pages/pdp/schema"
 import { pdpDefaultContent } from "./pages/pdp/defaultContent"
 import { PdpRender } from "./pages/pdp/Render"
-import { PdpEditorPanel } from "./pages/pdp/EditorPanel"
 
 import {
   DefaultModernCartFlowBody,
@@ -28,7 +26,13 @@ import {
 } from "./pages/flow/FlowWrappers"
 import { defaultModernFlowShellSchema } from "./pages/flow/flow-shell-schema"
 import { DefaultModernFlowBandShell } from "./pages/flow/FlowBandShell"
-import { DefaultModernFlowShellEditorPanel } from "./pages/flow/FlowShellEditorPanel"
+
+const HomeEditorPanel = dynamic(() => import("./pages/home/EditorPanel").then((m) => m.HomeEditorPanel))
+const ShopEditorPanel = dynamic(() => import("./pages/shop/EditorPanel").then((m) => m.ShopEditorPanel))
+const PdpEditorPanel = dynamic(() => import("./pages/pdp/EditorPanel").then((m) => m.PdpEditorPanel))
+const DefaultModernFlowShellEditorPanel = dynamic(() =>
+  import("./pages/flow/FlowShellEditorPanel").then((m) => m.DefaultModernFlowShellEditorPanel)
+)
 
 export const defaultModern: TemplateModule = defineTemplate({
   manifest: {

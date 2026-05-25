@@ -64,7 +64,9 @@ export function Footer({
     twitter: Twitter,
     youtube: Youtube,
   } as const
-  const enabledSocialLinks = (settings?.socialLinks || []).filter((item) => item.enabled)
+  const enabledSocialLinks = (settings?.socialLinks || []).filter(
+    (item) => item.enabled && item.url?.trim()
+  )
   const quickLinks = settings?.quickLinks?.length
     ? settings.quickLinks
     : [
@@ -235,7 +237,7 @@ export function Footer({
               {enabledSocialLinks.map((item) => {
                 const Icon = socialIconMap[item.platform]
                 return (
-                  <Link key={item.platform} href={item.url || "#"} target={item.url ? "_blank" : undefined}>
+                  <Link key={item.platform} href={item.url.trim()} target="_blank" rel="noreferrer">
                     <Button variant="ghost" size="icon" className="w-12 h-12 rounded-none bg-muted/40 border border-border text-muted-foreground hover:text-primary-foreground hover:bg-muted/60 transition-all">
                       <Icon className="w-6 h-6" />
                     </Button>

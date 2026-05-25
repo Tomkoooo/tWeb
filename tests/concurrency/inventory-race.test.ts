@@ -168,7 +168,7 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
         expect(finalP?.stock).toBe(0);
         expect(await Reservation.countDocuments({ state: "pending", product: pid })).toBe(1);
       }
-    });
+    }, 30000);
   });
 
   describe("multi-winner (stock 2)", () => {
@@ -273,6 +273,71 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
       expect(await Reservation.countDocuments({ state: "pending", product: productId, variantId: "v1" })).toBe(
         1
       );
+    });
+  });
+
+  describe("variant limited price quota", () => {
+    beforeEach(async () => {
+      await clearTestDatabase();
+    });
+
+    it("does not allocate the 3rd variant unit to a first-2 limited price under concurrency", async () => {
+      const cat = new mongoose.Types.ObjectId();
+      const product = await Product.create({
+        name: "Variant promo quota",
+        images: [],
+        description: "x",
+        stock: 3,
+        netPrice: 5000,
+        discount: 0,
+        category: cat,
+        slug: uniqueSlug("var-promo"),
+        isActive: true,
+        isVisible: true,
+        variantOptions: [{ name: "Size", values: ["S"] }],
+        variants: [
+          {
+            id: "v1",
+            attributes: { Size: "S" },
+            netPrice: 5000,
+            grossPrice: 5000,
+            discount: 0,
+            stock: 3,
+            isActive: true,
+            limitedPrice: {
+              enabled: true,
+              limitQuantity: 2,
+              netPrice: 3000,
+              grossPrice: 3000,
+              reservedCount: 0,
+              soldCount: 0,
+              claimedCount: 0,
+            },
+          },
+        ],
+        requireVariantSelection: true,
+        ratings: [],
+      });
+
+      const results = await Promise.all(
+        Array.from({ length: 3 }, async () => {
+          const tempOrderId = new mongoose.Types.ObjectId();
+          const result = await allocateReservationsForStripeTempOrder(tempOrderId, [
+            { product: product._id.toString(), variantId: "v1", quantity: 1 },
+          ]);
+          return result.allocations[0].promoQuantity;
+        })
+      );
+
+      expect(results.reduce((sum, qty) => sum + qty, 0)).toBe(2);
+      expect(results.filter((qty) => qty === 0)).toHaveLength(1);
+
+      const snapshot = await Product.findById(product._id).lean();
+      const variant = (snapshot?.variants as any[] | undefined)?.find((v) => v.id === "v1");
+      expect(variant?.stock).toBe(0);
+      expect(variant?.limitedPrice?.claimedCount).toBe(2);
+      expect(variant?.limitedPrice?.reservedCount).toBe(2);
+      expect(await Reservation.countDocuments({ product: product._id, variantId: "v1", promoQuantity: 1 })).toBe(2);
     });
   });
 

@@ -23,11 +23,30 @@ type VariantInput = {
   stock?: number;
   isActive?: boolean;
   isDefault?: boolean;
+  limitedPrice?: {
+    enabled?: boolean;
+    limitQuantity?: number;
+    netPrice?: number;
+    grossPrice?: number;
+    reservedCount?: number;
+    soldCount?: number;
+    claimedCount?: number;
+  };
   seo?: {
     title?: string;
     description?: string;
     keywords?: string[];
   };
+};
+
+type LimitedPriceInput = {
+  enabled?: boolean;
+  limitQuantity?: number;
+  netPrice?: number;
+  grossPrice?: number;
+  reservedCount?: number;
+  soldCount?: number;
+  claimedCount?: number;
 };
 
 function parseJsonField<T>(raw: FormDataEntryValue | null, fallback: T): T {
@@ -73,6 +92,15 @@ function sanitizeVariants(
     const grossRaw = Number(variant.grossPrice);
     const grossPrice =
       Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined;
+    const limitedNetRaw = Number(variant.limitedPrice?.netPrice);
+    const limitedGrossRaw = Number(variant.limitedPrice?.grossPrice);
+    const limitedReserved = Math.max(0, Math.round(Number(variant.limitedPrice?.reservedCount ?? 0) || 0));
+    const limitedSold = Math.max(0, Math.round(Number(variant.limitedPrice?.soldCount ?? 0) || 0));
+    const limitedClaimedRaw = Number(variant.limitedPrice?.claimedCount);
+    const limitedClaimed = Math.max(
+      limitedReserved + limitedSold,
+      Number.isFinite(limitedClaimedRaw) ? Math.round(limitedClaimedRaw) : limitedReserved + limitedSold
+    );
 
     return {
       id: baseId,
@@ -87,6 +115,17 @@ function sanitizeVariants(
       stock: Number(variant.stock ?? 0) || 0,
       isActive: variant.isActive !== false,
       isDefault: Boolean(variant.isDefault),
+      limitedPrice: {
+        enabled: Boolean(variant.limitedPrice?.enabled),
+        limitQuantity: Math.max(0, Math.round(Number(variant.limitedPrice?.limitQuantity ?? 0) || 0)),
+        netPrice:
+          Number.isFinite(limitedNetRaw) && limitedNetRaw > 0 ? limitedNetRaw : undefined,
+        grossPrice:
+          Number.isFinite(limitedGrossRaw) && limitedGrossRaw > 0 ? limitedGrossRaw : undefined,
+        reservedCount: limitedReserved,
+        soldCount: limitedSold,
+        claimedCount: limitedClaimed,
+      },
       seo: {
         title: String(variant.seo?.title || "").trim() || undefined,
         description: String(variant.seo?.description || "").trim() || undefined,
@@ -114,6 +153,35 @@ function sanitizeVariants(
     values[0].isDefault = true;
   }
   return values;
+}
+
+function sanitizeLimitedPrice(input: LimitedPriceInput | undefined, existing?: LimitedPriceInput) {
+  const netRaw = Number(input?.netPrice);
+  const grossRaw = Number(input?.grossPrice);
+  const reserved = Math.max(0, Math.round(Number(existing?.reservedCount ?? input?.reservedCount ?? 0) || 0));
+  const sold = Math.max(0, Math.round(Number(existing?.soldCount ?? input?.soldCount ?? 0) || 0));
+  const claimedRaw = Number(existing?.claimedCount ?? input?.claimedCount);
+  return {
+    enabled: Boolean(input?.enabled),
+    limitQuantity: Math.max(0, Math.round(Number(input?.limitQuantity ?? 0) || 0)),
+    netPrice: Number.isFinite(netRaw) && netRaw > 0 ? netRaw : undefined,
+    grossPrice: Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined,
+    reservedCount: reserved,
+    soldCount: sold,
+    claimedCount: Math.max(
+      reserved + sold,
+      Number.isFinite(claimedRaw) ? Math.round(claimedRaw) : reserved + sold
+    ),
+  };
+}
+
+function parseProductLimitedPrice(formData: FormData): LimitedPriceInput {
+  return {
+    enabled: formData.get("limitedPriceEnabled") === "true",
+    limitQuantity: Number(formData.get("limitedPriceLimitQuantity") || 0),
+    netPrice: Number(formData.get("limitedPriceNetPrice") || 0),
+    grossPrice: Number(formData.get("limitedPriceGrossPrice") || 0),
+  };
 }
 
 function parseProductPricing(formData: FormData, variants: ReturnType<typeof sanitizeVariants>, variantsEnabled: boolean, requireVariantSelection: boolean) {
@@ -187,6 +255,7 @@ async function persistProduct(
 
   const preNet = parseFloat(formData.get("netPrice") as string) || 0;
   const variants = variantsEnabled ? sanitizeVariants(variantsInput, preNet) : [];
+  const existingProduct = mode === "update" && id ? await ProductService.getById(id) : null;
 
   if (variantsEnabled && variants.length === 0) {
     throw new Error("A variáns termékhez legalább egy variáns kötelező.");
@@ -208,7 +277,10 @@ async function persistProduct(
     grossPrice,
     vatPercent,
     discount,
-    category: category as any,
+    limitedPrice: variantsEnabled
+      ? sanitizeLimitedPrice({ enabled: false }, existingProduct?.limitedPrice)
+      : sanitizeLimitedPrice(parseProductLimitedPrice(formData), existingProduct?.limitedPrice),
+    category,
     seo,
     variantOptions,
     variants,
@@ -251,15 +323,58 @@ export async function updateProduct(id: string, formData: FormData) {
   redirect("/admin/products");
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, confirmationName: string) {
   await requireAdmin();
 
   try {
+    const product = await ProductService.getById(id);
+    if (!product) {
+      throw new Error("A termék nem található.");
+    }
+    const expectedName = String(product.name || "").trim();
+    if (!expectedName || confirmationName.trim() !== expectedName) {
+      throw new Error("A törlés megerősítése nem egyezik a termék nevével.");
+    }
     await ProductService.delete(id);
   } catch (error) {
     console.error("Error deleting product:", error);
     throw error;
   }
   revalidatePath("/admin/products");
-  redirect("/admin/products");
+  return { success: true };
+}
+
+export async function restoreProduct(id: string) {
+  await requireAdmin();
+
+  try {
+    const product = await ProductService.getById(id, { includeDeleted: true });
+    if (!product) {
+      throw new Error("A termék nem található.");
+    }
+    await ProductService.restore(id);
+  } catch (error) {
+    console.error("Error restoring product:", error);
+    throw error;
+  }
+  revalidatePath("/admin/products");
+  return { success: true };
+}
+
+export async function resetProductLimitedPriceCounters(id: string, variantId?: string) {
+  await requireAdmin();
+
+  try {
+    const product = await ProductService.getById(id, { includeDeleted: true });
+    if (!product) {
+      throw new Error("A termék nem található.");
+    }
+    await ProductService.resetLimitedPriceCounters(id, variantId);
+  } catch (error) {
+    console.error("Error resetting limited price counters:", error);
+    throw error;
+  }
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${id}`);
+  return { success: true };
 }

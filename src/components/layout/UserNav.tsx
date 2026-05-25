@@ -29,8 +29,8 @@ export function UserNav() {
         aria-label="Bejelentkezés"
         className="px-0 text-xs font-black uppercase tracking-[0.2em] text-foreground hover:bg-transparent hover:text-primary-foreground"
       >
-        <LogIn className="h-5 w-5 shrink-0 xl:mr-2" aria-hidden />
-        <span className="hidden xl:inline">Bejelentkezés</span>
+        <LogIn className="h-5 w-5 shrink-0 2xl:mr-2" aria-hidden />
+        <span className="hidden 2xl:inline">Bejelentkezés</span>
       </Button>
     )
   }

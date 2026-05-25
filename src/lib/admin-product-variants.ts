@@ -12,6 +12,15 @@ export type AdminVariantRow = {
   stock: number
   isActive: boolean
   isDefault: boolean
+  limitedPrice?: {
+    enabled: boolean
+    limitQuantity: number
+    netPrice?: number
+    grossPrice?: number
+    reservedCount?: number
+    soldCount?: number
+    claimedCount?: number
+  }
   seo?: {
     title?: string
     description?: string
@@ -75,6 +84,24 @@ export function normalizeAdminVariants(
       stock: Number(variant.stock ?? 0) || 0,
       isActive: variant.isActive !== false,
       isDefault: Boolean(variant.isDefault),
+      limitedPrice: {
+        enabled: Boolean(variant.limitedPrice?.enabled),
+        limitQuantity: Number(variant.limitedPrice?.limitQuantity ?? 0) || 0,
+        netPrice:
+          Number.isFinite(Number(variant.limitedPrice?.netPrice)) && Number(variant.limitedPrice?.netPrice) > 0
+            ? Number(variant.limitedPrice?.netPrice)
+            : undefined,
+        grossPrice:
+          Number.isFinite(Number(variant.limitedPrice?.grossPrice)) && Number(variant.limitedPrice?.grossPrice) > 0
+            ? Number(variant.limitedPrice?.grossPrice)
+            : undefined,
+        reservedCount: Number(variant.limitedPrice?.reservedCount ?? 0) || 0,
+        soldCount: Number(variant.limitedPrice?.soldCount ?? 0) || 0,
+        claimedCount:
+          Number(variant.limitedPrice?.claimedCount ?? 0) ||
+          (Number(variant.limitedPrice?.reservedCount ?? 0) || 0) +
+            (Number(variant.limitedPrice?.soldCount ?? 0) || 0),
+      },
       seo: {
         title: variant.seo?.title || "",
         description: variant.seo?.description || "",

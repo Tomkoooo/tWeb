@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/db";
 import Category, { ICategory } from "@/models/Category";
+import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 import { revalidateStorefrontSitemap } from "@/lib/sitemap/revalidate-storefront-sitemap";
 import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
@@ -9,6 +10,7 @@ import { unstable_cache } from "next/cache";
 type CategoryLean = {
   _id: { toString(): string };
   parent?: { toString(): string } | null;
+  slug?: string;
 };
 
 const getCachedAllCategories = unstable_cache(
@@ -32,7 +34,10 @@ export class CategoryService {
 
   static async getById(id: string) {
     await dbConnect();
-    return await Category.findById(id).populate("parent").lean();
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      return await Category.findById(id).populate("parent").lean();
+    }
+    return await Category.findOne({ slug: id }).populate("parent").lean();
   }
 
   static async create(data: Partial<ICategory>) {
@@ -85,10 +90,16 @@ export class CategoryService {
   static async getTree() {
     await dbConnect();
     const categories = await Category.find({}).lean();
+    const childrenByParent = new Map<string | null, typeof categories>();
+    for (const cat of categories) {
+      const parentId = cat.parent?.toString() || null;
+      const bucket = childrenByParent.get(parentId) || [];
+      bucket.push(cat);
+      childrenByParent.set(parentId, bucket);
+    }
 
     const buildTree = (parentId: string | null = null): unknown[] => {
-      return categories
-        .filter((cat) => (cat.parent?.toString() || null) === parentId)
+      return (childrenByParent.get(parentId) || [])
         .map((cat) => ({
           ...cat,
           children: buildTree(cat._id.toString()),
@@ -98,8 +109,13 @@ export class CategoryService {
     return buildTree(null);
   }
 
-  static async getDescendantIds(parentId: string): Promise<string[]> {
+  static async getDescendantIds(parentIdOrSlug: string): Promise<string[]> {
     const categories = await getCachedAllCategories();
+    const root = categories.find(
+      (cat) => cat._id.toString() === parentIdOrSlug || cat.slug === parentIdOrSlug
+    );
+    if (!root) return [];
+    const parentId = root._id.toString();
 
     const getIds = (id: string): string[] => {
       const children = categories.filter(

@@ -28,6 +28,7 @@ import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
 interface ShopProps {
   /** Active template — resolves `commerceSlots.ProductCard` client-side (homepage `deps` includes this). */
   templateId: string
+  shopEnabled: boolean
   categories?: HomePageDeps["categories"]
   products?: HomePageFeaturedProduct[]
   title?: string
@@ -41,6 +42,7 @@ interface ShopProps {
 
 export function Shop({
   templateId,
+  shopEnabled,
   categories = [],
   products = [],
   title,
@@ -168,7 +170,7 @@ export function Shop({
                   src={category.image}
                   alt={category.name}
                   fill
-                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 25vw"
                   className="pointer-events-none object-cover transition-transform duration-1000 opacity-60 group-hover:scale-110 group-hover:opacity-100"
                 />
                 {category.image ? (
@@ -244,7 +246,10 @@ export function Shop({
                     cms.enabled && "[&_button]:pointer-events-none [&_a[href*='products']]:pointer-events-none"
                   )}
                 >
-                  <ProductCardCmp product={homepageFeaturedToProductDetail(product)} />
+                  <ProductCardCmp
+                    product={homepageFeaturedToProductDetail(product)}
+                    shopEnabled={shopEnabled}
+                  />
                 </CarouselItem>
               ))}
             </CarouselContent>

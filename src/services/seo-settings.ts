@@ -28,22 +28,11 @@ const DEFAULTS: SeoSettings = {
 export class SeoSettingsService {
   static async get() {
     await dbConnect()
-    let doc = await SeoSetting.findOne({ key: "seo" }).sort({ updatedAt: -1, _id: -1 }).lean()
-    if (!doc) {
-      await SeoSetting.create({
-        key: "seo",
-        siteTitle: DEFAULTS.siteTitle,
-        siteDescription: DEFAULTS.siteDescription,
-        favicon: DEFAULTS.favicon,
-        ogImage: DEFAULTS.ogImage,
-        twitterImage: DEFAULTS.twitterImage,
-        defaultLocale: DEFAULTS.defaultLocale,
-        robotsIndex: DEFAULTS.robotsIndex,
-        robotsFollow: DEFAULTS.robotsFollow,
-        canonicalBaseUrl: DEFAULTS.canonicalBaseUrl,
-      })
-      doc = await SeoSetting.findOne({ key: "seo" }).sort({ updatedAt: -1, _id: -1 }).lean()
-    }
+    const doc = await SeoSetting.findOneAndUpdate(
+      { key: "seo" },
+      { $setOnInsert: { key: "seo", ...DEFAULTS } },
+      { upsert: true, returnDocument: "after", lean: true }
+    )
     return {
       siteTitle: doc?.siteTitle || DEFAULTS.siteTitle,
       siteDescription: doc?.siteDescription || DEFAULTS.siteDescription,

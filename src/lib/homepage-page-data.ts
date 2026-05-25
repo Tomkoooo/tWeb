@@ -5,14 +5,13 @@ import {
   type HomepageFeaturedResolveOptions,
 } from "@/features/homepage-cms/render/homepage-deps"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
-import { PageContentService } from "@/services/page-content"
 import {
   resolveStorefrontFooterContact,
   type FooterCategoryItem,
 } from "@/lib/storefront-footer-data"
+import { getRequestPageContent } from "@/lib/cached-storefront"
 import type { HomepageDepsInternal } from "@/features/homepage-cms/render/homepage-deps"
 import type { ActiveChrome } from "@/lib/active-chrome"
-import type { TemplateModule } from "@/templates/types"
 
 export type HomepagePageData = {
   chrome: ActiveChrome
@@ -31,11 +30,11 @@ export type HomepagePageData = {
 
 export async function getHomepagePageData(): Promise<HomepagePageData> {
   const chrome = await timeAsync("homepage.getActiveChrome", () => getActiveChrome())
-  const { template, branding } = chrome
+  const { template } = chrome
   const homePageDef = template.pages.home
 
   const content = await timeAsync("homepage.pageContent", () =>
-    PageContentService.get<HomepageSnapshot>(template.manifest.id, "page:home").catch(
+    getRequestPageContent<HomepageSnapshot>(template.manifest.id, "page:home").catch(
       () => homePageDef.defaultContent as HomepageSnapshot
     )
   )
@@ -63,11 +62,19 @@ export async function getHomepagePageData(): Promise<HomepagePageData> {
     })
   )
 
-  const { shopContentSnapshot: _s, categoryTreeSnapshot: _c, ...publicDeps } = deps
+  const { products, categories, reviews, siteContact, company, shopEnabled } = deps
   return {
     chrome,
     content,
-    dependencies: { ...publicDeps, templateId: template.manifest.id },
+    dependencies: {
+      products,
+      categories,
+      reviews,
+      siteContact,
+      company,
+      shopEnabled: chrome.shopEnabled && shopEnabled,
+      templateId: template.manifest.id,
+    },
     footerData,
   }
 }

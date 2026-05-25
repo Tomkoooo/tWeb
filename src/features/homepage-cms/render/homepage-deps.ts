@@ -9,6 +9,7 @@ import {
 } from "@/lib/cached-storefront"
 import { mediaImageSrc } from "@/lib/images"
 import { listingPriceSummary } from "@/lib/pricing"
+import { buildProductListingLines } from "@/lib/product-variants"
 import {
   orderIdsByList,
   resolveFeaturedCategoryIds,
@@ -29,6 +30,7 @@ type ProductVariant = {
   isActive?: boolean
   isDefault?: boolean
   images?: string[]
+  limitedPrice?: ProductItem["limitedPrice"]
 }
 type ProductCategory = { name?: string }
 type CategoryItem = {
@@ -48,6 +50,15 @@ type ProductItem = {
   netPrice: number
   discount?: number
   grossPrice?: number
+  limitedPrice?: {
+    enabled?: boolean
+    limitQuantity?: number
+    netPrice?: number
+    grossPrice?: number
+    reservedCount?: number
+    soldCount?: number
+    claimedCount?: number
+  }
   images?: string[]
   category?: ProductCategory
   stock?: number
@@ -65,21 +76,23 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
   const allVariants = Array.isArray(p.variants) ? p.variants : []
   const effectiveVariants = allVariants.filter((v) => v.isActive !== false)
   const hasVariants = allVariants.length > 0
-  const listingLines =
-    effectiveVariants.length > 0
-      ? effectiveVariants.map((v) => ({
-          netPrice: Number(v.netPrice ?? p.netPrice) || p.netPrice,
-          discount: Number(v.discount || 0) || 0,
-          grossPrice: v.grossPrice,
-        }))
-      : [
-          {
-            netPrice: p.netPrice,
-            discount: Number(p.discount || 0) || 0,
-            grossPrice: p.grossPrice,
-          },
-        ]
-  const { unitGross: gross, maxDiscount } = listingPriceSummary(listingLines, p.vatPercent)
+  const listingLines = buildProductListingLines({
+    name: p.name,
+    description: "",
+    netPrice: p.netPrice,
+    grossPrice: p.grossPrice,
+    discount: p.discount,
+    limitedPrice: p.limitedPrice,
+    variants: effectiveVariants.map((v) => ({
+      id: v.id,
+      netPrice: v.netPrice ?? p.netPrice,
+      grossPrice: v.grossPrice,
+      discount: v.discount,
+      isActive: v.isActive,
+      limitedPrice: v.limitedPrice,
+    })),
+  })
+  const { unitGross: gross } = listingPriceSummary(listingLines, p.vatPercent)
   const rootStock =
     typeof p.stock === "number" && Number.isFinite(p.stock) ? p.stock : 100
 
@@ -100,6 +113,7 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
     discount: Number(p.discount || 0) || 0,
     vatPercent: p.vatPercent,
     grossPrice: p.grossPrice,
+    limitedPrice: p.limitedPrice,
     images: (p.images || []).map((img) => mediaImageSrc(img)),
     stock: rootStock,
     variants: allVariants.map((v) => ({
@@ -112,6 +126,7 @@ function mapFeaturedProduct(p: ProductItem): HomePageFeaturedProduct {
       isDefault: v.isDefault,
       attributes: v.attributes,
       images: v.images?.map((img) => mediaImageSrc(img)),
+      limitedPrice: v.limitedPrice,
     })),
   }
 }
@@ -170,6 +185,7 @@ export async function getHomepageRenderDependencies(
     products,
     categories,
     reviews,
+    shopEnabled: isShopPageEnabled,
     siteContact: channels,
     company: {
       name: content.brand_name || "Company name",

@@ -114,14 +114,14 @@ export function Navbar({
       </span>
     </div>
   ) : (
-    <div className="flex min-w-0 flex-none items-center gap-4 lg:gap-6 xl:gap-10">
+    <div className="flex min-w-0 flex-none items-center gap-4 lg:gap-6 2xl:gap-10">
       {shopEnabled ? (
         <>
           <div className="hidden min-w-0 shrink lg:block">
             {NavbarSearch ? (
-              <NavbarSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
+              <NavbarSearch className="w-36 transition-all duration-300 focus-within:w-44 2xl:w-44 2xl:focus-within:w-52" />
             ) : (
-              <LiveSearch className="w-36 transition-all duration-300 focus-within:w-44 xl:w-44 xl:focus-within:w-52" />
+              <LiveSearch className="w-36 transition-all duration-300 focus-within:w-44 2xl:w-44 2xl:focus-within:w-52" />
             )}
           </div>
 
@@ -223,7 +223,7 @@ export function Navbar({
 
 function CartCountBadge() {
   const [mounted, setMounted] = React.useState(false)
-  const totalItems = useCartStore((state: any) => state.totalItems)
+  const totalItems = useCartStore((state) => state.totalItems)
 
   React.useEffect(() => {
     setMounted(true)

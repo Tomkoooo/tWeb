@@ -20,14 +20,11 @@ function parseDoc(raw: unknown): ProductSuggestionSettings {
 export class ProductSuggestionSettingsService {
   static async get(): Promise<ProductSuggestionSettings> {
     await dbConnect()
-    let doc = await ProductSuggestionSetting.findOne({ key: KEY }).lean()
-    if (!doc) {
-      await ProductSuggestionSetting.create({
-        key: KEY,
-        ...DEFAULT_PRODUCT_SUGGESTION_SETTINGS,
-      })
-      doc = await ProductSuggestionSetting.findOne({ key: KEY }).lean()
-    }
+    const doc = await ProductSuggestionSetting.findOneAndUpdate(
+      { key: KEY },
+      { $setOnInsert: { key: KEY, ...DEFAULT_PRODUCT_SUGGESTION_SETTINGS } },
+      { upsert: true, returnDocument: "after", lean: true }
+    )
     return parseDoc({
       enabled: doc?.enabled,
       showCartLinesInModal: doc?.showCartLinesInModal,

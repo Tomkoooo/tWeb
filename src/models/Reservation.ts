@@ -7,6 +7,9 @@ export interface IReservation extends Document {
   product: mongoose.Types.ObjectId;
   variantId?: string;
   quantity: number;
+  promoQuantity?: number;
+  promoUnitPrice?: number;
+  regularUnitPrice?: number;
   state: ReservationState;
   expiresAt: Date;
   createdAt: Date;
@@ -19,6 +22,9 @@ const ReservationSchema = new Schema<IReservation>(
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true, index: true },
     variantId: { type: String },
     quantity: { type: Number, required: true, min: 1 },
+    promoQuantity: { type: Number, default: 0, min: 0 },
+    promoUnitPrice: { type: Number },
+    regularUnitPrice: { type: Number },
     state: {
       type: String,
       enum: ["pending", "confirmed", "released", "expired"],

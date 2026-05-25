@@ -10,6 +10,7 @@ import type { ProductDetailSlotProps } from "@/templates/types"
 export function AtelierProductDetailSlot({
   product,
   initialVariantId,
+  shopEnabled,
   editorial,
   introPlacement,
 }: ProductDetailSlotProps) {
@@ -18,6 +19,7 @@ export function AtelierProductDetailSlot({
       <ProductDetail
         product={product as never}
         initialVariantId={initialVariantId}
+        shopEnabled={shopEnabled}
         editorial={editorial}
         introPlacement={introPlacement}
         buyColumnFirst

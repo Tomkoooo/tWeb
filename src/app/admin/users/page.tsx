@@ -1,4 +1,5 @@
-import { Shield, User, ShoppingBag, Coins, CalendarDays } from "lucide-react";
+import { Shield, User, ShoppingBag, Coins, CalendarDays, Eye } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getAdminUsers } from "@/actions/admin-users";
 import { cn } from "@/lib/utils";
@@ -7,6 +8,7 @@ import { formatHuf } from "@/lib/pricing";
 
 type AdminUserRow = {
   _id: string;
+  kind?: "registered" | "guest";
   name?: string;
   email?: string;
   role?: "ADMIN" | "USER";
@@ -23,6 +25,7 @@ type AdminUserRow = {
 
 type AdminUsersSearchParams = Promise<{
   q?: string;
+  kind?: string;
   role?: string;
   hasOrders?: string;
 }>;
@@ -38,17 +41,26 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
           Vásárlók <span className="admin-headline-accent">Kezelése</span>
         </h1>
         <p className="text-white/40 font-medium italic">
-          Felhasználók, szerepkörök és vásárlási összefoglaló.
+          Regisztrált fiókok és vendég vásárlók vásárlási összefoglalója.
         </p>
       </div>
 
-      <form className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white/5 border border-white/10 p-4">
+      <form className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white/5 border border-white/10 p-4">
         <input
           name="q"
           defaultValue={filters.q || ""}
           placeholder="Keresés név vagy email alapján..."
           className="md:col-span-2 h-12 bg-black border border-white/10 px-4 text-sm text-white placeholder:text-neutral-600 rounded-none"
         />
+        <select
+          name="kind"
+          defaultValue={filters.kind || "all"}
+          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+        >
+          <option value="all">Minden vásárló</option>
+          <option value="registered">Regisztrált</option>
+          <option value="guest">Vendég</option>
+        </select>
         <select
           name="role"
           defaultValue={filters.role || "all"}
@@ -63,7 +75,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
           defaultValue={filters.hasOrders || "all"}
           className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
         >
-          <option value="all">Minden vásárló</option>
+          <option value="all">Rendelés szerint: mind</option>
           <option value="yes">Van rendelése</option>
           <option value="no">Nincs rendelése</option>
         </select>
@@ -77,7 +89,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
           <thead>
             <tr className="border-b border-white/10">
               <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Felhasználó</th>
-              <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Szerepkör</th>
+              <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Típus / Szerepkör</th>
               <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Rendelések</th>
               <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Összes költés</th>
               <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Utolso rendelés</th>
@@ -99,24 +111,39 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 admin-icon-accent" />
                         <span className="text-white font-black uppercase tracking-wider">
-                          {item.name || "Névtelen felhasználó"}
+                          {item.name || (item.kind === "guest" ? "Vendég vásárló" : "Névtelen felhasználó")}
                         </span>
                       </div>
                       <p className="text-[11px] text-neutral-500 font-bold">{item.email || "Nincs email"}</p>
                     </div>
                   </td>
                   <td className="px-5 py-5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] border",
-                        item.role === "ADMIN"
-                          ? "text-amber-300 border-amber-300/40 bg-amber-500/10"
-                          : "text-neutral-300 border-white/20 bg-white/5"
-                      )}
-                    >
-                      <Shield className="w-3.5 h-3.5" />
-                      {item.role}
-                    </span>
+                    <div className="flex flex-col items-start gap-2">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] border",
+                          item.kind === "guest"
+                            ? "border-blue-400/40 bg-blue-500/10 text-blue-300"
+                            : "border-emerald-400/40 bg-emerald-500/10 text-emerald-300"
+                        )}
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        {item.kind === "guest" ? "Vendég" : "Regisztrált"}
+                      </span>
+                      {item.kind !== "guest" ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] border",
+                            item.role === "ADMIN"
+                              ? "text-amber-300 border-amber-300/40 bg-amber-500/10"
+                              : "text-neutral-300 border-white/20 bg-white/5"
+                          )}
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          {item.role}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-5 py-5 text-white font-black">
                     <span className="inline-flex items-center gap-2">
@@ -138,20 +165,35 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
                   </td>
                   <td className="px-5 py-5">
                     <div className="flex justify-end gap-2">
-                      <UserManagementSheet
-                        user={{
-                          _id: item._id.toString(),
-                          name: item.name,
-                          email: item.email,
-                          role: item.role,
-                        }}
-                        recentOrders={(item.recentOrders || []).map((order) => ({
-                          _id: order._id.toString(),
-                          total: order.total,
-                          status: order.status,
-                          createdAt: order.createdAt,
-                        }))}
-                      />
+                      {item.kind === "guest" ? (
+                        item.recentOrders?.[0] ? (
+                          <Link href={`/admin/orders/${item.recentOrders[0]._id.toString()}`}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="rounded-none text-neutral-400 hover:text-white hover:bg-white/5"
+                              title="Legutóbbi rendelés megnyitása"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                        ) : null
+                      ) : (
+                        <UserManagementSheet
+                          user={{
+                            _id: item._id.toString(),
+                            name: item.name,
+                            email: item.email,
+                            role: item.role,
+                          }}
+                          recentOrders={(item.recentOrders || []).map((order) => ({
+                            _id: order._id.toString(),
+                            total: order.total,
+                            status: order.status,
+                            createdAt: order.createdAt,
+                          }))}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>

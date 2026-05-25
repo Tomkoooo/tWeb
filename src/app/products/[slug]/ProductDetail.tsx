@@ -21,9 +21,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useCartStore } from "@/store/useCartStore"
 import {
   getActiveVariants,
+  getVariantAttributes,
   getVariantById,
+  getVariantByAttributes,
   getVariantLabel,
+  getVariantOptionGroups,
+  getLimitedPriceOffer,
   hasVariants,
+  isVariantAttributeValueAvailable,
   resolveProductView,
 } from "@/lib/product-variants"
 import {
@@ -51,9 +56,89 @@ export type ProductDetailEditorial = {
   addedLabel?: string
 }
 
+function VariantOptionPicker({
+  product,
+  selectedAttributes,
+  selectedVariantId,
+  onSelect,
+  compact = false,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  product: any
+  selectedAttributes: Record<string, string>
+  selectedVariantId: string
+  onSelect: (name: string, value: string) => void
+  compact?: boolean
+}) {
+  const groups = getVariantOptionGroups(product)
+  const activeVariants = getActiveVariants(product)
+
+  if (groups.length === 0) {
+    return (
+      <div className={cn("flex flex-wrap", compact ? "gap-1.5" : "gap-2")}>
+        {activeVariants.map((variant) => {
+          const isSelected = selectedVariantId === variant.id
+          return (
+            <button
+              key={variant.id}
+              type="button"
+              onClick={() => onSelect("__variant", variant.id)}
+              className={cn(
+                "border font-semibold uppercase tracking-widest transition-colors",
+                compact ? "min-h-9 px-3 py-1 text-[10px]" : "h-11 px-4 text-xs",
+                isSelected
+                  ? "border-primary-foreground/35 bg-primary/10 text-primary-foreground"
+                  : "border-border text-foreground hover:border-primary-foreground/40"
+              )}
+            >
+              {getVariantLabel(variant as never)}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn("space-y-3", compact && "space-y-2")}>
+      {groups.map((group) => (
+        <div key={group.name} className={compact ? "space-y-1.5" : "space-y-2"}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            {group.name}
+          </p>
+          <div className={cn("flex flex-wrap", compact ? "gap-1.5" : "gap-2")}>
+            {group.values.map((value) => {
+              const isSelected = selectedAttributes[group.name] === value
+              const isAvailable = isVariantAttributeValueAvailable(product, selectedAttributes, group.name, value)
+              return (
+                <button
+                  key={`${group.name}-${value}`}
+                  type="button"
+                  onClick={() => onSelect(group.name, value)}
+                  disabled={!isAvailable}
+                  className={cn(
+                    "border font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+                    compact ? "min-h-8 px-2.5 py-1 text-[10px]" : "h-11 px-4 text-xs",
+                    isSelected
+                      ? "border-primary-foreground/35 bg-primary/10 text-primary-foreground"
+                      : "border-border text-foreground hover:border-primary-foreground/40"
+                  )}
+                >
+                  {value}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function ProductDetail({
   product,
   initialVariantId,
+  shopEnabled = true,
   editorial,
   introPlacement = "aboveGrid",
   buyColumnFirst = false,
@@ -62,6 +147,7 @@ export function ProductDetail({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   product: any
   initialVariantId?: string
+  shopEnabled?: boolean
   editorial?: ProductDetailEditorial
   /** Defaults to legacy order (intro above gallery). Story-style templates prefer `belowHero`. */
   introPlacement?: PdpEditorialPlacement
@@ -71,16 +157,15 @@ export function ProductDetail({
   const [loadedImageKeys, setLoadedImageKeys] = useState<Record<string, true>>({})
   const [frameByImageKey, setFrameByImageKey] = useState<Record<string, MediaFrameVariant>>({})
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId || "")
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({})
   const [activeImage, setActiveImage] = useState<string>(product.images?.[0] || "")
   const [isAdded, setIsAdded] = useState(false)
-  const [shopEnabled, setShopEnabled] = useState<boolean | null>(null)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addItem = useCartStore((state: any) => state.addItem)
 
-  const activeVariants = useMemo(() => getActiveVariants(product), [product])
   const view = useMemo(
     () => resolveProductView(product, selectedVariantId),
     [product, selectedVariantId]
@@ -96,6 +181,12 @@ export function ProductDetail({
   )
   const priceBreakdown = priceBreakdownFromGross(finalPrice, 1, vatPct)
   const selectedVariant = view.selectedVariant
+  const selectedVariantLabel = selectedVariant ? getVariantLabel(selectedVariant) : ""
+  const limitedOffer = hasVariants(product)
+    ? selectedVariant
+      ? getLimitedPriceOffer(product, selectedVariant.id)
+      : null
+    : getLimitedPriceOffer(product)
   const displayImages = useMemo(() => {
     const variant = getVariantById(product, selectedVariantId)
     const variantImages = (variant?.images || []).filter((img: string) => Boolean(img?.trim()))
@@ -146,21 +237,10 @@ export function ProductDetail({
   }, [initialVariantId])
 
   useEffect(() => {
-    const loadAvailability = async () => {
-      try {
-        const res = await fetch("/api/shop/availability")
-        if (!res.ok) {
-          setShopEnabled(false)
-          return
-        }
-        const data = await res.json()
-        setShopEnabled(Boolean(data.enabled))
-      } catch {
-        setShopEnabled(false)
-      }
-    }
-    loadAvailability()
-  }, [])
+    // Keep grouped option chips in sync with URL/deep-linked variant state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived picker state from selected variant
+    if (selectedVariantId) setSelectedAttributes(getVariantAttributes(product, selectedVariantId))
+  }, [product, selectedVariantId])
 
   useEffect(() => {
     // Only change preview when the available image set actually changes — keep current if still valid.
@@ -177,8 +257,19 @@ export function ProductDetail({
     if ((selectedVariantId || "") === currentVariant) return
     if (selectedVariantId) params.set("variant", selectedVariantId)
     else params.delete("variant")
-    router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
+    router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false })
   }, [selectedVariantId, pathname, router, searchParams])
+
+  const handleVariantOptionSelect = (name: string, value: string) => {
+    if (name === "__variant") {
+      setSelectedVariantId(value)
+      return
+    }
+    const next = { ...selectedAttributes, [name]: value }
+    setSelectedAttributes(next)
+    const nextVariant = getVariantByAttributes(product, next)
+    setSelectedVariantId(nextVariant?.id || "")
+  }
 
   const handleAddToCart = () => {
     if (shopEnabled === false) return
@@ -187,7 +278,7 @@ export function ProductDetail({
     }
     const productId = product._id.toString()
     const lineId = selectedVariant ? `${productId}:${selectedVariant.id}` : productId
-    const variantLabel = selectedVariant ? getVariantLabel(selectedVariant) : ""
+    const variantLabel = selectedVariantLabel
     addItem({
       id: lineId,
       productId,
@@ -305,7 +396,7 @@ export function ProductDetail({
     ) : null
 
   return (
-    <div className="container mx-auto px-4 pb-24 pt-36 animate-in fade-in duration-700 text-foreground md:pb-32 md:pt-40">
+    <div className="container mx-auto px-4 pb-64 pt-36 animate-in fade-in duration-700 text-foreground md:pb-32 md:pt-40">
       {introPlacement === "aboveGrid" && editorialIntroEl ? (
         <div className="mb-14">{editorialIntroEl}</div>
       ) : null}
@@ -424,12 +515,43 @@ export function ProductDetail({
               <>
                 <div className="mb-2 flex items-baseline gap-4">
                   <span className="text-5xl font-semibold">{formatHuf(finalPrice)}</span>
-                  {discountAmount > 0 ? (
+                  {limitedOffer && !limitedOffer.exhausted ? (
+                    <span className="text-2xl text-muted-foreground line-through">
+                      {formatHuf(limitedOffer.regularUnitGross)}
+                    </span>
+                  ) : discountAmount > 0 ? (
                     <span className="text-2xl text-muted-foreground line-through">
                       {formatHuf(price)}
                     </span>
                   ) : null}
                 </div>
+                {limitedOffer ? (
+                  <div className="mb-4 rounded-2xl border border-primary-foreground/25 bg-primary/10 p-4">
+                    {!limitedOffer.exhausted ? (
+                      <>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-foreground">
+                          Limitált bevezető ár
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-foreground">
+                          Első {limitedOffer.limitQuantity} db{" "}
+                          <span className="text-primary-foreground">
+                            {formatHuf(limitedOffer.promoUnitGross)}
+                          </span>
+                          , utána {formatHuf(limitedOffer.regularUnitGross)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Még {limitedOffer.remainingQuantity} db érhető el limitált áron. A kosár és a checkout ezt
+                          az árat használja, amíg a limit tart.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        A limitált első {limitedOffer.limitQuantity} db-os ár elfogyott. Aktuális ár:{" "}
+                        {formatHuf(limitedOffer.regularUnitGross)} / db.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
                 <p className="text-sm font-medium italic text-muted-foreground">
                   Bruttó · Nettó {formatHuf(priceBreakdown.unitNet)} · ÁFA{" "}
                   {formatHuf(priceBreakdown.unitVat)} ({priceBreakdown.vatPercent}%)
@@ -465,37 +587,23 @@ export function ProductDetail({
           ) : null}
 
           {hasVariantOptions ? (
-            <div className="mb-10 space-y-4">
+            <div className="mb-10 hidden space-y-4 md:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 {variantRequired ? "Variáns kiválasztása (kötelező)" : "Variáns kiválasztása (opcionális)"}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {activeVariants.map((variant) => {
-                  const isSelected = selectedVariantId === variant.id
-                  return (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      onClick={() => setSelectedVariantId(variant.id)}
-                      className={cn(
-                        "h-11 border px-4 text-xs font-semibold uppercase tracking-widest transition-colors",
-                        isSelected
-                          ? "border-primary-foreground/35 bg-primary/10 text-primary-foreground"
-                          : "border-border text-foreground hover:border-primary-foreground/40"
-                      )}
-                    >
-                      {getVariantLabel(variant as never)}
-                    </button>
-                  )
-                })}
-              </div>
+              <VariantOptionPicker
+                product={product}
+                selectedAttributes={selectedAttributes}
+                selectedVariantId={selectedVariantId}
+                onSelect={handleVariantOptionSelect}
+              />
               {!selectedVariant && variantRequired ? (
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
                   Válassz variánst a termék kosárba helyezéséhez.
                 </p>
               ) : selectedVariant ? (
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Kiválasztva: {getVariantLabel(selectedVariant)}
+                  Kiválasztva: {selectedVariantLabel}
                 </p>
               ) : null}
             </div>
@@ -727,6 +835,56 @@ export function ProductDetail({
           if (nextSrc) setActiveImage(nextSrc)
         }}
       />
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-3 py-3 shadow-2xl backdrop-blur md:hidden">
+        <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col gap-3 overflow-y-auto">
+          {hasVariantOptions ? (
+            <VariantOptionPicker
+              product={product}
+              selectedAttributes={selectedAttributes}
+              selectedVariantId={selectedVariantId}
+              onSelect={handleVariantOptionSelect}
+              compact
+            />
+          ) : null}
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              {canShowPriceAndStock ? (
+                <>
+                  <p className="truncate text-sm font-semibold">{formatHuf(finalPrice)}</p>
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {limitedOffer && !limitedOffer.exhausted
+                      ? `${limitedOffer.remainingQuantity} db limitált áron`
+                      : selectedVariant ? selectedVariantLabel : `Készlet: ${view.stock}`}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600">
+                  Válassz variánst.
+                </p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={handleAddToCart}
+              disabled={
+                shopEnabled === false ||
+                isAdded ||
+                (variantRequired && !selectedVariant)
+              }
+              className={cn(
+                "h-12 shrink-0 rounded-xl px-4 text-xs font-semibold uppercase tracking-widest",
+                isAdded
+                  ? "bg-green-600 text-white hover:bg-green-600"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              )}
+            >
+              {isAdded ? <Check className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+              {isAdded ? added : cta}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

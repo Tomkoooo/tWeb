@@ -1,14 +1,29 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { Save, ArrowLeft, Info, Trash2, Star } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload"
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields"
-import { createProduct, updateProduct, deleteProduct } from "@/actions/admin-products"
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  resetProductLimitedPriceCounters,
+} from "@/actions/admin-products"
 import { cn } from "@/lib/utils"
 import { netToGross } from "@/lib/pricing"
 import { useAdminPricePair } from "@/hooks/useAdminPricePair"
@@ -39,6 +54,15 @@ type ProductFormInitialData = {
   netPrice?: number
   grossPrice?: number
   discount?: number
+  limitedPrice?: {
+    enabled?: boolean
+    limitQuantity?: number
+    netPrice?: number
+    grossPrice?: number
+    reservedCount?: number
+    soldCount?: number
+    claimedCount?: number
+  }
   stock?: number
   category?: CategoryLike
   variantOptions?: ProductVariantOption[]
@@ -67,11 +91,19 @@ function getRatingUserName(user: ProductRating["user"]) {
 }
 
 export default function ProductForm({ categories, initialData, isEdit }: ProductFormProps) {
+  const router = useRouter()
   const productId = initialData?._id?.toString() || ""
+  const productName = initialData?.name || ""
   const [images, setImages] = useState<string[]>(initialData?.images || [])
   const [isActive, setIsActive] = useState(initialData?.isActive ?? false)
   const [isVisible, setIsVisible] = useState(initialData?.isVisible ?? true)
   const [vatPercent, setVatPercent] = useState(Number(initialData?.vatPercent ?? 27))
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState("")
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [isDeleting, startDeleteTransition] = useTransition()
+  const [isResettingLimiter, startResetLimiterTransition] = useTransition()
+  const [limiterResetMessage, setLimiterResetMessage] = useState<string | null>(null)
 
   const initialNet = Number(initialData?.netPrice || 0)
   const initialGross =
@@ -80,6 +112,18 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
       : netToGross(initialNet, Number(initialData?.vatPercent ?? 27))
 
   const productPrice = useAdminPricePair(initialNet, vatPercent, initialGross)
+  const initialLimitedNet = Number(initialData?.limitedPrice?.netPrice || 0)
+  const initialLimitedGross =
+    initialData?.limitedPrice?.grossPrice != null && initialData.limitedPrice.grossPrice > 0
+      ? Number(initialData.limitedPrice.grossPrice)
+      : initialLimitedNet > 0
+        ? netToGross(initialLimitedNet, Number(initialData?.vatPercent ?? 27))
+        : 0
+  const limitedPrice = useAdminPricePair(initialLimitedNet, vatPercent, initialLimitedGross)
+  const [limitedPriceEnabled, setLimitedPriceEnabled] = useState(Boolean(initialData?.limitedPrice?.enabled))
+  const [limitedPriceLimitQuantity, setLimitedPriceLimitQuantity] = useState(
+    Number(initialData?.limitedPrice?.limitQuantity || 0)
+  )
 
   const [variantsEnabled, setVariantsEnabled] = useState(
     (initialData?.variants?.length ?? 0) > 0 || (initialData?.variantOptions?.length ?? 0) > 0
@@ -107,6 +151,43 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
     ? derivedFromVariants.grossPrice || netToGross(derivedFromVariants.netPrice, vatPercent)
     : productPrice.grossPrice
   const submitGrossPrice = summaryGross
+  const deleteConfirmed = productName.trim().length > 0 && deleteConfirmation.trim() === productName.trim()
+  const limitedClaimedCount = Number(initialData?.limitedPrice?.claimedCount || 0)
+  const limitedReservedCount = Number(initialData?.limitedPrice?.reservedCount || 0)
+  const limitedSoldCount = Number(initialData?.limitedPrice?.soldCount || 0)
+  const limitedRemainingCount = Math.max(0, limitedPriceLimitQuantity - limitedClaimedCount)
+
+  const handleDeleteProduct = () => {
+    if (!productId || !deleteConfirmed || isDeleting) return
+    setDeleteError(null)
+    startDeleteTransition(async () => {
+      try {
+        await deleteProduct(productId, deleteConfirmation)
+        router.push("/admin/products")
+        router.refresh()
+      } catch (error) {
+        setDeleteError(error instanceof Error ? error.message : "A törlés sikertelen.")
+      }
+    })
+  }
+
+  const handleResetSimpleLimiter = () => {
+    if (!productId || isResettingLimiter) return
+    const confirmed = window.confirm(
+      "Biztosan nullázod a limitált ár számlálóit? A limit és az árak megmaradnak, csak a foglalt/eladott/claimed érték lesz 0."
+    )
+    if (!confirmed) return
+    setLimiterResetMessage(null)
+    startResetLimiterTransition(async () => {
+      try {
+        await resetProductLimitedPriceCounters(productId)
+        setLimiterResetMessage("Limit számlálók nullázva.")
+        router.refresh()
+      } catch (error) {
+        setLimiterResetMessage(error instanceof Error ? error.message : "A limit számlálók nullázása sikertelen.")
+      }
+    })
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -198,7 +279,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
                 A bruttó ár az, amit a vevő fizet. A nettó a számlázáshoz kerül mentésre.
               </p>
-              <div className="grid grid-cols-1 items-end gap-6 md:grid-cols-2 lg:grid-cols-5">
+              <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-5">
                 <AdminPricePairFields
                   netPrice={productPrice.netPrice}
                   grossPrice={productPrice.grossPrice}
@@ -242,6 +323,81 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   />
                 </div>
               </div>
+              <div className="border border-amber-500/20 bg-amber-500/5 p-4 space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
+                      Első X darab egyedi ára
+                    </p>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      Egyszerű, variáns nélküli termékekhez. A foglalt és eladott darabokat a rendelési folyamat kezeli.
+                    </p>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                      Maradt: {limitedRemainingCount} · Felhasználva: {limitedClaimedCount} · Foglalt:{" "}
+                      {limitedReservedCount} · Eladott: {limitedSoldCount}
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={limitedPriceEnabled}
+                      onChange={(event) => setLimitedPriceEnabled(event.target.checked)}
+                    />
+                    Bekapcsolva
+                  </label>
+                </div>
+                {isEdit ? (
+                  <div className="flex flex-col gap-2 border border-white/10 bg-black/20 p-3 md:flex-row md:items-center md:justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      Teszt rendelések után itt nullázható csak a limit számláló. A készlet és az árak nem változnak.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isResettingLimiter}
+                      onClick={handleResetSimpleLimiter}
+                      className="h-10 shrink-0 rounded-none border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                    >
+                      {isResettingLimiter ? "Nullázás..." : "Limit számláló nullázása"}
+                    </Button>
+                  </div>
+                ) : null}
+                {limiterResetMessage ? (
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300">
+                    {limiterResetMessage}
+                  </p>
+                ) : null}
+                <input type="hidden" name="limitedPriceEnabled" value={limitedPriceEnabled ? "true" : "false"} />
+                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
+                      Limit (db)
+                    </label>
+                    <Input
+                      type="number"
+                      name="limitedPriceLimitQuantity"
+                      min={0}
+                      value={limitedPriceLimitQuantity || ""}
+                      onChange={(event) =>
+                        setLimitedPriceLimitQuantity(Math.max(0, Math.round(Number(event.target.value) || 0)))
+                      }
+                      placeholder="Pl. 412"
+                      className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+                    />
+                  </div>
+                  <AdminPricePairFields
+                    netPrice={limitedPrice.netPrice}
+                    grossPrice={limitedPrice.grossPrice}
+                    vatPercent={vatPercent}
+                    onNetChange={limitedPrice.setNetPrice}
+                    onGrossChange={limitedPrice.setGrossPrice}
+                    netName="limitedPriceNetPrice"
+                    grossName="limitedPriceGrossPrice"
+                    compact
+                    className="md:col-span-2"
+                  />
+                </div>
+              </div>
               <input type="hidden" name="grossPrice" value={productPrice.grossPrice} />
             </div>
           )}
@@ -255,7 +411,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
                 Ha a vevő nem választ variánst, ezek az árak és készlet érvényesek.
               </p>
-              <div className="grid grid-cols-1 items-end gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <AdminPricePairFields
                   netPrice={productPrice.netPrice}
                   grossPrice={productPrice.grossPrice}
@@ -289,6 +445,8 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
           )}
 
           <ProductVariantsEditor
+            productId={productId}
+            isEdit={Boolean(isEdit)}
             initialOptions={initialData?.variantOptions || []}
             initialVariants={editorVariants}
             variants={editorVariants}
@@ -488,15 +646,69 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
 
                 {isEdit && (
                   <div className="pt-10 mt-10 border-t border-white/5">
-                    <Button
-                      formAction={() => deleteProduct(productId)}
-                      type="submit"
-                      variant="ghost"
-                      className="w-full text-rose-500 hover:text-white hover:bg-rose-500/20 rounded-none font-black uppercase tracking-widest text-[10px] h-12"
+                    <Dialog
+                      open={deleteDialogOpen}
+                      onOpenChange={(open) => {
+                        setDeleteDialogOpen(open)
+                        if (!open) {
+                          setDeleteConfirmation("")
+                          setDeleteError(null)
+                        }
+                      }}
                     >
-                      <Trash2 className="w-5 h-5 mr-3" />
-                      TERMÉK TÖRLÉSE
-                    </Button>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full text-rose-500 hover:text-white hover:bg-rose-500/20 rounded-none font-black uppercase tracking-widest text-[10px] h-12"
+                        >
+                          <Trash2 className="w-5 h-5 mr-3" />
+                          TERMÉK TÖRLÉSE
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Termék törlése</DialogTitle>
+                          <DialogDescription>
+                            Ez elrejti és inaktívvá teszi a terméket. Később a törölt termékek nézetből visszaállítható.
+                            Biztonsági okból írd be pontosan a termék nevét:
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <p className="border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white">
+                            {productName}
+                          </p>
+                          <Input
+                            value={deleteConfirmation}
+                            onChange={(event) => setDeleteConfirmation(event.target.value)}
+                            placeholder="Terméknév pontosan"
+                            className="bg-black border-white/10 h-11 text-white rounded-none"
+                          />
+                          {deleteError ? (
+                            <p className="text-sm font-bold text-rose-400">{deleteError}</p>
+                          ) : null}
+                        </div>
+                        <DialogFooter className="gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                            disabled={isDeleting}
+                            className="rounded-none border-white/10 text-white hover:bg-white/5"
+                          >
+                            Mégse
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleDeleteProduct}
+                            disabled={!deleteConfirmed || isDeleting}
+                            className="rounded-none bg-rose-600 text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isDeleting ? "Törlés..." : "Termék törlése"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
               </div>

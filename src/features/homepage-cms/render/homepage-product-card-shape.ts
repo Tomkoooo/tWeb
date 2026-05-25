@@ -11,6 +11,7 @@ export function homepageFeaturedToProductDetail(p: HomePageFeaturedProduct): Rec
     discount: p.discount,
     vatPercent: p.vatPercent,
     grossPrice: p.grossPrice,
+    limitedPrice: p.limitedPrice,
     stock: p.stock,
     images: p.images,
     requireVariantSelection: p.requireVariantSelection,

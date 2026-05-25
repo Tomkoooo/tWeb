@@ -9,27 +9,94 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
-import { buildProductListingLines, getActiveVariants, hasVariants } from "@/lib/product-variants"
-import { formatHuf, listingPriceSummary } from "@/lib/pricing"
+import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
+import {
+  buildProductListingLines,
+  getActiveVariants,
+  getLimitedPriceOffer,
+  getVariantById,
+  getVariantLabel,
+  hasVariants,
+  resolveProductView,
+} from "@/lib/product-variants"
+import { clampVatPercent, customerGrossFromNetWithDiscount, formatHuf, listingHasPriceRange, listingPriceSummary } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
 
 import { useCartStore } from "@/store/useCartStore"
 
-interface ProductCardProps {
-  product: any
+type ProductCardProduct = {
+  _id: { toString(): string }
+  name: string
+  slug: string
+  description: string
+  images?: string[]
+  category?: { name?: string }
+  rating?: number
+  stock?: number
+  netPrice: number
+  grossPrice?: number
+  discount?: number
+  vatPercent?: number
+  requireVariantSelection?: boolean
+  variantOptions?: Array<{ name: string; values: string[] }>
+  variants?: Array<{
+    id: string
+    attributes?: Record<string, string>
+    nameOverride?: string
+    descriptionOverride?: string
+    netPrice: number
+    grossPrice?: number
+    discount?: number
+    stock?: number
+    isActive?: boolean
+    isDefault?: boolean
+    images?: string[]
+    limitedPrice?: {
+      enabled?: boolean
+      limitQuantity?: number
+      netPrice?: number
+      grossPrice?: number
+      reservedCount?: number
+      soldCount?: number
+      claimedCount?: number
+    }
+  }>
+  limitedPrice?: {
+    enabled?: boolean
+    limitQuantity?: number
+    netPrice?: number
+    grossPrice?: number
+    reservedCount?: number
+    soldCount?: number
+    claimedCount?: number
+  }
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+interface ProductCardProps {
+  product: unknown
+  shopEnabled?: boolean
+}
+
+export function ProductCard({ product: productInput, shopEnabled = true }: ProductCardProps) {
+  const product = productInput as ProductCardProduct
   const [isLoaded, setIsLoaded] = React.useState(false)
-  const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const router = useRouter()
-  const addItem = useCartStore((state: any) => state.addItem)
+  const addItem = useCartStore((state) => state.addItem)
   const variantProduct = hasVariants(product)
   const requiresVariantSelection = Boolean(product.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(product)
+  const [selectedVariantId, setSelectedVariantId] = React.useState(
+    () => activeVariants.find((variant) => variant.isDefault)?.id || activeVariants[0]?.id || ""
+  )
+  const selectedVariant = getVariantById(product, selectedVariantId)
+  const limitedOffer = variantProduct
+    ? selectedVariant
+      ? getLimitedPriceOffer(product, selectedVariant.id)
+      : null
+    : getLimitedPriceOffer(product)
   const listingLines = buildProductListingLines(product)
-  const showFromPrice = variantProduct && activeVariants.length > 1
+  const showFromPrice = variantProduct && listingHasPriceRange(listingLines, product.vatPercent)
   const {
     unitGross: finalPrice,
     unitNet,
@@ -40,40 +107,56 @@ export function ProductCard({ product }: ProductCardProps) {
   } = listingPriceSummary(listingLines, product.vatPercent)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
-  React.useEffect(() => {
-    const loadAvailability = async () => {
-      try {
-        const res = await fetch("/api/shop/availability")
-        if (!res.ok) {
-          setShopEnabled(false)
-          return
-        }
-        const data = await res.json()
-        setShopEnabled(Boolean(data.enabled))
-      } catch {
-        setShopEnabled(false)
-      }
-    }
-    loadAvailability()
-  }, [])
-
   const handleAddToCart = () => {
     if (shopEnabled === false) return
-    if (requiresVariantSelection) {
+    if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${product.slug}`)
       return
     }
+    if (selectedVariant) {
+      const productId = product._id.toString()
+      const view = resolveProductView(product, selectedVariant.id)
+      const vatPercent = clampVatPercent(product.vatPercent)
+      addItem({
+        id: `${productId}:${selectedVariant.id}`,
+        productId,
+        variantId: selectedVariant.id,
+        variantLabel: getVariantLabel(selectedVariant),
+        selectedAttributes: selectedVariant.attributes || {},
+        name: view.name,
+        slug: product.slug,
+        price: customerGrossFromNetWithDiscount(
+          Number(view.netPrice || 0),
+          Number(view.discount || 0),
+          vatPercent,
+          view.grossPrice
+        ),
+        image: mediaImageSrc(view.images?.[0]),
+        quantity: 1,
+        stock: view.stock,
+        netPrice: view.netPrice,
+        discount: view.discount,
+        vatPercent,
+      })
+      return
+    }
+    const view = resolveProductView(product)
     addItem({
       id: product._id.toString(),
       productId: product._id.toString(),
-      name: product.name,
+      name: view.name,
       slug: product.slug,
-      price: finalPrice,
-      image: mediaImageSrc(product.images?.[0]),
+      price: customerGrossFromNetWithDiscount(
+        Number(view.netPrice || 0),
+        Number(view.discount || 0),
+        vatPct,
+        view.grossPrice
+      ),
+      image: mediaImageSrc(view.images?.[0]),
       quantity: 1,
-      stock: product.stock,
-      netPrice: product.netPrice,
-      discount: product.discount,
+      stock: view.stock,
+      netPrice: view.netPrice,
+      discount: view.discount,
       vatPercent: vatPct,
     })
   }
@@ -152,15 +235,28 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
             Nettó {formatHuf(unitNet)} · ÁFA {formatHuf(unitVat)} ({vatPct}%)
           </p>
+          {limitedOffer && !limitedOffer.exhausted ? (
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground">
+              Első {limitedOffer.limitQuantity} db {formatHuf(limitedOffer.promoUnitGross)}, utána{" "}
+              {formatHuf(limitedOffer.regularUnitGross)}
+            </p>
+          ) : null}
 
           <div className="flex flex-col gap-2">
+            {variantProduct ? (
+              <QuickVariantSelector
+                product={product}
+                selectedVariantId={selectedVariantId}
+                onVariantChange={setSelectedVariantId}
+              />
+            ) : null}
             <Button 
               onClick={handleAddToCart}
-              disabled={shopEnabled === false}
+              disabled={shopEnabled === false || (requiresVariantSelection && !selectedVariant)}
               className="w-full bg-primary border border-primary-foreground/35 text-white hover:bg-primary/90 hover:border-primary-foreground/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               <ShoppingCart className="w-4 h-4" />
-              {requiresVariantSelection ? "Variáns választása" : "Kosárba"}
+              {requiresVariantSelection && !selectedVariant ? "Variáns választása" : "Kosárba"}
             </Button>
             <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">

@@ -37,8 +37,8 @@ const DEFAULTS: FooterSettings = {
   newsletterPlaceholder: "E-mail cím",
   copyrightText: "© {year} {brand}. Minden jog fenntartva.",
   socialLinks: [
-    { platform: "facebook", enabled: true, url: "" },
-    { platform: "instagram", enabled: true, url: "" },
+    { platform: "facebook", enabled: false, url: "" },
+    { platform: "instagram", enabled: false, url: "" },
     { platform: "twitter", enabled: false, url: "" },
     { platform: "youtube", enabled: false, url: "" },
   ],
@@ -83,11 +83,11 @@ export class FooterSettingsService {
 
   static async get(): Promise<FooterSettings> {
     await dbConnect()
-    let doc = await FooterSetting.findOne({ key: "footer" }).lean()
-    if (!doc) {
-      await FooterSetting.create({ key: "footer", ...DEFAULTS })
-      doc = await FooterSetting.findOne({ key: "footer" }).lean()
-    }
+    const doc = await FooterSetting.findOneAndUpdate(
+      { key: "footer" },
+      { $setOnInsert: { key: "footer", ...DEFAULTS } },
+      { upsert: true, returnDocument: "after", lean: true }
+    )
     return normalize(doc as Partial<FooterSettings>)
   }
 
