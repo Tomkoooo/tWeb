@@ -6,6 +6,7 @@ import Product from "@/models/Product";
 import User from "@/models/User";
 import Review from "@/models/Review";
 import ShopFeedback from "@/models/ShopFeedback";
+import ContactMessage from "@/models/ContactMessage";
 import { requireAdmin } from "@/lib/admin-auth";
 
 type AdminOrder = {
@@ -25,7 +26,15 @@ export async function getAdminStats() {
   await requireAdmin();
   await dbConnect();
 
-  const [ordersRaw, usersCount, productsCount, reviewsCount, shopFeedbackCount, topProductsAggRaw] =
+  const [
+    ordersRaw,
+    usersCount,
+    productsCount,
+    reviewsCount,
+    shopFeedbackCount,
+    topProductsAggRaw,
+    unreadContactMessagesRaw,
+  ] =
     await Promise.all([
       Order.find({}).sort({ createdAt: -1 }).lean(),
       User.countDocuments({}),
@@ -60,6 +69,7 @@ export async function getAdminStats() {
           },
         },
       ]),
+      ContactMessage.find({ status: "unread" }).sort({ createdAt: -1 }).limit(5).lean(),
     ]);
 
   const orders = ordersRaw as AdminOrder[];
@@ -113,5 +123,6 @@ export async function getAdminStats() {
     topProducts: topProductsAgg,
     monthlyRevenue,
     recentOrders: JSON.parse(JSON.stringify(orders.slice(0, 5))),
+    unreadContactMessages: JSON.parse(JSON.stringify(unreadContactMessagesRaw)),
   };
 }

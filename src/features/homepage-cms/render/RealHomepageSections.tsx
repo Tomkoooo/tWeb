@@ -115,6 +115,14 @@ export function RealHomepageSections({
       rating: item.rating,
       avatar: "/generic-logo.svg",
     })) ?? []
+  const featuresSection = features ? (
+    <Features
+      title={isVisible(features, "title") ? features.title : ""}
+      subtitle={isVisible(features, "subtitle") ? features.subtitle : ""}
+      cards={isVisible(features, "cards") ? features.cards : []}
+      embedded={Boolean(productGrid)}
+    />
+  ) : null
 
   return (
     <>
@@ -150,9 +158,10 @@ export function RealHomepageSections({
           viewAllHref={productGrid.viewAllHref}
           categoriesTitle={isVisible(productGrid, "categoriesTitle") ? productGrid.categoriesTitle : ""}
           categoriesDescription={isVisible(productGrid, "categoriesDescription") ? productGrid.categoriesDescription : ""}
+          afterCategories={featuresSection}
         />
       ) : null}
-      {features ? <Features title={isVisible(features, "title") ? features.title : ""} subtitle={isVisible(features, "subtitle") ? features.subtitle : ""} cards={isVisible(features, "cards") ? features.cards : []} /> : null}
+      {!productGrid ? featuresSection : null}
       <Reviews
         reviews={testimonialReviews.length ? testimonialReviews : dependencies.reviews}
         title={isVisible(testimonials, "title") ? testimonials?.title : ""}

@@ -19,6 +19,8 @@ export type AdminVariantRow = {
   }
 }
 
+export type AdminVariantInput = Partial<AdminVariantRow>
+
 /** Treat 0 / missing variant price as “inherit product default”. */
 export function resolveVariantNetPrice(
   variantNet: number | undefined | null,
@@ -42,24 +44,27 @@ export function resolveVariantGrossPrice(
   return 0
 }
 
-export function normalizeAdminVariants(
-  variants: AdminVariantRow[],
-  defaultNetPrice: number,
-  vatPercent: number,
-  defaultGrossPrice?: number
-): AdminVariantRow[] {
-  const fallbackGross =
-    defaultGrossPrice != null && defaultGrossPrice > 0
-      ? defaultGrossPrice
-      : netToGross(defaultNetPrice, vatPercent)
+export function hasVariantPriceOverride(
+  variant: Pick<AdminVariantRow, "netPrice" | "grossPrice">,
+  defaultNetPrice?: number
+): boolean {
+  const gross = Number(variant.grossPrice)
+  if (Number.isFinite(gross) && gross > 0) return true
 
+  const net = Number(variant.netPrice)
+  if (!Number.isFinite(net) || net <= 0) return false
+
+  return defaultNetPrice == null || net !== Number(defaultNetPrice)
+}
+
+export function normalizeAdminVariants(
+  variants: AdminVariantInput[],
+  defaultNetPrice: number
+): AdminVariantRow[] {
   return variants.map((variant, index) => {
     const netPrice = resolveVariantNetPrice(variant.netPrice, defaultNetPrice)
-    const grossPrice = resolveVariantGrossPrice(
-      { netPrice, grossPrice: variant.grossPrice },
-      vatPercent,
-      fallbackGross
-    )
+    const grossRaw = Number(variant.grossPrice)
+    const grossPrice = Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined
     return {
       ...variant,
       id: variant.id || `variant-${index + 1}`,
@@ -79,14 +84,28 @@ export function normalizeAdminVariants(
   })
 }
 
-export function variantGrossForDisplay(variant: AdminVariantRow, vatPercent: number): number {
-  return resolveVariantGrossPrice(variant, vatPercent)
+export function variantGrossForDisplay(
+  variant: AdminVariantRow,
+  vatPercent: number,
+  defaultGrossPrice?: number,
+  defaultNetPrice?: number
+): number {
+  if (!hasVariantPriceOverride(variant, defaultNetPrice)) {
+    if (defaultGrossPrice != null && defaultGrossPrice > 0) return defaultGrossPrice
+    return netToGross(Number(defaultNetPrice) || 0, vatPercent)
+  }
+  return resolveVariantGrossPrice(variant, vatPercent, defaultGrossPrice)
 }
 
-export function deriveVariantGrossBounds(variants: AdminVariantRow[], vatPercent: number) {
+export function deriveVariantGrossBounds(
+  variants: AdminVariantRow[],
+  vatPercent: number,
+  defaultGrossPrice?: number,
+  defaultNetPrice?: number
+) {
   const grosses = variants
     .filter((v) => v.isActive !== false)
-    .map((v) => variantGrossForDisplay(v, vatPercent))
+    .map((v) => variantGrossForDisplay(v, vatPercent, defaultGrossPrice, defaultNetPrice))
     .filter((g) => g > 0)
   if (grosses.length === 0) return { min: 0, max: 0 }
   return { min: Math.min(...grosses), max: Math.max(...grosses) }

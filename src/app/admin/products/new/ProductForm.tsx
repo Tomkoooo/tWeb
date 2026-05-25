@@ -15,16 +15,59 @@ import { useAdminPricePair } from "@/hooks/useAdminPricePair"
 import {
   deriveProductLevelFromVariants,
   normalizeAdminVariants,
+  type AdminVariantInput,
   type AdminVariantRow,
 } from "@/lib/admin-product-variants"
 
+type IdLike = { toString(): string }
+type CategoryLike = IdLike & { _id?: IdLike; name?: string }
+type ProductRating = {
+  rating: number
+  createdAt: string | Date
+  comment?: string
+  user?: { name?: string } | IdLike
+}
+type ProductVariantOption = { name: string; values: string[] }
+type ProductFormInitialData = {
+  _id?: IdLike
+  name?: string
+  description?: string
+  images?: string[]
+  isActive?: boolean
+  isVisible?: boolean
+  vatPercent?: number
+  netPrice?: number
+  grossPrice?: number
+  discount?: number
+  stock?: number
+  category?: CategoryLike
+  variantOptions?: ProductVariantOption[]
+  variants?: AdminVariantInput[]
+  requireVariantSelection?: boolean
+  seo?: {
+    title?: string
+    description?: string
+    keywords?: string[]
+  }
+  ratings?: ProductRating[]
+  featuredListIndex?: number | null
+}
+
 interface ProductFormProps {
-  categories: any[]
-  initialData?: any
+  categories: Array<{ _id: IdLike; name: string }>
+  initialData?: ProductFormInitialData
   isEdit?: boolean
 }
 
+function getRatingUserName(user: ProductRating["user"]) {
+  if (user && typeof user === "object" && "name" in user && typeof user.name === "string") {
+    return user.name
+  }
+  return "VENDÉG VÁSÁRLÓ"
+}
+
 export default function ProductForm({ categories, initialData, isEdit }: ProductFormProps) {
+  const productId = initialData?._id?.toString() || ""
   const [images, setImages] = useState<string[]>(initialData?.images || [])
   const [isActive, setIsActive] = useState(initialData?.isActive ?? false)
   const [isVisible, setIsVisible] = useState(initialData?.isVisible ?? true)
@@ -47,9 +90,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
   const [editorVariants, setEditorVariants] = useState<AdminVariantRow[]>(() =>
     normalizeAdminVariants(
       initialData?.variants || [],
-      initialNet,
-      Number(initialData?.vatPercent ?? 27),
-      initialGross
+      initialNet
     )
   )
 
@@ -86,7 +127,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
       </div>
 
       <form
-        action={isEdit ? updateProduct.bind(null, initialData._id.toString()) : createProduct}
+        action={isEdit ? updateProduct.bind(null, productId) : createProduct}
         className="grid grid-cols-1 lg:grid-cols-3 gap-8"
       >
         <div className="lg:col-span-2 space-y-8">
@@ -119,7 +160,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                   >
                     <option value="">VÁLASSZON KATEGÓRIÁT...</option>
                     {categories.map((cat) => (
-                      <option key={cat._id} value={cat._id.toString()}>
+                      <option key={cat._id.toString()} value={cat._id.toString()}>
                         {cat.name}
                       </option>
                     ))}
@@ -323,7 +364,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
               </div>
 
               <div className="space-y-6">
-                {initialData.ratings.map((rating: any, index: number) => (
+                {initialData.ratings.map((rating, index) => (
                   <div key={index} className="p-5 bg-black/20 border border-white/5 space-y-4">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-1">
@@ -345,7 +386,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                       <p className="text-sm text-white font-medium italic">&quot;{rating.comment}&quot;</p>
                     )}
                     <p className="text-[10px] text-neutral-600 uppercase font-black tracking-[0.2em] text-right">
-                      {rating.user?.name || "VENDÉG VÁSÁRLÓ"}
+                      {getRatingUserName(rating.user)}
                     </p>
                   </div>
                 ))}
@@ -448,7 +489,7 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                 {isEdit && (
                   <div className="pt-10 mt-10 border-t border-white/5">
                     <Button
-                      formAction={() => deleteProduct(initialData._id.toString())}
+                      formAction={() => deleteProduct(productId)}
                       type="submit"
                       variant="ghost"
                       className="w-full text-rose-500 hover:text-white hover:bg-rose-500/20 rounded-none font-black uppercase tracking-widest text-[10px] h-12"

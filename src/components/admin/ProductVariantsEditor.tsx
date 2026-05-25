@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, slugify } from "@/lib/utils";
 import { deriveNetFromGross, netToGross } from "@/lib/pricing";
-import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields";
-import { AdminFormField, ADMIN_METRICS_ROW_CLASS } from "@/components/admin/AdminFormField";
-import { useAdminPricePair } from "@/hooks/useAdminPricePair";
+import { AdminFormField } from "@/components/admin/AdminFormField";
 import {
   deriveVariantGrossBounds,
-  normalizeAdminVariants,
+  hasVariantPriceOverride,
   resolveVariantGrossPrice,
   variantGrossForDisplay,
   type AdminVariantRow,
@@ -63,6 +61,18 @@ function attributesToLabel(attributes: Record<string, string>) {
     .join(" / ");
 }
 
+function numericInputValue(value: number | undefined | null) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? String(n) : "";
+}
+
+function parseOptionalNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function ProductVariantsEditor({
   initialOptions = [],
   initialVariants = [],
@@ -89,9 +99,10 @@ export function ProductVariantsEditor({
       ? initialOptions.map((option) => ({ name: option.name, valuesText: option.values.join(", ") }))
       : [{ name: "", valuesText: "" }]
   );
-  const bulkPrice = useAdminPricePair(defaultNetPrice, vatPercent, defaultGrossPrice);
-  const [bulkDiscount, setBulkDiscount] = useState(0);
-  const [bulkStock, setBulkStock] = useState(0);
+  const [bulkNetPrice, setBulkNetPrice] = useState("");
+  const [bulkGrossPrice, setBulkGrossPrice] = useState("");
+  const [bulkDiscount, setBulkDiscount] = useState("");
+  const [bulkStock, setBulkStock] = useState("");
   const [activeVariantId, setActiveVariantId] = useState<string>(
     () =>
       initialVariants.find((v) => v.isDefault)?.id ||
@@ -105,19 +116,9 @@ export function ProductVariantsEditor({
     onModeChange?.({ enabled, requireVariantSelection });
   }, [enabled, requireVariantSelection, onModeChange]);
 
-  useEffect(() => {
-    if (variants.length === 0) {
-      if (activeVariantId) setActiveVariantId("");
-      return;
-    }
-    if (!variants.some((v) => v.id === activeVariantId)) {
-      setActiveVariantId(variants.find((v) => v.isDefault)?.id || variants[0]?.id || "");
-    }
-  }, [variants, activeVariantId]);
-
   const grossBounds = useMemo(
-    () => deriveVariantGrossBounds(variants, vatPercent),
-    [variants, vatPercent]
+    () => deriveVariantGrossBounds(variants, vatPercent, defaultGrossPrice, defaultNetPrice),
+    [variants, vatPercent, defaultGrossPrice, defaultNetPrice]
   );
   const totalStock = useMemo(
     () => variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0),
@@ -160,9 +161,24 @@ export function ProductVariantsEditor({
     }))
   );
 
-  const activeVariantIndex = variants.findIndex((variant) => variant.id === activeVariantId);
+  const currentActiveVariantId = variants.some((variant) => variant.id === activeVariantId)
+    ? activeVariantId
+    : variants.find((variant) => variant.isDefault)?.id || variants[0]?.id || "";
+  const activeVariantIndex = variants.findIndex((variant) => variant.id === currentActiveVariantId);
   const safeActiveIndex = activeVariantIndex >= 0 ? activeVariantIndex : variants.length > 0 ? 0 : -1;
   const activeVariant = safeActiveIndex >= 0 ? variants[safeActiveIndex] : null;
+  const activeVariantUsesBasePrice = activeVariant
+    ? !hasVariantPriceOverride(activeVariant, defaultNetPrice)
+    : false;
+  const activeVariantEffectiveGross = activeVariant
+    ? variantGrossForDisplay(activeVariant, vatPercent, defaultGrossPrice, defaultNetPrice)
+    : 0;
+  const activeVariantNetInput =
+    activeVariant && !activeVariantUsesBasePrice ? numericInputValue(activeVariant.netPrice) : "";
+  const activeVariantGrossInput =
+    activeVariant && !activeVariantUsesBasePrice
+      ? numericInputValue(resolveVariantGrossPrice(activeVariant, vatPercent))
+      : "";
 
   const updateVariantPrices = (
     variantId: string,
@@ -171,6 +187,26 @@ export function ProductVariantsEditor({
     setVariants((prev) =>
       prev.map((item) => (item.id === variantId ? { ...item, ...patch } : item))
     );
+  };
+
+  const clearVariantPriceOverride = (variantId: string) => {
+    setVariants((prev) =>
+      prev.map((item) =>
+        item.id === variantId ? { ...item, netPrice: defaultNetPrice, grossPrice: undefined } : item
+      )
+    );
+  };
+
+  const updateBulkNetPrice = (value: string) => {
+    setBulkNetPrice(value);
+    const parsed = parseOptionalNumber(value);
+    setBulkGrossPrice(parsed == null ? "" : String(netToGross(parsed, vatPercent)));
+  };
+
+  const updateBulkGrossPrice = (value: string) => {
+    setBulkGrossPrice(value);
+    const parsed = parseOptionalNumber(value);
+    setBulkNetPrice(parsed == null ? "" : String(deriveNetFromGross(parsed, vatPercent)));
   };
 
   const generateCombinations = () => {
@@ -190,7 +226,7 @@ export function ProductVariantsEditor({
           id,
           attributes,
           netPrice: net,
-          grossPrice: netToGross(net, vatPercent),
+          grossPrice: undefined,
           discount: 0,
           stock: 0,
           isActive: true,
@@ -207,13 +243,33 @@ export function ProductVariantsEditor({
   };
 
   const applyBulkValues = () => {
+    const net = parseOptionalNumber(bulkNetPrice);
+    const gross = parseOptionalNumber(bulkGrossPrice);
+    const discount = parseOptionalNumber(bulkDiscount);
+    const stock = parseOptionalNumber(bulkStock);
+    const shouldUpdatePrice = net != null || gross != null;
+
     setVariants((prev) =>
       prev.map((variant) => ({
         ...variant,
-        netPrice: bulkPrice.netPrice,
-        grossPrice: bulkPrice.grossPrice,
-        discount: Number(bulkDiscount) || 0,
-        stock: Number(bulkStock) || 0,
+        ...(shouldUpdatePrice
+          ? {
+              netPrice: net ?? deriveNetFromGross(gross ?? 0, vatPercent),
+              grossPrice: gross ?? netToGross(net ?? 0, vatPercent),
+            }
+          : {}),
+        ...(discount != null ? { discount } : {}),
+        ...(stock != null ? { stock } : {}),
+      }))
+    );
+  };
+
+  const clearAllVariantPriceOverrides = () => {
+    setVariants((prev) =>
+      prev.map((variant) => ({
+        ...variant,
+        netPrice: defaultNetPrice,
+        grossPrice: undefined,
       }))
     );
   };
@@ -277,7 +333,7 @@ export function ProductVariantsEditor({
                 Kötelező variáns választás
               </p>
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
-                Ha bekapcsolt, a vevő nem teheti a base terméket kosárba variáns nélkül.
+                Ha bekapcsolt, a vevő nem teheti az alapterméket kosárba variáns nélkül.
               </p>
             </div>
             <button
@@ -357,25 +413,50 @@ export function ProductVariantsEditor({
 
           {variants.length > 0 ? (
             <>
-              <div className="border border-white/10 p-4 space-y-3">
-                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                  Bulk szerkesztés — alkalmazás minden variánsra
-                </p>
-                <div className={ADMIN_METRICS_ROW_CLASS}>
-                  <AdminPricePairFields
-                    netPrice={bulkPrice.netPrice}
-                    grossPrice={bulkPrice.grossPrice}
-                    vatPercent={vatPercent}
-                    onNetChange={bulkPrice.setNetPrice}
-                    onGrossChange={bulkPrice.setGrossPrice}
-                    compact
-                    showVatHint={false}
-                  />
+              <div className="border border-white/10 p-4 space-y-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                      Tömeges módosítás
+                    </p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      Csak a kitöltött mezők íródnak rá az összes variánsra.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={clearAllVariantPriceOverrides}
+                    className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
+                  >
+                    Árak vissza alapárra
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <AdminFormField label="Nettó ár (Ft)">
+                    <Input
+                      type="number"
+                      value={bulkNetPrice}
+                      onChange={(event) => updateBulkNetPrice(event.target.value)}
+                      placeholder="Nem módosítja"
+                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                    />
+                  </AdminFormField>
+                  <AdminFormField label="Bruttó ár (Ft)">
+                    <Input
+                      type="number"
+                      value={bulkGrossPrice}
+                      onChange={(event) => updateBulkGrossPrice(event.target.value)}
+                      placeholder="Nem módosítja"
+                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                    />
+                  </AdminFormField>
                   <AdminFormField label="Kedvezmény (%)">
                     <Input
                       type="number"
                       value={bulkDiscount}
-                      onChange={(event) => setBulkDiscount(Number(event.target.value) || 0)}
+                      onChange={(event) => setBulkDiscount(event.target.value)}
+                      placeholder="Nem módosítja"
                       className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                     />
                   </AdminFormField>
@@ -383,15 +464,16 @@ export function ProductVariantsEditor({
                     <Input
                       type="number"
                       value={bulkStock}
-                      onChange={(event) => setBulkStock(Number(event.target.value) || 0)}
+                      onChange={(event) => setBulkStock(event.target.value)}
+                      placeholder="Nem módosítja"
                       className="h-11 w-full rounded-none border-white/5 bg-black text-white"
                     />
                   </AdminFormField>
-                  <div className="col-span-2 flex items-end sm:col-span-1 xl:col-span-1">
+                  <div className="flex items-end">
                     <Button
                       type="button"
                       onClick={applyBulkValues}
-                      className="h-11 w-full rounded-none bg-primary text-white xl:w-auto"
+                      className="h-11 w-full rounded-none bg-primary text-white"
                     >
                       Alkalmazás
                     </Button>
@@ -411,7 +493,12 @@ export function ProductVariantsEditor({
                         activeVariant?.id === variant.id ? "admin-item-selected" : "admin-item-idle"
                       )}
                     >
-                      {attributesToLabel(variant.attributes)}
+                      <span className="block">{attributesToLabel(variant.attributes) || variant.id}</span>
+                      <span className="mt-1 block text-[9px] text-neutral-500">
+                        {formatHuf(variantGrossForDisplay(variant, vatPercent, defaultGrossPrice, defaultNetPrice))} ·{" "}
+                        {Number(variant.stock) || 0} DB
+                        {variant.isActive === false ? " · INAKTÍV" : ""}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -420,7 +507,7 @@ export function ProductVariantsEditor({
                     <div className="flex flex-wrap justify-between gap-3">
                       <div>
                         <p className="text-xs text-white font-black uppercase tracking-widest">
-                          {attributesToLabel(activeVariant.attributes)}
+                          {attributesToLabel(activeVariant.attributes) || activeVariant.id}
                         </p>
                         <p className="text-[10px] text-neutral-500 uppercase tracking-widest">{activeVariant.id}</p>
                       </div>
@@ -444,50 +531,93 @@ export function ProductVariantsEditor({
                           type="button"
                           variant="ghost"
                           className="h-9 rounded-none text-rose-500 hover:text-white hover:bg-rose-500/20"
-                          onClick={() =>
-                            setVariants((prev) => {
-                              const next = prev.filter((item) => item.id !== activeVariant.id);
-                              setActiveVariantId(next[0]?.id || "");
-                              return next;
-                            })
-                          }
+                          onClick={() => {
+                            const next = variants.filter((item) => item.id !== activeVariant.id);
+                            setVariants(next);
+                            setActiveVariantId(next.find((item) => item.isDefault)?.id || next[0]?.id || "");
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
 
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                      Bruttó ezen a variánson:{" "}
-                      <span className="text-white">
-                        {formatHuf(variantGrossForDisplay(activeVariant, vatPercent))}
-                      </span>
-                    </p>
+                    <div className="border border-white/10 bg-black/30 p-4 space-y-3">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                            Egyedi ár
+                          </p>
+                          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                            Üresen hagyva ez a variáns az alap termék árát használja.
+                          </p>
+                        </div>
+                        <div className="text-left md:text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                            Vevőnek érvényes bruttó
+                          </p>
+                          <p className="text-sm font-black uppercase tracking-widest text-white">
+                            {formatHuf(activeVariantEffectiveGross)}
+                          </p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                            {activeVariantUsesBasePrice ? "Alapárból örökölve" : "Egyedi variánsárból"}
+                          </p>
+                        </div>
+                      </div>
 
-                    <div className={ADMIN_METRICS_ROW_CLASS}>
-                      <AdminPricePairFields
-                        netPrice={activeVariant.netPrice}
-                        grossPrice={resolveVariantGrossPrice(
-                          activeVariant,
-                          vatPercent,
-                          defaultGrossPrice
-                        )}
-                        vatPercent={vatPercent}
-                        onNetChange={(net) =>
-                          updateVariantPrices(activeVariant.id, {
-                            netPrice: net,
-                            grossPrice: netToGross(net, vatPercent),
-                          })
-                        }
-                        onGrossChange={(gross) =>
-                          updateVariantPrices(activeVariant.id, {
-                            grossPrice: gross,
-                            netPrice: deriveNetFromGross(gross, vatPercent),
-                          })
-                        }
-                        compact
-                        showVatHint={false}
-                      />
+                      <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2">
+                        <AdminFormField label="Nettó ár (Ft)">
+                          <Input
+                            type="number"
+                            value={activeVariantNetInput}
+                            onChange={(event) => {
+                              const net = parseOptionalNumber(event.target.value);
+                              if (net == null) {
+                                clearVariantPriceOverride(activeVariant.id);
+                                return;
+                              }
+                              updateVariantPrices(activeVariant.id, {
+                                netPrice: net,
+                                grossPrice: netToGross(net, vatPercent),
+                              });
+                            }}
+                            placeholder="Alapár"
+                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          />
+                        </AdminFormField>
+                        <AdminFormField label="Bruttó ár (Ft)">
+                          <Input
+                            type="number"
+                            value={activeVariantGrossInput}
+                            onChange={(event) => {
+                              const gross = parseOptionalNumber(event.target.value);
+                              if (gross == null) {
+                                clearVariantPriceOverride(activeVariant.id);
+                                return;
+                              }
+                              updateVariantPrices(activeVariant.id, {
+                                grossPrice: gross,
+                                netPrice: deriveNetFromGross(gross, vatPercent),
+                              });
+                            }}
+                            placeholder="Alapár"
+                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          />
+                        </AdminFormField>
+                        <div className="md:col-span-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => clearVariantPriceOverride(activeVariant.id)}
+                            className="h-11 w-full rounded-none border-white/10 text-white hover:bg-white/5"
+                          >
+                            Alapár használata
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       <AdminFormField label="Kedvezmény (%)">
                         <Input
                           type="number"

@@ -2,15 +2,26 @@
 
 import { revalidatePath } from "next/cache"
 import { EmailTemplateService } from "@/services/email-template"
-import { auth } from "@/auth"
+import { BrandingSettingsService } from "@/services/branding-settings"
+import { ThemeService } from "@/services/theme"
+import { getStorefrontSiteContact } from "@/lib/site-contact"
+import { requireAdmin } from "@/lib/admin-auth"
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+function getPublicBaseUrl() {
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/+$/, "")
+}
 
 export async function updateEmailTemplate(type: string, formData: FormData) {
-  const session = await auth()
-  
-  // @ts-ignore
-  if (!session || session.user?.role !== "ADMIN") {
-    throw new Error("Unauthorized")
-  }
+  await requireAdmin()
 
   const subject = formData.get("subject") as string
   const body = formData.get("body") as string
@@ -26,24 +37,49 @@ export async function updateEmailTemplate(type: string, formData: FormData) {
 }
 
 export async function seedEmailTemplates() {
-  const session = await auth()
-  
-  // @ts-ignore
-  if (!session || session.user?.role !== "ADMIN") {
-    throw new Error("Unauthorized")
-  }
+  await requireAdmin()
+
+  const [branding, theme, siteContact] = await Promise.all([
+    BrandingSettingsService.get(),
+    ThemeService.get(),
+    getStorefrontSiteContact(),
+  ])
+
+  const shopName = escapeHtml(branding.brandName)
+  const primary = theme.primary
+  const primaryForeground = theme.primaryForeground
+  const background = theme.background
+  const foreground = theme.foreground
+  const surface = theme.surface
+  const mutedForeground = theme.mutedForeground
+  const border = theme.border
+  const contactUrl = `${getPublicBaseUrl()}/#contact`
+  const contactEmails = siteContact.emails.length
+    ? siteContact.emails
+        .map((entry) => `${escapeHtml(entry.label)}: ${escapeHtml(entry.email)}`)
+        .join(" · ")
+    : "a weboldalon található kapcsolatfelvételi űrlapon"
+  const footer = `
+          <hr style="border:0;border-top:1px solid ${border};margin:30px 0;" />
+          <p style="font-size:12px;line-height:1.6;color:${mutedForeground};">
+            Ez egy automatikus, no-reply üzenet. Kérjük, ne válaszolj erre az e-mailre.
+            Kapcsolatfelvételhez írj a weboldalon keresztül: <a href="${contactUrl}" style="color:${primary};font-weight:bold;">Kapcsolat</a>,
+            vagy használd az alábbi elérhetőségeket: ${contactEmails}.
+          </p>
+          <p style="font-size:12px;color:${mutedForeground};">${shopName}</p>
+  `
 
   const baseTemplates = [
     {
       type: "order_confirmation",
-      subject: "Rendelés visszaigazolása - #{{orderNumber}}",
+      subject: `${branding.brandName} rendelés visszaigazolása - #{{orderNumber}}`,
       body: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-          <h1 style="color: #FF5500; text-transform: uppercase;">Köszönjük a rendelését!</h1>
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:${background};color:${foreground};">
+          <h1 style="color:${primary};text-transform:uppercase;">Köszönjük a rendelésed!</h1>
           <p>Kedves {{customerName}},</p>
-          <p>Örömmel értesítjük, hogy megkaptuk a rendelését (#{{orderNumber}}).</p>
+          <p>A(z) ${shopName} örömmel értesít, hogy megkaptuk a rendelésed (#{{orderNumber}}).</p>
           
-          <div style="background: #f9f9f9; padding: 15px; margin: 20px 0;">
+          <div style="background:${surface};padding:15px;margin:20px 0;border:1px solid ${border};">
             <h3 style="margin-top: 0;">Rendelés összefoglaló:</h3>
             <p>Végösszeg: <strong>{{totalAmount}} Ft</strong></p>
             <p>Szállítási cím: {{shippingAddress}}</p>
@@ -53,18 +89,17 @@ export async function seedEmailTemplates() {
 
           {{#if orderViewUrl}}
           <p style="margin: 28px 0 12px;">
-            <a href="{{orderViewUrl}}" style="display:inline-block;background:#FF5500;color:white;padding:12px 18px;text-decoration:none;font-weight:bold;">Rendelés megtekintése</a>
+            <a href="{{orderViewUrl}}" style="display:inline-block;background:${primary};color:${primaryForeground};padding:12px 18px;text-decoration:none;font-weight:bold;">Rendelés megtekintése</a>
           </p>
-          <p style="font-size: 13px; color: #666;">Vendég vásárlás esetén a fenti linkkel bármikor megnyithatod a rendelésed. Ha később Google-fiókkal regisztrálsz ugyanazzal az e-mail címmel, a rendelés automatikusan megjelenik a profilodban.</p>
+          <p style="font-size:13px;color:${mutedForeground};">Vendég vásárlás esetén a fenti linkkel bármikor megnyithatod a rendelésed. Ha később Google-fiókkal regisztrálsz ugyanazzal az e-mail címmel, a rendelés automatikusan megjelenik a profilodban.</p>
           {{#if linkToAccountUrl}}
           <p style="margin-top: 16px;">
-            <a href="{{linkToAccountUrl}}" style="color:#FF5500;font-weight:bold;">Rendelés hozzárendelése fiókhoz</a>
+            <a href="{{linkToAccountUrl}}" style="color:${primary};font-weight:bold;">Rendelés hozzárendelése fiókhoz</a>
           </p>
           {{/if}}
           {{/if}}
           
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="font-size: 12px; color: #999;">Krausz Barkácsmester - Minőség a mestereknek.</p>
+          ${footer}
         </div>
       `,
       description: "Vásárló kapja meg sikeres rendelés után.",
@@ -81,22 +116,21 @@ export async function seedEmailTemplates() {
     },
     {
       type: "order_status_change",
-      subject: "Rendelés állapotának változása - #{{orderNumber}}",
+      subject: `${branding.brandName} rendelés állapotának változása - #{{orderNumber}}`,
       body: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-          <h1 style="color: #FF5500; text-transform: uppercase;">Frissítés a rendelésedről</h1>
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:${background};color:${foreground};">
+          <h1 style="color:${primary};text-transform:uppercase;">Frissítés a rendelésedről</h1>
           <p>Kedves {{customerName}},</p>
-          <p>Értesítjük, hogy a(z) #{{orderNumber}} számú rendelésének állapota megváltozott.</p>
+          <p>A(z) ${shopName} értesít, hogy a #{{orderNumber}} számú rendelésed állapota megváltozott.</p>
           
-          <div style="background: #f9f9f9; padding: 15px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; font-size: 14px; text-transform: uppercase; color: #999;">Régi állapot: {{oldStatus}}</p>
-            <p style="margin: 10px 0; font-size: 24px; font-weight: bold; color: #FF5500;">Új állapot: {{newStatus}}</p>
+          <div style="background:${surface};padding:15px;margin:20px 0;text-align:center;border:1px solid ${border};">
+            <p style="margin:0;font-size:14px;text-transform:uppercase;color:${mutedForeground};">Régi állapot: {{oldStatus}}</p>
+            <p style="margin:10px 0;font-size:24px;font-weight:bold;color:${primary};">Új állapot: {{newStatus}}</p>
           </div>
 
           <p>További információkért látogasson el fiókjába.</p>
           
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="font-size: 12px; color: #999;">Krausz Barkácsmester - Minőség a mestereknek.</p>
+          ${footer}
         </div>
       `,
       description: "Vásárló kapja meg, ha a rendelés állapota változik (pl. csomagolva, kiszállítva).",
@@ -104,15 +138,16 @@ export async function seedEmailTemplates() {
     },
     {
       type: "invoice_sent",
-      subject: "Számla elkészült - #{{orderNumber}} / {{invoiceId}}",
+      subject: `${branding.brandName} számla elkészült - #{{orderNumber}} / {{invoiceId}}`,
       body: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-          <h1 style="color: #FF5500; text-transform: uppercase;">Számla elkészült</h1>
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:${background};color:${foreground};">
+          <h1 style="color:${primary};text-transform:uppercase;">Számla elkészült</h1>
           <p>Kedves {{customerName}},</p>
-          <p>A #{{orderNumber}} rendeléshez tartozó számla elkészült.</p>
+          <p>A(z) ${shopName} #{{orderNumber}} rendeléséhez tartozó számla elkészült.</p>
           <p>Számla azonosító: <strong>{{invoiceId}}</strong></p>
           <p>{{invoiceMessage}}</p>
           <p>A számlát csatolmányként küldjük, illetve fiókodban is bármikor letöltheted.</p>
+          ${footer}
         </div>
       `,
       description: "Automatikus vagy manuális számla küldésekor.",
@@ -120,14 +155,15 @@ export async function seedEmailTemplates() {
     },
     {
       type: "invoice_issue",
-      subject: "Számlázási értesítés - #{{orderNumber}}",
+      subject: `${branding.brandName} számlázási értesítés - #{{orderNumber}}`,
       body: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-          <h1 style="color: #FF5500; text-transform: uppercase;">Számlázási értesítés</h1>
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:${background};color:${foreground};">
+          <h1 style="color:${primary};text-transform:uppercase;">Számlázási értesítés</h1>
           <p>Kedves {{customerName}},</p>
-          <p>A #{{orderNumber}} rendelés számlázása manuális ellenőrzést igényel.</p>
+          <p>A(z) ${shopName} #{{orderNumber}} rendelésének számlázása manuális ellenőrzést igényel.</p>
           <p>{{invoiceMessage}}</p>
           <p>Amint a számla elérhető, új értesítést küldünk.</p>
+          ${footer}
         </div>
       `,
       description: "Számlázási hiba vagy manuális beavatkozás esetén.",

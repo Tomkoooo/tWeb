@@ -32,39 +32,29 @@ export function AdminPricePairFields({
 }: Props) {
   const breakdown = priceBreakdownFromGross(grossPrice, 1, vatPercent)
   const h = compact ? "h-11" : "h-12"
-  const inputClass = `bg-black border-white/5 ${h} pl-12 text-white rounded-none w-full`
+  const inputClass = `bg-black border-white/5 ${h} text-white rounded-none w-full`
 
   const netField = (
     <AdminFormField label="Nettó ár (Ft)">
-      <div className="relative">
-        <Input
-          type="number"
-          name={netName}
-          value={netPrice}
-          onChange={(e) => onNetChange(Number(e.target.value) || 0)}
-          className={inputClass}
-        />
-        <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-neutral-600">
-          FT
-        </div>
-      </div>
+      <Input
+        type="number"
+        name={netName}
+        value={netPrice}
+        onChange={(e) => onNetChange(Number(e.target.value) || 0)}
+        className={inputClass}
+      />
     </AdminFormField>
   )
 
   const grossField = (
     <AdminFormField label="Bruttó ár (Ft)">
-      <div className="relative">
-        <Input
-          type="number"
-          name={grossName}
-          value={grossPrice}
-          onChange={(e) => onGrossChange(Number(e.target.value) || 0)}
-          className={inputClass}
-        />
-        <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-neutral-600">
-          FT
-        </div>
-      </div>
+      <Input
+        type="number"
+        name={grossName}
+        value={grossPrice}
+        onChange={(e) => onGrossChange(Number(e.target.value) || 0)}
+        className={inputClass}
+      />
       {showVatHint && !compact ? (
         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
           ÁFA: {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)

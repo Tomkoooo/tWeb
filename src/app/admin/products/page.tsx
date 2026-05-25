@@ -1,12 +1,36 @@
-import { ProductService } from "@/services/product";
+import { ProductService, type ProductFilters } from "@/services/product";
 import { Plus, Edit2, Trash2, Search as SearchIcon, AlertCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { formatHuf, grossFromNetWithDiscount, priceBreakdownFromGross } from "@/lib/pricing";
+import { formatHuf, listingPriceSummary } from "@/lib/pricing";
 import { FallbackImage } from "@/components/common/FallbackImage";
 import { mediaImageSrc } from "@/lib/images";
+
+type AdminProductVariant = {
+  netPrice?: number;
+  grossPrice?: number | null;
+  discount?: number;
+  stock?: number;
+  isActive?: boolean;
+};
+
+type AdminProductListRow = {
+  _id: string | { toString(): string };
+  name: string;
+  slug: string;
+  images?: string[];
+  isActive?: boolean;
+  isVisible?: boolean;
+  stock?: number;
+  netPrice: number;
+  grossPrice?: number | null;
+  discount?: number;
+  vatPercent?: number;
+  requireVariantSelection?: boolean;
+  variants?: AdminProductVariant[];
+};
 
 export default async function AdminProducts({ 
   searchParams 
@@ -16,7 +40,7 @@ export default async function AdminProducts({
   const { page, q, active, visible, discounted } = await searchParams;
   const currentPage = parseInt(page || "1");
   
-  const filters: any = { search: q };
+  const filters: ProductFilters = { search: q };
   if (active === "true") filters.isActive = true;
   if (active === "false") filters.isActive = false;
   if (visible === "true") filters.isVisible = true;
@@ -24,6 +48,13 @@ export default async function AdminProducts({
   if (discounted === "true") filters.isDiscounted = true;
 
   const { products, total, pages } = await ProductService.getPaginated(currentPage, 10, filters);
+  const listProducts = products as unknown as AdminProductListRow[];
+  const currentParams = {
+    ...(q ? { q } : {}),
+    ...(active ? { active } : {}),
+    ...(visible ? { visible } : {}),
+    ...(discounted ? { discounted } : {}),
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -56,22 +87,22 @@ export default async function AdminProducts({
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/products?${new URLSearchParams({ ...filters, active: active === 'true' ? '' : 'true' }).toString()}`}>
+          <Link href={`/admin/products?${new URLSearchParams({ ...currentParams, active: active === 'true' ? '' : 'true' }).toString()}`}>
             <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", active === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Aktív
             </Button>
           </Link>
-          <Link href={`/admin/products?${new URLSearchParams({ ...filters, visible: visible === 'true' ? '' : 'true' }).toString()}`}>
+          <Link href={`/admin/products?${new URLSearchParams({ ...currentParams, visible: visible === 'true' ? '' : 'true' }).toString()}`}>
             <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", visible === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Látható
             </Button>
           </Link>
-          <Link href={`/admin/products?${new URLSearchParams({ ...filters, discounted: discounted === 'true' ? '' : 'true' }).toString()}`}>
+          <Link href={`/admin/products?${new URLSearchParams({ ...currentParams, discounted: discounted === 'true' ? '' : 'true' }).toString()}`}>
             <Button variant="ghost" size="sm" className={cn("h-12 rounded-none border-2 uppercase tracking-widest text-[10px] font-black px-4", discounted === 'true' ? "admin-item-selected" : "border-white/5 text-neutral-500 hover:text-white admin-item-idle")}>
               Akciós
             </Button>
           </Link>
-          {Object.values(filters).some(v => v !== undefined && v !== "") && (
+          {Object.values(currentParams).some(v => v !== undefined && v !== "") && (
             <Link href="/admin/products">
               <Button variant="ghost" size="sm" className="h-12 px-4 text-rose-500 hover:text-rose-400 hover:bg-rose-500/5 font-black uppercase tracking-widest text-[10px]">
                 Visszaállít
@@ -99,29 +130,39 @@ export default async function AdminProducts({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {products.length === 0 ? (
+              {listProducts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-white/20 italic">
                     Nem található a keresésnek megfelelő termék.
                   </td>
                 </tr>
               ) : (
-                products.map((product: any) => {
+                listProducts.map((product) => {
+                    const productId = product._id.toString()
+                    const stock = Number(product.stock ?? 0)
                     const variants = Array.isArray(product.variants)
-                      ? product.variants.filter((variant: any) => variant.isActive !== false)
+                      ? product.variants.filter((variant) => variant.isActive !== false)
                       : []
                     const hasVariants = variants.length > 0
                     const needsVariantSelection = Boolean(product.requireVariantSelection) && hasVariants
-                    const minNetPrice = needsVariantSelection
-                      ? Math.min(...variants.map((variant: any) => Number(variant.netPrice || product.netPrice) || product.netPrice))
-                      : product.netPrice
-                    const maxDiscount = needsVariantSelection
-                      ? Math.max(...variants.map((variant: any) => Number(variant.discount || 0) || 0))
-                      : Number(product.discount || 0) || 0
-                    const grossPrice = grossFromNetWithDiscount(minNetPrice, maxDiscount)
-                    const breakdown = priceBreakdownFromGross(grossPrice)
+                    const priceLines = needsVariantSelection
+                      ? variants.map((variant) => ({
+                          netPrice: Number(variant.netPrice || product.netPrice) || product.netPrice,
+                          discount: variant.discount,
+                          grossPrice: variant.grossPrice,
+                        }))
+                      : [
+                          {
+                            netPrice: product.netPrice,
+                            discount: product.discount,
+                            grossPrice: product.grossPrice,
+                          },
+                        ]
+                    const priceSummary = listingPriceSummary(priceLines, product.vatPercent)
+                    const grossPrice = priceSummary.unitGross
+                    const maxDiscount = priceSummary.maxDiscount
                     return (
-                  <tr key={product._id} className="hover:bg-white/5 transition-colors group">
+                  <tr key={productId} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-none bg-neutral-900 flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-white/25 transition-colors">
@@ -155,10 +196,10 @@ export default async function AdminProducts({
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-black uppercase tracking-widest ${product.stock > 10 ? 'text-white' : product.stock > 0 ? 'text-highlight' : 'text-rose-500'}`}>
-                          {product.stock} DB
+                        <span className={`text-sm font-black uppercase tracking-widest ${stock > 10 ? 'text-white' : stock > 0 ? 'text-highlight' : 'text-rose-500'}`}>
+                          {stock} DB
                         </span>
-                        {product.stock <= 5 && (
+                        {stock <= 5 && (
                           <AlertCircle className="w-4 h-4 text-rose-500 animate-pulse" />
                         )}
                       </div>
@@ -170,7 +211,7 @@ export default async function AdminProducts({
                           {formatHuf(grossPrice)}
                         </p>
                         <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-                          Nettó {formatHuf(breakdown.unitNet)} · ÁFA {formatHuf(breakdown.unitVat)}
+                          Nettó {formatHuf(priceSummary.unitNet)} · ÁFA {formatHuf(priceSummary.unitVat)} ({priceSummary.vatPercent}%)
                         </p>
                         {maxDiscount > 0 && (
                           <p className="text-[10px] text-highlight font-black uppercase tracking-widest mt-1">-{maxDiscount}% KEDVEZMÉNY</p>
@@ -184,7 +225,7 @@ export default async function AdminProducts({
                             <ExternalLink className="w-4 h-4" />
                           </Button>
                         </Link>
-                        <Link href={`/admin/products/${product._id}`}>
+                        <Link href={`/admin/products/${productId}`}>
                           <Button variant="ghost" size="icon" className="hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/10 transition-all" title="Szerkesztés">
                             <Edit2 className="w-4 h-4" />
                           </Button>

@@ -2,8 +2,10 @@
 
 import { z } from "zod"
 import { findContactEmailById } from "@/lib/contact-emails"
+import { serializeMailerError } from "@/lib/mailer-log"
 import { MailerService } from "@/services/mailer"
 import { ContactEmailsService } from "@/services/contact-emails"
+import { ContactMessageService } from "@/services/contact-messages"
 
 const schema = z.object({
   name: z.string().min(2),
@@ -43,6 +45,25 @@ export async function submitContactForm(
   }
 
   const { name, email, message } = parsed.data
+  let savedMessage: { _id: string }
+
+  try {
+    savedMessage = await ContactMessageService.create({
+      name,
+      email,
+      message,
+      recipientId: recipient.id,
+      recipientLabel: recipient.label,
+      recipientEmail: recipient.email,
+    })
+  } catch (error) {
+    console.error("Failed to persist contact form message:", error)
+    return {
+      ok: false,
+      message: "Az üzenet mentése sikertelen. Kérjük próbálja újra később.",
+    }
+  }
+
   const subject = `Kapcsolatfelvétel: ${name}`
   const html = `
     <p><strong>Név:</strong> ${escapeHtml(name)}</p>
@@ -59,11 +80,13 @@ export async function submitContactForm(
       subject,
       html,
       text,
-      logContext: { flow: "contact_form", recipientId: recipient.id },
+      logContext: { flow: "contact_form", recipientId: recipient.id, contactMessageId: savedMessage._id },
     })
+    await safelyUpdateNotificationStatus(savedMessage._id, "sent")
     return { ok: true, message: "Üzenet elküldve. Hamarosan válaszolunk." }
-  } catch {
-    return { ok: false, message: "Az üzenet küldése sikertelen. Próbálja újra később." }
+  } catch (error) {
+    await safelyUpdateNotificationStatus(savedMessage._id, "failed", formatStoredMailerError(error))
+    return { ok: true, message: "Üzenetét rögzítettük. Hamarosan válaszolunk." }
   }
 }
 
@@ -73,4 +96,20 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+function formatStoredMailerError(error: unknown): string {
+  return JSON.stringify(serializeMailerError(error)).slice(0, 2000)
+}
+
+async function safelyUpdateNotificationStatus(
+  contactMessageId: string,
+  status: "sent" | "failed",
+  error?: string
+) {
+  try {
+    await ContactMessageService.updateNotificationStatus(contactMessageId, status, error)
+  } catch (updateError) {
+    console.error("Failed to update contact message notification status:", updateError)
+  }
 }

@@ -13,6 +13,8 @@ type FeatureCard = {
   icon?: string
 }
 
+const COLLAPSE_AT = 220
+
 const defaultFeatures: FeatureCard[] = [
   {
     title: "Lorem Ipsum",
@@ -44,19 +46,27 @@ export function Features({
   title,
   subtitle,
   cards,
+  embedded = false,
 }: {
   title?: string
   subtitle?: string
   cards?: FeatureCard[]
+  embedded?: boolean
 }) {
   const cms = useCmsEdit()
   const displayFeatures: FeatureCard[] = cards?.length ? cards : defaultFeatures
   return (
-    <section className="py-32 bg-background-dark relative overflow-hidden border-t border-border/40">
+    <section
+      className={
+        embedded
+          ? "relative overflow-hidden border-y border-border/40 py-24"
+          : "py-32 bg-background-dark relative overflow-hidden border-t border-border/40"
+      }
+    >
       {/* Accent blurs */}
       <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full -mr-64 -mb-64 pointer-events-none" />
 
-      <div className="container mx-auto px-6 relative z-10">
+      <div className={embedded ? "relative z-10" : "container mx-auto px-6 relative z-10"}>
         <div className="text-center mb-24">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -140,7 +150,7 @@ export function Features({
                   </Button>
                 </div>
               ) : (
-                <p className="text-neutral-400 leading-relaxed text-lg">{feature.description}</p>
+                <FeatureCardDescription text={feature.description} />
               )}
             </motion.div>
           ))}
@@ -157,5 +167,29 @@ export function Features({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function FeatureCardDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = React.useState(false)
+  const shouldCollapse = text.length > COLLAPSE_AT
+  const visibleText =
+    shouldCollapse && !expanded ? `${text.slice(0, COLLAPSE_AT).trimEnd()}...` : text
+
+  return (
+    <div className="space-y-4">
+      <p className="whitespace-pre-line text-base leading-relaxed text-neutral-400">{visibleText}</p>
+      {shouldCollapse ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-auto px-0 text-primary-foreground hover:bg-transparent hover:text-primary"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? "Kevesebb" : "Teljes szöveg"}
+        </Button>
+      ) : null}
+    </div>
   )
 }

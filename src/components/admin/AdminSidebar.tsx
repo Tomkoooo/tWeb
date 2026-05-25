@@ -42,6 +42,7 @@ type MenuItem = {
 const topLevelMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders", requiresShop: true },
+  { icon: Mail, label: "Kapcsolat", href: "/admin/contact" },
   { icon: Users, label: "Vásárlók", href: "/admin/users", requiresShop: true },
   { icon: BarChart3, label: "Statisztikák", href: "/admin/stats", requiresShop: true },
   { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews", requiresShop: true },
@@ -117,6 +118,8 @@ export function AdminSidebar({
     productManager: true,
     webshopSettings: true,
   })
+  const isItemActive = (href: string) =>
+    href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
 
   return (
     <div className={cn("admin-shell h-full flex flex-col bg-[#0A0A0B]", className)}>
@@ -138,7 +141,7 @@ export function AdminSidebar({
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
         {visibleTopLevelItems.slice(0, 2).map((item) => {
-          const isActive = pathname === item.href
+          const isActive = isItemActive(item.href)
           return (
             <Link
               key={item.href}
@@ -158,7 +161,7 @@ export function AdminSidebar({
         })}
 
         {visibleMenuGroups.map((group) => {
-          const isGroupActive = group.items.some((item) => pathname === item.href)
+          const isGroupActive = group.items.some((item) => isItemActive(item.href))
           const isOpen = openGroups[group.id] ?? true
 
           return (
@@ -183,7 +186,7 @@ export function AdminSidebar({
               {isOpen && (
                 <div className="ml-5 space-y-1 border-l border-white/10 pl-4">
                   {group.items.map((item) => {
-                    const isActive = pathname === item.href
+                    const isActive = isItemActive(item.href)
 
                     return (
                       <Link
@@ -209,7 +212,7 @@ export function AdminSidebar({
         })}
 
         {visibleTopLevelItems.slice(2).map((item) => {
-          const isActive = pathname === item.href
+          const isActive = isItemActive(item.href)
           return (
             <Link
               key={item.href}

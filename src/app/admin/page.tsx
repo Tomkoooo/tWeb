@@ -5,7 +5,8 @@ import {
   Package,
   ArrowUpRight,
   ArrowDownRight,
-  Eye
+  Eye,
+  Mail,
 } from "lucide-react"
 import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
@@ -29,6 +30,14 @@ type RecentOrder = {
   _id: string
   createdAt: string | Date
   total: number
+}
+
+type UnreadContactMessage = {
+  _id: string
+  name: string
+  email: string
+  message: string
+  createdAt: string | Date
 }
 
 async function KpiCard({ title, value, change, trend, icon: Icon }: KpiCardProps) {
@@ -89,7 +98,16 @@ export default async function AdminDashboard() {
   }
 
   const statsData = await getAdminStats()
-  const { kpis, recentOrders } = statsData as { kpis: { totalRevenue: number; ordersCount: number; activeCustomersCount: number; productsCount: number }; recentOrders: RecentOrder[] }
+  const { kpis, recentOrders, unreadContactMessages } = statsData as {
+    kpis: {
+      totalRevenue: number
+      ordersCount: number
+      activeCustomersCount: number
+      productsCount: number
+    }
+    recentOrders: RecentOrder[]
+    unreadContactMessages: UnreadContactMessage[]
+  }
 
   const stats: KpiCardProps[] = [
     { title: "Összes Bevétel", value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`, change: 0, trend: "up", icon: TrendingUp },
@@ -147,13 +165,44 @@ export default async function AdminDashboard() {
           </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[400px]">
-          <h2 className="text-xl font-bold mb-6 italic uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1.5 h-6 admin-section-marker rounded-full" />
-            Aktivitási Napló
-          </h2>
-          <div className="flex flex-col items-center justify-center h-full text-white/20">
-            <TrendingUp className="w-12 h-12 mb-4 opacity-10" />
-            <p className="italic">Az élő aktivitási napló hamarosan érkezik...</p>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2">
+              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
+              Aktivitási Napló
+            </h2>
+            <Link href="/admin/contact" className="text-[10px] font-black uppercase tracking-widest admin-link-accent">Üzenetek</Link>
+          </div>
+          <div className="space-y-4">
+            {unreadContactMessages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                <TrendingUp className="w-12 h-12 mb-4 opacity-10" />
+                <p className="italic">Nincs új olvasatlan kapcsolatfelvétel.</p>
+              </div>
+            ) : (
+              unreadContactMessages.map((message) => (
+                <div key={message._id} className="flex items-start justify-between gap-4 p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group">
+                  <div className="min-w-0 flex items-start gap-3">
+                    <div className="mt-1 rounded-full bg-primary/10 p-2">
+                      <Mail className="h-4 w-4 admin-icon-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-heading font-black text-white uppercase tracking-wider text-sm">
+                        Új üzenet: {message.name}
+                      </span>
+                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-400">
+                        {message.message}
+                      </p>
+                      <span className="mt-2 block text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+                        {message.email} · {format(new Date(message.createdAt), "MM. dd. HH:mm", { locale: hu })}
+                      </span>
+                    </div>
+                  </div>
+                  <Link href={`/admin/contact/${message._id}`} className="mt-1 shrink-0" title="Üzenet megnyitása">
+                    <Eye className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
+                  </Link>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

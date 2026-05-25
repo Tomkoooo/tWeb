@@ -23,12 +23,12 @@ import { mediaImageSrc } from "@/lib/images"
 import { getTemplateById } from "@/templates/registry"
 import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
 import { homepageFeaturedToProductDetail } from "@/features/homepage-cms/render/homepage-product-card-shape"
-import type { HomePageFeaturedProduct } from "@/templates/types"
+import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
 
 interface ShopProps {
   /** Active template — resolves `commerceSlots.ProductCard` client-side (homepage `deps` includes this). */
   templateId: string
-  categories?: any[]
+  categories?: HomePageDeps["categories"]
   products?: HomePageFeaturedProduct[]
   title?: string
   description?: string
@@ -36,6 +36,7 @@ interface ShopProps {
   viewAllHref?: string
   categoriesTitle?: string
   categoriesDescription?: string
+  afterCategories?: React.ReactNode
 }
 
 export function Shop({
@@ -48,6 +49,7 @@ export function Shop({
   viewAllHref,
   categoriesTitle,
   categoriesDescription,
+  afterCategories,
 }: ShopProps) {
   const cms = useCmsEdit()
   const categoryLightboxItems = React.useMemo<MediaLightboxItem[]>(
@@ -133,7 +135,7 @@ export function Shop({
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6", afterCategories ? "mb-20" : "mb-32")}>
           {categories.map((category, idx) => {
             const openCategoryLightbox = () => {
               const lbIndex = categoryLightboxItems.findIndex(
@@ -196,6 +198,8 @@ export function Shop({
             )
           })}
         </div>
+
+        {afterCategories ? <div className="mb-32">{afterCategories}</div> : null}
 
         <div className="space-y-16 py-10 border-t border-white/5">
           <div className="flex items-center gap-6">

@@ -113,7 +113,7 @@ export class OrderService {
     }
   }
 
-  /** After Stripe inventory hold: DB stock already lowered; verify lines still fit remaining stock. */
+  /** After Stripe inventory hold: DB stock was already lowered atomically; only verify the reserved lines still map to orderable products/variants. */
   private static async validateReservedStockStillCoversOrder(orderData: any) {
     for (const item of orderData.items) {
       const product = await Product.findById(item.product).lean();
@@ -129,13 +129,8 @@ export class OrderService {
         if (variant.isActive === false) {
           throw new Error(`A kiválasztott variáns már nem elérhető: ${product.name}`);
         }
-        if ((variant.stock || 0) < item.quantity) {
-          throw new Error(`Nincs elég készlet a kiválasztott variánshoz: ${product.name}`);
-        }
       } else if (requireVariantSelection) {
         if (!item.variantId) throw new Error(`Válassz variánst a termékhez: ${product.name}`);
-      } else {
-        if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
       }
     }
   }
