@@ -94,7 +94,11 @@ export default async function RootLayout({
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
+        <Providers
+          devMetricsEnabled={
+            process.env.DEV_METRICS === "1" || process.env.DEV_METRICS?.toLowerCase() === "true"
+          }
+        >
           {children}
           <Toaster position="bottom-right" />
         </Providers>

@@ -1,11 +1,14 @@
 import { cache } from "react"
-import { TemplateService } from "@/services/template"
 import {
+  getRequestActiveTemplateInfo,
   getRequestBrandingSettings,
   getRequestFooterSettings,
 } from "@/lib/cached-storefront"
 import { isShopEnabled } from "@/lib/features/shop"
 import { resolveCommerceSlots } from "@/templates/resolve-commerce-slots"
+import { readPreviewTemplateId } from "@/services/template-preview"
+import { loadTemplateModule } from "@/templates/registry"
+import { timeDevMetric } from "@/lib/dev-metrics"
 import type { NavbarSearchSlotProps, TemplateModule } from "@/templates/types"
 import type { ComponentType } from "react"
 
@@ -20,11 +23,17 @@ export type ActiveChrome = {
 }
 
 export const getActiveChrome = cache(async function getActiveChrome(): Promise<ActiveChrome> {
-  const [template, branding, footerSettings] = await Promise.all([
-    TemplateService.getActive(),
-    getRequestBrandingSettings(),
-    getRequestFooterSettings(),
+  const [previewTemplateId, activeInfo, branding, footerSettings] = await Promise.all([
+    timeDevMetric("activeChrome.previewTemplate", () => readPreviewTemplateId(), { category: "page-data" }),
+    timeDevMetric("activeChrome.templateInfo", () => getRequestActiveTemplateInfo(), { category: "page-data" }),
+    timeDevMetric("activeChrome.branding", () => getRequestBrandingSettings(), { category: "page-data" }),
+    timeDevMetric("activeChrome.footerSettings", () => getRequestFooterSettings(), { category: "page-data" }),
   ])
+  const template = await timeDevMetric(
+    "activeChrome.templateModule",
+    () => loadTemplateModule(previewTemplateId ?? activeInfo.templateId),
+    { category: "page-data", metadata: { templateId: previewTemplateId ?? activeInfo.templateId } }
+  )
   const shopEnabled = isShopEnabled()
   const { NavbarSearch } = resolveCommerceSlots(template)
   return {

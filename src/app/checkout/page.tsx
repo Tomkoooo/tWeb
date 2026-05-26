@@ -1,7 +1,11 @@
 import { TemplateService } from "@/services/template"
 import { FlowRoutePageClient } from "@/components/flow-routes/FlowRoutePageClient"
+import { timeDevMetric } from "@/lib/dev-metrics"
 
 export default async function CheckoutPage() {
-  const template = await TemplateService.getActive()
+  const template = await timeDevMetric("checkout.template", () => TemplateService.getActive(), {
+    category: "page-data",
+    route: "/checkout",
+  })
   return <FlowRoutePageClient templateId={template.manifest.id} flowRoute="checkout" variant="page" />
 }

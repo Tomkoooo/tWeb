@@ -117,7 +117,11 @@ export function ProductGridBlockView({
               key={product.id}
               className="flex flex-col overflow-hidden rounded-2xl border border-border bg-muted/30"
             >
-              <Link href={`/products/${product.slug}`} className="relative block aspect-square bg-muted">
+              <Link
+                href={`/products/${product.slug}`}
+                prefetch={false}
+                className="relative block aspect-square bg-muted"
+              >
                 <FallbackImage
                   src={mediaImageSrc(product.image)}
                   alt={product.name}
@@ -129,7 +133,9 @@ export function ProductGridBlockView({
                 <p className="text-xs font-medium text-foreground line-clamp-2">{product.name}</p>
                 <p className="text-xs text-muted-foreground">{product.price.toLocaleString("hu-HU")} Ft</p>
                 <Button asChild variant="default" className="mt-auto w-full rounded-full text-sm font-semibold">
-                  <Link href={`/products/${product.slug}`}>View</Link>
+                  <Link href={`/products/${product.slug}`} prefetch={false}>
+                    View
+                  </Link>
                 </Button>
               </div>
             </article>

@@ -6,6 +6,7 @@ import { mediaImageSrc } from "@/lib/images"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
 import { getRequestPageContent } from "@/lib/cached-storefront"
+import { timeDevMetric } from "@/lib/dev-metrics"
 
 export const revalidate = 60
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
@@ -53,13 +54,26 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const {
     chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
     footerHydration,
-  } = await getStorefrontChromeBundle()
+  } = await timeDevMetric("product.chromeBundle", () => getStorefrontChromeBundle(), {
+    category: "page-data",
+    route: "/products/[slug]",
+    metadata: { slug },
+  })
 
-  const [product, pdpContent, footerData] = await Promise.all([
-    ProductService.getBySlug(slug),
-    getRequestPageContent(template.manifest.id, "page:pdp"),
-    resolveStorefrontFooterContact(template),
-  ])
+  const [product, pdpContent, footerData] = await timeDevMetric(
+    "product.dataBundle",
+    () =>
+      Promise.all([
+        ProductService.getBySlug(slug),
+        getRequestPageContent(template.manifest.id, "page:pdp"),
+        resolveStorefrontFooterContact(template),
+      ]),
+    {
+      category: "page-data",
+      route: "/products/[slug]",
+      metadata: { slug },
+    }
+  )
 
   if (!product) {
     notFound()

@@ -293,6 +293,16 @@ export class ProductService {
     return rows;
   }
 
+  static async getHomepageFeaturedByIds(ids: string[]) {
+    await dbConnect();
+    const objectIds = ids.filter((id) => mongoose.isValidObjectId(id));
+    if (objectIds.length === 0) return [];
+    return await Product.find({ _id: { $in: objectIds }, deletedAt: null })
+      .select(LISTING_SELECT)
+      .populate("category", "name slug seo image")
+      .lean();
+  }
+
   static async getById(id: string, options: { includeDeleted?: boolean } = {}) {
     await dbConnect();
     const query: Record<string, unknown> = { _id: id };

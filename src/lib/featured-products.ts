@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
+import { unstable_cache } from "next/cache";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
+import { STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 import {
   ShopFeaturedSettingsService,
   type ShopFeaturedSettings,
@@ -49,6 +51,25 @@ export type ResolveFeaturedProductsInput = {
 };
 
 export async function resolveFeaturedProductIds(
+  input: ResolveFeaturedProductsInput = {}
+): Promise<string[]> {
+  const cmsKey = (input.cmsSelectedProductIds ?? []).join(",");
+  const maxKey = String(input.maxItems ?? "");
+  return unstable_cache(
+    () => resolveFeaturedProductIdsUncached(input),
+    ["homepage-featured-product-ids", cmsKey, maxKey],
+    {
+      revalidate: 60,
+      tags: [
+        STOREFRONT_CACHE_TAGS.homepage,
+        STOREFRONT_CACHE_TAGS.products,
+        STOREFRONT_CACHE_TAGS.categories,
+      ],
+    }
+  )();
+}
+
+async function resolveFeaturedProductIdsUncached(
   input: ResolveFeaturedProductsInput = {}
 ): Promise<string[]> {
   await dbConnect();
@@ -123,6 +144,21 @@ async function resolveFromShopSettings(
 }
 
 export async function resolveFeaturedCategoryIds(limit = 4): Promise<string[]> {
+  return unstable_cache(
+    () => resolveFeaturedCategoryIdsUncached(limit),
+    ["homepage-featured-category-ids", String(limit)],
+    {
+      revalidate: 60,
+      tags: [
+        STOREFRONT_CACHE_TAGS.homepage,
+        STOREFRONT_CACHE_TAGS.products,
+        STOREFRONT_CACHE_TAGS.categories,
+      ],
+    }
+  )();
+}
+
+async function resolveFeaturedCategoryIdsUncached(limit = 4): Promise<string[]> {
   await dbConnect();
   const settings = await ShopFeaturedSettingsService.get();
 

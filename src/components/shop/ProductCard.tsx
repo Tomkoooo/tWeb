@@ -224,7 +224,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
 
       {/* Content Section */}
       <div className="p-6 flex flex-col grow">
-        <Link href={`/products/${product.slug}`} className="block mb-2">
+        <Link href={`/products/${product.slug}`} prefetch={false} className="block mb-2">
           <h4 className="text-white text-lg font-heading font-black tracking-tighter group-hover:text-primary-foreground transition-colors line-clamp-2 uppercase">
             {product.name}
           </h4>
@@ -268,7 +268,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
               {isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
               {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns választása" : "Kosárba"}
             </Button>
-            <Link href={`/products/${product.slug}`} className="w-full">
+            <Link href={`/products/${product.slug}`} prefetch={false} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">
                 Megtekintés
                 <ArrowRight className="w-3 h-3 text-primary-foreground" />

@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import Review from "@/models/Review";
 import ShopFeedback from "@/models/ShopFeedback";
 import { requireAdmin } from "@/lib/admin-auth";
+import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 
 type ReviewStatus = "pending" | "approved" | "rejected";
 
@@ -45,6 +46,7 @@ export async function updateProductReviewStatus(reviewId: string, status: string
 
   revalidatePath("/admin/reviews");
   revalidatePath("/");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.homepage);
 }
 
 export async function updateShopFeedbackStatus(feedbackId: string, status: string) {
@@ -55,6 +57,7 @@ export async function updateShopFeedbackStatus(feedbackId: string, status: strin
 
   revalidatePath("/admin/reviews");
   revalidatePath("/");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.homepage);
 }
 
 export async function deleteProductReview(reviewId: string) {
@@ -63,6 +66,7 @@ export async function deleteProductReview(reviewId: string) {
 
   await Review.findByIdAndDelete(reviewId);
   revalidatePath("/admin/reviews");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.homepage);
 }
 
 export async function deleteShopFeedback(feedbackId: string) {
@@ -71,4 +75,5 @@ export async function deleteShopFeedback(feedbackId: string) {
 
   await ShopFeedback.findByIdAndDelete(feedbackId);
   revalidatePath("/admin/reviews");
+  revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.homepage);
 }

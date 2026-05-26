@@ -3,6 +3,23 @@ import Cart, { ICart } from "@/models/Cart";
 import Product from "@/models/Product";
 import mongoose from "mongoose";
 
+type LocalCartInput = {
+  id?: unknown;
+  productId?: unknown;
+  quantity?: unknown;
+};
+
+function normalizedCartSignature(items: Array<{ product: unknown; quantity: number }>) {
+  return JSON.stringify(
+    items
+      .map((item) => ({
+        productId: item.product?.toString() ?? "",
+        quantity: Math.max(1, Number(item.quantity) || 1),
+      }))
+      .sort((a, b) => a.productId.localeCompare(b.productId))
+  );
+}
+
 export class CartService {
   static async getCart(userId: string) {
     await dbConnect();
@@ -21,7 +38,7 @@ export class CartService {
   }
 
   /** Replace server cart with validated client lines (one row per product). */
-  static async replaceCart(userId: string, localItems: any[]) {
+  static async replaceCart(userId: string, localItems: LocalCartInput[]) {
     await dbConnect();
     const userObjectId = new mongoose.Types.ObjectId(userId);
     let cart = await Cart.findOne({ user: userObjectId });
@@ -30,25 +47,44 @@ export class CartService {
       cart = new Cart({ user: userObjectId, items: [] });
     }
 
-    const nextItems: ICart["items"] = [];
+    const requestedByProductId = new Map<string, number>();
 
-    for (const localItem of localItems) {
-      const productId = String(localItem.productId || localItem.id);
-      let productObjectId: mongoose.Types.ObjectId;
+    for (const localItem of Array.isArray(localItems) ? localItems : []) {
+      const productId = String(localItem.productId || localItem.id || "");
       try {
-        productObjectId = new mongoose.Types.ObjectId(productId);
+        const objectId = new mongoose.Types.ObjectId(productId);
+        const qty = Math.max(1, Number(localItem.quantity) || 1);
+        requestedByProductId.set(objectId.toString(), (requestedByProductId.get(objectId.toString()) || 0) + qty);
       } catch {
         continue;
       }
+    }
 
-      const product = await Product.findById(productObjectId);
-      if (!product || !product.isActive || !product.isVisible) continue;
+    const objectIds = [...requestedByProductId.keys()].map((id) => new mongoose.Types.ObjectId(id));
+    const products = objectIds.length
+      ? await Product.find({
+          _id: { $in: objectIds },
+          isActive: true,
+          isVisible: true,
+          deletedAt: null,
+        })
+          .select("stock")
+          .lean()
+      : [];
 
-      const qty = Math.max(1, Number(localItem.quantity) || 1);
+    const nextItems: ICart["items"] = [];
+    for (const product of products) {
+      const productId = product._id.toString();
+      const qty = requestedByProductId.get(productId);
+      if (!qty) continue;
       nextItems.push({
-        product: productObjectId,
+        product: product._id,
         quantity: Math.min(qty, product.stock),
       });
+    }
+
+    if (normalizedCartSignature(cart.items) === normalizedCartSignature(nextItems)) {
+      return await cart.populate("items.product");
     }
 
     cart.items = nextItems;

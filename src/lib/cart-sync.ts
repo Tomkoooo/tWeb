@@ -6,6 +6,26 @@ export function cartLineProductId(item: { productId?: string; id: string }): str
   return String(item.productId || item.id)
 }
 
+export function cartItemsSyncSignature(
+  items: Array<{ productId?: string; id: string; quantity: number }>
+): string {
+  return JSON.stringify(
+    items
+      .map((item) => ({
+        productId: cartLineProductId(item),
+        quantity: Math.max(1, Number(item.quantity) || 1),
+      }))
+      .sort((a, b) => a.productId.localeCompare(b.productId))
+  )
+}
+
+export function areCartItemsSyncEqual(
+  a: Array<{ productId?: string; id: string; quantity: number }>,
+  b: Array<{ productId?: string; id: string; quantity: number }>
+): boolean {
+  return cartItemsSyncSignature(a) === cartItemsSyncSignature(b)
+}
+
 type DbCartProduct = {
   _id?: string | { toString(): string }
   name?: string
@@ -64,7 +84,6 @@ export function dbCartItemsToCartItems(dbItems: DbCartLine[] | undefined): CartI
 
 /** Prefer local variant lines; fill in product-only lines from the server. */
 export function mergeLocalAndServerCart(local: CartItem[], server: CartItem[]): CartItem[] {
-  const serverByProduct = new Map(server.map((line) => [line.productId, line]))
   const merged: CartItem[] = []
   const seenProducts = new Set<string>()
 

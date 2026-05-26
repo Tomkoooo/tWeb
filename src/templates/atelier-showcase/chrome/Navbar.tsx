@@ -47,7 +47,15 @@ export function Navbar({
 }: NavbarProps) {
   const navLinks = shopEnabled ? ALL_NAV_LINKS : ALL_NAV_LINKS.filter((l) => !("shopOnly" in l))
   const [isScrolled, setIsScrolled] = React.useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
   const resolvedBrand = { brandName, logoSrc }
+
+  const closeMobileMenuOnLinkClick = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
+    const target = event.target instanceof HTMLElement ? event.target : null
+    if (target?.closest("a[href]")) {
+      setIsMobileMenuOpen(false)
+    }
+  }, [])
 
   React.useEffect(() => {
     if (cmsChromePreview) return
@@ -142,7 +150,7 @@ export function Navbar({
 
       <UserNav />
 
-      <Sheet>
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="ml-2 h-10 w-10 p-0 md:hidden lg:hidden">
             <Menu className="h-8 w-8 text-foreground" />
@@ -151,6 +159,7 @@ export function Navbar({
         <SheetContent
           side="right"
           className="w-full border-border bg-background sm:max-w-md"
+          onClickCapture={closeMobileMenuOnLinkClick}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div className="mt-20 flex flex-col gap-10 px-6">

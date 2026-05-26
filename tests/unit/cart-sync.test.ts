@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  areCartItemsSyncEqual,
   cartLineProductId,
+  cartItemsSyncSignature,
   dbCartItemsToCartItems,
   mergeLocalAndServerCart,
 } from "@/lib/cart-sync"
@@ -10,6 +12,20 @@ describe("cart-sync helpers", () => {
   it("cartLineProductId prefers productId", () => {
     expect(cartLineProductId({ id: "line-1", productId: "prod-1" })).toBe("prod-1")
     expect(cartLineProductId({ id: "prod-2" })).toBe("prod-2")
+  })
+
+  it("cartItemsSyncSignature ignores order and normalizes quantity", () => {
+    const a = [
+      { id: "p2", productId: "p2", quantity: 0 },
+      { id: "variant-line", productId: "p1", quantity: 2 },
+    ]
+    const b = [
+      { id: "p1", productId: "p1", quantity: 2 },
+      { id: "p2", productId: "p2", quantity: 1 },
+    ]
+
+    expect(cartItemsSyncSignature(a)).toBe(cartItemsSyncSignature(b))
+    expect(areCartItemsSyncEqual(a, b)).toBe(true)
   })
 
   it("dbCartItemsToCartItems skips inactive products", () => {

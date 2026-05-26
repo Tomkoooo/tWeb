@@ -9,8 +9,15 @@ export function HeroBlockView({ block }: { block: HeroBlock }) {
   return (
     <section className="border-b border-border bg-background py-20 md:py-24">
       <div className="container mx-auto space-y-6 px-4 text-center">
-        <div className="relative mx-auto aspect-[21/9] max-h-[min(52vh,420px)] w-full max-w-5xl overflow-hidden rounded-2xl border border-border bg-muted">
-          <FallbackImage src={block.data.heroImage} alt={block.data.title} fill className="object-cover" />
+        <div className="relative mx-auto aspect-21/9 max-h-[min(52vh,420px)] w-full max-w-5xl overflow-hidden rounded-2xl border border-border bg-muted">
+          <FallbackImage
+            src={block.data.heroImage}
+            alt={block.data.title}
+            fill
+            priority
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            className="object-cover"
+          />
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
           {cms.enabled ? (

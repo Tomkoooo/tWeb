@@ -325,6 +325,7 @@ export function Footer({
                   <li key={item.id}>
                     <Link
                       href={`/shop?category=${item.slug}`}
+                      prefetch={false}
                       className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest"
                     >
                       {item.depth > 0 ? `${"— ".repeat(item.depth)}${item.name}` : item.name}
@@ -335,6 +336,7 @@ export function Footer({
                   <li>
                     <Link
                       href="/shop"
+                      prefetch={false}
                       className="text-muted-foreground hover:text-foreground transition-colors text-base font-bold uppercase tracking-widest"
                     >
                       {settings?.browseProductsLabel || "Browse Products"}

@@ -1,6 +1,8 @@
 import dbConnect from "@/lib/db";
 import Review from "@/models/Review";
 import ShopFeedback from "@/models/ShopFeedback";
+import { unstable_cache } from "next/cache";
+import { STOREFRONT_CACHE_TAGS } from "@/lib/storefront-cache-tags";
 
 type HomeReview = {
   id: string;
@@ -35,6 +37,14 @@ type ProductReviewDoc = {
 
 export class FeedbackService {
   static async getHomepageReviews(limit: number = 6): Promise<HomeReview[]> {
+    return unstable_cache(
+      () => FeedbackService.getHomepageReviewsUncached(limit),
+      ["homepage-reviews", String(limit)],
+      { revalidate: 60, tags: [STOREFRONT_CACHE_TAGS.homepage] }
+    )();
+  }
+
+  private static async getHomepageReviewsUncached(limit: number = 6): Promise<HomeReview[]> {
     await dbConnect();
 
     const [shopFeedbacks, productReviews] = await Promise.all([

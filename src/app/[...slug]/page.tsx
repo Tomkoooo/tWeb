@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { getActiveChrome } from "@/lib/active-chrome"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { getRequestPageContent } from "@/lib/cached-storefront"
+import { timeDevMetric } from "@/lib/dev-metrics"
 
 export const revalidate = 60
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
@@ -41,17 +42,30 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
   const {
     chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
     footerHydration,
-  } = await getStorefrontChromeBundle()
+  } = await timeDevMetric("static.chromeBundle", () => getStorefrontChromeBundle(), {
+    category: "page-data",
+    route: "/[...slug]",
+    metadata: { slug: slugStr },
+  })
 
   const def = template.staticPages[slugStr]
   if (!def) {
     notFound()
   }
 
-  const [content, footerData] = await Promise.all([
-    getRequestPageContent(template.manifest.id, `page:${slugStr}`),
-    resolveStorefrontFooterContact(template),
-  ])
+  const [content, footerData] = await timeDevMetric(
+    "static.dataBundle",
+    () =>
+      Promise.all([
+        getRequestPageContent(template.manifest.id, `page:${slugStr}`),
+        resolveStorefrontFooterContact(template),
+      ]),
+    {
+      category: "page-data",
+      route: "/[...slug]",
+      metadata: { slug: slugStr },
+    }
+  )
   const Render = def.Render
 
   return (

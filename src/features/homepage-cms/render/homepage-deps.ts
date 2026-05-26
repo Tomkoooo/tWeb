@@ -171,7 +171,7 @@ export async function getHomepageRenderDependencies(
         slug: c.slug,
       }))
 
-    const productRows = await ProductService.getByIds(featuredIds)
+    const productRows = await ProductService.getHomepageFeaturedByIds(featuredIds)
     const ordered = orderIdsByList(
       featuredIds,
       productRows.filter(Boolean) as ProductItem[]

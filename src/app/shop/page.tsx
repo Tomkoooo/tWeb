@@ -20,6 +20,7 @@ import {
 import { resolveCommerceShopRendering } from "@/templates/resolve-commerce-slots"
 import { storefrontCatalogFilters } from "@/lib/storefront-catalog"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
+import { timeDevMetric } from "@/lib/dev-metrics"
 
 export async function generateMetadata({
   searchParams,
@@ -75,14 +76,26 @@ export default async function ShopPage({
     sort?: string
   }>
 }) {
-  const isShopPageEnabled = await getCachedFeatureFlag("shopPage", true)
+  const isShopPageEnabled = await timeDevMetric(
+    "shop.featureFlag",
+    () => getCachedFeatureFlag("shopPage", true),
+    { category: "page-data", route: "/shop" }
+  )
   const {
     chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
     footerHydration,
-  } = await getStorefrontChromeBundle()
+  } = await timeDevMetric("shop.chromeBundle", () => getStorefrontChromeBundle(), {
+    category: "page-data",
+    route: "/shop",
+  })
   const shopPageDef = template.pages.shop
-  const shopRaw = await getRequestPageContent(template.manifest.id, "page:shop").catch(
-    () => shopPageDef.defaultContent
+  const shopRaw = await timeDevMetric(
+    "shop.pageContent",
+    () =>
+      getRequestPageContent(template.manifest.id, "page:shop").catch(
+        () => shopPageDef.defaultContent
+      ),
+    { category: "page-data", route: "/shop" }
   )
   const shopContent = shopRaw as typeof shopPageDef.defaultContent
 
@@ -124,21 +137,30 @@ export default async function ShopPage({
   }
 
   const [paginationResult, categoriesResult, contentDoc] =
-    await Promise.all([
+    await timeDevMetric("shop.productsAndFilters", () => Promise.all([
       ProductService.getStorefrontPaginated(currentPage, limit, filters),
       getRequestCategoryTree(),
       getRequestShopContent(),
-    ])
+    ]), {
+      category: "page-data",
+      route: "/shop",
+      metadata: { currentPage, limit, sort: filters.sort, hasSearch: Boolean(filters.search) },
+    })
 
   const products = JSON.parse(JSON.stringify(paginationResult.products))
   const total = paginationResult.total
   const pages = paginationResult.pages
   const categories = JSON.parse(JSON.stringify(categoriesResult))
 
-  const footerData = await resolveStorefrontFooterContact(template, {
-    shopContentSnapshot: contentDoc,
-    categoryTreeSnapshot: categoriesResult as CategoryTreeNode[],
-  })
+  const footerData = await timeDevMetric(
+    "shop.footerContact",
+    () =>
+      resolveStorefrontFooterContact(template, {
+        shopContentSnapshot: contentDoc,
+        categoryTreeSnapshot: categoriesResult as CategoryTreeNode[],
+      }),
+    { category: "page-data", route: "/shop" }
+  )
 
   const ShopRender = shopPageDef.Render
 
