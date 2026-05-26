@@ -7,6 +7,7 @@ const Hero = dynamic(
   { ssr: true }
 )
 import { Story } from "@/components/sections/Story"
+import { Gallery } from "@/components/sections/Gallery"
 import { Shop } from "@/components/sections/Shop"
 import { Features } from "@/components/sections/Features"
 import { Reviews } from "@/components/sections/Reviews"
@@ -78,6 +79,12 @@ export function RealHomepageSections({
         categoriesDescription?: string
       }
     | undefined
+  const gallery = getBlockData(snapshot, "gallery") as
+    | {
+        title?: string
+        items?: Array<{ image: string; caption: string }>
+      }
+    | undefined
   const features = getBlockData(snapshot, "features") as
     | {
         title?: string
@@ -145,6 +152,12 @@ export function RealHomepageSections({
           content={isVisible(about, "paragraph") ? about.paragraph : ""}
           accordions={isVisible(about, "accordions") ? about.accordions : []}
           cards={about.cards}
+        />
+      ) : null}
+      {gallery ? (
+        <Gallery
+          title={isVisible(gallery, "title") ? gallery.title : ""}
+          items={isVisible(gallery, "items") ? gallery.items : []}
         />
       ) : null}
       {productGrid ? (

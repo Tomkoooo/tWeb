@@ -9,10 +9,7 @@ export const galleryDefinition: BlockDefinition<"gallery"> = {
     enabled: true,
     data: {
       title: "Galéria",
-      items: [
-        { image: "/generic-hero.svg", caption: "Első kép" },
-        { image: "/generic-logo.svg", caption: "Második kép" },
-      ],
+      items: [],
     },
   }),
 }

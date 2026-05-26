@@ -53,6 +53,15 @@ export function getDefaultHomepageSnapshot(): HomepageSnapshot {
         },
       },
       {
+        id: "gallery-1",
+        type: "gallery",
+        enabled: true,
+        data: {
+          title: "Gallery",
+          items: [],
+        },
+      },
+      {
         id: "features-1",
         type: "features",
         enabled: true,
