@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { formatHuf, listingPriceSummary } from "@/lib/pricing";
+import { formatHuf, listingHasPriceRange, listingPriceSummary } from "@/lib/pricing";
 import { FallbackImage } from "@/components/common/FallbackImage";
 import { mediaImageSrc } from "@/lib/images";
 import { ProductRowActions } from "./ProductRowActions";
@@ -171,6 +171,7 @@ export default async function AdminProducts({
                     const priceSummary = listingPriceSummary(priceLines, product.vatPercent)
                     const grossPrice = priceSummary.unitGross
                     const maxDiscount = priceSummary.maxDiscount
+                    const showFromPrice = needsVariantSelection && listingHasPriceRange(priceLines, product.vatPercent)
                     return (
                   <tr key={productId} className={cn("hover:bg-white/5 transition-colors group", isDeleted && "opacity-60")}>
                     <td className="px-6 py-6">
@@ -222,7 +223,7 @@ export default async function AdminProducts({
                     <td className="px-6 py-6">
                       <div>
                         <p className="font-black text-white text-lg tracking-tighter">
-                          {needsVariantSelection ? "Tól " : ""}
+                          {showFromPrice ? "Tól " : ""}
                           {formatHuf(grossPrice)}
                         </p>
                         <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">

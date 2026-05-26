@@ -310,6 +310,7 @@ export class OrderService {
       order.invoiceStatus = "pending";
       await order.save();
 
+      await order.populate("paymentMethod");
       const result = await InvoicingSzamlazzService.issueInvoice(order);
       order.invoiceId = result.invoiceId;
       order.invoiceStatus = "issued";
