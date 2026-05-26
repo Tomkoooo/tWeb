@@ -18,7 +18,13 @@ interface MethodDialogProps {
   children: React.ReactNode
   title: string
   action: (formData: FormData) => Promise<void>
-  initialData?: any
+  initialData?: {
+    name?: string
+    grossPrice?: number
+    isActive?: boolean
+    provider?: string
+    descriptionHtml?: string
+  }
   /** When set, shows provider type (standard / GLS / Foxpost) for shipping methods. */
   shippingProviderMode?: boolean
 }
@@ -48,7 +54,7 @@ export function MethodDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="bg-black border-white/10 text-white rounded-none sm:max-w-[425px]">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto bg-black border-white/10 text-white rounded-none sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
             {title}
@@ -57,7 +63,7 @@ export function MethodDialog({
         <form action={async (formData) => {
           await action(formData)
           setOpen(false)
-        }} className="space-y-8 py-6">
+        }} className="space-y-8 py-6 pr-1">
           {shippingProviderMode ? (
             <div className="space-y-2">
               <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
@@ -98,7 +104,12 @@ export function MethodDialog({
               <p className="text-[10px] text-neutral-500 leading-relaxed">
                 Megjelenik, ha a vásárló ezt a csomagpontos / automatás szállítást választja (összegzés lépésen is).
               </p>
-              <RichTextEditor value={descriptionHtml} onChange={setDescriptionHtml} />
+              <RichTextEditor
+                value={descriptionHtml}
+                onChange={setDescriptionHtml}
+                className="max-w-full"
+                editorClassName="max-h-[38dvh] min-h-[180px] overflow-y-auto break-words"
+              />
               <input type="hidden" name="descriptionHtml" value={descriptionHtml} />
             </div>
           ) : (

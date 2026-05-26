@@ -1,4 +1,8 @@
-import { Printer } from "lucide-react";
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
@@ -41,6 +45,11 @@ type FoxpostShipment = {
   lastError?: string;
 };
 
+type ParcelActionResult = {
+  success: boolean;
+  error?: string;
+};
+
 type OrderParcelPanelProps = {
   parcelManagerEnabled: boolean;
   provider: ParcelLockerProvider;
@@ -49,9 +58,50 @@ type OrderParcelPanelProps = {
   foxpostParcelPoint?: FoxpostParcelPoint | null;
   glsLabel?: GlsLabel | null;
   foxpostShipment?: FoxpostShipment | null;
-  generateGlsAction: () => Promise<void>;
-  generateFoxpostAction: () => Promise<void>;
+  generateGlsAction: () => Promise<ParcelActionResult>;
+  generateFoxpostAction: () => Promise<ParcelActionResult>;
 };
+
+type GenerateLabelButtonProps = {
+  label: string;
+  pendingLabel: string;
+  onGenerate: () => Promise<ParcelActionResult>;
+  onResult: (result: ParcelActionResult | null) => void;
+};
+
+function GenerateLabelButton({
+  label,
+  pendingLabel,
+  onGenerate,
+  onResult,
+}: GenerateLabelButtonProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={isPending}
+      onClick={() => {
+        onResult(null);
+        startTransition(async () => {
+          const result = await onGenerate();
+          onResult(result);
+          router.refresh();
+        });
+      }}
+      className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
+    >
+      {isPending ? (
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      ) : (
+        <Printer className="w-4 h-4 mr-2" />
+      )}
+      {isPending ? pendingLabel : label}
+    </Button>
+  );
+}
 
 export function OrderParcelPanel({
   parcelManagerEnabled,
@@ -64,6 +114,8 @@ export function OrderParcelPanel({
   generateGlsAction,
   generateFoxpostAction,
 }: OrderParcelPanelProps) {
+  void orderId;
+  const [lastResult, setLastResult] = useState<ParcelActionResult | null>(null);
   const orderSnapshot = {
     glsParcelPoint,
     foxpostParcelPoint,
@@ -71,6 +123,9 @@ export function OrderParcelPanel({
     foxpostShipment,
   };
   const needsLabel = orderNeedsParcelLabel(orderSnapshot);
+  const glsError = lastResult?.success ? undefined : lastResult?.error || glsLabel?.lastError;
+  const foxpostError = lastResult?.success ? undefined : lastResult?.error || foxpostShipment?.lastError;
+  const successMessage = lastResult?.success ? "Frissítés sikeres. Az adatok újratöltése folyamatban / kész." : null;
 
   if (provider === "gls") {
     return (
@@ -89,15 +144,17 @@ export function OrderParcelPanel({
           </p>
         ) : null}
         {parcelManagerEnabled && glsParcelPoint?.id ? (
-          <form action={generateGlsAction}>
-            <Button
-              variant="outline"
-              className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              GLS címke generálása
-            </Button>
-          </form>
+          <GenerateLabelButton
+            label="GLS címke generálása"
+            pendingLabel="GLS címke készül..."
+            onGenerate={generateGlsAction}
+            onResult={setLastResult}
+          />
+        ) : null}
+        {successMessage ? (
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+            {successMessage}
+          </p>
         ) : null}
         {glsLabel?.parcelNumber ? (
           <div className="text-[10px] font-black uppercase tracking-widest text-neutral-300 space-y-1">
@@ -128,9 +185,9 @@ export function OrderParcelPanel({
             Címke hiányzik
           </p>
         ) : null}
-        {glsLabel?.lastError ? (
+        {glsError ? (
           <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
-            GLS hiba: {glsLabel.lastError}
+            GLS hiba: {glsError}
           </p>
         ) : null}
       </div>
@@ -156,15 +213,17 @@ export function OrderParcelPanel({
         <p className="text-[10px] text-neutral-500">Telítettség: {foxpostParcelPoint.load}</p>
       ) : null}
       {parcelManagerEnabled && foxpostParcelPoint?.id ? (
-        <form action={generateFoxpostAction}>
-          <Button
-            variant="outline"
-            className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
-          >
-            <Printer className="w-4 h-4 mr-2" />
-            Foxpost csomag + címke
-          </Button>
-        </form>
+        <GenerateLabelButton
+          label="Foxpost csomag + címke"
+          pendingLabel="Foxpost címke készül..."
+          onGenerate={generateFoxpostAction}
+          onResult={setLastResult}
+        />
+      ) : null}
+      {successMessage ? (
+        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+          {successMessage}
+        </p>
       ) : null}
       {foxpostShipment?.clFoxId ? (
         <div className="text-[10px] font-black uppercase tracking-widest text-neutral-300 space-y-1">
@@ -207,18 +266,12 @@ export function OrderParcelPanel({
           Csomag/címke hiányzik
         </p>
       ) : null}
-      {foxpostShipment?.lastError ? (
+      {foxpostError ? (
         <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
-          Foxpost hiba: {foxpostShipment.lastError}
+          Foxpost hiba: {foxpostError}
         </p>
       ) : null}
     </div>
   );
 }
 
-export function orderHasParcelShipping(order: {
-  glsParcelPoint?: { id?: string } | null;
-  foxpostParcelPoint?: { id?: string } | null;
-}): boolean {
-  return Boolean(order.glsParcelPoint?.id || order.foxpostParcelPoint?.id);
-}

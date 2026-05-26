@@ -57,6 +57,7 @@ export function ContactReplyComposer({ messageId, defaultSubject, themeColors }:
           onChange={setBodyHtml}
           placeholder="Írja meg a választ..."
           themeColors={themeColors}
+          variant="mail"
         />
         <input type="hidden" name="bodyHtml" value={bodyHtml} />
       </div>

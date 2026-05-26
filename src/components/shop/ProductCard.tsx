@@ -30,7 +30,7 @@ type ProductCardProduct = {
   _id: { toString(): string }
   name: string
   slug: string
-  description: string
+  description?: string
   images?: string[]
   category?: { name?: string }
   rating?: number

@@ -10,9 +10,8 @@ import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
 import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar } from "lucide-react"
 import {
   OrderParcelPanel,
-  orderHasParcelShipping,
 } from "@/components/admin/OrderParcelPanel"
-import { getOrderParcelProvider, getOrderShippingTypeLabel } from "@/lib/parcel-locker"
+import { getOrderParcelProvider, getOrderShippingTypeLabel, orderHasParcelShipping } from "@/lib/parcel-locker"
 import { getOrderParcelDeliveryDisplay } from "@/lib/parcel-locker-checkout-display"
 import {
   isFoxpostParcelManagerEnabled,
@@ -126,9 +125,12 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     glsLabel={order.glsLabel}
                     generateGlsAction={async () => {
                       "use server"
-                      await generateOrderGlsLabel(order._id.toString())
+                      return generateOrderGlsLabel(order._id.toString())
                     }}
-                    generateFoxpostAction={async () => {}}
+                    generateFoxpostAction={async () => {
+                      "use server"
+                      return { success: true }
+                    }}
                   />
                 ) : null}
                 {parcelProvider === "foxpost" ? (
@@ -138,10 +140,13 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     orderId={order._id.toString()}
                     foxpostParcelPoint={order.foxpostParcelPoint}
                     foxpostShipment={order.foxpostShipment}
-                    generateGlsAction={async () => {}}
+                    generateGlsAction={async () => {
+                      "use server"
+                      return { success: true }
+                    }}
                     generateFoxpostAction={async () => {
                       "use server"
-                      await generateOrderFoxpostShipment(order._id.toString())
+                      return generateOrderFoxpostShipment(order._id.toString())
                     }}
                   />
                 ) : null}

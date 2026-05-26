@@ -71,6 +71,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
               value={bodyHtml}
               onChange={setBodyHtml}
               placeholder="Írd meg a hírlevél tartalmát..."
+              variant="mail"
             />
             <input type="hidden" name="bodyHtml" value={bodyHtml} />
           </div>

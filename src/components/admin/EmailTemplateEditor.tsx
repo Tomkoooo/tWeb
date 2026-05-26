@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Save, Info, AlertCircle } from "lucide-react"
+import { ArrowLeft, Info, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,12 @@ import { CMSForm } from "./CMSForm"
 import type { ThemeTokens } from "@/services/theme"
 
 interface EmailTemplateEditorProps {
-  template: any
+  template: {
+    type: string
+    subject: string
+    body: string
+    variables: string[]
+  }
   themeColors?: Partial<ThemeTokens>
 }
 
@@ -64,6 +69,7 @@ export function EmailTemplateEditor({ template, themeColors }: EmailTemplateEdit
                   onChange={setBody}
                   placeholder="ÍRJA MEG AZ ÜZENETÉT..."
                   themeColors={themeColors}
+                  variant="mail"
                 />
                 {/* Hidden input to pass the HTML content to the form action */}
                 <input type="hidden" name="body" value={body} />

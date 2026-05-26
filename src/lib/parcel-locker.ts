@@ -53,6 +53,13 @@ export function getOrderParcelProvider(order: {
   return null;
 }
 
+export function orderHasParcelShipping(order: {
+  glsParcelPoint?: { id?: string } | null;
+  foxpostParcelPoint?: { id?: string } | null;
+}): boolean {
+  return Boolean(order.glsParcelPoint?.id || order.foxpostParcelPoint?.id);
+}
+
 export type OrderShippingTypeFilter = "all" | "gls" | "foxpost" | "standard";
 
 export function getOrderShippingTypeLabel(order: {

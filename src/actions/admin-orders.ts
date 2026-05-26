@@ -1,5 +1,6 @@
 "use server"
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy admin order actions handle dynamic Mongoose query/order shapes */
 import { revalidatePath } from "next/cache"
 import dbConnect from "@/lib/db"
 import Order from "@/models/Order"
@@ -17,11 +18,52 @@ import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
 import { formatOrderNumber } from "@/lib/order-number"
 
+const ORDER_STATUS_VALUES = ["pending", "processing", "shipped", "delivered", "cancelled"] as const
+type OrderStatusValue = (typeof ORDER_STATUS_VALUES)[number]
+
 async function checkAdmin() {
   const session = await auth()
   if (!session || session.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
+}
+
+function assertOrderStatus(status: string): asserts status is OrderStatusValue {
+  if (!ORDER_STATUS_VALUES.includes(status as OrderStatusValue)) {
+    throw new Error("Invalid order status")
+  }
+}
+
+async function notifyOrderStatusChange(order: any, oldStatus: string, newStatus: string) {
+  try {
+    const customerEmail = order.user?.email || order.billingInfo?.email
+    const customerName = order.user?.name || order.shippingAddress?.name
+
+    if (customerEmail) {
+      await MailerService.sendEmail({
+        to: customerEmail,
+        templateType: "order_status_change",
+        data: {
+          orderNumber: formatOrderNumber(order._id),
+          customerName,
+          oldStatus: getStatusLabel(oldStatus),
+          newStatus: getStatusLabel(newStatus),
+        }
+      })
+    }
+  } catch (error) {
+    console.error("Failed to send status change email:", error)
+  }
+}
+
+async function applyOrderStatusChange(order: any, newStatus: OrderStatusValue) {
+  const oldStatus = order.status
+  if (oldStatus === newStatus) return false
+
+  order.status = newStatus
+  await order.save()
+  await notifyOrderStatusChange(order, oldStatus, newStatus)
+  return true
 }
 
 type OrderFilters = {
@@ -89,39 +131,58 @@ export async function getOrderById(id: string) {
 export async function updateOrderStatus(orderId: string, newStatus: string) {
   await checkAdmin()
   await dbConnect()
+  assertOrderStatus(newStatus)
 
   const order = await Order.findById(orderId).populate("user")
   if (!order) throw new Error("Order not found")
 
-  const oldStatus = order.status
-  order.status = newStatus
-  await order.save()
-
-  // Trigger Email Notification
-  try {
-    const customerEmail = order.user?.email || order.billingInfo?.email // Assuming email might be in billingInfo too if guest
-    const customerName = order.user?.name || order.shippingAddress?.name
-
-    if (customerEmail) {
-      await MailerService.sendEmail({
-        to: customerEmail,
-        templateType: "order_status_change",
-        data: {
-          orderNumber: formatOrderNumber(order._id),
-          customerName,
-          oldStatus: getStatusLabel(oldStatus),
-          newStatus: getStatusLabel(newStatus),
-        }
-      })
-    }
-  } catch (error) {
-    console.error("Failed to send status change email:", error)
-  }
+  await applyOrderStatusChange(order, newStatus)
 
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
   
   return { success: true }
+}
+
+export async function bulkUpdateOrderStatuses(orderIds: string[], newStatus: string) {
+  await checkAdmin()
+  await dbConnect()
+  assertOrderStatus(newStatus)
+
+  const uniqueOrderIds = Array.from(
+    new Set(
+      orderIds
+        .map((orderId) => String(orderId || "").trim())
+        .filter((orderId) => mongoose.Types.ObjectId.isValid(orderId))
+    )
+  )
+
+  if (uniqueOrderIds.length === 0) {
+    throw new Error("No valid orders selected")
+  }
+
+  const orders = await Order.find({ _id: { $in: uniqueOrderIds } }).populate("user")
+  let updatedCount = 0
+  let skippedCount = 0
+
+  for (const order of orders) {
+    const changed = await applyOrderStatusChange(order, newStatus)
+    if (changed) {
+      updatedCount += 1
+      revalidatePath(`/admin/orders/${order._id.toString()}`)
+    } else {
+      skippedCount += 1
+    }
+  }
+
+  revalidatePath("/admin/orders")
+
+  return {
+    success: true,
+    updatedCount,
+    skippedCount,
+    missingCount: uniqueOrderIds.length - orders.length,
+  }
 }
 
 export async function generateOrderGlsLabel(orderId: string) {
@@ -150,7 +211,9 @@ export async function generateOrderGlsLabel(orderId: string) {
       generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
       lastError: undefined,
     }
+    order.set("glsLabel.lastError", undefined)
     await order.save()
+    await Order.updateOne({ _id: order._id }, { $unset: { "glsLabel.lastError": "" } })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "A GLS címke létrehozása sikertelen."
     order.glsLabel = {
@@ -213,7 +276,9 @@ export async function generateOrderFoxpostShipment(orderId: string) {
       generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
       lastError: undefined,
     }
+    order.set("foxpostShipment.lastError", undefined)
     await order.save()
+    await Order.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } })
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "A Foxpost csomag/címke létrehozása sikertelen."
