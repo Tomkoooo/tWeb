@@ -55,8 +55,19 @@ export function Features({
 }) {
   const cms = useCmsEdit()
   const displayFeatures: FeatureCard[] = cards?.length ? cards : defaultFeatures
+  const moveFeatureCard = (index: number, offset: -1 | 1) => {
+    const nextIndex = index + offset
+    if (nextIndex < 0 || nextIndex >= displayFeatures.length) return
+    const nextCards = [...displayFeatures]
+    const currentCard = nextCards[index]
+    nextCards[index] = nextCards[nextIndex]
+    nextCards[nextIndex] = currentCard
+    cms.updateField("features", "cards", nextCards)
+  }
+
   return (
     <section
+      id="features"
       className={
         embedded
           ? "relative overflow-hidden border-y border-border/40 py-24"
@@ -140,14 +151,34 @@ export function Features({
                       )
                     }
                   />
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="destructive"
-                    onClick={() => cms.updateField("features", "cards", displayFeatures.filter((_, index) => index !== idx))}
-                  >
-                    Törlés
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      disabled={idx === 0}
+                      onClick={() => moveFeatureCard(idx, -1)}
+                    >
+                      Fel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      disabled={idx === displayFeatures.length - 1}
+                      onClick={() => moveFeatureCard(idx, 1)}
+                    >
+                      Le
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="destructive"
+                      onClick={() => cms.updateField("features", "cards", displayFeatures.filter((_, index) => index !== idx))}
+                    >
+                      Törlés
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <FeatureCardDescription text={feature.description} />

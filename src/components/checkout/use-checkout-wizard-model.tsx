@@ -82,6 +82,59 @@ export type StripeRedirectHold = {
   serverTime: string | null
 }
 
+type BillingRequiredField = "name" | "taxNumber" | "zip" | "city" | "street" | "email" | "phone"
+type ShippingRequiredField = "name" | "zip" | "city" | "street" | "email" | "phone"
+type CheckoutFieldErrors = {
+  billing: Partial<Record<BillingRequiredField, boolean>>
+  shipping: Partial<Record<ShippingRequiredField, boolean>>
+}
+
+function createEmptyFieldErrors(): CheckoutFieldErrors {
+  return { billing: {}, shipping: {} }
+}
+
+function isMissing(value: unknown) {
+  return typeof value !== "string" || value.trim() === ""
+}
+
+function hasFieldErrors<T extends string>(errors: Partial<Record<T, boolean>>) {
+  return Object.values(errors).some(Boolean)
+}
+
+function reconcileFieldErrors<T extends string>(
+  current: Partial<Record<T, boolean>>,
+  missing: Partial<Record<T, boolean>>
+) {
+  return (Object.keys(current) as T[]).reduce<Partial<Record<T, boolean>>>((next, field) => {
+    if (missing[field]) next[field] = true
+    return next
+  }, {})
+}
+
+function getBillingRequiredErrors(
+  billing: CheckoutWizardFormState["billing"]
+): Partial<Record<BillingRequiredField, boolean>> {
+  const errors: Partial<Record<BillingRequiredField, boolean>> = {}
+  for (const field of ["name", "zip", "city", "street", "email", "phone"] as const) {
+    if (isMissing(billing[field])) errors[field] = true
+  }
+  if (billing.type === "company" && isMissing(billing.taxNumber)) {
+    errors.taxNumber = true
+  }
+  return errors
+}
+
+function getShippingRequiredErrors(
+  shipping: CheckoutWizardFormState["shipping"]
+): Partial<Record<ShippingRequiredField, boolean>> {
+  if (shipping.isSameAsBilling) return {}
+  const errors: Partial<Record<ShippingRequiredField, boolean>> = {}
+  for (const field of ["name", "zip", "city", "street", "email", "phone"] as const) {
+    if (isMissing(shipping[field])) errors[field] = true
+  }
+  return errors
+}
+
 /**
  * Shared checkout wizard state + validation + submit (Stripe vs COD).
  * Use from the engine `CheckoutPageView` or from a template `RouteMain` for full UI freedom.
@@ -98,10 +151,13 @@ export function useCheckoutWizardModel(
   const cartTotalPrice = useCartStore((s) => s.totalPrice)
   const clearCart = useCartStore((s) => s.clearCart)
   const { data: session, status: sessionStatus } = useSession()
+  const sessionUserEmail = session?.user?.email
+  const sessionUserName = session?.user?.name
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [stripeRedirectHold, setStripeRedirectHold] = React.useState<StripeRedirectHold | null>(null)
   const [tradingLimits, setTradingLimits] = React.useState<TradingLimits | null>(null)
+  const [fieldErrors, setFieldErrors] = React.useState<CheckoutFieldErrors>(createEmptyFieldErrors)
   const router = useRouter()
 
   const parcelOnlyShipping = React.useMemo(
@@ -210,7 +266,7 @@ export function useCheckoutWizardModel(
   }, [])
 
   React.useEffect(() => {
-    if (sessionStatus !== "authenticated" || !session?.user) return
+    if (sessionStatus !== "authenticated") return
 
     let cancelled = false
     const loadProfile = async () => {
@@ -221,8 +277,8 @@ export function useCheckoutWizardModel(
         if (cancelled || data?.error) return
 
         const prefill = checkoutPrefillFromUserProfile(data, {
-          email: session.user.email,
-          name: session.user.name,
+          email: sessionUserEmail,
+          name: sessionUserName,
         })
 
         setFormData((prev) => {
@@ -232,13 +288,13 @@ export function useCheckoutWizardModel(
             billing = { ...billing, ...prefill.billing }
             shipping = { ...shipping, ...prefill.shipping }
           } else {
-            if (session.user.name) {
-              billing.name = billing.name || session.user.name
-              shipping.name = shipping.name || session.user.name
+            if (sessionUserName) {
+              billing.name = billing.name || sessionUserName
+              shipping.name = shipping.name || sessionUserName
             }
-            if (session.user.email) {
-              billing.email = billing.email || session.user.email
-              shipping.email = shipping.email || session.user.email
+            if (sessionUserEmail) {
+              billing.email = billing.email || sessionUserEmail
+              shipping.email = shipping.email || sessionUserEmail
             }
           }
 
@@ -267,7 +323,7 @@ export function useCheckoutWizardModel(
     return () => {
       cancelled = true
     }
-  }, [sessionStatus, session?.user?.email, session?.user?.name])
+  }, [sessionStatus, sessionUserEmail, sessionUserName])
 
   const selectedShipping = availableMethods?.shippingMethods?.find(
     (m: any) => m._id === formData.methods.shippingMethod
@@ -348,18 +404,13 @@ export function useCheckoutWizardModel(
     const stepId = activeSteps[currentStep]?.id
     if (stepId === "billing") {
       const b = formData.billing
-      if (
-        !b.name ||
-        !b.zip ||
-        !b.city ||
-        !b.street ||
-        !b.email ||
-        !b.phone ||
-        (b.type === "company" && !b.taxNumber)
-      ) {
+      const billingErrors = getBillingRequiredErrors(b)
+      if (hasFieldErrors(billingErrors)) {
+        setFieldErrors((prev) => ({ ...prev, billing: billingErrors }))
         toast.error("Kérjük, töltsön ki minden kötelező adatot a számlázásnál!")
         return
       }
+      setFieldErrors((prev) => ({ ...prev, billing: {} }))
       const bc = normalizeIso2(b.countryCode)
       if (!bc) {
         toast.error("Kérjük, válasszon érvényes számlázási országot.")
@@ -399,11 +450,14 @@ export function useCheckoutWizardModel(
       }
       if (!formData.shipping.isSameAsBilling) {
         const s = formData.shipping
-        if (!s.name || !s.zip || !s.city || !s.street || !s.email || !s.phone) {
+        const shippingErrors = getShippingRequiredErrors(s)
+        if (hasFieldErrors(shippingErrors)) {
+          setFieldErrors((prev) => ({ ...prev, shipping: shippingErrors }))
           toast.error("Kérjük, töltse ki a szállítási adatokat is!")
           return
         }
       }
+      setFieldErrors((prev) => ({ ...prev, shipping: {} }))
     } else if (stepId === "methods") {
       if (!formData.methods.shippingMethod || !formData.methods.paymentMethod) {
         toast.error("Kérjük, válasszon szállítási és fizetési módot!")
@@ -556,8 +610,15 @@ export function useCheckoutWizardModel(
           <BillingStep
             appearance={stepAppearance}
             data={formData.billing}
+            errors={fieldErrors.billing}
             tradingLimits={tradingLimits}
-            onChange={(val: any) => setFormData((prev) => ({ ...prev, billing: val }))}
+            onChange={(val: any) => {
+              setFormData((prev) => ({ ...prev, billing: val }))
+              setFieldErrors((prev) => ({
+                ...prev,
+                billing: reconcileFieldErrors(prev.billing, getBillingRequiredErrors(val)),
+              }))
+            }}
           />
         )
       case "shipping":
@@ -566,8 +627,15 @@ export function useCheckoutWizardModel(
             appearance={stepAppearance}
             data={formData.shipping}
             billingData={formData.billing}
+            errors={fieldErrors.shipping}
             tradingLimits={tradingLimits}
-            onChange={(val: any) => setFormData((prev) => ({ ...prev, shipping: val }))}
+            onChange={(val: any) => {
+              setFormData((prev) => ({ ...prev, shipping: val }))
+              setFieldErrors((prev) => ({
+                ...prev,
+                shipping: reconcileFieldErrors(prev.shipping, getShippingRequiredErrors(val)),
+              }))
+            }}
           />
         )
       case "methods":
@@ -598,6 +666,7 @@ export function useCheckoutWizardModel(
     activeSteps,
     availableMethods,
     currentStep,
+    fieldErrors,
     formData,
     items,
     session?.user,

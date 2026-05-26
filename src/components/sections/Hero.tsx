@@ -277,7 +277,7 @@ export function Hero({
                           return (
                             <>
                               <span className="block">{firstPart}</span>
-                              <span className="inline-block bg-primary text-primary-foreground px-4 mt-2">{lastWord}</span>
+                              <span className="inline-block bg-primary-foreground/10 text-primary-foreground mt-2">{lastWord}</span>
                             </>
                           )
                         })()}

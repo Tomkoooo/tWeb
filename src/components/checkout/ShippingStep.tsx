@@ -16,11 +16,25 @@ import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout
 import { TradingLimitsContactNote } from "@/components/checkout/TradingLimitsContactNote"
 import { getCountryDisplayName } from "@/lib/country-codes"
 
+type ShippingStepData = {
+  isSameAsBilling: boolean
+  name: string
+  countryCode?: string
+  country?: string
+  city: string
+  zip: string
+  street: string
+  comment?: string
+  email?: string
+  phone?: string
+}
+
 interface ShippingStepProps {
-  data: any
-  onChange: (data: any) => void
-  billingData: any
+  data: ShippingStepData
+  onChange: (data: ShippingStepData) => void
+  billingData: Pick<ShippingStepData, "countryCode" | "country">
   tradingLimits?: TradingLimits | null
+  errors?: Partial<Record<"name" | "zip" | "city" | "street" | "email" | "phone", boolean>>
   /** @default "dark" */
   appearance?: CheckoutStepAppearance
 }
@@ -30,13 +44,16 @@ export function ShippingStep({
   onChange,
   billingData,
   tradingLimits = null,
+  errors = {},
   appearance = "dark",
 }: ShippingStepProps) {
-  const handleChange = (field: string, value: unknown) => {
+  const handleChange = <TField extends keyof ShippingStepData>(field: TField, value: ShippingStepData[TField]) => {
     onChange({ ...data, [field]: value })
   }
   const a = appearance
   const fieldClass = cn(cxInput(a), a === "dark" && "shadow-none dark:bg-transparent")
+  const inputClass = (field: keyof NonNullable<ShippingStepProps["errors"]>) =>
+    cn(fieldClass, errors[field] && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30")
 
   const toggleSameAsBilling = () => {
     const isNowSame = !data.isSameAsBilling
@@ -108,8 +125,9 @@ export function ShippingStep({
                 <Input
                   value={data.name}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder={a === "light" ? "Teljes név" : "TELJES NÉV"}
-                  className={fieldClass}
+                  placeholder="Átvevő neve"
+                  aria-invalid={errors.name || undefined}
+                  className={inputClass("name")}
                 />
               </div>
 
@@ -118,8 +136,9 @@ export function ShippingStep({
                 <Input
                   value={data.zip}
                   onChange={(e) => handleChange("zip", e.target.value)}
-                  placeholder="1234"
-                  className={fieldClass}
+                  placeholder="Irányítószám"
+                  aria-invalid={errors.zip || undefined}
+                  className={inputClass("zip")}
                 />
               </div>
 
@@ -128,8 +147,9 @@ export function ShippingStep({
                 <Input
                   value={data.city}
                   onChange={(e) => handleChange("city", e.target.value)}
-                  placeholder={a === "light" ? "Budapest" : "BUDAPEST"}
-                  className={fieldClass}
+                  placeholder="Város"
+                  aria-invalid={errors.city || undefined}
+                  className={inputClass("city")}
                 />
               </div>
 
@@ -138,8 +158,9 @@ export function ShippingStep({
                 <Input
                   value={data.street}
                   onChange={(e) => handleChange("street", e.target.value)}
-                  placeholder={a === "light" ? "Utca, házszám" : "VALAMI UTCA 12."}
-                  className={fieldClass}
+                  placeholder="Utca, házszám"
+                  aria-invalid={errors.street || undefined}
+                  className={inputClass("street")}
                 />
               </div>
 
@@ -149,8 +170,9 @@ export function ShippingStep({
                   type="email"
                   value={data.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="name@example.com"
-                  className={fieldClass}
+                  placeholder="E-mail"
+                  aria-invalid={errors.email || undefined}
+                  className={inputClass("email")}
                 />
               </div>
 
@@ -159,8 +181,9 @@ export function ShippingStep({
                 <Input
                   value={data.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="+36701234567"
-                  className={fieldClass}
+                  placeholder="Telefonszám"
+                  aria-invalid={errors.phone || undefined}
+                  className={inputClass("phone")}
                 />
               </div>
             </div>

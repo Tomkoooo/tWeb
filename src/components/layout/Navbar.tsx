@@ -18,8 +18,8 @@ import type { NavbarSearchSlotProps } from "@/templates/types"
 
 const ALL_NAV_LINKS = [
   { name: "Rólunk", href: "/#about" },
+  { name: "Üzenetünk", href: "/#features" },
   { name: "Bolt", href: "/shop", shopOnly: true as const },
-  { name: "Vélemények", href: "/#reviews" },
   { name: "Kapcsolat", href: "/#contact" },
 ]
 

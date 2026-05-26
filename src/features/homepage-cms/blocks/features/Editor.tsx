@@ -26,6 +26,16 @@ type Props = {
 
 export function FeaturesBlockEditor({ block, onPatch }: Props) {
   const cards = Array.isArray(block.data.cards) ? block.data.cards : []
+  const moveCard = (index: number, offset: -1 | 1) => {
+    const nextIndex = index + offset
+    if (nextIndex < 0 || nextIndex >= cards.length) return
+    const nextCards = [...cards]
+    const currentCard = nextCards[index]
+    nextCards[index] = nextCards[nextIndex]
+    nextCards[nextIndex] = currentCard
+    onPatch("cards", nextCards)
+  }
+
   return (
     <section className="py-20 border-b border-white/10 bg-black/20">
       <div className="container mx-auto px-4 space-y-4">
@@ -75,6 +85,22 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={() => moveCard(index, -1)}
+                  disabled={index === 0}
+                  className="px-3 h-9 border border-white/20 text-white text-xs uppercase disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Fel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveCard(index, 1)}
+                  disabled={index === cards.length - 1}
+                  className="px-3 h-9 border border-white/20 text-white text-xs uppercase disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Le
+                </button>
                 <button
                   type="button"
                   onClick={() => onPatch("cards", cards.filter((_, idx) => idx !== index))}

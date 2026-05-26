@@ -15,20 +15,42 @@ import { CheckoutCountryPicker, type TradingLimits } from "@/components/checkout
 import { TradingLimitsContactNote } from "@/components/checkout/TradingLimitsContactNote"
 import { getCountryDisplayName } from "@/lib/country-codes"
 
+type BillingStepData = {
+  type: "personal" | "company"
+  name: string
+  taxNumber: string
+  countryCode?: string
+  country?: string
+  city: string
+  zip: string
+  street: string
+  email?: string
+  phone?: string
+}
+
 interface BillingStepProps {
-  data: any
-  onChange: (data: any) => void
+  data: BillingStepData
+  onChange: (data: BillingStepData) => void
   tradingLimits?: TradingLimits | null
+  errors?: Partial<Record<"name" | "taxNumber" | "zip" | "city" | "street" | "email" | "phone", boolean>>
   /** @default "dark" */
   appearance?: CheckoutStepAppearance
 }
 
-export function BillingStep({ data, onChange, tradingLimits = null, appearance = "dark" }: BillingStepProps) {
-  const handleChange = (field: string, value: string) => {
+export function BillingStep({
+  data,
+  onChange,
+  tradingLimits = null,
+  errors = {},
+  appearance = "dark",
+}: BillingStepProps) {
+  const handleChange = <TField extends keyof BillingStepData>(field: TField, value: BillingStepData[TField]) => {
     onChange({ ...data, [field]: value })
   }
   const a = appearance
   const fieldClass = cn(cxInput(a), a === "dark" && "shadow-none dark:bg-transparent")
+  const inputClass = (field: keyof NonNullable<BillingStepProps["errors"]>) =>
+    cn(fieldClass, errors[field] && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30")
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 sm:space-y-8">
@@ -72,8 +94,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            placeholder={a === "light" ? "Teljes név vagy cégnév" : "Teljes név vagy cégnév"}
-            className={fieldClass}
+            placeholder="Név / Cégnév"
+            aria-invalid={errors.name || undefined}
+            className={inputClass("name")}
           />
         </div>
 
@@ -83,8 +106,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
             <Input
               value={data.taxNumber}
               onChange={(e) => handleChange("taxNumber", e.target.value)}
-              placeholder="12345678-1-12"
-              className={fieldClass}
+              placeholder="Adószám"
+              aria-invalid={errors.taxNumber || undefined}
+              className={inputClass("taxNumber")}
             />
           </div>
         )}
@@ -94,8 +118,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.zip}
             onChange={(e) => handleChange("zip", e.target.value)}
-            placeholder="1234"
-            className={fieldClass}
+            placeholder="Irányítószám"
+            aria-invalid={errors.zip || undefined}
+            className={inputClass("zip")}
           />
         </div>
 
@@ -104,8 +129,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.city}
             onChange={(e) => handleChange("city", e.target.value)}
-            placeholder={a === "light" ? "Budapest" : "Budapest"}
-            className={fieldClass}
+            placeholder="Város"
+            aria-invalid={errors.city || undefined}
+            className={inputClass("city")}
           />
         </div>
 
@@ -114,8 +140,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.street}
             onChange={(e) => handleChange("street", e.target.value)}
-            placeholder={a === "light" ? "Utca, házszám…" : "Valami utca 12. 3/4"}
-            className={fieldClass}
+            placeholder="Utca, házszám, emelet/ajtó"
+            aria-invalid={errors.street || undefined}
+            className={inputClass("street")}
           />
         </div>
 
@@ -125,8 +152,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
             type="email"
             value={data.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
-            placeholder="name@example.com"
-            className={fieldClass}
+            placeholder="E-mail"
+            aria-invalid={errors.email || undefined}
+            className={inputClass("email")}
           />
         </div>
 
@@ -135,8 +163,9 @@ export function BillingStep({ data, onChange, tradingLimits = null, appearance =
           <Input
             value={data.phone || ""}
             onChange={(e) => handleChange("phone", e.target.value)}
-            placeholder="+36701234567"
-            className={fieldClass}
+            placeholder="Telefonszám"
+            aria-invalid={errors.phone || undefined}
+            className={inputClass("phone")}
           />
         </div>
       </div>
