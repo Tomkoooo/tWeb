@@ -19,14 +19,14 @@ import { getCountryDisplayName } from "@/lib/country-codes"
 type ShippingStepData = {
   isSameAsBilling: boolean
   name: string
-  countryCode?: string
-  country?: string
+  countryCode: string
+  country: string
   city: string
   zip: string
   street: string
-  comment?: string
-  email?: string
-  phone?: string
+  comment: string
+  email: string
+  phone: string
 }
 
 interface ShippingStepProps {

@@ -19,13 +19,13 @@ type BillingStepData = {
   type: "personal" | "company"
   name: string
   taxNumber: string
-  countryCode?: string
-  country?: string
+  countryCode: string
+  country: string
   city: string
   zip: string
   street: string
-  email?: string
-  phone?: string
+  email: string
+  phone: string
 }
 
 interface BillingStepProps {

@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 const defaultForm = () => ({
   billing: {
-    type: "personal" as const,
+    type: "personal" as "personal" | "company",
     name: "",
     taxNumber: "",
     country: "",
