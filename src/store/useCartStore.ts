@@ -57,7 +57,9 @@ export const useCartStore = create<CartState>()(
         let newItems;
         if (existingItem) {
           const newQuantity = existingItem.quantity + newItem.quantity;
-          const clampedQuantity = Math.min(newQuantity, newItem.stock);
+          const clampedQuantity = Number.isFinite(newItem.stock)
+            ? Math.min(newQuantity, newItem.stock)
+            : newQuantity;
           newItems = currentItems.map((item: CartItem) =>
             item.id === newItem.id
               ? { ...item, quantity: clampedQuantity }
@@ -80,7 +82,8 @@ export const useCartStore = create<CartState>()(
         const item = items.find((i: CartItem) => i.id === lineId);
         if (!item) return;
 
-        const newQuantity = Math.max(1, Math.min(quantity, item.stock));
+        const maxQuantity = Number.isFinite(item.stock) ? item.stock : quantity;
+        const newQuantity = Math.max(1, Math.min(quantity, maxQuantity));
         const newItems = items.map((i: CartItem) =>
           i.id === lineId ? { ...i, quantity: newQuantity } : i
         );

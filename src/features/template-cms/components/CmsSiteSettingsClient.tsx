@@ -30,6 +30,7 @@ type Props = {
   initialFooter: FooterSettings
   initialContactEmails: ContactEmailEntry[]
   initialInvoiceErrorAlertEmails: string[]
+  initialNewOrderNotificationEmails: string[]
 }
 
 export function CmsSiteSettingsClient({
@@ -43,6 +44,7 @@ export function CmsSiteSettingsClient({
   initialFooter,
   initialContactEmails,
   initialInvoiceErrorAlertEmails,
+  initialNewOrderNotificationEmails,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -123,6 +125,7 @@ export function CmsSiteSettingsClient({
             <ContactEmailsEditor
               initial={initialContactEmails}
               initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
+              initialNewOrderNotificationEmails={initialNewOrderNotificationEmails}
             />
           ) : null}
         </div>

@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ShoppingBag } from "lucide-react"
+import { Check, ShoppingBag } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -37,6 +37,7 @@ export function AtelierProductCard({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = product as any
   const [isLoaded, setIsLoaded] = React.useState(false)
+  const [isAdded, setIsAdded] = React.useState(false)
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
 
@@ -64,7 +65,9 @@ export function AtelierProductCard({
   } = listingPriceSummary(listingLines, p.vatPercent)
   const ratingValue = typeof p.rating === "number" ? p.rating : 0
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     if (shopEnabled === false) return
     if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${p.slug}`)
@@ -95,6 +98,8 @@ export function AtelierProductCard({
         discount: view.discount,
         vatPercent,
       })
+      setIsAdded(true)
+      window.setTimeout(() => setIsAdded(false), 2000)
       return
     }
     const view = resolveProductView(p)
@@ -116,6 +121,8 @@ export function AtelierProductCard({
       discount: view.discount,
       vatPercent: vatPct,
     })
+    setIsAdded(true)
+    window.setTimeout(() => setIsAdded(false), 2000)
   }
 
   return (
@@ -199,11 +206,11 @@ export function AtelierProductCard({
               type="button"
               size="sm"
               onClick={handleAddToCart}
-              disabled={shopEnabled === false || (requiresVariantSelection && !selectedVariant)}
+              disabled={shopEnabled === false}
               className="rounded-full border-0 bg-primary font-serif text-xs uppercase tracking-wider text-primary-foreground"
             >
-              <ShoppingBag className="mr-1.5 h-3.5 w-3.5" />
-              {requiresVariantSelection && !selectedVariant ? "Variáns" : "Kosárba"}
+              {isAdded ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <ShoppingBag className="mr-1.5 h-3.5 w-3.5" />}
+              {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns" : "Kosárba"}
             </Button>
             <Button variant="outline" size="sm" asChild className="rounded-full border-border font-serif text-xs uppercase">
               <Link href={`/products/${p.slug}`}>Részletek</Link>

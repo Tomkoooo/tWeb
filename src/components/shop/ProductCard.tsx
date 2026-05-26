@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Star, ShoppingCart, ArrowRight } from "lucide-react"
+import { Check, Star, ShoppingCart, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -82,6 +82,7 @@ interface ProductCardProps {
 export function ProductCard({ product: productInput, shopEnabled = true }: ProductCardProps) {
   const product = productInput as ProductCardProduct
   const [isLoaded, setIsLoaded] = React.useState(false)
+  const [isAdded, setIsAdded] = React.useState(false)
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
   const variantProduct = hasVariants(product)
@@ -109,7 +110,9 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
   } = listingPriceSummary(listingLines, product.vatPercent)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     if (shopEnabled === false) return
     if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${product.slug}`)
@@ -140,6 +143,8 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
         discount: view.discount,
         vatPercent,
       })
+      setIsAdded(true)
+      window.setTimeout(() => setIsAdded(false), 2000)
       return
     }
     const view = resolveProductView(product)
@@ -161,6 +166,8 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
       discount: view.discount,
       vatPercent: vatPct,
     })
+    setIsAdded(true)
+    window.setTimeout(() => setIsAdded(false), 2000)
   }
 
   return (
@@ -253,12 +260,13 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
               />
             ) : null}
             <Button 
+              type="button"
               onClick={handleAddToCart}
-              disabled={shopEnabled === false || (requiresVariantSelection && !selectedVariant)}
+              disabled={shopEnabled === false}
               className="w-full bg-primary border border-primary-foreground/35 text-white hover:bg-primary/90 hover:border-primary-foreground/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
-              <ShoppingCart className="w-4 h-4" />
-              {requiresVariantSelection && !selectedVariant ? "Variáns választása" : "Kosárba"}
+              {isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+              {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns választása" : "Kosárba"}
             </Button>
             <Link href={`/products/${product.slug}`} className="w-full">
               <Button variant="outline" className="w-full h-12 border-white/10 text-white hover:bg-white/5 rounded-none font-black text-xs tracking-widest uppercase flex items-center justify-center gap-2">

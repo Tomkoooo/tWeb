@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy order flow handles dynamic Mongoose and checkout payload shapes */
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
@@ -17,6 +18,7 @@ import {
 } from "@/services/inventory-reservation";
 import { applyCheckoutPriceAllocations } from "@/services/checkout-validation";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
+import { sendNewOrderNotification } from "@/services/new-order-notification";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
 import { OrderGuestAccessService } from "@/services/order-guest-access";
 import { buildAuthLoginUrl } from "@/lib/order-guest-access";
@@ -56,11 +58,14 @@ export class OrderService {
         saveAddressToProfile,
         billingCountry: billingCountryRaw,
         shippingCountry: shippingCountryRaw,
-        billingCountryCode: _bcc,
-        shippingCountryCode: _scc,
-        paymentProvider: _paymentProvider,
+        billingCountryCode,
+        shippingCountryCode,
+        paymentProvider,
         ...orderPayload
       } = orderData;
+      void billingCountryCode;
+      void shippingCountryCode;
+      void paymentProvider;
 
       // 2. Create the order
       const order = new Order({
@@ -93,6 +98,7 @@ export class OrderService {
 
       // 4. Trigger side effects after successful persistence
       await this.sendOrderConfirmation(order, orderData, guestAccessToken);
+      await sendNewOrderNotification(order._id);
       await this.tryIssueInvoice(order);
 
       if (guestAccessToken) {

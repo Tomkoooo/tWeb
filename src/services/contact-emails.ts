@@ -8,6 +8,10 @@ import {
   parseInvoiceErrorAlertEmailsFromShopContent,
   serializeInvoiceErrorAlertEmails,
 } from "@/lib/invoice-error-alert-emails"
+import {
+  parseNewOrderNotificationEmailsFromShopContent,
+  serializeNewOrderNotificationEmails,
+} from "@/lib/new-order-notification-emails"
 import { ShopContentService } from "@/services/shop-content"
 
 export class ContactEmailsService {
@@ -19,6 +23,11 @@ export class ContactEmailsService {
   static async listInvoiceErrorAlertEmails(): Promise<string[]> {
     const content = await ShopContentService.getAll()
     return parseInvoiceErrorAlertEmailsFromShopContent(content)
+  }
+
+  static async listNewOrderNotificationEmails(): Promise<string[]> {
+    const content = await ShopContentService.getAll()
+    return parseNewOrderNotificationEmailsFromShopContent(content)
   }
 
   static async save(entries: ContactEmailEntry[]): Promise<ContactEmailEntry[]> {
@@ -53,6 +62,20 @@ export class ContactEmailsService {
     await ShopContentService.update(
       "invoice_error_alert_emails",
       serializeInvoiceErrorAlertEmails(normalized),
+      "contact"
+    )
+    return [...new Set(normalized)]
+  }
+
+  static async saveNewOrderNotificationEmails(emails: string[]): Promise<string[]> {
+    const normalized = emails
+      .map((email) => email.trim())
+      .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+
+    await dbConnect()
+    await ShopContentService.update(
+      "new_order_notification_emails",
+      serializeNewOrderNotificationEmails(normalized),
       "contact"
     )
     return [...new Set(normalized)]

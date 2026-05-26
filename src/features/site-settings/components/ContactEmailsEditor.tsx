@@ -17,15 +17,20 @@ function newEntry(): ContactEmailEntry {
 export function ContactEmailsEditor({
   initial,
   initialInvoiceErrorAlertEmails,
+  initialNewOrderNotificationEmails,
 }: {
   initial: ContactEmailEntry[]
   initialInvoiceErrorAlertEmails: string[]
+  initialNewOrderNotificationEmails: string[]
 }) {
   const [entries, setEntries] = useState<ContactEmailEntry[]>(
     initial.length > 0 ? initial : [newEntry()]
   )
   const [invoiceAlertEmails, setInvoiceAlertEmails] = useState<string[]>(
     initialInvoiceErrorAlertEmails.length > 0 ? initialInvoiceErrorAlertEmails : [""]
+  )
+  const [newOrderEmails, setNewOrderEmails] = useState<string[]>(
+    initialNewOrderNotificationEmails.length > 0 ? initialNewOrderNotificationEmails : [""]
   )
   const [saving, setSaving] = useState(false)
 
@@ -102,6 +107,62 @@ export function ContactEmailsEditor({
       <div className="space-y-4 pt-6 border-t border-white/10">
         <div className="space-y-2">
           <h3 className="text-sm font-black uppercase tracking-wider text-white">
+            Új rendelés értesítések
+          </h3>
+          <p className="text-sm text-neutral-400 max-w-2xl">
+            Ide küldünk e-mailt minden sikeresen létrejött rendelésről. Üres lista esetén nem megy belső új rendelés
+            értesítés.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {newOrderEmails.map((email, index) => (
+            <div
+              key={`new-order-${index}`}
+              className="grid gap-3 md:grid-cols-[1fr_auto] items-end bg-white/5 border border-emerald-500/20 p-4"
+            >
+              <label className="space-y-1 block">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-400">E-mail cím</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) =>
+                    setNewOrderEmails((prev) =>
+                      prev.map((row, idx) => (idx === index ? event.target.value : row))
+                    )
+                  }
+                  placeholder="rendelesek@example.com"
+                  className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={newOrderEmails.length <= 1}
+                onClick={() => setNewOrderEmails((prev) => prev.filter((_, idx) => idx !== index))}
+                className="h-10 rounded-none border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
+                aria-label="Új rendelés értesítési e-mail törlése"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setNewOrderEmails((prev) => [...prev, ""])}
+          className="rounded-none border-white/20 text-white hover:bg-white/10 h-11 font-black uppercase tracking-widest text-[10px]"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Új rendelés értesítő
+        </Button>
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-white/10">
+        <div className="space-y-2">
+          <h3 className="text-sm font-black uppercase tracking-wider text-white">
             Számlázási hiba értesítések
           </h3>
           <p className="text-sm text-neutral-400 max-w-2xl">
@@ -171,6 +232,9 @@ export function ContactEmailsEditor({
             const validInvoiceAlerts = invoiceAlertEmails
               .map((row) => row.trim())
               .filter((row) => row.length > 0)
+            const validNewOrderEmails = newOrderEmails
+              .map((row) => row.trim())
+              .filter((row) => row.length > 0)
             setSaving(true)
             try {
               const response = await fetch("/api/admin/contact-emails", {
@@ -179,6 +243,7 @@ export function ContactEmailsEditor({
                 body: JSON.stringify({
                   entries: valid,
                   invoiceErrorAlertEmails: validInvoiceAlerts,
+                  newOrderNotificationEmails: validNewOrderEmails,
                 }),
               })
               if (!response.ok) {
@@ -188,12 +253,16 @@ export function ContactEmailsEditor({
               const data = (await response.json()) as {
                 entries: ContactEmailEntry[]
                 invoiceErrorAlertEmails: string[]
+                newOrderNotificationEmails: string[]
               }
               setEntries(data.entries.length > 0 ? data.entries : [newEntry()])
               setInvoiceAlertEmails(
                 data.invoiceErrorAlertEmails.length > 0 ? data.invoiceErrorAlertEmails : [""]
               )
-              toast.success("Kapcsolat és számlázási értesítések mentve.")
+              setNewOrderEmails(
+                data.newOrderNotificationEmails.length > 0 ? data.newOrderNotificationEmails : [""]
+              )
+              toast.success("Kapcsolat és értesítési e-mailek mentve.")
             } catch {
               toast.error("Mentés sikertelen.")
             } finally {

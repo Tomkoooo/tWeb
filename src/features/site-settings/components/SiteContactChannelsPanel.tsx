@@ -6,10 +6,11 @@ import { ContactEmailsService } from "@/services/contact-emails"
 
 /** Admin: where each contact channel is configured (emails = single source of truth). */
 export async function SiteContactChannelsPanel() {
-  const [shopContent, contactEmails, invoiceErrorAlertEmails] = await Promise.all([
+  const [shopContent, contactEmails, invoiceErrorAlertEmails, newOrderNotificationEmails] = await Promise.all([
     ShopContentService.getAll(),
     ContactEmailsService.list(),
     ContactEmailsService.listInvoiceErrorAlertEmails(),
+    ContactEmailsService.listNewOrderNotificationEmails(),
   ])
   const channels = resolveSiteContactChannels(shopContent)
 
@@ -35,6 +36,23 @@ export async function SiteContactChannelsPanel() {
           </ul>
         ) : (
           <p className="text-amber-200/90 text-xs">Még nincs e-mail cím — add hozzá alább.</p>
+        )}
+      </div>
+
+      <div className="space-y-2 pt-2 border-t border-white/10">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300/90">
+          Új rendelés értesítések
+        </h3>
+        {newOrderNotificationEmails.length > 0 ? (
+          <ul className="space-y-1 text-neutral-300">
+            {newOrderNotificationEmails.map((email) => (
+              <li key={email}>{email}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-neutral-500 text-xs">
+            Nincs beállítva — sikeres rendeléskor nem küldünk külön belső értesítőt.
+          </p>
         )}
       </div>
 
