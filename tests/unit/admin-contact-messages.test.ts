@@ -5,7 +5,7 @@ const getByIdMock = vi.fn()
 const updateStatusMock = vi.fn()
 const createReplyAttemptMock = vi.fn()
 const updateReplyStatusMock = vi.fn()
-const sendSystemHtmlEmailMock = vi.fn()
+const sendEmailMock = vi.fn()
 const revalidatePathMock = vi.fn()
 
 vi.mock("@/lib/admin-auth", () => ({
@@ -22,7 +22,7 @@ vi.mock("@/services/contact-messages", () => ({
 }))
 
 vi.mock("@/services/mailer", () => ({
-  MailerService: { sendSystemHtmlEmail: sendSystemHtmlEmailMock },
+  MailerService: { sendEmail: sendEmailMock },
 }))
 
 vi.mock("next/cache", () => ({
@@ -52,7 +52,7 @@ describe("admin contact message replies", () => {
     createReplyAttemptMock.mockResolvedValue({ replyId: "reply-1" })
     updateStatusMock.mockResolvedValue(null)
     updateReplyStatusMock.mockResolvedValue({})
-    sendSystemHtmlEmailMock.mockResolvedValue({ messageId: "mail-1" })
+    sendEmailMock.mockResolvedValue({ messageId: "mail-1" })
   })
 
   it("marks unread messages as read when opened without render-time revalidation", async () => {
@@ -88,13 +88,19 @@ describe("admin contact message replies", () => {
       adminEmail: "admin@example.com",
     })
     expect(createReplyAttemptMock.mock.invocationCallOrder[0]).toBeLessThan(
-      sendSystemHtmlEmailMock.mock.invocationCallOrder[0]
+      sendEmailMock.mock.invocationCallOrder[0]
+    )
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "teszt@example.com",
+        templateType: "contact_reply",
+      })
     )
     expect(updateReplyStatusMock).toHaveBeenCalledWith("message-1", "reply-1", "sent")
   })
 
   it("marks the saved reply attempt failed when SMTP rejects it", async () => {
-    sendSystemHtmlEmailMock.mockRejectedValue(
+    sendEmailMock.mockRejectedValue(
       Object.assign(new Error("domain not registered here"), { responseCode: 550 })
     )
 

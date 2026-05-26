@@ -16,6 +16,7 @@ import {
   Heading1, 
   Heading2, 
   Heading3,
+  Palette,
   Quote,
   Undo,
   Redo,
@@ -24,17 +25,49 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect } from "react"
+import type { ThemeTokens } from "@/services/theme"
 
 interface RichTextEditorProps {
   value: string
   onChange: (content: string) => void
   placeholder?: string
+  themeColors?: Partial<ThemeTokens>
 }
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const FALLBACK_THEME_COLORS: Partial<ThemeTokens> = {
+  primary: "#111827",
+  primaryForeground: "#FFFFFF",
+  secondary: "#1F2937",
+  secondaryForeground: "#FFFFFF",
+  accent: "#2563EB",
+  accentForeground: "#FFFFFF",
+  foreground: "#111827",
+  mutedForeground: "#6B7280",
+  success: "#16A34A",
+  warning: "#D97706",
+  error: "#DC2626",
+}
+
+function buildColorOptions(themeColors?: Partial<ThemeTokens>) {
+  const colors = { ...FALLBACK_THEME_COLORS, ...themeColors }
+  return [
+    { label: "Szöveg", value: colors.foreground },
+    { label: "Primary foreground", value: colors.primaryForeground },
+    { label: "Secondary", value: colors.secondary },
+    { label: "Secondary foreground", value: colors.secondaryForeground },
+    { label: "Accent", value: colors.accent },
+    { label: "Muted", value: colors.mutedForeground },
+    { label: "Success", value: colors.success },
+    { label: "Warning", value: colors.warning },
+    { label: "Error", value: colors.error },
+  ].filter((item): item is { label: string; value: string } => Boolean(item.value))
+}
+
+const MenuBar = ({ editor, themeColors }: { editor: any; themeColors?: Partial<ThemeTokens> }) => {
   if (!editor) {
     return null
   }
+  const colorOptions = buildColorOptions(themeColors)
 
   const items = [
     {
@@ -127,7 +160,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
   ]
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 bg-neutral-900 border-b border-white/10">
+    <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-900 border-b border-white/10">
       {items.map((item, index) => (
         item.type === "divider" ? (
           <div key={index} className="w-px h-6 bg-white/10 mx-1 self-center" />
@@ -150,11 +183,42 @@ const MenuBar = ({ editor }: { editor: any }) => {
           </Button>
         )
       ))}
+      <div className="w-px h-6 bg-white/10 mx-1 self-center" />
+      <div className="flex flex-wrap items-center gap-1 pl-1">
+        <Palette className="h-4 w-4 text-neutral-500" />
+        {colorOptions.map((item) => (
+          <button
+            key={`${item.label}-${item.value}`}
+            type="button"
+            title={item.label}
+            aria-label={`Szövegszín: ${item.label}`}
+            onClick={(event) => {
+              event.preventDefault()
+              editor.chain().focus().setColor(item.value).run()
+            }}
+            className={cn(
+              "h-7 w-7 rounded-none border border-white/15 transition-transform hover:scale-110",
+              editor.isActive("textStyle", { color: item.value }) && "ring-2 ring-white"
+            )}
+            style={{ backgroundColor: item.value }}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault()
+            editor.chain().focus().unsetColor().run()
+          }}
+          className="h-7 rounded-none border border-white/15 px-2 text-[10px] font-black uppercase tracking-widest text-neutral-300 hover:bg-white/10 hover:text-white"
+        >
+          Alap
+        </button>
+      </div>
     </div>
   )
 }
 
-export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, themeColors }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -189,7 +253,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
   return (
     <div className="bg-white border border-white/5 rounded-none overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} themeColors={themeColors} />
       <EditorContent editor={editor} />
       
       <style jsx global>{`

@@ -20,6 +20,7 @@ import {
 import { ContactReplyComposer } from "@/components/admin/ContactReplyComposer"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ThemeService } from "@/services/theme"
 
 export default async function AdminContactMessageDetail({
   params,
@@ -27,7 +28,10 @@ export default async function AdminContactMessageDetail({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const message = await getContactMessage(id)
+  const [message, theme] = await Promise.all([
+    getContactMessage(id),
+    ThemeService.get(),
+  ])
 
   if (!message) {
     notFound()
@@ -92,6 +96,7 @@ export default async function AdminContactMessageDetail({
             <ContactReplyComposer
               messageId={message._id}
               defaultSubject={`Re: Kapcsolatfelvétel - ${message.name}`}
+              themeColors={theme}
             />
           </section>
 

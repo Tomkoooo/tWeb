@@ -1,10 +1,18 @@
 import dbConnect from "@/lib/db";
 import EmailTemplate from "@/models/EmailTemplate";
 
+export type EmailTemplateSeed = {
+  type: string;
+  subject: string;
+  body: string;
+  description?: string;
+  variables?: string[];
+};
+
 export const EmailTemplateService = {
   async getAll() {
     await dbConnect();
-    return EmailTemplate.find({}).lean();
+    return EmailTemplate.find({}).sort({ type: 1 }).lean();
   },
 
   async getByType(type: string) {
@@ -17,6 +25,15 @@ export const EmailTemplateService = {
     return EmailTemplate.findOneAndUpdate(
       { type },
       { $set: data },
+      { upsert: true, returnDocument: "after" }
+    );
+  },
+
+  async createMissing(type: string, data: EmailTemplateSeed) {
+    await dbConnect();
+    return EmailTemplate.findOneAndUpdate(
+      { type },
+      { $setOnInsert: data },
       { upsert: true, returnDocument: "after" }
     );
   }

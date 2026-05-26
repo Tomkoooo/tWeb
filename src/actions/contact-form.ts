@@ -64,22 +64,19 @@ export async function submitContactForm(
     }
   }
 
-  const subject = `Kapcsolatfelvétel: ${name}`
-  const html = `
-    <p><strong>Név:</strong> ${escapeHtml(name)}</p>
-    <p><strong>Feladó e-mail:</strong> ${escapeHtml(email)}</p>
-    <p><strong>Címzett:</strong> ${escapeHtml(recipient.label)} (${escapeHtml(recipient.email)})</p>
-    <hr />
-    <p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>
-  `
-  const text = `Név: ${name}\nFeladó: ${email}\nCímzett: ${recipient.label} <${recipient.email}>\n\n${message}`
-
   try {
-    await MailerService.sendSystemHtmlEmail({
+    await MailerService.sendEmail({
       to: recipient.email,
-      subject,
-      html,
-      text,
+      templateType: "contact_form_notification",
+      data: {
+        name,
+        email,
+        message,
+        messageHtml: escapeHtml(message).replace(/\n/g, "<br />"),
+        recipientLabel: recipient.label,
+        recipientEmail: recipient.email,
+        contactMessageId: savedMessage._id,
+      },
       logContext: { flow: "contact_form", recipientId: recipient.id, contactMessageId: savedMessage._id },
     })
     await safelyUpdateNotificationStatus(savedMessage._id, "sent")

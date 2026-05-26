@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const listContactEmailsMock = vi.fn()
 const createContactMessageMock = vi.fn()
 const updateNotificationStatusMock = vi.fn()
-const sendSystemHtmlEmailMock = vi.fn()
+const sendEmailMock = vi.fn()
 
 vi.mock("@/services/contact-emails", () => ({
   ContactEmailsService: { list: listContactEmailsMock },
@@ -17,7 +17,7 @@ vi.mock("@/services/contact-messages", () => ({
 }))
 
 vi.mock("@/services/mailer", () => ({
-  MailerService: { sendSystemHtmlEmail: sendSystemHtmlEmailMock },
+  MailerService: { sendEmail: sendEmailMock },
 }))
 
 function contactFormData() {
@@ -38,7 +38,7 @@ describe("submitContactForm persistence", () => {
     ])
     createContactMessageMock.mockResolvedValue({ _id: "contact-message-1" })
     updateNotificationStatusMock.mockResolvedValue({})
-    sendSystemHtmlEmailMock.mockResolvedValue({ messageId: "mail-1" })
+    sendEmailMock.mockResolvedValue({ messageId: "mail-1" })
   })
 
   it("saves the contact message before sending notification mail", async () => {
@@ -55,13 +55,19 @@ describe("submitContactForm persistence", () => {
       recipientEmail: "sales@example.com",
     })
     expect(createContactMessageMock.mock.invocationCallOrder[0]).toBeLessThan(
-      sendSystemHtmlEmailMock.mock.invocationCallOrder[0]
+      sendEmailMock.mock.invocationCallOrder[0]
+    )
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "sales@example.com",
+        templateType: "contact_form_notification",
+      })
     )
     expect(updateNotificationStatusMock).toHaveBeenCalledWith("contact-message-1", "sent", undefined)
   })
 
   it("keeps the visitor success path and records notification failure when SMTP fails", async () => {
-    sendSystemHtmlEmailMock.mockRejectedValue(
+    sendEmailMock.mockRejectedValue(
       Object.assign(new Error("domain not registered here"), { responseCode: 550 })
     )
 
@@ -86,7 +92,7 @@ describe("submitContactForm persistence", () => {
     const result = await submitContactForm(undefined, contactFormData())
 
     expect(result.ok).toBe(false)
-    expect(sendSystemHtmlEmailMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
     expect(updateNotificationStatusMock).not.toHaveBeenCalled()
   })
 })

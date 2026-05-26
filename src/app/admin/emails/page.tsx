@@ -2,7 +2,7 @@ import { EmailTemplateService } from "@/services/email-template"
 import { Mail, Edit2, Info, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { seedEmailTemplates } from "@/actions/admin-emails"
+import { initializeMissingEmailTemplates, seedEmailTemplates } from "@/actions/admin-emails"
 
 export default async function AdminEmails() {
   const templates = await EmailTemplateService.getAll()
@@ -17,21 +17,22 @@ export default async function AdminEmails() {
           <p className="text-white/40 font-medium italic">Szabja testre a vásárlóknak küldött automatikus rendszerüzeneteket.</p>
         </div>
         
-        {templates.length === 0 ? (
-          <form action={seedEmailTemplates}>
+        <div className="flex flex-wrap gap-3">
+          <form action={initializeMissingEmailTemplates}>
             <Button variant="krausz" type="submit" className="h-14 px-8 flex items-center gap-3">
               <RefreshCw className="w-5 h-5" />
-              SABLONOK INICIALIZÁLÁSA
+              HIÁNYZÓ SABLONOK INICIALIZÁLÁSA
             </Button>
           </form>
-        ) : (
-          <form action={seedEmailTemplates}>
-            <Button variant="ghost" type="submit" className="text-neutral-500 hover:text-white hover:bg-white/5 uppercase tracking-widest text-[10px] font-black gap-2">
-              <RefreshCw className="w-4 h-4" />
-              SABLONOK VISSZAÁLLÍTÁSA
-            </Button>
-          </form>
-        )}
+          {templates.length > 0 ? (
+            <form action={seedEmailTemplates}>
+              <Button variant="ghost" type="submit" className="text-neutral-500 hover:text-white hover:bg-white/5 uppercase tracking-widest text-[10px] font-black gap-2">
+                <RefreshCw className="w-4 h-4" />
+                SABLONOK VISSZAÁLLÍTÁSA
+              </Button>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -54,7 +55,9 @@ export default async function AdminEmails() {
                        template.type === 'order_status_change' ? 'Rendelés állapot változás' : 
                        template.type === 'invoice_sent' ? 'Számla elküldve' :
                        template.type === 'invoice_issue' ? 'Számlázási probléma' :
-                       template.type.replace('_', ' ')}
+                       template.type === 'contact_form_notification' ? 'Kapcsolati értesítés' :
+                       template.type === 'contact_reply' ? 'Kapcsolati válasz' :
+                       template.type.replace(/_/g, ' ')}
                     </h3>
                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
                       {template.type}

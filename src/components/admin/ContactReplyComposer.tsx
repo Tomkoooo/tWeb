@@ -9,15 +9,17 @@ import {
   type ContactReplyFormState,
 } from "@/actions/admin-contact-messages"
 import { cn } from "@/lib/utils"
+import type { ThemeTokens } from "@/services/theme"
 
 type Props = {
   messageId: string
   defaultSubject: string
+  themeColors?: Partial<ThemeTokens>
 }
 
 const initialState: ContactReplyFormState = { ok: false, message: "" }
 
-export function ContactReplyComposer({ messageId, defaultSubject }: Props) {
+export function ContactReplyComposer({ messageId, defaultSubject, themeColors }: Props) {
   const [bodyHtml, setBodyHtml] = React.useState("<p></p>")
   const formRef = React.useRef<HTMLFormElement>(null)
   const [state, formAction, isPending] = React.useActionState(
@@ -54,6 +56,7 @@ export function ContactReplyComposer({ messageId, defaultSubject }: Props) {
           value={bodyHtml}
           onChange={setBodyHtml}
           placeholder="Írja meg a választ..."
+          themeColors={themeColors}
         />
         <input type="hidden" name="bodyHtml" value={bodyHtml} />
       </div>

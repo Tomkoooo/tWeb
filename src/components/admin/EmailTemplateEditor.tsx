@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input"
 import { RichTextEditor } from "./RichTextEditor"
 import { updateEmailTemplate } from "@/actions/admin-emails"
 import { CMSForm } from "./CMSForm"
+import type { ThemeTokens } from "@/services/theme"
 
 interface EmailTemplateEditorProps {
   template: any
+  themeColors?: Partial<ThemeTokens>
 }
 
-export function EmailTemplateEditor({ template }: EmailTemplateEditorProps) {
+export function EmailTemplateEditor({ template, themeColors }: EmailTemplateEditorProps) {
   const [subject, setSubject] = useState(template.subject)
   const [body, setBody] = useState(template.body)
 
@@ -61,6 +63,7 @@ export function EmailTemplateEditor({ template }: EmailTemplateEditorProps) {
                   value={body}
                   onChange={setBody}
                   placeholder="ÍRJA MEG AZ ÜZENETÉT..."
+                  themeColors={themeColors}
                 />
                 {/* Hidden input to pass the HTML content to the form action */}
                 <input type="hidden" name="body" value={body} />
