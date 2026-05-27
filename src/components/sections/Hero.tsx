@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { MotionReveal, useSafeMotionInitial } from "@/components/motion/safe-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -63,6 +63,7 @@ export function Hero({
   slides,
 }: HeroProps) {
   const cms = useCmsEdit()
+  const slideImageInitial = useSafeMotionInitial({ x: 30, opacity: 0 })
   const normalizedSlides = React.useMemo<HeroSlide[]>(() => {
     if (slides?.length) {
       return slides.map((slide) => ({
@@ -164,7 +165,14 @@ export function Hero({
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Dynamic Industrial Background Layers */}
       <div className="absolute inset-0 bg-background-dark z-0" />
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-1" />
+      <div
+        className="absolute inset-0 z-1 opacity-10"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(135deg, color-mix(in oklab, var(--theme-foreground) 6%, transparent) 0 1px, transparent 1px 4px)",
+        }}
+        aria-hidden
+      />
       
       {/* Radical Glow Effects */}
       <div className="absolute top-[10%] left-[10%] w-[600px] h-[600px] bg-primary/15 rounded-full blur-[180px] opacity-40" />
@@ -174,9 +182,10 @@ export function Hero({
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-16 min-h-[calc(100vh-80px)]">
           {/* Side Logo with Premium Floating Animation */}
           <MotionReveal
-            visible={{ opacity: 1, scale: 1 }}
+            mode="mount"
+            from={{ opacity: 0, scale: 0.9 }}
+            to={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            margin="0px"
             className="flex justify-center lg:justify-start pt-10 lg:pt-0"
           >
             <motion.div
@@ -193,7 +202,7 @@ export function Hero({
               <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-110 animate-pulse" />
               <motion.div
                 key={`${activeSlideIndex}-${activeImageIndex}-${displayHeroImage}`}
-                initial={false}
+                initial={slideImageInitial}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.45, ease: "easeOut" }}
                 className="absolute inset-0 z-10"
@@ -226,6 +235,7 @@ export function Hero({
                     src={displayHeroImage}
                     alt="Placeholder hero image"
                     fill
+                    sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 550px"
                     className="object-contain"
                     priority
                   />
@@ -237,8 +247,8 @@ export function Hero({
           {/* Typography Section */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
             <MotionReveal
+              mode="mount"
               transition={{ delay: 0.4, duration: 0.8 }}
-              margin="0px"
               className="w-full"
             >
               {cms.enabled ? (
@@ -293,8 +303,8 @@ export function Hero({
 
             {/* Buttons */}
             <MotionReveal
+              mode="mount"
               transition={{ delay: 0.6, duration: 0.8 }}
-              margin="0px"
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
               {cms.enabled ? (
@@ -347,9 +357,10 @@ export function Hero({
 
             {/* Micro-Features */}
             <MotionReveal
-              visible={{ opacity: 1 }}
+              mode="mount"
+              from={{ opacity: 0 }}
+              to={{ opacity: 1 }}
               transition={{ delay: 1, duration: 1 }}
-              margin="0px"
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-12 w-full lg:max-w-xl"
             >
               {displayBadges.map((badge, i) => {

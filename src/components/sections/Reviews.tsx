@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import { Quote, Star } from "lucide-react"
 import {
   Carousel,
@@ -44,10 +44,8 @@ export function Reviews({
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-24">
-          <motion.h2
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <MotionReveal
+            as="h2"
             className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
           >
             {cms.enabled ? (
@@ -55,11 +53,9 @@ export function Reviews({
             ) : (
               title ?? "LOREM REVIEWS"
             )}
-          </motion.h2>
-          <motion.p
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          </MotionReveal>
+          <MotionReveal
+            as="p"
             transition={{ delay: 0.1 }}
             className="text-neutral-400 text-xl max-w-2xl mx-auto leading-relaxed"
           >
@@ -73,7 +69,7 @@ export function Reviews({
             ) : (
               subtitle ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
             )}
-          </motion.p>
+          </MotionReveal>
         </div>
 
         <Carousel
@@ -86,10 +82,9 @@ export function Reviews({
           <CarouselContent>
             {reviews.map((review, idx) => (
               <CarouselItem key={review.id} className="p-4">
-                <motion.div
-                  initial={false}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
+                <MotionReveal
+                  from={{ opacity: 0, scale: 0.95 }}
+                  to={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.1 }}
                   className="h-full"
                 >
@@ -124,7 +119,7 @@ export function Reviews({
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </MotionReveal>
               </CarouselItem>
             ))}
           </CarouselContent>

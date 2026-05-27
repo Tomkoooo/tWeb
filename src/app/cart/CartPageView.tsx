@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useCheckoutWithSuggestions } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
 import { motion, AnimatePresence } from "framer-motion"
+import { MotionReveal, useSafeMotionInitial } from "@/components/motion/safe-motion"
 import {
   Trash2,
   Plus,
@@ -35,6 +36,7 @@ export function CartPageView({
   showPageHeading?: boolean
 }) {
   const embedded = variant === "embedded"
+  const cartLineInitial = useSafeMotionInitial({ opacity: 0, x: -20 })
   const { items, removeItem, updateQuantity, totalItems } = useCartStore()
   const { issues, hasIssues } = useCartLineIssues(items)
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
@@ -119,9 +121,10 @@ export function CartPageView({
     return (
       <main className={shell}>
         <div className="container mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, scale: 1 }}
+          <MotionReveal
+            mode="mount"
+            from={{ opacity: 0, scale: 0.9 }}
+            to={{ opacity: 1, scale: 1 }}
             className="glass-card p-20 border-border"
           >
             <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
@@ -138,7 +141,7 @@ export function CartPageView({
                 IRÁNY A BOLT <ArrowRight className="ml-2 inline h-5 w-5" />
               </Button>
             </Link>
-          </motion.div>
+          </MotionReveal>
         </div>
       </main>
     )
@@ -174,7 +177,7 @@ export function CartPageView({
                     <motion.div
                       key={item.id}
                       layout
-                      initial={false}
+                      initial={cartLineInitial}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       className="glass-card border-border p-4 sm:p-6"

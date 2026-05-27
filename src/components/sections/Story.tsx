@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import {
   Accordion,
   AccordionContent,
@@ -67,10 +67,9 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
     <section id="about" className="py-32 bg-background-dark overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+          <MotionReveal
+            from={{ opacity: 0, x: -50 }}
+            to={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
             {cms.enabled ? (
@@ -146,17 +145,15 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                 )}
               />
             </Accordion>
-          </motion.div>
+          </MotionReveal>
 
           {/* Cards with high-contrast blurs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {displayCards.map((item, i) => {
               return (
-              <motion.div
+              <MotionReveal
                 key={i}
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                from={{ opacity: 0, y: 30 }}
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
                 <div className={cn(
@@ -217,7 +214,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                     </>
                   )}
                 </div>
-              </motion.div>
+              </MotionReveal>
             )})}
           </div>
           {cms.enabled ? (

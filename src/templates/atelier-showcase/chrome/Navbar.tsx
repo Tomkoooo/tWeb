@@ -221,7 +221,9 @@ export function Navbar({
     <MotionNavbar
       className={cn(
         "fixed left-0 right-0 top-0 z-50 transition-all duration-500",
-        isScrolled ? "border-b border-border bg-background/95 py-4 backdrop-blur-xl" : "bg-transparent py-10"
+        isScrolled
+          ? "border-b border-border bg-background/95 py-4 supports-[(-webkit-touch-callout:none)]:backdrop-blur-none supports-[(-webkit-touch-callout:none)]:bg-background supports-[(-webkit-touch-callout:none)]:[-webkit-backdrop-filter:none] backdrop-blur-xl"
+          : "bg-transparent py-10"
       )}
     >
       {bar}

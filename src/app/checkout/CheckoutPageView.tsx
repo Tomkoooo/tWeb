@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSafeMotionInitial } from "@/components/motion/safe-motion"
 import { Check, ChevronRight, ArrowLeft, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,6 +16,7 @@ import { clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "embedded" }) {
   const embedded = variant === "embedded"
+  const stepInitial = useSafeMotionInitial({ opacity: 0, x: 20 })
   const wizard = useCheckoutWizardModel({ variant })
   const {
     currentStep,
@@ -174,7 +176,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
-                  initial={false}
+                  initial={stepInitial}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   className="glass-card -mx-3 border-x-0 border-border p-4 sm:mx-0 sm:rounded-lg sm:border-x sm:p-6 lg:p-10"

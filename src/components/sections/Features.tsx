@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { Button } from "@/components/ui/button"
@@ -79,10 +79,8 @@ export function Features({
 
       <div className={embedded ? "relative z-10" : "container mx-auto px-6 relative z-10"}>
         <div className="text-center mb-24">
-          <motion.h2
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <MotionReveal
+            as="h2"
             className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
           >
             {cms.enabled ? (
@@ -90,7 +88,7 @@ export function Features({
             ) : (
               title ?? "LOREM ADVANTAGE"
             )}
-          </motion.h2>
+          </MotionReveal>
           {cms.enabled ? (
             <EditableTextInline blockType="features" field="subtitle" value={subtitle ?? ""} className="text-neutral-400 text-lg max-w-2xl mx-auto text-center" />
           ) : subtitle ? <p className="text-neutral-400 text-lg max-w-2xl mx-auto">{subtitle}</p> : null}
@@ -99,11 +97,9 @@ export function Features({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayFeatures.map((feature, idx) => (
-            <motion.div
+            <MotionReveal
               key={idx}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              from={{ opacity: 0, y: 30 }}
               transition={{ delay: idx * 0.1, duration: 0.6 }}
               className="glass-card p-10 group hover:border-primary-foreground/40 transition-all duration-500"
             >
@@ -183,7 +179,7 @@ export function Features({
               ) : (
                 <FeatureCardDescription text={feature.description} />
               )}
-            </motion.div>
+            </MotionReveal>
           ))}
         </div>
         {cms.enabled ? (

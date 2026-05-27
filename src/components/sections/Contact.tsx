@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import { Mail, Phone, MapPin, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
@@ -46,10 +46,9 @@ export function Contact({
     <section id="contact" className="py-32 bg-background-dark relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+          <MotionReveal
+            from={{ opacity: 0, x: -40 }}
+            to={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
             {cms.enabled ? (
@@ -127,12 +126,11 @@ export function Contact({
                 </div>
               ) : null}
             </div>
-          </motion.div>
+          </MotionReveal>
 
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+          <MotionReveal
+            from={{ opacity: 0, x: 40 }}
+            to={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
             <div className="glass-card p-10 md:p-14 relative border-border/40">
@@ -154,7 +152,7 @@ export function Contact({
                 />
               )}
             </div>
-          </motion.div>
+          </MotionReveal>
         </div>
       </div>
     </section>

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import { ChevronRight, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -75,11 +75,7 @@ export function Shop({
     <section id="shop" className="py-32 bg-background-dark px-4 overflow-hidden">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
+          <MotionReveal>
             {cms.enabled ? (
               <div className="space-y-2">
                 <EditableTextInline
@@ -110,13 +106,9 @@ export function Shop({
                 </p>
               </>
             )}
-          </motion.div>
+          </MotionReveal>
 
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
+          <MotionReveal from={{ opacity: 0, x: 20 }} to={{ opacity: 1, x: 0 }}>
             {cms.enabled ? (
               <EditableLinkInline
                 blockType="productGrid"
@@ -134,7 +126,7 @@ export function Shop({
                 </Button>
               </Link>
             )}
-          </motion.div>
+          </MotionReveal>
         </div>
 
         <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6", afterCategories ? "mb-20" : "mb-32")}>
@@ -150,11 +142,10 @@ export function Shop({
             const categoryHref = cms.enabled ? "#" : `/shop?category=${category.id}`
 
             return (
-              <motion.div
+              <MotionReveal
                 key={category.id}
-                initial={false}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
+                from={{ opacity: 0, scale: 0.95 }}
+                to={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.1 }}
                 className="relative group h-[400px] overflow-hidden border border-white/5"
               >
@@ -196,7 +187,7 @@ export function Shop({
                     EXPLORE <ArrowRight className="ml-2 w-4 h-4" />
                   </span>
                 </div>
-              </motion.div>
+              </MotionReveal>
             )
           })}
         </div>

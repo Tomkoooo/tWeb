@@ -21,7 +21,7 @@ export function Providers({
   devMetricsEnabled?: boolean
 }) {
   return (
-    <SessionProvider refetchOnWindowFocus>
+    <SessionProvider refetchOnWindowFocus={false}>
       <AnalyticsProvider>
         <ChunkLoadRecovery />
         {devMetricsEnabled ? (

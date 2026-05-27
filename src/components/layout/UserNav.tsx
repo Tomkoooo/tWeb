@@ -17,17 +17,15 @@ import { LayoutDashboard, LogOut, User, Package, LogIn } from "lucide-react"
 export function UserNav() {
   const { data: session, status } = useSession()
 
-  if (status === "loading") {
-    return <div className="w-8 h-8 rounded-full bg-muted/40 animate-pulse" />
-  }
-
-  if (!session) {
+  // Avoid an empty navbar slot while NextAuth resolves (common on iOS Safari cold start).
+  if (status === "loading" || !session) {
     return (
       <Button
         onClick={() => signIn("google")}
         variant="ghost"
+        disabled={status === "loading"}
         aria-label="Bejelentkezés"
-        className="px-0 text-xs font-black uppercase tracking-[0.2em] text-foreground hover:bg-transparent hover:text-primary-foreground"
+        className="px-0 text-xs font-black uppercase tracking-[0.2em] text-foreground hover:bg-transparent hover:text-primary-foreground disabled:opacity-70"
       >
         <LogIn className="h-5 w-5 shrink-0 2xl:mr-2" aria-hidden />
         <span className="hidden 2xl:inline">Bejelentkezés</span>
@@ -35,7 +33,7 @@ export function UserNav() {
     )
   }
 
-  const user = session.user
+  const user = session!.user
   const initials = user?.name
     ?.split(" ")
     .map((n) => n[0])

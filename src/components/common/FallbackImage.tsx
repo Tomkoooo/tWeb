@@ -54,6 +54,9 @@ export function FallbackImage({
 }: FallbackImageProps) {
   const raw = typeof src === "string" ? src.trim() : ""
   const resolvedSizes = sizes ?? (fill ? "(max-width: 768px) 100vw, 33vw" : undefined)
+  const isPriority = Boolean(props.priority)
+  const loading = props.loading ?? (isPriority ? "eager" : "lazy")
+  const fetchPriority = isPriority ? ("high" as const) : props.fetchPriority
   const [broken, setBroken] = React.useState(false)
   const [currentSrc, setCurrentSrc] = React.useState(() =>
     showFallbackOnError ? raw || fallbackSrc : raw
@@ -79,6 +82,8 @@ export function FallbackImage({
         alt={alt}
         fill={fill}
         sizes={resolvedSizes}
+        loading={loading}
+        fetchPriority={fetchPriority}
         className={className}
         src={raw}
         onError={(event) => {
@@ -95,6 +100,8 @@ export function FallbackImage({
       alt={alt}
       fill={fill}
       sizes={resolvedSizes}
+      loading={loading}
+      fetchPriority={fetchPriority}
       className={className}
       src={currentSrc}
       onError={(event) => {
