@@ -71,6 +71,52 @@ function stringifyAttributes(attrs: Record<string, string> | undefined): string 
     .join("; ")
 }
 
+const MAX_ITEM_COLS = 12
+
+function addItemsAsColumns(
+  row: Record<string, string | number>,
+  items: ExportOrder["items"] | undefined
+): Record<string, string | number> {
+  const safeItems = Array.isArray(items) ? items : []
+  row["Tételek száma"] = safeItems.length
+
+  row["Tételek (összegzés)"] = safeItems
+    .map((item) => {
+      const name = String(item?.name || "").trim()
+      const qty = Number(item?.quantity || 0)
+      const unit = Number(item?.price || 0)
+      const variant = String(item?.variantLabel || "").trim()
+      const attrs = stringifyAttributes(item?.selectedAttributes)
+      const details = [variant, attrs].filter(Boolean).join(" | ")
+      const label = details ? `${name} (${details})` : name
+      return `${label} × ${qty} @ ${unit}`
+    })
+    .filter(Boolean)
+    .join(" || ")
+
+  for (let i = 0; i < MAX_ITEM_COLS; i += 1) {
+    const item = safeItems[i]
+    const n = i + 1
+    row[`Tétel ${n} termék ID`] = item?.product != null ? String(item.product) : ""
+    row[`Tétel ${n} név`] = item?.name || ""
+    row[`Tétel ${n} variáns ID`] = item?.variantId || ""
+    row[`Tétel ${n} variáns`] = item?.variantLabel || ""
+    row[`Tétel ${n} attribútumok`] = stringifyAttributes(item?.selectedAttributes)
+    row[`Tétel ${n} mennyiség`] = item?.quantity != null ? Number(item.quantity || 0) : ""
+    row[`Tétel ${n} egységár (bruttó)`] = item?.price != null ? Number(item.price || 0) : ""
+    row[`Tétel ${n} ÁFA %`] = item?.vatPercent ?? ""
+    if (item?.quantity != null && item?.price != null) {
+      const q = Number(item.quantity || 0)
+      const p = Number(item.price || 0)
+      row[`Tétel ${n} sorösszeg`] = q * p
+    } else {
+      row[`Tétel ${n} sorösszeg`] = ""
+    }
+  }
+
+  return row
+}
+
 function baseOrderRow(order: ExportOrder) {
   const billing = order.billingInfo || {}
   const shipping = order.shippingAddress || {}
@@ -135,40 +181,8 @@ export function buildAdminOrdersExportRows(orders: ExportOrder[]) {
 
   for (const order of orders) {
     const base = baseOrderRow(order)
-    const items = order.items?.length ? order.items : [null]
-
-    for (const item of items) {
-      if (!item) {
-        rows.push({
-          ...base,
-          "Tétel termék ID": "",
-          "Tétel név": "",
-          "Tétel variáns ID": "",
-          "Tétel variáns": "",
-          "Tétel attribútumok": "",
-          Mennyiség: "",
-          "Egységár (bruttó)": "",
-          "ÁFA %": "",
-          "Tétel sorösszeg": "",
-        })
-        continue
-      }
-
-      const quantity = Number(item.quantity || 0)
-      const unitPrice = Number(item.price || 0)
-      rows.push({
-        ...base,
-        "Tétel termék ID": String(item.product || ""),
-        "Tétel név": item.name || "",
-        "Tétel variáns ID": item.variantId || "",
-        "Tétel variáns": item.variantLabel || "",
-        "Tétel attribútumok": stringifyAttributes(item.selectedAttributes),
-        Mennyiség: quantity,
-        "Egységár (bruttó)": unitPrice,
-        "ÁFA %": item.vatPercent ?? "",
-        "Tétel sorösszeg": quantity * unitPrice,
-      })
-    }
+    const row = addItemsAsColumns({ ...base }, order.items)
+    rows.push(row)
   }
 
   return rows
