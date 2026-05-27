@@ -12,6 +12,7 @@ import { EditableDocText } from "@/features/template-cms/primitives/EditableDocT
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 import type { RenderProps, ShopPageDeps } from "@/templates/types"
 import type { ShopContent } from "./schema"
+import { ShopListAnalytics } from "@/components/analytics/AnalyticsRouteListener"
 
 const COLUMN_CLASSES: Record<2 | 3 | 4, string> = {
   2: "grid-cols-1 sm:grid-cols-2",
@@ -41,6 +42,7 @@ export function ShopRender({
 
   return (
     <main className="min-h-screen bg-background-dark pt-32 pb-20 px-6">
+      <ShopListAnalytics products={products as never} />
       <div className="container mx-auto">
         {(content.heading ||
           content.subheading ||

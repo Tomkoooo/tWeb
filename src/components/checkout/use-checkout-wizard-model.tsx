@@ -28,6 +28,7 @@ import {
   offersOnlyParcelLockerShipping,
 } from "@/lib/shipping-providers"
 import { useCartStore, type CartItem } from "@/store/useCartStore"
+import { saveCheckoutSnapshotFromCart } from "@/lib/analytics/track"
 
 export const CHECKOUT_WIZARD_STEPS = [
   { id: "billing", title: "Számlázás" },
@@ -556,9 +557,15 @@ export function useCheckoutWizardModel(
       })
       if (res.ok) {
         const payload = await res.json()
+        const totals = calculateTotal()
         if (isStripe) {
           if (payload?.checkoutUrl) {
             if (payload.tempOrderId) {
+              saveCheckoutSnapshotFromCart(String(payload.tempOrderId), items, {
+                total: totals.total,
+                shipping: totals.shippingFee,
+                coupon: formData.coupon?.code,
+              })
               try {
                 sessionStorage.setItem("stripeTempOrderId", String(payload.tempOrderId))
               } catch {
@@ -578,6 +585,13 @@ export function useCheckoutWizardModel(
           }
           toast.error("Nem sikerült átirányítani a Stripe fizetéshez.")
         } else {
+          if (payload?.orderId) {
+            saveCheckoutSnapshotFromCart(String(payload.orderId), items, {
+              total: totals.total,
+              shipping: totals.shippingFee,
+              coupon: formData.coupon?.code,
+            })
+          }
           clearCart()
           const successParams = new URLSearchParams()
           if (payload?.orderId) successParams.set("orderId", String(payload.orderId))
@@ -594,13 +608,35 @@ export function useCheckoutWizardModel(
     } finally {
       setIsSubmitting(false)
     }
-  }, [buildOrderPayload, clearCart, formData.methods.paymentMethod, router, shopEnabled])
+  }, [
+    buildOrderPayload,
+    calculateTotal,
+    clearCart,
+    formData.coupon?.code,
+    formData.methods.paymentMethod,
+    items,
+    router,
+    shopEnabled,
+  ])
 
   const goToStripeNow = React.useCallback(() => {
     if (stripeRedirectHold?.checkoutUrl) {
+      try {
+        const tempId = sessionStorage.getItem("stripeTempOrderId")
+        if (tempId) {
+          const totals = calculateTotal()
+          saveCheckoutSnapshotFromCart(tempId, items, {
+            total: totals.total,
+            shipping: totals.shippingFee,
+            coupon: formData.coupon?.code,
+          })
+        }
+      } catch {
+        /* ignore */
+      }
       window.location.href = stripeRedirectHold.checkoutUrl
     }
-  }, [stripeRedirectHold])
+  }, [stripeRedirectHold, calculateTotal, items, formData.coupon?.code])
 
   const renderStep = React.useCallback(() => {
     const stepId = activeSteps[currentStep]?.id

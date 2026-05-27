@@ -23,6 +23,7 @@ import {
 } from "@/lib/product-variants"
 import { clampVatPercent, customerGrossFromNetWithDiscount, formatHuf, listingHasPriceRange, listingPriceSummary } from "@/lib/pricing"
 import { useCartStore } from "@/store/useCartStore"
+import { trackProductSelectFromListing } from "@/lib/analytics/product-events"
 
 /**
  * Catalogue **row card** (image + copy side-by-side) — unlike engine `ProductCard` portrait glass tile.
@@ -125,12 +126,17 @@ export function AtelierProductCard({
     window.setTimeout(() => setIsAdded(false), 2000)
   }
 
+  const handleProductNavigate = () => {
+    trackProductSelectFromListing(p, selectedVariantId || undefined)
+  }
+
   return (
     <article className="group flex flex-col gap-4 border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-stretch">
       <Link
         href={`/products/${p.slug}`}
         prefetch={false}
         className="relative block h-44 w-full shrink-0 overflow-hidden bg-muted sm:h-auto sm:w-40 sm:min-w-40"
+        onClick={handleProductNavigate}
       >
         {!isLoaded && <Skeleton className="absolute inset-0 z-10 rounded-none" />}
         <FallbackImage
@@ -158,7 +164,12 @@ export function AtelierProductCard({
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/products/${p.slug}`} prefetch={false} className="block min-w-0">
+            <Link
+              href={`/products/${p.slug}`}
+              prefetch={false}
+              className="block min-w-0"
+              onClick={handleProductNavigate}
+            >
               <h3 className="font-serif text-lg font-semibold leading-snug tracking-tight text-foreground decoration-primary/0 underline-offset-4 group-hover:underline">
                 {p.name}
               </h3>
@@ -214,7 +225,7 @@ export function AtelierProductCard({
               {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns" : "Kosárba"}
             </Button>
             <Button variant="outline" size="sm" asChild className="rounded-full border-border font-serif text-xs uppercase">
-              <Link href={`/products/${p.slug}`} prefetch={false}>
+              <Link href={`/products/${p.slug}`} prefetch={false} onClick={handleProductNavigate}>
                 Részletek
               </Link>
             </Button>

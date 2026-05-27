@@ -3,6 +3,8 @@
 import { lazy, Suspense, type ReactNode } from "react"
 import { SessionProvider } from "next-auth/react"
 import { CartSync } from "./cart/CartSync"
+import { AnalyticsProvider } from "./analytics/AnalyticsProvider"
+import { CookieConsentBanner } from "./consent/CookieConsentBanner"
 
 const DevMetricsClient = lazy(() =>
   import("./dev/DevMetricsClient").then((module) => ({
@@ -19,13 +21,16 @@ export function Providers({
 }) {
   return (
     <SessionProvider refetchOnWindowFocus>
-      {devMetricsEnabled ? (
-        <Suspense fallback={null}>
-          <DevMetricsClient enabled />
-        </Suspense>
-      ) : null}
-      <CartSync />
-      {children}
+      <AnalyticsProvider>
+        {devMetricsEnabled ? (
+          <Suspense fallback={null}>
+            <DevMetricsClient enabled />
+          </Suspense>
+        ) : null}
+        <CartSync />
+        {children}
+        <CookieConsentBanner />
+      </AnalyticsProvider>
     </SessionProvider>
   )
 }

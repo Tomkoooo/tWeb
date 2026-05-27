@@ -12,6 +12,8 @@ import { useCartStore } from "@/store/useCartStore"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { guestOrderPath } from "@/lib/order-guest-access"
 import { authLoginPath } from "@/lib/auth-redirect"
+import { firePurchaseOnce } from "@/lib/analytics/track"
+import { updateSnapshotTransactionId } from "@/lib/analytics/checkout-snapshot"
 
 function buildOrderViewHref(
   orderId: string,
@@ -100,6 +102,17 @@ function CheckoutSuccessPageContent() {
       stopped = true
     }
   }, [tempOrderId, sessionId, clearCart])
+
+  React.useEffect(() => {
+    if (status !== "success") return
+    const purchaseId = orderId ?? initialOrderId
+    if (purchaseId) {
+      updateSnapshotTransactionId(purchaseId)
+      firePurchaseOnce(purchaseId)
+      return
+    }
+    if (tempOrderId) firePurchaseOnce(tempOrderId)
+  }, [status, orderId, initialOrderId, tempOrderId])
 
   const isStripeFlow = Boolean(tempOrderId)
   const orderViewHref = orderId ? buildOrderViewHref(orderId, guestToken, isAuthenticated) : null

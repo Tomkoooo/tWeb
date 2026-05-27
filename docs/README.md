@@ -23,6 +23,7 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 | --- | --- |
 | [integrations/STRIPE_WEBHOOK_SETUP.md](integrations/STRIPE_WEBHOOK_SETUP.md) | Stripe webhook endpoint, events, API version |
 | [integrations/szamlazzhu-integration.md](integrations/szamlazzhu-integration.md) | Számlázz.hu invoicing |
+| [integrations/analytics-gtm-meta.md](integrations/analytics-gtm-meta.md) | GTM, GA4 dataLayer events, Meta Pixel, cookie consent |
 
 ## Templates & agents
 

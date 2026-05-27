@@ -162,6 +162,16 @@ Values are grouped by **required core**, **recommended**, and **feature-specific
 | `AUTH_TRUST_HOST` | Recommended | Trust forwarded host headers (`true` for proxy/Vercel setups). | `true` |
 | `ENABLE_SHOP` | Optional | Set to `false` to ship this codebase as landing/CMS-only (hides storefront, cart, checkout, profile, shop admin, related APIs). Omit or use any value other than `false` for full commerce. | `false` |
 
+### Marketing analytics (GTM + Meta Pixel)
+
+| Variable | Required | Purpose | Example |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_GTM_ID` | Optional | Google Tag Manager container ID (loads after cookie consent). | `GTM-KZNTSD4M` |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Optional | Meta (Facebook) Pixel ID (loads after cookie consent). | `1618980845831904` |
+| `NEXT_PUBLIC_ANALYTICS_ENABLED` | Optional | Set to `false` to disable marketing tags entirely. | `true` |
+
+See [docs/integrations/analytics-gtm-meta.md](docs/integrations/analytics-gtm-meta.md) for GTM/GA4 setup and event mapping.
+
 ### Admin bootstrap
 
 | Variable | Required | Purpose | Example |

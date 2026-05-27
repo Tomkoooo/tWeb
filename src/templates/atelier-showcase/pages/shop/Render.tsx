@@ -10,6 +10,7 @@ import { EditableDocText } from "@/features/template-cms/primitives/EditableDocT
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 import type { RenderProps, ShopPageDeps } from "@/templates/types"
 import type { ShopContent } from "./schema"
+import { ShopListAnalytics } from "@/components/analytics/AnalyticsRouteListener"
 
 /**
  * Atelier shop: **full-width filter strip + masonry product columns** — structurally unlike
@@ -33,6 +34,7 @@ export function ShopRender({ content, deps }: RenderProps<ShopContent, ShopPageD
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-muted/40 via-background to-background pb-28 pt-36 text-foreground md:pt-40">
+      <ShopListAnalytics products={products as never} />
       <div className="container mx-auto px-4 sm:px-6">
         {(content.heading || content.subheading || cms.enabled) && (
           <div className="mb-10 flex flex-col gap-4 border-l-4 border-primary-foreground/35 pl-6 md:flex-row md:items-end md:justify-between">

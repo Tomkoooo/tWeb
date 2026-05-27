@@ -43,6 +43,7 @@ import { mediaImageSrc } from "@/lib/images"
 import type { PdpEditorialPlacement } from "@/templates/types"
 import { EditableDocText } from "@/features/template-cms/primitives/EditableDocText"
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
+import { trackViewItem } from "@/lib/analytics/track"
 
 export type ProductDetailEditorial = {
   eyebrow?: string
@@ -259,6 +260,27 @@ export function ProductDetail({
     else params.delete("variant")
     router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false })
   }, [selectedVariantId, pathname, router, searchParams])
+
+  useEffect(() => {
+    if (variantRequired && !selectedVariant) return
+    const productId = product._id.toString()
+    trackViewItem({
+      item_id: selectedVariant ? `${productId}:${selectedVariant.id}` : productId,
+      item_name: view.name,
+      price: finalPrice,
+      item_variant: selectedVariantLabel || undefined,
+      item_category: product.category?.name,
+    })
+  }, [
+    product._id,
+    product.category?.name,
+    selectedVariantId,
+    selectedVariant,
+    selectedVariantLabel,
+    variantRequired,
+    view.name,
+    finalPrice,
+  ])
 
   const handleVariantOptionSelect = (name: string, value: string) => {
     if (name === "__variant") {

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { trackAddToCart, trackRemoveFromCart } from "@/lib/analytics/track";
 
 export interface CartItem {
   id: string;
@@ -54,12 +55,14 @@ export const useCartStore = create<CartState>()(
         const currentItems = get().items;
         const existingItem = currentItems.find((item: CartItem) => item.id === newItem.id);
 
-        let newItems;
+        let newItems: CartItem[];
+        let quantityAdded = newItem.quantity;
         if (existingItem) {
           const newQuantity = existingItem.quantity + newItem.quantity;
           const clampedQuantity = Number.isFinite(newItem.stock)
             ? Math.min(newQuantity, newItem.stock)
             : newQuantity;
+          quantityAdded = Math.max(0, clampedQuantity - existingItem.quantity);
           newItems = currentItems.map((item: CartItem) =>
             item.id === newItem.id
               ? { ...item, quantity: clampedQuantity }
@@ -70,11 +73,17 @@ export const useCartStore = create<CartState>()(
         }
 
         set({ items: newItems, ...calculateTotals(newItems) });
+        if (quantityAdded > 0) {
+          const line = newItems.find((item) => item.id === newItem.id);
+          if (line) trackAddToCart(line, quantityAdded);
+        }
       },
 
       removeItem: (lineId: string) => {
+        const removed = get().items.find((item: CartItem) => item.id === lineId);
         const newItems = get().items.filter((item: CartItem) => item.id !== lineId);
         set({ items: newItems, ...calculateTotals(newItems) });
+        if (removed) trackRemoveFromCart(removed);
       },
 
       updateQuantity: (lineId: string, quantity: number) => {
