@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import dbConnect from "@/lib/db"
 import Order from "@/models/Order"
+// Ensure populated models are registered in this route bundle.
+import "@/models/User"
+import "@/models/ShippingMethod"
+import "@/models/PaymentMethod"
 import { format } from "date-fns"
 import {
   buildAdminOrdersMongoQuery,
