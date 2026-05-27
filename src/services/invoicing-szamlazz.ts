@@ -108,7 +108,7 @@ export class InvoicingSzamlazzService {
       authToken,
       user,
       password,
-      eInvoice: false,
+      eInvoice: true,
       requestInvoiceDownload,
       downloadedInvoiceCount: 1,
       responseVersion: 1,
