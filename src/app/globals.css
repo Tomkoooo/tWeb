@@ -281,3 +281,142 @@ h6 {
   letter-spacing: normal;
   font-family: var(--font-sans);
 }
+
+/* --- Storefront reveal (CSS + Intersection Observer; SSR-visible until armed) --- */
+.sf-reveal {
+  /* Framer-like easeOut: soft deceleration at the end */
+  --sf-reveal-duration: 0.75s;
+  --sf-reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Transition always on .sf-reveal (not only when armed). Feature cards
+   * worked because transition-all kept this active; other sections only
+   * transitioned when armed+visible landed on the same paint — no motion.
+   */
+  .sf-reveal {
+    transition:
+      opacity var(--sf-reveal-duration) var(--sf-reveal-ease),
+      transform var(--sf-reveal-duration) var(--sf-reveal-ease);
+  }
+
+  .sf-reveal.sf-reveal--armed:not(.sf-reveal--visible) {
+    opacity: 0;
+  }
+
+  .sf-reveal--up.sf-reveal--armed:not(.sf-reveal--visible) {
+    transform: translate3d(0, 2rem, 0);
+  }
+
+  .sf-reveal--left.sf-reveal--armed:not(.sf-reveal--visible) {
+    transform: translate3d(-2.5rem, 0, 0);
+  }
+
+  .sf-reveal--right.sf-reveal--armed:not(.sf-reveal--visible) {
+    transform: translate3d(2.5rem, 0, 0);
+  }
+
+  .sf-reveal--scale.sf-reveal--armed:not(.sf-reveal--visible) {
+    transform: translate3d(0, 1rem, 0) scale(0.96);
+  }
+
+  .sf-reveal--fade.sf-reveal--armed:not(.sf-reveal--visible) {
+    transform: none;
+  }
+
+  .sf-reveal.sf-reveal--visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sf-nav-reveal.sf-nav-reveal--visible {
+    animation: sf-nav-slide-in 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes sf-nav-slide-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+}
+
+/* Hero floating loop — keep on compositor */
+@keyframes sf-hero-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -15px, 0);
+  }
+}
+
+.sf-hero-float {
+  animation: sf-hero-float 5s ease-in-out infinite;
+}
+
+@keyframes sf-scroll-nudge {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-50%, 10px, 0);
+  }
+}
+
+.sf-scroll-nudge {
+  animation: sf-scroll-nudge 2s ease-in-out infinite;
+}
+
+/* Checkout step — same smooth easing as scroll reveals */
+.sf-step-panel {
+  --sf-reveal-duration: 0.55s;
+}
+
+/* Collapse (grid 0fr → 1fr) */
+.sf-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sf-collapse--open {
+  grid-template-rows: 1fr;
+}
+
+.sf-collapse__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sf-collapse__inner {
+    opacity: 0;
+    transition: opacity 0.35s ease-out 0.06s;
+  }
+
+  .sf-collapse--open .sf-collapse__inner {
+    opacity: 1;
+  }
+
+  .sf-list-item--exit {
+    opacity: 0;
+    transform: translate3d(1.25rem, 0, 0);
+    transition:
+      opacity 0.28s ease-in,
+      transform 0.28s ease-in;
+    pointer-events: none;
+  }
+}

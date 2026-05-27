@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { CollapseReveal } from "@/components/motion/css-reveal"
 import { Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -96,14 +96,7 @@ export function ShippingStep({
         </span>
       </button>
 
-      <AnimatePresence>
-        {!data.isSameAsBilling && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
+      <CollapseReveal open={!data.isSameAsBilling}>
             <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2 md:gap-8">
               <CheckoutCountryPicker
                 id="checkout-shipping-country"
@@ -187,9 +180,7 @@ export function ShippingStep({
                 />
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </CollapseReveal>
 
       <div className="space-y-2">
         <Label className={cxLabel(a)}>Megjegyzés a futárnak (opcionális)</Label>

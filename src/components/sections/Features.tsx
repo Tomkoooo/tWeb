@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal, REVEAL_DURATION_MS, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { Button } from "@/components/ui/button"
@@ -79,7 +79,7 @@ export function Features({
 
       <div className={embedded ? "relative z-10" : "container mx-auto px-6 relative z-10"}>
         <div className="text-center mb-24">
-          <MotionReveal
+          <Reveal
             as="h2"
             className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
           >
@@ -88,7 +88,7 @@ export function Features({
             ) : (
               title ?? "LOREM ADVANTAGE"
             )}
-          </MotionReveal>
+          </Reveal>
           {cms.enabled ? (
             <EditableTextInline blockType="features" field="subtitle" value={subtitle ?? ""} className="text-neutral-400 text-lg max-w-2xl mx-auto text-center" />
           ) : subtitle ? <p className="text-neutral-400 text-lg max-w-2xl mx-auto">{subtitle}</p> : null}
@@ -97,11 +97,11 @@ export function Features({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayFeatures.map((feature, idx) => (
-            <MotionReveal
+            <Reveal
               key={idx}
-              from={{ opacity: 0, y: 30 }}
-              transition={{ delay: idx * 0.1, duration: 0.6 }}
-              className="glass-card p-10 group hover:border-primary-foreground/40 transition-all duration-500"
+              delayMs={idx * REVEAL_STAGGER_MS}
+              durationMs={REVEAL_DURATION_MS}
+              className="glass-card p-10 group hover:border-primary-foreground/40 transition-colors duration-500"
             >
               <div className="text-primary-foreground mb-8 group-hover:scale-110 transition-transform duration-500 origin-left">
                 <DynamicLucideIcon name={feature.icon || "Zap"} className="w-10 h-10" />
@@ -179,7 +179,7 @@ export function Features({
               ) : (
                 <FeatureCardDescription text={feature.description} />
               )}
-            </MotionReveal>
+            </Reveal>
           ))}
         </div>
         {cms.enabled ? (

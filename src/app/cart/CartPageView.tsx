@@ -3,8 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useCheckoutWithSuggestions } from "@/components/checkout-suggestions/CheckoutSuggestionsDialog"
-import { motion, AnimatePresence } from "framer-motion"
-import { MotionReveal, useSafeMotionInitial } from "@/components/motion/safe-motion"
+import { Reveal, RevealListItem } from "@/components/motion/css-reveal"
 import {
   Trash2,
   Plus,
@@ -36,8 +35,23 @@ export function CartPageView({
   showPageHeading?: boolean
 }) {
   const embedded = variant === "embedded"
-  const cartLineInitial = useSafeMotionInitial({ opacity: 0, x: -20 })
   const { items, removeItem, updateQuantity, totalItems } = useCartStore()
+  const [exitingItemId, setExitingItemId] = React.useState<string | null>(null)
+
+  const removeItemWithAnimation = React.useCallback(
+    (id: string) => {
+      if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        removeItem(id)
+        return
+      }
+      setExitingItemId(id)
+      window.setTimeout(() => {
+        removeItem(id)
+        setExitingItemId(null)
+      }, 280)
+    },
+    [removeItem]
+  )
   const { issues, hasIssues } = useCartLineIssues(items)
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
@@ -121,12 +135,7 @@ export function CartPageView({
     return (
       <main className={shell}>
         <div className="container mx-auto max-w-4xl text-center">
-          <MotionReveal
-            mode="mount"
-            from={{ opacity: 0, scale: 0.9 }}
-            to={{ opacity: 1, scale: 1 }}
-            className="glass-card p-20 border-border"
-          >
+          <Reveal mode="mount" className="glass-card p-20 border-border">
             <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
               <ShoppingBag className="h-10 w-10 text-muted-foreground" />
             </div>
@@ -141,7 +150,7 @@ export function CartPageView({
                 IRÁNY A BOLT <ArrowRight className="ml-2 inline h-5 w-5" />
               </Button>
             </Link>
-          </MotionReveal>
+          </Reveal>
         </div>
       </main>
     )
@@ -166,7 +175,6 @@ export function CartPageView({
             )}
 
             <div className="space-y-4">
-              <AnimatePresence mode="popLayout">
                 {paginatedItems.map((item: CartItem) => {
                   const breakdown = priceBreakdownFromGross(
                     item.price,
@@ -174,12 +182,9 @@ export function CartPageView({
                     clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
                   )
                   return (
-                    <motion.div
+                    <RevealListItem
                       key={item.id}
-                      layout
-                      initial={cartLineInitial}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
+                      exiting={exitingItemId === item.id}
                       className="glass-card border-border p-4 sm:p-6"
                     >
                       <div className="grid grid-cols-1 gap-6 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-start">
@@ -262,17 +267,16 @@ export function CartPageView({
                             variant="ghost"
                             size="icon"
                             className="shrink-0 rounded-none text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => removeItemWithAnimation(item.id)}
                             aria-label="Tétel eltávolítása"
                           >
                             <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
                       </div>
-                    </motion.div>
+                    </RevealListItem>
                   )
                 })}
-              </AnimatePresence>
             </div>
 
             {totalPages > 1 ? (

@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal } from "@/components/motion/css-reveal"
 import { CheckCircle, AlertTriangle, ArrowRight } from "lucide-react"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { Button } from "@/components/ui/button"
@@ -144,12 +144,7 @@ function CheckoutSuccessPageContent() {
   return (
     <main className="min-h-screen bg-black pt-40 pb-20 px-6">
       <div className="container mx-auto max-w-2xl text-center">
-        <MotionReveal
-          mode="mount"
-          from={{ opacity: 0, scale: 0.9 }}
-          to={{ opacity: 1, scale: 1 }}
-          className="glass-card p-16 border-white/5"
-        >
+        <Reveal mode="mount" className="glass-card p-16 border-white/5">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-10">
             {status === "processing" ? (
               <div className="w-full h-full bg-primary/20 rounded-full flex items-center justify-center">
@@ -250,7 +245,7 @@ function CheckoutSuccessPageContent() {
               </div>
             </>
           )}
-        </MotionReveal>
+        </Reveal>
       </div>
     </main>
   )

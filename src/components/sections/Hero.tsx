@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
-import { MotionReveal, useSafeMotionInitial } from "@/components/motion/safe-motion"
+import { Reveal, RevealSwap, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -63,7 +62,6 @@ export function Hero({
   slides,
 }: HeroProps) {
   const cms = useCmsEdit()
-  const slideImageInitial = useSafeMotionInitial({ x: 30, opacity: 0 })
   const normalizedSlides = React.useMemo<HeroSlide[]>(() => {
     if (slides?.length) {
       return slides.map((slide) => ({
@@ -181,30 +179,11 @@ export function Hero({
       <div className="container relative z-10 mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-16 min-h-[calc(100vh-80px)]">
           {/* Side Logo with Premium Floating Animation */}
-          <MotionReveal
-            mode="mount"
-            from={{ opacity: 0, scale: 0.9 }}
-            to={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="flex justify-center lg:justify-start pt-10 lg:pt-0"
-          >
-            <motion.div
-              animate={{
-                y: [0, -15, 0],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] xl:w-[550px] xl:h-[550px]"
-            >
+          <Reveal mode="mount" className="flex justify-center lg:justify-start pt-10 lg:pt-0">
+            <div className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] xl:w-[550px] xl:h-[550px] sf-hero-float">
               <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-110 animate-pulse" />
-              <motion.div
-                key={`${activeSlideIndex}-${activeImageIndex}-${displayHeroImage}`}
-                initial={slideImageInitial}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.45, ease: "easeOut" }}
+              <RevealSwap
+                swapKey={`${activeSlideIndex}-${activeImageIndex}-${displayHeroImage}`}
                 className="absolute inset-0 z-10"
               >
                 {cms.enabled ? (
@@ -240,17 +219,13 @@ export function Hero({
                     priority
                   />
                 )}
-              </motion.div>
-            </motion.div>
-          </MotionReveal>
+              </RevealSwap>
+            </div>
+          </Reveal>
 
           {/* Typography Section */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-            <MotionReveal
-              mode="mount"
-              transition={{ delay: 0.4, duration: 0.8 }}
-              className="w-full"
-            >
+            <Reveal mode="mount" delayMs={REVEAL_STAGGER_MS} className="w-full">
               {cms.enabled ? (
                 <div className="space-y-3">
                   <EditableTextInline
@@ -299,12 +274,12 @@ export function Hero({
                   </p>
                 </>
               )}
-            </MotionReveal>
+            </Reveal>
 
             {/* Buttons */}
-            <MotionReveal
+            <Reveal
               mode="mount"
-              transition={{ delay: 0.6, duration: 0.8 }}
+              delayMs={REVEAL_STAGGER_MS * 2}
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
               {cms.enabled ? (
@@ -353,14 +328,12 @@ export function Hero({
                   </Link>
                 </>
               )}
-            </MotionReveal>
+            </Reveal>
 
             {/* Micro-Features */}
-            <MotionReveal
+            <Reveal
               mode="mount"
-              from={{ opacity: 0 }}
-              to={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 1 }}
+              delayMs={REVEAL_STAGGER_MS * 3}
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-12 w-full lg:max-w-xl"
             >
               {displayBadges.map((badge, i) => {
@@ -423,7 +396,7 @@ export function Hero({
                 </div>
                 )
               })}
-            </MotionReveal>
+            </Reveal>
             {cms.enabled ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
@@ -524,13 +497,9 @@ export function Hero({
 
 
       {/* Industrial Scroll Indicator */}
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 hidden md:block"
-      >
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 hidden md:block sf-scroll-nudge">
         <div className="w-px h-12 bg-linear-to-b from-primary to-transparent" />
-      </motion.div>
+      </div>
     </section>
   )
 }

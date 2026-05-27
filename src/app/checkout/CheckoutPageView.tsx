@@ -3,8 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { useSafeMotionInitial } from "@/components/motion/safe-motion"
+import { RevealStepPanel } from "@/components/motion/css-reveal"
 import { Check, ChevronRight, ArrowLeft, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -16,7 +15,6 @@ import { clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
 
 export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "embedded" }) {
   const embedded = variant === "embedded"
-  const stepInitial = useSafeMotionInitial({ opacity: 0, x: 20 })
   const wizard = useCheckoutWizardModel({ variant })
   const {
     currentStep,
@@ -173,14 +171,10 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
 
           <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-12">
             <div className="min-w-0 lg:col-span-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={stepInitial}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="glass-card -mx-3 border-x-0 border-border p-4 sm:mx-0 sm:rounded-lg sm:border-x sm:p-6 lg:p-10"
-                >
+              <RevealStepPanel
+                stepKey={currentStep}
+                className="glass-card -mx-3 border-x-0 border-border p-4 sm:mx-0 sm:rounded-lg sm:border-x sm:p-6 lg:p-10"
+              >
                   <div className="mb-6 flex items-center gap-3 sm:mb-10 sm:gap-4">
                     <div className="h-6 w-1.5 shrink-0 bg-primary sm:h-8" />
                     <h2 className="font-heading text-xl font-black uppercase italic leading-tight text-foreground sm:text-3xl">
@@ -220,8 +214,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
                       </Button>
                     )}
                   </div>
-                </motion.div>
-              </AnimatePresence>
+              </RevealStepPanel>
             </div>
 
             <div className="min-w-0 lg:col-span-4">

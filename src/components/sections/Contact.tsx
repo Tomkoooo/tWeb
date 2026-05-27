@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import { Mail, Phone, MapPin, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
@@ -46,11 +46,7 @@ export function Contact({
     <section id="contact" className="py-32 bg-background-dark relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
-          <MotionReveal
-            from={{ opacity: 0, x: -40 }}
-            to={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             {cms.enabled ? (
               <div className="space-y-3">
                 <EditableTextInline blockType="contact" field="title" value={title ?? "LOREM IPSUM CONTACT"} className="text-5xl md:text-7xl font-heading font-black text-foreground" />
@@ -126,13 +122,9 @@ export function Contact({
                 </div>
               ) : null}
             </div>
-          </MotionReveal>
+          </Reveal>
 
-          <MotionReveal
-            from={{ opacity: 0, x: 40 }}
-            to={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal delayMs={REVEAL_STAGGER_MS}>
             <div className="glass-card p-10 md:p-14 relative border-border/40">
               <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary-foreground/35" />
               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary-foreground/35" />
@@ -152,7 +144,7 @@ export function Contact({
                 />
               )}
             </div>
-          </MotionReveal>
+          </Reveal>
         </div>
       </div>
     </section>

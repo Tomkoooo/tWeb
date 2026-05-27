@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal } from "@/components/motion/css-reveal"
 import { Check, Star, ShoppingCart, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -176,7 +176,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
   }
 
   return (
-    <MotionReveal className="glass-card rounded-none overflow-hidden group border-white/5 h-full flex flex-col">
+    <Reveal className="glass-card rounded-none overflow-hidden group border-white/5 h-full flex flex-col">
       {/* Image Section */}
       <div className="relative aspect-square bg-neutral-900 overflow-hidden">
         {!isLoaded && <Skeleton className="absolute inset-0 z-10" />}
@@ -287,6 +287,6 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
           </div>
         </div>
       </div>
-    </MotionReveal>
+    </Reveal>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import { ChevronRight, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -75,7 +75,7 @@ export function Shop({
     <section id="shop" className="py-32 bg-background-dark px-4 overflow-hidden">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
-          <MotionReveal>
+          <Reveal>
             {cms.enabled ? (
               <div className="space-y-2">
                 <EditableTextInline
@@ -106,9 +106,9 @@ export function Shop({
                 </p>
               </>
             )}
-          </MotionReveal>
+          </Reveal>
 
-          <MotionReveal from={{ opacity: 0, x: 20 }} to={{ opacity: 1, x: 0 }}>
+          <Reveal delayMs={REVEAL_STAGGER_MS}>
             {cms.enabled ? (
               <EditableLinkInline
                 blockType="productGrid"
@@ -126,7 +126,7 @@ export function Shop({
                 </Button>
               </Link>
             )}
-          </MotionReveal>
+          </Reveal>
         </div>
 
         <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6", afterCategories ? "mb-20" : "mb-32")}>
@@ -142,11 +142,9 @@ export function Shop({
             const categoryHref = cms.enabled ? "#" : `/shop?category=${category.id}`
 
             return (
-              <MotionReveal
+              <Reveal
                 key={category.id}
-                from={{ opacity: 0, scale: 0.95 }}
-                to={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
+                delayMs={idx * REVEAL_STAGGER_MS}
                 className="relative group h-[400px] overflow-hidden border border-white/5"
               >
                 <Link
@@ -187,7 +185,7 @@ export function Shop({
                     EXPLORE <ArrowRight className="ml-2 w-4 h-4" />
                   </span>
                 </div>
-              </MotionReveal>
+              </Reveal>
             )
           })}
         </div>

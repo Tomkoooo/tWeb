@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import { Quote, Star } from "lucide-react"
 import {
   Carousel,
@@ -44,7 +44,7 @@ export function Reviews({
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-24">
-          <MotionReveal
+          <Reveal
             as="h2"
             className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
           >
@@ -53,12 +53,8 @@ export function Reviews({
             ) : (
               title ?? "LOREM REVIEWS"
             )}
-          </MotionReveal>
-          <MotionReveal
-            as="p"
-            transition={{ delay: 0.1 }}
-            className="text-neutral-400 text-xl max-w-2xl mx-auto leading-relaxed"
-          >
+          </Reveal>
+          <Reveal as="p" delayMs={REVEAL_STAGGER_MS} className="text-neutral-400 text-xl max-w-2xl mx-auto leading-relaxed">
             {cms.enabled ? (
               <EditableTextInline
                 blockType="testimonials"
@@ -69,7 +65,7 @@ export function Reviews({
             ) : (
               subtitle ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
             )}
-          </MotionReveal>
+          </Reveal>
         </div>
 
         <Carousel
@@ -82,12 +78,7 @@ export function Reviews({
           <CarouselContent>
             {reviews.map((review, idx) => (
               <CarouselItem key={review.id} className="p-4">
-                <MotionReveal
-                  from={{ opacity: 0, scale: 0.95 }}
-                  to={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="h-full"
-                >
+                <Reveal delayMs={idx * REVEAL_STAGGER_MS} className="h-full">
                   <div className="glass-card p-12 md:p-16 relative overflow-hidden h-full border-border group hover:border-primary-foreground/30 transition-all duration-500">
                     <Quote className="w-24 h-24 text-primary-foreground/10 absolute -top-4 -right-4 transition-transform group-hover:scale-110" />
                     
@@ -119,7 +110,7 @@ export function Reviews({
                       </div>
                     </div>
                   </div>
-                </MotionReveal>
+                </Reveal>
               </CarouselItem>
             ))}
           </CarouselContent>

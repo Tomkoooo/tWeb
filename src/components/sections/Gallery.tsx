@@ -14,6 +14,7 @@ import { MediaLightbox, useMediaLightbox, type MediaLightboxItem } from "@/compo
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { mediaImageSrc } from "@/lib/images"
+import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 
 export type GalleryItem = {
   image: string
@@ -86,7 +87,10 @@ export function Gallery({ title, items = [] }: GalleryProps) {
         <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
             {cms.enabled || title ? (
-              <h2 className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground md:text-7xl">
+              <Reveal
+                as="h2"
+                className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground md:text-7xl"
+              >
                 {cms.enabled ? (
                   <EditableTextInline
                     blockType="gallery"
@@ -97,7 +101,7 @@ export function Gallery({ title, items = [] }: GalleryProps) {
                 ) : (
                   title
                 )}
-              </h2>
+              </Reveal>
             ) : null}
             {cms.enabled ? (
               <p className="mt-4 max-w-xl text-sm text-neutral-500">
@@ -128,25 +132,36 @@ export function Gallery({ title, items = [] }: GalleryProps) {
         {visibleItems.length > 0 ? (
           <>
             <div className="hidden gap-4 md:block md:columns-2 xl:columns-3">
-              {items.map((item, index) =>
-                item.image?.trim() ? (
-                  <GalleryTile
+              {items.map((item, index) => {
+                if (!item.image?.trim()) return null
+                const visibleIndex = items
+                  .slice(0, index)
+                  .filter((entry) => entry.image?.trim()).length
+                return (
+                  <Reveal
                     key={`${item.image}-${index}`}
-                    item={item}
-                    index={index}
-                    editable={cms.enabled}
-                    onOpen={() => lightbox.openAt(lightboxItems.findIndex((image) => image.src === item.image))}
-                    onCaptionChange={(caption) =>
-                      updateItems(items.map((current, idx) => (idx === index ? { ...current, caption } : current)))
-                    }
-                    onMoveUp={() => moveItem(index, -1)}
-                    onMoveDown={() => moveItem(index, 1)}
-                    onRemove={() => updateItems(items.filter((_, idx) => idx !== index))}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < items.length - 1}
-                  />
-                ) : null
-              )}
+                    delayMs={visibleIndex * REVEAL_STAGGER_MS}
+                    className="mb-4 break-inside-avoid"
+                  >
+                    <GalleryTile
+                      item={item}
+                      index={index}
+                      editable={cms.enabled}
+                      onOpen={() =>
+                        lightbox.openAt(lightboxItems.findIndex((image) => image.src === item.image))
+                      }
+                      onCaptionChange={(caption) =>
+                        updateItems(items.map((current, idx) => (idx === index ? { ...current, caption } : current)))
+                      }
+                      onMoveUp={() => moveItem(index, -1)}
+                      onMoveDown={() => moveItem(index, 1)}
+                      onRemove={() => updateItems(items.filter((_, idx) => idx !== index))}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < items.length - 1}
+                    />
+                  </Reveal>
+                )
+              })}
             </div>
 
             <div className="md:hidden">
@@ -154,22 +169,24 @@ export function Gallery({ title, items = [] }: GalleryProps) {
                 <CarouselContent>
                   {visibleItems.map((item, index) => (
                     <CarouselItem key={`${item.image}-${index}`}>
-                      <button
-                        type="button"
-                        onClick={() => lightbox.openAt(index)}
-                        className="block w-full overflow-hidden border border-border/40 bg-surface/40 text-left"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={mediaImageSrc(item.image)}
-                          alt={item.caption || `Gallery image ${index + 1}`}
-                          className="max-h-[70vh] w-full object-contain"
-                          loading="lazy"
-                        />
-                        {item.caption ? (
-                          <span className="block px-4 py-3 text-sm text-muted-foreground">{item.caption}</span>
-                        ) : null}
-                      </button>
+                      <Reveal delayMs={index * REVEAL_STAGGER_MS}>
+                        <button
+                          type="button"
+                          onClick={() => lightbox.openAt(index)}
+                          className="block w-full overflow-hidden border border-border/40 bg-surface/40 text-left"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mediaImageSrc(item.image)}
+                            alt={item.caption || `Gallery image ${index + 1}`}
+                            className="max-h-[70vh] w-full object-contain"
+                            loading="lazy"
+                          />
+                          {item.caption ? (
+                            <span className="block px-4 py-3 text-sm text-muted-foreground">{item.caption}</span>
+                          ) : null}
+                        </button>
+                      </Reveal>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
@@ -226,7 +243,7 @@ function GalleryTile({
   canMoveDown: boolean
 }) {
   return (
-    <figure className="mb-4 break-inside-avoid overflow-hidden border border-border/40 bg-surface/40">
+    <figure className="overflow-hidden border border-border/40 bg-surface/40">
       <button type="button" onClick={onOpen} className="group block w-full text-left">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

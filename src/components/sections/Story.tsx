@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MotionReveal } from "@/components/motion/safe-motion"
+import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
 import {
   Accordion,
   AccordionContent,
@@ -67,11 +67,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
     <section id="about" className="py-32 bg-background-dark overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-          <MotionReveal
-            from={{ opacity: 0, x: -50 }}
-            to={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             {cms.enabled ? (
               <div className="space-y-3">
                 <EditableTextInline blockType="about" field="title" value={displayTitle} className="text-4xl md:text-7xl font-heading font-black text-foreground uppercase tracking-tighter" />
@@ -145,17 +141,13 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                 )}
               />
             </Accordion>
-          </MotionReveal>
+          </Reveal>
 
           {/* Cards with high-contrast blurs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {displayCards.map((item, i) => {
               return (
-              <MotionReveal
-                key={i}
-                from={{ opacity: 0, y: 30 }}
-                transition={{ delay: i * 0.1, duration: 0.6 }}
-              >
+              <Reveal key={i} delayMs={i * REVEAL_STAGGER_MS}>
                 <div className={cn(
                   "glass-card p-10 h-full flex flex-col items-center text-center group hover:border-primary-foreground/50 transition-all",
                   i % 2 === 1 ? "lg:mt-12" : ""
@@ -214,7 +206,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                     </>
                   )}
                 </div>
-              </MotionReveal>
+              </Reveal>
             )})}
           </div>
           {cms.enabled ? (

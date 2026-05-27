@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { MotionNavbar } from "@/components/motion/safe-motion"
+import { RevealHeader } from "@/components/motion/css-reveal"
 import { ShoppingCart, Search, Menu, UserRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -217,7 +217,7 @@ export function Navbar({
   }
 
   return (
-    <MotionNavbar
+    <RevealHeader
       className={cn(
         "fixed left-0 right-0 top-0 z-50 transition-all duration-500",
         isScrolled
@@ -226,7 +226,7 @@ export function Navbar({
       )}
     >
       {bar}
-    </MotionNavbar>
+    </RevealHeader>
   )
 }
 
