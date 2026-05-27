@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
+import dbConnect from "@/lib/db"
+import Order from "@/models/Order"
+import { format } from "date-fns"
+import {
+  buildAdminOrdersMongoQuery,
+  filterAdminOrders,
+  type AdminOrderFilters,
+} from "@/lib/admin-orders-query"
+import { buildAdminOrdersExcelBuffer } from "@/lib/admin-orders-export"
+
+function parseFilters(searchParams: URLSearchParams): AdminOrderFilters {
+  return {
+    q: searchParams.get("q") || undefined,
+    status: searchParams.get("status") || undefined,
+    invoiceStatus: searchParams.get("invoiceStatus") || undefined,
+    shippingType: searchParams.get("shippingType") || undefined,
+    productId: searchParams.get("productId") || undefined,
+    dateFrom: searchParams.get("dateFrom") || undefined,
+    dateTo: searchParams.get("dateTo") || undefined,
+  }
+}
+
+export const runtime = "nodejs"
+
+export async function GET(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const filters = parseFilters(request.nextUrl.searchParams)
+  await dbConnect()
+
+  const query = buildAdminOrdersMongoQuery(filters)
+  const rawOrders = await Order.find(query)
+    .populate("user", "name email")
+    .populate("shippingMethod", "name")
+    .populate("paymentMethod", "name")
+    .sort({ createdAt: -1 })
+    .lean()
+
+  const orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
+  const buffer = buildAdminOrdersExcelBuffer(orders, filters)
+  const filename = `rendelesek-${format(new Date(), "yyyy-MM-dd-HHmm")}.xlsx`
+
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  })
+}

@@ -2,24 +2,24 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { isAnalyticsEnabled } from "@/lib/analytics/config"
 import { hasConsentDecision, writeConsent } from "@/lib/analytics/consent"
 import { pushConsentDefaultDenied } from "@/lib/analytics/data-layer"
 
 export function CookieConsentBanner() {
-  const enabled = isAnalyticsEnabled()
+  const pathname = usePathname()
   const [visible, setVisible] = React.useState(false)
   const [showCustomize, setShowCustomize] = React.useState(false)
   const [marketing, setMarketing] = React.useState(false)
 
   React.useEffect(() => {
-    if (!enabled) return
     pushConsentDefaultDenied()
-    setVisible(!hasConsentDecision())
-  }, [enabled])
+    const isAdmin = (pathname || "").startsWith("/admin")
+    setVisible(!isAdmin && !hasConsentDecision())
+  }, [pathname])
 
-  if (!enabled || !visible) return null
+  if (!visible) return null
 
   const save = (acceptMarketing: boolean) => {
     writeConsent(acceptMarketing)

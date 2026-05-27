@@ -8,11 +8,13 @@ import { auth } from "@/auth"
 import { MailerService } from "@/services/mailer"
 import { GlsService } from "@/services/gls"
 import { FoxpostService } from "@/services/foxpost"
-import {
-  matchesOrderShippingTypeFilter,
-  type OrderShippingTypeFilter,
-} from "@/lib/parcel-locker"
 import mongoose from "mongoose"
+import Product from "@/models/Product"
+import {
+  buildAdminOrdersMongoQuery,
+  filterAdminOrders,
+  type AdminOrderFilters,
+} from "@/lib/admin-orders-query"
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
@@ -66,60 +68,30 @@ async function applyOrderStatusChange(order: any, newStatus: OrderStatusValue) {
   return true
 }
 
-type OrderFilters = {
-  q?: string
-  status?: string
-  invoiceStatus?: string
-  shippingType?: string
-  dateFrom?: string
-  dateTo?: string
+export type OrderFilters = AdminOrderFilters
+
+export async function getOrderFilterProducts() {
+  await checkAdmin()
+  await dbConnect()
+  const products = await Product.find({ deletedAt: null })
+    .select("name")
+    .sort({ name: 1 })
+    .lean()
+
+  return products.map((product) => ({
+    id: product._id.toString(),
+    name: product.name,
+  }))
 }
 
 export async function getOrders(filters: OrderFilters = {}) {
   await checkAdmin()
   await dbConnect()
-  const query: Record<string, any> = {}
-  if (filters.status && filters.status !== "all") query.status = filters.status
-  if (filters.invoiceStatus && filters.invoiceStatus !== "all") query.invoiceStatus = filters.invoiceStatus
-  if (filters.dateFrom || filters.dateTo) {
-    query.createdAt = {}
-    if (filters.dateFrom) query.createdAt.$gte = new Date(filters.dateFrom)
-    if (filters.dateTo) {
-      const dateTo = new Date(filters.dateTo)
-      dateTo.setHours(23, 59, 59, 999)
-      query.createdAt.$lte = dateTo
-    }
-  }
-
-  let orders = JSON.parse(JSON.stringify(await Order.find(query).sort({ createdAt: -1 })))
-
-  const shippingType = (filters.shippingType || "all") as OrderShippingTypeFilter
-  if (shippingType !== "all") {
-    orders = orders.filter((order: any) => matchesOrderShippingTypeFilter(order, shippingType))
-  }
-
-  const search = String(filters.q || "").trim().toLowerCase()
-  if (!search) return orders
-
-  return orders.filter((order: any) => {
-    const haystack = [
-      formatOrderNumber(order._id),
-      order._id,
-      order.billingInfo?.name,
-      order.billingInfo?.email,
-      order.billingInfo?.phone,
-      order.shippingAddress?.name,
-      order.shippingAddress?.email,
-      order.shippingAddress?.phone,
-      order.shippingAddress?.city,
-      order.invoiceId,
-      ...(order.items || []).map((item: any) => item.name),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-    return haystack.includes(search)
-  })
+  const query = buildAdminOrdersMongoQuery(filters)
+  const orders = JSON.parse(
+    JSON.stringify(await Order.find(query).sort({ createdAt: -1 }))
+  )
+  return filterAdminOrders(orders, filters)
 }
 
 export async function getOrderById(id: string) {
