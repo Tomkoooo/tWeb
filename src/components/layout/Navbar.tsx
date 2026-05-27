@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { MotionNavbar } from "@/components/motion/safe-motion"
 import { ShoppingCart, Search, Menu, UserRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -217,16 +217,14 @@ export function Navbar({
   }
 
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
+    <MotionNavbar
       className={cn(
         "fixed left-0 right-0 top-0 z-50 transition-all duration-500",
         isScrolled ? "bg-background-dark/95 py-4 backdrop-blur-2xl" : "bg-transparent py-10"
       )}
     >
       {bar}
-    </motion.header>
+    </MotionNavbar>
   )
 }
 

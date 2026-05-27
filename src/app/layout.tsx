@@ -93,6 +93,15 @@ export default async function RootLayout({
 
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
+      <head>
+        <noscript>
+          <style
+            dangerouslySetInnerHTML={{
+              __html: "body,body *{opacity:1!important;transform:none!important}",
+            }}
+          />
+        </noscript>
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers
           devMetricsEnabled={

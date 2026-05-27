@@ -65,7 +65,10 @@ export function FlowRoutePageClient({
         <LoadingSpinner />
       </div>
     ) : (
-      <p className="sr-only">Betöltés</p>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center py-16" aria-busy="true">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-sm text-muted-foreground">Betöltés…</p>
+      </div>
     )
   }
 

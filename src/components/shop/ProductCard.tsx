@@ -177,7 +177,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       className="glass-card rounded-none overflow-hidden group border-white/5 h-full flex flex-col"

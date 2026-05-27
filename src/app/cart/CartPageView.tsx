@@ -106,7 +106,10 @@ export function CartPageView({
             <LoadingSpinner />
           </div>
         ) : (
-          <p className="sr-only">Betöltés</p>
+          <div className="flex min-h-[40vh] flex-col items-center justify-center py-16" aria-busy="true">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-sm text-muted-foreground">Betöltés…</p>
+          </div>
         )}
       </main>
     )
@@ -117,7 +120,7 @@ export function CartPageView({
       <main className={shell}>
         <div className="container mx-auto max-w-4xl text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-20 border-border"
           >
@@ -171,7 +174,7 @@ export function CartPageView({
                     <motion.div
                       key={item.id}
                       layout
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={false}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       className="glass-card border-border p-4 sm:p-6"

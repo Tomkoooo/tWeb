@@ -45,7 +45,7 @@ export function Reviews({
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-24">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-4xl md:text-7xl font-heading font-black mb-6 text-foreground uppercase tracking-tighter"
@@ -57,7 +57,7 @@ export function Reviews({
             )}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
@@ -87,7 +87,7 @@ export function Reviews({
             {reviews.map((review, idx) => (
               <CarouselItem key={review.id} className="p-4">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={false}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}

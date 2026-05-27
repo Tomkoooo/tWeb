@@ -174,7 +174,7 @@ export function CheckoutPageView({ variant = "page" }: { variant?: "page" | "emb
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   className="glass-card -mx-3 border-x-0 border-border p-4 sm:mx-0 sm:rounded-lg sm:border-x sm:p-6 lg:p-10"

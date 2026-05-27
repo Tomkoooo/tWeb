@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react"
 import { CartSync } from "./cart/CartSync"
 import { AnalyticsProvider } from "./analytics/AnalyticsProvider"
 import { CookieConsentBanner } from "./consent/CookieConsentBanner"
+import { ChunkLoadRecovery } from "./ChunkLoadRecovery"
 
 const DevMetricsClient = lazy(() =>
   import("./dev/DevMetricsClient").then((module) => ({
@@ -22,6 +23,7 @@ export function Providers({
   return (
     <SessionProvider refetchOnWindowFocus>
       <AnalyticsProvider>
+        <ChunkLoadRecovery />
         {devMetricsEnabled ? (
           <Suspense fallback={null}>
             <DevMetricsClient enabled />

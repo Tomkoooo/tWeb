@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
+import { MotionReveal } from "@/components/motion/safe-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -172,10 +173,10 @@ export function Hero({
       <div className="container relative z-10 mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-16 min-h-[calc(100vh-80px)]">
           {/* Side Logo with Premium Floating Animation */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <MotionReveal
+            visible={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
+            margin="0px"
             className="flex justify-center lg:justify-start pt-10 lg:pt-0"
           >
             <motion.div
@@ -192,7 +193,7 @@ export function Hero({
               <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full scale-110 animate-pulse" />
               <motion.div
                 key={`${activeSlideIndex}-${activeImageIndex}-${displayHeroImage}`}
-                initial={{ x: 30, opacity: 0 }}
+                initial={false}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.45, ease: "easeOut" }}
                 className="absolute inset-0 z-10"
@@ -231,14 +232,13 @@ export function Hero({
                 )}
               </motion.div>
             </motion.div>
-          </motion.div>
+          </MotionReveal>
 
           {/* Typography Section */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <MotionReveal
               transition={{ delay: 0.4, duration: 0.8 }}
+              margin="0px"
               className="w-full"
             >
               {cms.enabled ? (
@@ -289,13 +289,12 @@ export function Hero({
                   </p>
                 </>
               )}
-            </motion.div>
+            </MotionReveal>
 
             {/* Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <MotionReveal
               transition={{ delay: 0.6, duration: 0.8 }}
+              margin="0px"
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
               {cms.enabled ? (
@@ -344,13 +343,13 @@ export function Hero({
                   </Link>
                 </>
               )}
-            </motion.div>
+            </MotionReveal>
 
             {/* Micro-Features */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+            <MotionReveal
+              visible={{ opacity: 1 }}
               transition={{ delay: 1, duration: 1 }}
+              margin="0px"
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-12 w-full lg:max-w-xl"
             >
               {displayBadges.map((badge, i) => {
@@ -413,7 +412,7 @@ export function Hero({
                 </div>
                 )
               })}
-            </motion.div>
+            </MotionReveal>
             {cms.enabled ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button

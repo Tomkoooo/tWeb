@@ -23,7 +23,12 @@ export function LoadingSpinner({
     <div
       role="status"
       aria-label="Loading"
-      className={cn(sizeClasses[size], "animate-spin rounded-full border-solid", sfSpinner, className)}
+      className={cn(
+        sizeClasses[size],
+        "animate-spin rounded-full border-solid border-white/30",
+        sfSpinner,
+        className
+      )}
     />
   )
 }

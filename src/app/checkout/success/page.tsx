@@ -145,7 +145,7 @@ function CheckoutSuccessPageContent() {
     <main className="min-h-screen bg-black pt-40 pb-20 px-6">
       <div className="container mx-auto max-w-2xl text-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1 }}
           className="glass-card p-16 border-white/5"
         >
