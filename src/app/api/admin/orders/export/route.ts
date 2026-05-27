@@ -23,33 +23,41 @@ function parseFilters(searchParams: URLSearchParams): AdminOrderFilters {
 }
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await auth()
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const filters = parseFilters(request.nextUrl.searchParams)
+    await dbConnect()
+
+    const query = buildAdminOrdersMongoQuery(filters)
+    const rawOrders = await Order.find(query)
+      .populate("user", "name email")
+      .populate("shippingMethod", "name")
+      .populate("paymentMethod", "name")
+      .sort({ createdAt: -1 })
+      .lean()
+
+    const orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
+    const buffer = await buildAdminOrdersExcelBuffer(orders, filters)
+    const filename = `rendelesek-${format(new Date(), "yyyy-MM-dd-HHmm")}.xlsx`
+
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": String(buffer.byteLength),
+        "Cache-Control": "no-store",
+      },
+    })
+  } catch (error) {
+    console.error("[admin/orders/export]", error)
+    return NextResponse.json({ error: "Export failed" }, { status: 500 })
   }
-
-  const filters = parseFilters(request.nextUrl.searchParams)
-  await dbConnect()
-
-  const query = buildAdminOrdersMongoQuery(filters)
-  const rawOrders = await Order.find(query)
-    .populate("user", "name email")
-    .populate("shippingMethod", "name")
-    .populate("paymentMethod", "name")
-    .sort({ createdAt: -1 })
-    .lean()
-
-  const orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
-  const buffer = buildAdminOrdersExcelBuffer(orders, filters)
-  const filename = `rendelesek-${format(new Date(), "yyyy-MM-dd-HHmm")}.xlsx`
-
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store",
-    },
-  })
 }

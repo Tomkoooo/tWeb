@@ -6,7 +6,7 @@ import type { AdminOrderFilters } from "@/lib/admin-orders-query"
 
 type AdminOrdersSearchParams = Promise<AdminOrderFilters>
 
-function buildExportHref(filters: AdminOrderFilters) {
+function buildExportQuery(filters: AdminOrderFilters) {
   const params = new URLSearchParams()
   const entries: Array<keyof AdminOrderFilters> = [
     "q",
@@ -23,14 +23,13 @@ function buildExportHref(filters: AdminOrderFilters) {
       params.set(key, value)
     }
   }
-  const query = params.toString()
-  return query ? `/api/admin/orders/export?${query}` : "/api/admin/orders/export"
+  return params.toString()
 }
 
 export default async function AdminOrders({ searchParams }: { searchParams: AdminOrdersSearchParams }) {
   const filters = await searchParams
   const [orders, products] = await Promise.all([getOrders(filters), getOrderFilterProducts()])
-  const exportHref = buildExportHref(filters)
+  const exportQuery = buildExportQuery(filters)
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -41,7 +40,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
           </h1>
           <p className="text-white/40 font-medium italic">Kísérje figyelemmel a beérkező rendeléseket és frissítse az állapotukat.</p>
         </div>
-        <AdminOrdersExportLink href={exportHref} />
+        <AdminOrdersExportLink exportQuery={exportQuery} />
       </div>
 
       <form className="grid grid-cols-1 items-end gap-3 bg-white/5 border border-white/10 p-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">

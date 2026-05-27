@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx"
 import { format } from "date-fns"
 import { formatOrderNumber } from "@/lib/order-number"
 import { getOrderShippingTypeLabel } from "@/lib/parcel-locker"
@@ -175,7 +174,11 @@ export function buildAdminOrdersExportRows(orders: ExportOrder[]) {
   return rows
 }
 
-export function buildAdminOrdersExcelBuffer(orders: ExportOrder[], filters: AdminOrderFilters = {}) {
+export async function buildAdminOrdersExcelBuffer(
+  orders: ExportOrder[],
+  filters: AdminOrderFilters = {}
+) {
+  const XLSX = await import("xlsx")
   const rows = buildAdminOrdersExportRows(orders)
   const worksheet = XLSX.utils.json_to_sheet(rows)
   const workbook = XLSX.utils.book_new()
