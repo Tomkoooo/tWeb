@@ -10,6 +10,8 @@ import { FeatureFlagService } from "@/services/feature-flags"
 import { isShopEnabled } from "@/lib/features/shop"
 import { listAllTemplates } from "@/templates/registry"
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminLayout({
   children,
 }: {
