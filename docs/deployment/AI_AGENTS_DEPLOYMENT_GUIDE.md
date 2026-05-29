@@ -18,9 +18,9 @@ One-page brief for agents (Cursor, Claude, etc.) wiring **templates**, **plugins
 1. **Never enable a template or plugin only in env** — update `deployments.config.json` and register the module in the correct registry file.
 2. **`allowedTemplates`** must list every template id admins may activate; **`defaultTemplateId`** must be one of them.
 3. **`enabledPlugins`** must only reference ids from `src/plugins/registry.ts`.
-4. Set **`DEPLOYMENT_KEY`** on the hosting platform to the deployment `key` (e.g. `course-seller`).
+4. Set **`DEPLOYMENT_KEY`** on the hosting platform to the deployment `key` (e.g. `minecraft-camp`).
 5. Run **`npm run deployments:validate`** (or `npm run test:unit -- deployments`) after editing the matrix.
-6. Plugins with **`featureFlagKey`** also need that flag enabled in admin (e.g. `pluginTicketing`).
+6. Plugins with **`featureFlagKey`** also need that flag enabled in admin under **Plugin beállítások** (e.g. `pluginCampBooking`).
 
 ## Workflow: new customer deployment
 
@@ -33,9 +33,9 @@ One-page brief for agents (Cursor, Claude, etc.) wiring **templates**, **plugins
   "label": "ACME courses",
   "allowedTemplates": ["default-modern"],
   "defaultTemplateId": "default-modern",
-  "enabledPlugins": ["ticketing"],
+  "enabledPlugins": ["camp-booking"],
   "pluginConfig": {
-    "ticketing": { "checkoutMode": "direct" }
+    "camp-booking": { "storefrontMode": "campOnly", "currency": "HUF" }
   }
 }
 ```

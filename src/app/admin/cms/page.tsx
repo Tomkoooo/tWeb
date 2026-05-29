@@ -2,13 +2,15 @@ import Link from "next/link"
 import { TemplateService } from "@/services/template"
 import { listEditablePages } from "@/templates/cms-pages"
 import { isShopEnabled } from "@/lib/features/shop"
-import { CMS_SITE_SETTINGS_SECTIONS } from "@/features/template-cms/cms-site-settings"
+import { getAccessibleCmsSiteSettingsSections } from "@/lib/admin-settings-access"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminCmsHub() {
+  const shopEnabled = isShopEnabled()
   const template = await TemplateService.getActive()
-  const pages = listEditablePages(template, isShopEnabled())
+  const pages = listEditablePages(template, shopEnabled)
+  const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
 
   return (
     <div className="space-y-10">
@@ -17,7 +19,7 @@ export default async function AdminCmsHub() {
           CMS <span className="admin-text-accent">áttekintés</span>
         </h1>
         <p className="mt-2 text-sm text-neutral-400 max-w-2xl">
-          Oldalanként szerkesztheted a tartalmat, vagy a webshop szintű beállításokat (téma, SEO, márka)
+          Oldalanként szerkesztheted a tartalmat, vagy a honlap szintű beállításokat (téma, SEO, márka)
           egy helyen.
         </p>
       </div>
@@ -38,7 +40,7 @@ export default async function AdminCmsHub() {
           </Link>
         </div>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {CMS_SITE_SETTINGS_SECTIONS.map((item) => (
+          {cmsSettingsSections.map((item) => (
             <li key={item.id}>
               <Link
                 href={`/admin/cms/settings?section=${item.id}`}

@@ -1,6 +1,7 @@
 import { definePlugin } from "@/plugins/types"
 import type { PluginApiContext } from "@/plugins/types"
 import { CampBookingAdminScreen } from "./admin/CampBookingAdminScreen"
+import { buildCampBookingEmailTemplateSeeds } from "./lib/email-templates"
 
 export const campBooking = definePlugin({
   manifest: {
@@ -11,9 +12,17 @@ export const campBooking = definePlugin({
     requiresShop: false,
     featureFlagKey: "pluginCampBooking",
   },
+  getEmailTemplates: async () => {
+    const { BrandingSettingsService } = await import("@/services/branding-settings")
+    const branding = await BrandingSettingsService.get()
+    return buildCampBookingEmailTemplateSeeds(branding.brandName)
+  },
   admin: {
+    primaryWhenShopDisabled: true,
+    statsSegment: "stats",
     navItems: [
-      { label: "Áttekintés", segment: "" },
+      { label: "Kezdőlap", segment: "" },
+      { label: "Statisztikák", segment: "stats" },
       { label: "Táborok", segment: "camps" },
       { label: "Régisztrációk", segment: "registrations" },
     ],

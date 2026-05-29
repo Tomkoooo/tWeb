@@ -6,6 +6,10 @@ export interface IEmailTemplate extends Document {
   body: string;
   description: string;
   variables: string[]; // List of available variables for this template
+  /** e.g. shop, contact, camp-booking — shown in admin for filtering */
+  tags: string[];
+  /** null = core engine; otherwise owning plugin id */
+  pluginId: string | null;
 }
 
 const EmailTemplateSchema = new Schema<IEmailTemplate>(
@@ -15,6 +19,8 @@ const EmailTemplateSchema = new Schema<IEmailTemplate>(
     body: { type: String, required: true },
     description: { type: String },
     variables: [{ type: String }],
+    tags: { type: [String], default: [] },
+    pluginId: { type: String, default: null },
   },
   { timestamps: true }
 );

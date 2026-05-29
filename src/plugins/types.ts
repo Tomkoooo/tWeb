@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import type { FlowRouteKey, FlowPageDefinition } from "@/templates/types"
+import type { EmailTemplateSeed } from "@/services/email-template"
 
 export type PluginManifest = {
   id: string
@@ -21,6 +22,19 @@ export type PluginAdminNavItem = {
   segment: string
 }
 
+export type PluginAdminConfig = {
+  navItems: PluginAdminNavItem[]
+  Screen: ComponentType<PluginAdminScreenProps>
+  /**
+   * When `ENABLE_SHOP=false`, this plugin is preferred for `/admin` redirect and sidebar focus.
+   */
+  primaryWhenShopDisabled?: boolean
+  /**
+   * Statistics segment (e.g. `stats`). `/admin/stats` redirects here when the shop is off.
+   */
+  statsSegment?: string
+}
+
 export type PluginAdminScreenProps = {
   /** Remaining path segments after `/admin/plugins/{pluginId}/`. */
   path: string[]
@@ -39,10 +53,11 @@ export type PluginStorefrontFlowOverrides = Partial<Record<FlowRouteKey, FlowPag
 
 export interface PluginModule {
   manifest: PluginManifest
-  admin?: {
-    navItems: PluginAdminNavItem[]
-    Screen: ComponentType<PluginAdminScreenProps>
-  }
+  /** Static email seeds (rare). Prefer getEmailTemplates for branding-dependent copy. */
+  emailTemplates?: EmailTemplateSeed[]
+  /** Async seeds merged on admin “initialize missing templates”. */
+  getEmailTemplates?: () => Promise<EmailTemplateSeed[]>
+  admin?: PluginAdminConfig
   api?: {
     handle(context: PluginApiContext): Promise<Response>
   }

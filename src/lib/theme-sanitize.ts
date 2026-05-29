@@ -41,7 +41,10 @@ function colorsTooClose(foreground: string, background: string, minRatio = 1.8):
   return ratio < minRatio
 }
 
-/** Clamp illegible admin overrides so text and spinners stay visible on dark backgrounds. */
+/**
+ * Optional clamp for low-contrast pairs (e.g. admin-only previews).
+ * Storefront merged themes are **not** sanitized on read — saved overrides apply as-is.
+ */
 export function sanitizeThemeTokens(theme: ThemeTokens, fallback: ThemeTokens): ThemeTokens {
   const out = { ...theme }
 
@@ -59,4 +62,21 @@ export function sanitizeThemeTokens(theme: ThemeTokens, fallback: ThemeTokens): 
   }
 
   return out
+}
+
+/** Human-readable hints after save when token pairs may be hard to read on the storefront. */
+export function getThemeContrastWarnings(theme: ThemeTokens): string[] {
+  const warnings: string[] = []
+  if (colorsTooClose(theme.foreground, theme.background)) {
+    warnings.push(
+      "foreground and background are very similar — body text may be hard to read unless you use custom section colors."
+    )
+  }
+  if (colorsTooClose(theme.primaryForeground, theme.background)) {
+    warnings.push("primaryForeground may be hard to see on the page background.")
+  }
+  if (colorsTooClose(theme.surfaceForeground, theme.surface)) {
+    warnings.push("surfaceForeground may be hard to read on surface panels.")
+  }
+  return warnings
 }

@@ -33,8 +33,9 @@ export const CMS_SITE_SETTINGS_SECTIONS: Array<{
 ]
 
 export function parseCmsSiteSettingsSection(
-  value: string | undefined
+  value: string | undefined,
+  allowedSections: ReadonlyArray<{ id: CmsSiteSettingsSection }> = CMS_SITE_SETTINGS_SECTIONS
 ): CmsSiteSettingsSection {
-  const found = CMS_SITE_SETTINGS_SECTIONS.find((s) => s.id === value)
-  return found?.id ?? "theme"
+  const found = allowedSections.find((s) => s.id === value)
+  return found?.id ?? allowedSections[0]?.id ?? "theme"
 }

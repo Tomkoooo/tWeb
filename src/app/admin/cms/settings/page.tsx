@@ -8,6 +8,11 @@ import { getEffectiveThemeBase, ThemeService } from "@/services/theme"
 import { parseCmsSiteSettingsSection } from "@/features/template-cms/cms-site-settings"
 import { CmsSiteSettingsClient } from "@/features/template-cms/components/CmsSiteSettingsClient"
 import { SiteContactChannelsPanel } from "@/features/site-settings/components/SiteContactChannelsPanel"
+import {
+  getAccessibleCmsSiteSettingsSections,
+  shouldShowShopOrderContactEmails,
+} from "@/lib/admin-settings-access"
+import { isShopEnabled } from "@/lib/features/shop"
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +22,9 @@ export default async function CmsSiteSettingsPage({
   searchParams: Promise<{ section?: string }>
 }) {
   const { section: sectionParam } = await searchParams
-  const section = parseCmsSiteSettingsSection(sectionParam)
+  const sections = getAccessibleCmsSiteSettingsSections(isShopEnabled())
+  const section = parseCmsSiteSettingsSection(sectionParam, sections)
+  const showShopOrderEmails = shouldShowShopOrderContactEmails(isShopEnabled())
 
   const dbActiveTemplate = await TemplateService.getDbActive()
   const [
@@ -48,6 +55,8 @@ export default async function CmsSiteSettingsPage({
       {section === "contact" ? <SiteContactChannelsPanel /> : null}
       <CmsSiteSettingsClient
         section={section}
+        sections={sections}
+        showShopOrderEmails={showShopOrderEmails}
         templateName={dbActiveTemplate.manifest.name}
         initialTheme={theme}
         themeResetBaseline={themeResetBaseline}

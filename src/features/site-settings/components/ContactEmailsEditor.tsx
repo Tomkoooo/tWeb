@@ -18,10 +18,12 @@ export function ContactEmailsEditor({
   initial,
   initialInvoiceErrorAlertEmails,
   initialNewOrderNotificationEmails,
+  showShopOrderEmails = true,
 }: {
   initial: ContactEmailEntry[]
   initialInvoiceErrorAlertEmails: string[]
   initialNewOrderNotificationEmails: string[]
+  showShopOrderEmails?: boolean
 }) {
   const [entries, setEntries] = useState<ContactEmailEntry[]>(
     initial.length > 0 ? initial : [newEntry()]
@@ -104,6 +106,7 @@ export function ContactEmailsEditor({
         </Button>
       </div>
 
+      {showShopOrderEmails ? (
       <div className="space-y-4 pt-6 border-t border-white/10">
         <div className="space-y-2">
           <h3 className="text-sm font-black uppercase tracking-wider text-white">
@@ -159,6 +162,7 @@ export function ContactEmailsEditor({
           Új rendelés értesítő
         </Button>
       </div>
+      ) : null}
 
       <div className="space-y-4 pt-6 border-t border-white/10">
         <div className="space-y-2">

@@ -8,7 +8,6 @@ export type PluginRegistryEntry = {
 const syncRegistry: Record<string, PluginModule> = {}
 
 const pluginLoaders: Record<string, () => Promise<PluginModule>> = {
-  ticketing: () => import("./ticketing/plugin.config").then((m) => m.ticketing),
   "camp-booking": () => import("./camp-booking/plugin.config").then((m) => m.campBooking),
 }
 

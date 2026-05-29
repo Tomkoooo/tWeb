@@ -7,6 +7,8 @@ export type EmailTemplateSeed = {
   body: string;
   description?: string;
   variables?: string[];
+  tags?: string[];
+  pluginId?: string | null;
 };
 
 export const EmailTemplateService = {

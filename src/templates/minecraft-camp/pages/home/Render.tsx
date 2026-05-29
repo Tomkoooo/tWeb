@@ -9,7 +9,7 @@ import { MineshowPrograms } from "./blocks/MineshowPrograms"
 import { MineshowSessions } from "./blocks/MineshowSessions"
 import { MineshowPricing } from "./blocks/MineshowPricing"
 import { MineshowFaq } from "./blocks/MineshowFaq"
-import { MineshowContactMap } from "./blocks/MineshowContactMap"
+import { MineshowContactSection } from "./blocks/MineshowContactSection"
 import { MineshowSocialTab } from "./blocks/MineshowSocialTab"
 
 function getBlock<T extends { type: string }>(
@@ -22,7 +22,7 @@ function getBlock<T extends { type: string }>(
   )
 }
 
-export function HomeRender({ content }: RenderProps<HomeContent, HomePageDeps>) {
+export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageDeps>) {
   const snapshot = content
   const site = extractMineshowSiteConfig(snapshot)
   const hero = getBlock(snapshot, "hero")
@@ -92,14 +92,12 @@ export function HomeRender({ content }: RenderProps<HomeContent, HomePageDeps>) 
         <MineshowFaq title={faqData.title} items={faqData.accordions} />
       ) : null}
 
-      {contactData || site.mapEmbedUrl ? (
-        <MineshowContactMap
-          addressTitle={
-            contactData?.title || contactData?.address || site.venueAddress
-          }
-          email={contactData?.email}
-          companyName={contactData?.companyName}
+      {contactData || site.mapEmbedUrl || deps.siteContact.emails.length > 0 ? (
+        <MineshowContactSection
+          siteContact={deps.siteContact}
+          contactData={contactData ?? undefined}
           mapEmbedUrl={contactData?.mapEmbedUrl || site.mapEmbedUrl}
+          venueAddress={site.venueAddress}
         />
       ) : null}
     </div>

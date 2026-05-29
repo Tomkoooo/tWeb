@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import {
-  CMS_SITE_SETTINGS_SECTIONS,
   parseCmsSiteSettingsSection,
   type CmsSiteSettingsSection,
 } from "@/features/template-cms/cms-site-settings"
@@ -19,8 +18,16 @@ import type { FooterSettings } from "@/services/footer-settings"
 import type { ContactEmailEntry } from "@/lib/contact-emails"
 import type { CmsBrandingToolbarState } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
 
+type SettingsSectionMeta = {
+  id: CmsSiteSettingsSection
+  label: string
+  description: string
+}
+
 type Props = {
   section: CmsSiteSettingsSection
+  sections: SettingsSectionMeta[]
+  showShopOrderEmails: boolean
   templateName: string
   themeResetBaseline: ThemeTokens
   themeResetHelpText: string
@@ -35,6 +42,8 @@ type Props = {
 
 export function CmsSiteSettingsClient({
   section: initialSection,
+  sections,
+  showShopOrderEmails,
   templateName,
   themeResetBaseline,
   themeResetHelpText,
@@ -48,7 +57,10 @@ export function CmsSiteSettingsClient({
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const section = parseCmsSiteSettingsSection(searchParams.get("section") ?? initialSection)
+  const section = parseCmsSiteSettingsSection(
+    searchParams.get("section") ?? initialSection,
+    sections
+  )
 
   const [branding, setBranding] = useState(initialBranding)
 
@@ -56,7 +68,7 @@ export function CmsSiteSettingsClient({
     router.push(`/admin/cms/settings?section=${next}`)
   }
 
-  const activeMeta = CMS_SITE_SETTINGS_SECTIONS.find((s) => s.id === section)
+  const activeMeta = sections.find((s) => s.id === section)
 
   return (
     <div className="space-y-8">
@@ -80,7 +92,7 @@ export function CmsSiteSettingsClient({
 
       <div className="flex flex-col gap-8 lg:flex-row">
         <aside className="lg:w-56 shrink-0 space-y-1">
-          {CMS_SITE_SETTINGS_SECTIONS.map((item) => (
+          {sections.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -126,6 +138,7 @@ export function CmsSiteSettingsClient({
               initial={initialContactEmails}
               initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
               initialNewOrderNotificationEmails={initialNewOrderNotificationEmails}
+              showShopOrderEmails={showShopOrderEmails}
             />
           ) : null}
         </div>

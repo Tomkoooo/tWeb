@@ -1,4 +1,7 @@
 import { getAdminStats } from "@/actions/admin-stats";
+import { redirect } from "next/navigation";
+import { isShopEnabled } from "@/lib/features/shop";
+import { resolvePluginStatsRedirect } from "@/lib/admin-plugin-navigation";
 import { TrendingUp, ShoppingCart, Users, Package, MessageSquare, BarChart3 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -55,6 +58,11 @@ function StatCard({ title, value, subtitle, icon: Icon }: StatCardProps) {
 }
 
 export default async function AdminStatsPage() {
+  if (!isShopEnabled()) {
+    const pluginStats = await resolvePluginStatsRedirect();
+    if (pluginStats) redirect(pluginStats);
+  }
+
   const stats = await getAdminStats() as AdminStatsResult;
   const { kpis } = stats;
 

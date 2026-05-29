@@ -97,7 +97,7 @@ export function Footer({
         </div>
       </div>
       <div className="bg-[#1a120c] py-3 text-center font-minecraft-body text-[10px] text-white/50">
-        powered by webshop-engine
+        powered by <a href="https://github.com/Tomkoooo/tWeb" target="_blank" rel="noopener noreferrer" className="underline">tWeb</a>
       </div>
     </footer>
   )

@@ -1,15 +1,20 @@
 import Link from "next/link"
 import type { EditablePageNavItem } from "@/templates/cms-pages"
-import { CMS_SITE_SETTINGS_SECTIONS } from "@/features/template-cms/cms-site-settings"
+type SettingsSectionLink = {
+  id: string
+  label: string
+}
 
 export function AdminCmsPageNav({
   editablePages,
   activeSegment,
   showSettingsLink = true,
+  settingsSections = [],
 }: {
   editablePages: EditablePageNavItem[]
   activeSegment?: string
   showSettingsLink?: boolean
+  settingsSections?: SettingsSectionLink[]
 }) {
   return (
     <nav className="flex flex-col gap-3 sm:items-end">
@@ -21,7 +26,7 @@ export function AdminCmsPageNav({
           >
             Weboldal beállítások
           </Link>
-          {CMS_SITE_SETTINGS_SECTIONS.map((section) => (
+          {settingsSections.map((section) => (
             <Link
               key={section.id}
               href={`/admin/cms/settings?section=${section.id}`}

@@ -485,10 +485,35 @@ img.pixelated {
 }
 
 .minecraft-page-mineshow .minecraft-input,
-.minecraft-page-mineshow .minecraft-panel-inner {
+.minecraft-page-mineshow .minecraft-panel-inner,
+.minecraft-page-mineshow .mineshow-contact-form input,
+.minecraft-page-mineshow .mineshow-contact-form textarea,
+.minecraft-page-mineshow .mineshow-contact-form select {
   font-family: var(--font-press-start), system-ui, cursive;
   font-size: 0.6rem;
   line-height: 1.6;
+}
+
+.minecraft-page-mineshow .mineshow-contact-form input,
+.minecraft-page-mineshow .mineshow-contact-form textarea,
+.minecraft-page-mineshow .mineshow-contact-form select {
+  padding: 0.5rem 0.75rem;
+  border: 3px solid #3d2817;
+  background: #fff;
+  color: #2d2817;
+  width: 100%;
+}
+
+.minecraft-page-mineshow .mineshow-contact-form label {
+  color: #2d5016;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.minecraft-page-mineshow .mineshow-contact-form button[type="submit"] {
+  font-family: var(--font-press-start), system-ui, cursive;
+  font-size: 0.55rem;
 }
 
 .minecraft-nav {

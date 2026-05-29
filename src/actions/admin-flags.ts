@@ -6,6 +6,13 @@ import { setCachedMaintenanceEnabled } from "@/lib/maintenance-flag-cache";
 import dbConnect from "@/lib/db";
 import FeatureFlag from "@/models/FeatureFlag";
 import { requireAdmin } from "@/lib/admin-auth";
+import {
+  isAdminFlagKeyAccessible,
+  getAccessiblePluginFeatureFlagKeys,
+  getDeploymentForAdmin,
+} from "@/lib/admin-settings-access";
+import { isShopEnabled } from "@/lib/features/shop";
+import { PluginService } from "@/services/plugin";
 
 type FlagSeed = {
   key: string;
@@ -67,13 +74,6 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     key: "szamlazzInvoicing",
     label: "Automatikus számlázás",
     description: "Számlázz.hu/szamlazz.ts alapú automatikus számlázás.",
-    defaultEnabled: false,
-  },
-  {
-    key: "pluginTicketing",
-    label: "Ticketing plugin",
-    description:
-      "Jegyértékesítés plugin (események, közvetlen checkout). A deployment allowlist mellett szükséges, ha a plugin manifest featureFlagKey-t használ.",
     defaultEnabled: false,
   },
   {
@@ -147,6 +147,15 @@ export async function getAdminFeatureFlags() {
 
 export async function updateFeatureFlag(flagKey: string, enabled: boolean) {
   await requireAdmin();
+  const host = await PluginService.getHost();
+  const deployment = getDeploymentForAdmin(host);
+  const shopEnabled = isShopEnabled();
+  const pluginFlagKeys = new Set(getAccessiblePluginFeatureFlagKeys(deployment));
+  const allowed =
+    isAdminFlagKeyAccessible(flagKey, deployment, shopEnabled) || pluginFlagKeys.has(flagKey);
+  if (!allowed) {
+    throw new Error("Ez a beállítás nem érhető el ezen a deploymenten.");
+  }
   await dbConnect();
 
   await FeatureFlag.findOneAndUpdate(

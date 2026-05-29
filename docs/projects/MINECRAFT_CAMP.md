@@ -37,10 +37,26 @@ Shop routes (`/shop`, `/cart`, …) return **404** in camp-only mode.
 - Set `BOOTSTRAP_ADMIN_EMAILS=you@example.com` on an empty database for the first admin.
 - Footer and navbar show **Bejelentkezés** when logged out, **Admin megnyitása** when logged in as admin.
 
-## KPIs and statistics
+## Contact form
 
-- **Camp KPIs** live on the plugin dashboard: `/admin/plugins/camp-booking` (bevétel, gyerekek, szabad helyek, aktív holdok, legutóbbi regisztrációk).
-- **Global** `/admin/stats` is for **webshop orders** only and returns **404** when `ENABLE_SHOP=false`.
+Homepage **Kapcsolat** section (`#contact`) uses the shared `ContactInquiryForm` with recipients from **CMS → Weboldal beállítások → Kapcsolat e-mailek**. Messages appear under **Admin → Kapcsolat** (same as default-modern).
+
+## Email templates
+
+| Template type | Tags | Used by |
+| --- | --- | --- |
+| `order_confirmation` | shop, order | Webshop checkout only |
+| `camp_registration_confirmation` | camp-booking | Tábor Stripe fizetés után |
+| `contact_form_notification` | contact | Kapcsolat űrlap (minden sablon) |
+
+Initialize missing templates at **Admin → Emailek** after enabling `pluginCampBooking`.
+
+## Admin navigation (`ENABLE_SHOP=false`)
+
+- **`/admin`** redirects to **`/admin/plugins/camp-booking/stats`** (plugin KPIs).
+- **`/admin/stats`** also redirects to the plugin statistics page.
+- There is no webshop dashboard; sidebar shows tábor plugin links + CMS / contact / payment settings.
+- Plugin config: `primaryWhenShopDisabled` + `statsSegment: "stats"` on the camp-booking module.
 
 ## Admin workflow
 

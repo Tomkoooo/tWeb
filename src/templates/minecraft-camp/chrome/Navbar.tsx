@@ -1,6 +1,5 @@
 import Link from "next/link"
 import type { ChromeProps } from "@/templates/types"
-import { ChromeAuthActions } from "./ChromeAuthActions"
 
 export function Navbar({ brandName, logoSrc, venueBadge }: ChromeProps) {
   return (
@@ -33,7 +32,6 @@ export function Navbar({ brandName, logoSrc, venueBadge }: ChromeProps) {
           >
             Jelentkezés
           </Link>
-          <ChromeAuthActions variant="nav" className="hidden sm:inline" />
         </div>
       </div>
       {venueBadge ? (

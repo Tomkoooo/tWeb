@@ -16,8 +16,8 @@ Optional full-stack modules (admin UI, API, models) gated per deployment.
 
 1. Register the plugin in [`src/plugins/registry.ts`](../../src/plugins/registry.ts).
 2. Add the plugin id to `enabledPlugins` for a deployment in [`deployments.config.json`](../../deployments.config.json).
-3. Set `DEPLOYMENT_KEY` in the deployment environment to that deployment’s `key` (e.g. `course-seller`).
-4. If the plugin manifest sets `featureFlagKey`, enable that flag in **Admin → Beállítások** (e.g. `pluginTicketing`).
+3. Set `DEPLOYMENT_KEY` in the deployment environment to that deployment’s `key` (e.g. `minecraft-camp`).
+4. If the plugin manifest sets `featureFlagKey`, enable that flag in **Admin → Beállítások → Plugin beállítások** (e.g. `pluginCampBooking`).
 5. Run `npm run deployments:validate`.
 
 ## URLs
@@ -29,5 +29,4 @@ Optional full-stack modules (admin UI, API, models) gated per deployment.
 ## Ticketing (skeleton)
 
 - Model: `TicketEvent`
-- Status probe: `GET /api/plugins/ticketing/status` (when enabled)
-- Course-seller sample deployment: `DEPLOYMENT_KEY=course-seller`
+- Minecraft camp sample deployment: `DEPLOYMENT_KEY=minecraft-camp`

@@ -14,7 +14,7 @@ export function MineshowContactMap({
   if (!mapEmbedUrl) return null
 
   return (
-    <section id="helyszin" className="bg-[#b8d88a] px-4 py-12 border-t-4 border-[#3d2817]/20">
+    <div className="px-4 pt-12 pb-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {addressTitle ? (
           <h2 className="font-minecraft text-center text-xs md:text-sm text-[#2d2817]">
@@ -44,6 +44,6 @@ export function MineshowContactMap({
           </div>
         )}
       </div>
-    </section>
+    </div>
   )
 }

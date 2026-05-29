@@ -31,7 +31,10 @@ export const SHOP_DISABLED_PUBLIC_PREFIXES = [
   "/profile",
 ] as const
 
-/** Admin URL prefixes that require the shop. */
+/**
+ * Admin URL prefixes blocked when the product catalog / cart is off.
+ * Payment methods, coupons, Számlázz (feature flag), and emails stay available for camp/plugin checkout.
+ */
 export const SHOP_DISABLED_ADMIN_PREFIXES = [
   "/admin/orders",
   "/admin/users",
@@ -40,8 +43,6 @@ export const SHOP_DISABLED_ADMIN_PREFIXES = [
   "/admin/products",
   "/admin/categories",
   "/admin/shipping",
-  "/admin/payment",
-  "/admin/coupons",
   "/admin/shop",
 ] as const
 

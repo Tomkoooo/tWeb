@@ -324,6 +324,11 @@ export class CampCheckoutService {
 
     await CampService.confirmSessionSeats(hold.sessionId, seats)
 
+    const { sendCampRegistrationConfirmationEmail } = await import(
+      "../lib/send-registration-email"
+    )
+    void sendCampRegistrationConfirmationEmail(registration)
+
     hold.status = "finalized"
     hold.registrationId = registration._id
     await hold.save()

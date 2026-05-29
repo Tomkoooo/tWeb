@@ -1,6 +1,5 @@
 import dbConnect from "@/lib/db"
 import { THEME_TOKEN_KEYS } from "@/lib/theme-token-keys"
-import { sanitizeThemeTokens } from "@/lib/theme-sanitize"
 import ThemeSetting from "@/models/ThemeSetting"
 import type { TemplateModule } from "@/templates/types"
 
@@ -135,16 +134,16 @@ export class ThemeService {
         doc.colors === undefined ||
         doc.colors === null ||
         typeof doc.colors !== "object") {
-      return sanitizeThemeTokens(base, ENGINE_DEFAULT_THEME)
+      return base
     }
 
     if (doc.overridesOnly === true) {
       const partial = doc.colors as Partial<ThemeTokens>
-      return sanitizeThemeTokens({ ...base, ...partial } as ThemeTokens, base)
+      return { ...base, ...partial } as ThemeTokens
     }
 
     const legacyLayer = themeLayerFromStoredDocument(doc)
-    return sanitizeThemeTokens({ ...base, ...legacyLayer }, base)
+    return { ...base, ...legacyLayer } as ThemeTokens
   }
 
   /**

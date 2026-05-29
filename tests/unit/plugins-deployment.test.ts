@@ -25,18 +25,18 @@ describe("deployment config", () => {
     expect(listAllowedTemplateIdsForDeployment()).toContain("default-modern")
   })
 
-  it("selects course-seller deployment via DEPLOYMENT_KEY", () => {
-    process.env.DEPLOYMENT_KEY = "course-seller"
+  it("selects minecraft-camp deployment via DEPLOYMENT_KEY", () => {
+    process.env.DEPLOYMENT_KEY = "minecraft-camp"
     const config = getDeploymentDefinition()
-    expect(config.key).toBe("course-seller")
-    expect(config.enabledPlugins).toContain("ticketing")
-    expect(getPluginConfigForDeployment("ticketing").checkoutMode).toBe("direct")
+    expect(config.key).toBe("minecraft-camp")
+    expect(config.enabledPlugins).toContain("camp-booking")
+    expect(getPluginConfigForDeployment("camp-booking").currency).toBe("HUF")
   })
 
   it("allowlists plugins per deployment", () => {
     process.env.DEPLOYMENT_KEY = "default"
-    expect(isPluginAllowlistedForDeployment("ticketing")).toBe(false)
-    process.env.DEPLOYMENT_KEY = "course-seller"
-    expect(isPluginAllowlistedForDeployment("ticketing")).toBe(true)
+    expect(isPluginAllowlistedForDeployment("camp-booking")).toBe(false)
+    process.env.DEPLOYMENT_KEY = "minecraft-camp"
+    expect(isPluginAllowlistedForDeployment("camp-booking")).toBe(true)
   })
 })

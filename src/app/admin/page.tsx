@@ -10,9 +10,10 @@ import {
 } from "lucide-react"
 import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { isShopEnabled } from "@/lib/features/shop"
-import { PluginService } from "@/services/plugin"
-import { pluginAdminHref } from "@/plugins/types"
+import { resolveShopDisabledAdminLanding } from "@/lib/admin-plugin-navigation"
+import { AdminContentModeHub } from "@/components/admin/AdminContentModeHub"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
@@ -50,8 +51,10 @@ async function KpiCard({ title, value, subtitle, change, trend, icon: Icon }: Kp
         <div className="p-3 admin-icon-well rounded-xl group-hover:scale-110 transition-transform duration-300">
           <Icon className="w-6 h-6 admin-icon-accent" />
         </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+        <div
+          className={`flex items-center gap-1 text-sm font-medium ${trend === "up" ? "text-emerald-400" : "text-rose-400"}`}
+        >
+          {trend === "up" ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
           {change}%
         </div>
       </div>
@@ -66,57 +69,11 @@ async function KpiCard({ title, value, subtitle, change, trend, icon: Icon }: Kp
 
 export default async function AdminDashboard() {
   if (!isShopEnabled()) {
-    const pluginsWithAdmin = await PluginService.listEnabledWithAdmin()
-    return (
-      <div className="space-y-8 animate-in fade-in duration-700 max-w-xl">
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
-            Admin <span className="admin-headline-accent">áttekintés</span>
-          </h1>
-          <p className="text-white/40 font-medium italic">
-            Csak tartalmi üzemmód: a bolt funkció ki van kapcsolva{" "}
-            <code className="text-neutral-300">ENABLE_SHOP=false</code> környezettel. A tábor
-            foglalás és a CMS továbbra is elérhető; a vásárlók nem kellenek bejelentkezzenek a
-            jelentkezéshez.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest">
-          {pluginsWithAdmin.map((plugin) => (
-            <Link
-              key={plugin.id}
-              href={pluginAdminHref(plugin.id)}
-              className="rounded-lg border border-amber-500/30 bg-amber-950/30 px-5 py-4 text-white hover:border-amber-400/50"
-            >
-              {plugin.name}
-            </Link>
-          ))}
-          <Link
-            href="/admin/templates"
-            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-          >
-            Sablonok
-          </Link>
-          <Link
-            href="/admin/cms"
-            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-          >
-            CMS
-          </Link>
-          <Link
-            href="/admin/contact"
-            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-          >
-            Kapcsolat
-          </Link>
-          <Link
-            href="/admin/info"
-            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-          >
-            Beállítások
-          </Link>
-        </div>
-      </div>
-    )
+    const landing = await resolveShopDisabledAdminLanding()
+    if (landing.kind === "redirect") {
+      redirect(landing.href)
+    }
+    return <AdminContentModeHub plugins={landing.plugins} />
   }
 
   const statsData = await getAdminStats()
@@ -134,8 +91,20 @@ export default async function AdminDashboard() {
   }
 
   const stats: KpiCardProps[] = [
-    { title: "Összes Bevétel", value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`, change: 0, trend: "up", icon: TrendingUp },
-    { title: "Összes Rendelés", value: kpis.ordersCount.toString(), change: 0, trend: "up", icon: ShoppingCart },
+    {
+      title: "Összes Bevétel",
+      value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`,
+      change: 0,
+      trend: "up",
+      icon: TrendingUp,
+    },
+    {
+      title: "Összes Rendelés",
+      value: kpis.ordersCount.toString(),
+      change: 0,
+      trend: "up",
+      icon: ShoppingCart,
+    },
     {
       title: "Összes Vásárló",
       value: kpis.totalCustomersCount.toString(),
@@ -144,7 +113,13 @@ export default async function AdminDashboard() {
       trend: "up",
       icon: Users,
     },
-    { title: "Összes Termék", value: kpis.productsCount.toString(), change: 0, trend: "up", icon: Package },
+    {
+      title: "Összes Termék",
+      value: kpis.productsCount.toString(),
+      change: 0,
+      trend: "up",
+      icon: Package,
+    },
   ]
 
   return (
@@ -153,7 +128,9 @@ export default async function AdminDashboard() {
         <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
           Vezérlőpult <span className="admin-headline-accent">Áttekintés</span>
         </h1>
-        <p className="text-white/40 font-medium italic">Üdvözöljük az adminisztrációs felületen. Itt láthatja a bolt jelenlegi állapotát.</p>
+        <p className="text-white/40 font-medium italic">
+          Üdvözöljük az adminisztrációs felületen. Itt láthatja a bolt jelenlegi állapotát.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -169,7 +146,12 @@ export default async function AdminDashboard() {
               <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Legutóbbi Rendelések
             </h2>
-            <Link href="/admin/orders" className="text-[10px] font-black uppercase tracking-widest admin-link-accent">Összes megtekintése</Link>
+            <Link
+              href="/admin/orders"
+              className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+            >
+              Összes megtekintése
+            </Link>
           </div>
           <div className="space-y-4">
             {recentOrders.length === 0 ? (
@@ -179,13 +161,22 @@ export default async function AdminDashboard() {
               </div>
             ) : (
               recentOrders.map((order) => (
-                <div key={order._id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group">
+                <div
+                  key={order._id}
+                  className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group"
+                >
                   <div className="flex flex-col">
-                    <span className="font-heading font-black text-white uppercase tracking-wider text-sm">{formatOrderNumberLabel(order._id)}</span>
-                    <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">{format(new Date(order.createdAt), "MM. dd. HH:mm", { locale: hu })}</span>
+                    <span className="font-heading font-black text-white uppercase tracking-wider text-sm">
+                      {formatOrderNumberLabel(order._id)}
+                    </span>
+                    <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
+                      {format(new Date(order.createdAt), "MM. dd. HH:mm", { locale: hu })}
+                    </span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-black text-white text-sm">{order.total.toLocaleString("hu-HU")} FT</span>
+                    <span className="font-black text-white text-sm">
+                      {order.total.toLocaleString("hu-HU")} FT
+                    </span>
                     <Link href={`/admin/orders/${order._id}`}>
                       <Eye className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
                     </Link>
@@ -201,7 +192,12 @@ export default async function AdminDashboard() {
               <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Aktivitási Napló
             </h2>
-            <Link href="/admin/contact" className="text-[10px] font-black uppercase tracking-widest admin-link-accent">Üzenetek</Link>
+            <Link
+              href="/admin/contact"
+              className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+            >
+              Üzenetek
+            </Link>
           </div>
           <div className="space-y-4">
             {unreadContactMessages.length === 0 ? (
@@ -211,7 +207,10 @@ export default async function AdminDashboard() {
               </div>
             ) : (
               unreadContactMessages.map((message) => (
-                <div key={message._id} className="flex items-start justify-between gap-4 p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group">
+                <div
+                  key={message._id}
+                  className="flex items-start justify-between gap-4 p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group"
+                >
                   <div className="min-w-0 flex items-start gap-3">
                     <div className="mt-1 rounded-full bg-primary/10 p-2">
                       <Mail className="h-4 w-4 admin-icon-accent" />
@@ -224,11 +223,16 @@ export default async function AdminDashboard() {
                         {message.message}
                       </p>
                       <span className="mt-2 block text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-                        {message.email} · {format(new Date(message.createdAt), "MM. dd. HH:mm", { locale: hu })}
+                        {message.email} ·{" "}
+                        {format(new Date(message.createdAt), "MM. dd. HH:mm", { locale: hu })}
                       </span>
                     </div>
                   </div>
-                  <Link href={`/admin/contact/${message._id}`} className="mt-1 shrink-0" title="Üzenet megnyitása">
+                  <Link
+                    href={`/admin/contact/${message._id}`}
+                    className="mt-1 shrink-0"
+                    title="Üzenet megnyitása"
+                  >
                     <Eye className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
                   </Link>
                 </div>
@@ -240,4 +244,3 @@ export default async function AdminDashboard() {
     </div>
   )
 }
-

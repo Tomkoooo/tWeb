@@ -10,18 +10,6 @@
       "pluginConfig": {}
     },
     {
-      "key": "course-seller",
-      "label": "Course seller (ticketing + direct checkout)",
-      "allowedTemplates": ["default-modern", "atelier-showcase"],
-      "defaultTemplateId": "default-modern",
-      "enabledPlugins": ["ticketing"],
-      "pluginConfig": {
-        "ticketing": {
-          "checkoutMode": "direct"
-        }
-      }
-    },
-    {
       "key": "minecraft-camp",
       "label": "Minecraft tábor foglalás",
       "allowedTemplates": ["minecraft-camp"],

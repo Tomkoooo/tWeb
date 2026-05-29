@@ -6,6 +6,7 @@ import { TemplateService } from "@/services/template"
 import { PageContentService } from "@/services/page-content"
 import { listEditablePages } from "@/templates/cms-pages"
 import { isShopEnabled } from "@/lib/features/shop"
+import { getAccessibleCmsSiteSettingsSections } from "@/lib/admin-settings-access"
 import { CmsTemplatePageClient } from "@/features/template-cms/components/CmsTemplatePageClient"
 import { ShopVisualSurfaceEditor } from "@/features/template-cms/editors/ShopVisualSurfaceEditor"
 import { StaticPageVisualSurfaceEditor } from "@/features/template-cms/editors/StaticPageVisualSurfaceEditor"
@@ -51,6 +52,7 @@ export default async function CmsPageEditor({
   const dbActiveTemplate = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
   const editablePages = listEditablePages(template, shopEnabled)
+  const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
   const entry = editablePages.find((p) => p.adminSegment === pageKey)
   if (!entry) notFound()
 
@@ -117,7 +119,11 @@ export default async function CmsPageEditor({
                 <span className="ml-2 admin-text-accent">· Blokkos főoldal</span>
               </p>
             </div>
-            <AdminCmsPageNav editablePages={editablePages} activeSegment={pageKey} />
+            <AdminCmsPageNav
+              editablePages={editablePages}
+              activeSegment={pageKey}
+              settingsSections={cmsSettingsSections}
+            />
           </div>
         </header>
 
@@ -152,6 +158,7 @@ export default async function CmsPageEditor({
           label={entry.label}
           subtitle="Bolt · szerkesztő"
           editablePages={editablePages}
+          settingsSections={cmsSettingsSections}
           pageKey={pageKey}
           manifestName={template.manifest.name}
           fullPageKey={fullPageKey}
@@ -183,6 +190,7 @@ export default async function CmsPageEditor({
           label={entry.label}
           subtitle="Termék oldal · keret szerkesztő"
           editablePages={editablePages}
+          settingsSections={cmsSettingsSections}
           pageKey={pageKey}
           manifestName={template.manifest.name}
           fullPageKey={fullPageKey}
@@ -215,6 +223,7 @@ export default async function CmsPageEditor({
             label={entry.label}
             subtitle="Folyamat oldal · keret szerkesztő"
             editablePages={editablePages}
+            settingsSections={settingsSections}
             pageKey={pageKey}
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
@@ -244,6 +253,7 @@ export default async function CmsPageEditor({
             label={entry.label}
             subtitle={`Statikus lap · /${staticSlug}`}
             editablePages={editablePages}
+            settingsSections={settingsSections}
             pageKey={pageKey}
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
@@ -276,6 +286,7 @@ function SurfacePageLayout({
   label,
   subtitle,
   editablePages,
+  settingsSections,
   pageKey,
   manifestName,
   fullPageKey,
@@ -284,6 +295,7 @@ function SurfacePageLayout({
   label: string
   subtitle: string
   editablePages: ReturnType<typeof listEditablePages>
+  settingsSections: Array<{ id: string; label: string }>
   pageKey: string
   manifestName: string
   fullPageKey: string
@@ -306,7 +318,11 @@ function SurfacePageLayout({
               <span className="ml-2 admin-text-accent">· {subtitle}</span>
             </p>
           </div>
-          <AdminCmsPageNav editablePages={editablePages} activeSegment={pageKey} />
+          <AdminCmsPageNav
+            editablePages={editablePages}
+            activeSegment={pageKey}
+            settingsSections={settingsSections}
+          />
         </div>
       </header>
 

@@ -12,6 +12,7 @@ import { listAllTemplates } from "@/templates/registry"
 import { PluginService } from "@/services/plugin"
 import { pluginAdminHref } from "@/plugins/types"
 import type { PluginNavGroup } from "@/components/admin/AdminPluginNavSection"
+import { resolveContentModeSidebarNav } from "@/lib/admin-plugin-navigation"
 
 export default async function AdminLayout({
   children,
@@ -26,12 +27,14 @@ export default async function AdminLayout({
     glsParcelPickerEnabled,
     stripePaymentsEnabled,
     pluginsWithAdmin,
+    contentModeNav,
   ] = await Promise.all([
     BrandingSettingsService.get(),
     FeatureFlagService.isEnabled("newsletter", false),
     FeatureFlagService.isEnabled("glsParcelPicker", false),
     FeatureFlagService.isEnabled("stripePayments", false),
     PluginService.listEnabledWithAdmin(),
+    resolveContentModeSidebarNav(),
   ])
   const shopEnabled = isShopEnabled()
   const adminBrandName = branding.brandName || "Generic"
@@ -82,6 +85,7 @@ export default async function AdminLayout({
               enabledFeatures={enabledFeatures}
               shopEnabled={shopEnabled}
               pluginNavGroups={pluginNavGroups}
+              contentModeNav={shopEnabled ? undefined : contentModeNav}
             />
           </SheetContent>
         </Sheet>
@@ -94,6 +98,7 @@ export default async function AdminLayout({
           enabledFeatures={enabledFeatures}
           shopEnabled={shopEnabled}
           pluginNavGroups={pluginNavGroups}
+          contentModeNav={shopEnabled ? undefined : contentModeNav}
         />
       </aside>
 

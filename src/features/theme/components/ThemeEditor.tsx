@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { THEME_TOKEN_KEYS } from "@/lib/theme-token-keys"
 import { mergeThemeTokens, parseThemeJsonInput } from "@/lib/parse-theme-json"
+import { getThemeContrastWarnings } from "@/lib/theme-sanitize"
 import type { ThemeTokens } from "@/services/theme"
 
 type Props = {
@@ -233,7 +234,13 @@ export function ThemeEditor({
             setTheme(updated)
             onSaved?.(updated)
             router.refresh()
-            toast.success("Theme saved")
+            const warnings = getThemeContrastWarnings(updated)
+            if (warnings.length > 0) {
+              toast.success("Theme saved")
+              toast.warning(warnings.join(" "))
+            } else {
+              toast.success("Theme saved")
+            }
           }}
           className="px-3 h-10 bg-primary text-white text-xs uppercase"
         >

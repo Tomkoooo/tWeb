@@ -20,7 +20,7 @@ describe("deployments-registry", () => {
     const matrix = getDeploymentAccessMatrix()
     expect(matrix.length).toBeGreaterThan(0)
     expect(matrix.some((d) => d.key === "default")).toBe(true)
-    expect(matrix.some((d) => d.key === "course-seller")).toBe(true)
+    expect(matrix.some((d) => d.key === "minecraft-camp")).toBe(true)
   })
 
   it("default deployment allows both registered templates", () => {
@@ -31,11 +31,11 @@ describe("deployments-registry", () => {
     expect(getDeploymentDefinition().enabledPlugins).toEqual([])
   })
 
-  it("course-seller allowlists ticketing plugin and templates", () => {
-    process.env.DEPLOYMENT_KEY = "course-seller"
-    expect(isPluginAllowlistedForDeployment("ticketing")).toBe(true)
+  it("minecraft-camp allowlists camp-booking plugin and template", () => {
+    process.env.DEPLOYMENT_KEY = "minecraft-camp"
+    expect(isPluginAllowlistedForDeployment("camp-booking")).toBe(true)
     expect(isPluginAllowlistedForDeployment("unknown")).toBe(false)
-    expect(isTemplateAllowedForDeployment("default-modern")).toBe(true)
-    expect(getDeploymentKey()).toBe("course-seller")
+    expect(isTemplateAllowedForDeployment("minecraft-camp")).toBe(true)
+    expect(getDeploymentKey()).toBe("minecraft-camp")
   })
 })

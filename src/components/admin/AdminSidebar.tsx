@@ -20,6 +20,7 @@ import {
   Tag,
   ChevronDown,
   FolderTree,
+  Puzzle,
   Store,
   Layout as LayoutIcon,
   Sparkles,
@@ -32,6 +33,7 @@ import {
   AdminPluginNavSection,
   type PluginNavGroup,
 } from "@/components/admin/AdminPluginNavSection"
+import type { ContentModeSidebarNav } from "@/lib/admin-plugin-navigation"
 
 type FeatureKey = "newsletter" | "glsParcelPicker" | "stripePayments"
 
@@ -77,9 +79,9 @@ const menuGroups: Array<{
       { icon: FileEdit, label: "CMS", href: "/admin/cms" },
       { icon: Mail, label: "Emailek", href: "/admin/emails" },
       { icon: Send, label: "Hírlevelek", href: "/admin/newsletters", featureKey: "newsletter" },
+      { icon: CreditCard, label: "Fizetés", href: "/admin/payment" },
+      { icon: Tag, label: "Kuponok", href: "/admin/coupons" },
       { icon: Truck, label: "Szállítás", href: "/admin/shipping", requiresShop: true },
-      { icon: CreditCard, label: "Fizetés", href: "/admin/payment", requiresShop: true },
-      { icon: Tag, label: "Kuponok", href: "/admin/coupons", requiresShop: true },
       { icon: Sparkles, label: "Termék javaslatok", href: "/admin/shop/product-suggestions", requiresShop: true },
       { icon: Globe2, label: "Ország / kereskedés", href: "/admin/shop/trading", requiresShop: true },
       { icon: ListOrdered, label: "Kiemelt termékek", href: "/admin/shop/featured", requiresShop: true },
@@ -94,6 +96,7 @@ export function AdminSidebar({
   enabledFeatures,
   shopEnabled = true,
   pluginNavGroups = [],
+  contentModeNav,
 }: {
   className?: string
   onAction?: () => void
@@ -101,6 +104,7 @@ export function AdminSidebar({
   enabledFeatures?: Partial<Record<FeatureKey, boolean>>
   shopEnabled?: boolean
   pluginNavGroups?: PluginNavGroup[]
+  contentModeNav?: ContentModeSidebarNav
 }) {
   const pathname = usePathname()
   const { data: session } = useSession()
@@ -113,7 +117,38 @@ export function AdminSidebar({
     if (item.requiresShop && !shopEnabled) return false
     return true
   }
-  const visibleTopLevelItems = topLevelMenuItems.filter(isVisibleByFeature).filter(isVisibleForShopFlag)
+  const visibleTopLevelItems = topLevelMenuItems
+    .filter(isVisibleByFeature)
+    .filter(isVisibleForShopFlag)
+    .filter((item) => {
+      if (shopEnabled) return true
+      if (item.href === "/admin" || item.href === "/admin/stats") return false
+      return true
+    })
+
+  const flattenedPluginItems: Array<{ label: string; href: string }> =
+    !shopEnabled && contentModeNav?.flattenPluginNav && pluginNavGroups.length === 1
+      ? pluginNavGroups[0].items
+      : []
+
+  const contentModePrimaryItems: MenuItem[] = []
+  if (!shopEnabled && contentModeNav && flattenedPluginItems.length === 0) {
+    contentModePrimaryItems.push({
+      icon: LayoutDashboard,
+      label: contentModeNav.overviewLabel,
+      href: contentModeNav.overviewHref,
+    })
+    if (contentModeNav.statsHref) {
+      contentModePrimaryItems.push({
+        icon: BarChart3,
+        label: contentModeNav.statsLabel,
+        href: contentModeNav.statsHref,
+      })
+    }
+  }
+
+  const showPluginAccordion = pluginNavGroups.length > 0 && flattenedPluginItems.length === 0
+
   const visibleMenuGroups = menuGroups
     .map((group) => ({
       ...group,
@@ -124,8 +159,36 @@ export function AdminSidebar({
     productManager: true,
     webshopSettings: true,
   })
-  const isItemActive = (href: string) =>
-    href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+  const isItemActive = (href: string) => {
+    if (href === "/admin") return pathname === "/admin"
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }
+
+  const renderNavLink = (
+    item: { icon: MenuItem["icon"]; label: string; href: string },
+    size: "sm" | "md" = "md"
+  ) => {
+    const isActive = isItemActive(item.href)
+    const py = size === "sm" ? "py-2.5" : "py-3"
+    const text = size === "sm" ? "text-xs" : "text-sm"
+    const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5"
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onAction}
+        className={cn(
+          `flex items-center gap-3 px-4 ${py} rounded-none ${text} font-black uppercase tracking-widest transition-all duration-300`,
+          isActive
+            ? "bg-white/15 text-white shadow-lg shadow-black/20"
+            : "text-neutral-500 hover:text-white hover:bg-white/5"
+        )}
+      >
+        <item.icon className={cn(iconSize, isActive ? "text-white" : "text-neutral-400")} />
+        {item.label}
+      </Link>
+    )
+  }
 
   return (
     <div className={cn("admin-shell h-full flex flex-col bg-[#0A0A0B]", className)}>
@@ -146,25 +209,19 @@ export function AdminSidebar({
       </div>
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        {visibleTopLevelItems.slice(0, 2).map((item) => {
-          const isActive = isItemActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onAction}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
-                isActive 
-                  ? "bg-white/15 text-white shadow-lg shadow-black/20" 
-                  : "text-neutral-500 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
-              {item.label}
-            </Link>
-          )
-        })}
+        {contentModePrimaryItems.map((item) => renderNavLink(item))}
+
+        {flattenedPluginItems.map((item) =>
+          renderNavLink({ icon: Puzzle, label: item.label, href: item.href }, "sm")
+        )}
+
+        {!shopEnabled && contentModePrimaryItems.length > 0 ? (
+          <div className="my-2 border-t border-white/10" />
+        ) : null}
+
+        {shopEnabled
+          ? visibleTopLevelItems.slice(0, 2).map((item) => renderNavLink(item))
+          : null}
 
         {visibleMenuGroups.map((group) => {
           const isGroupActive = group.items.some((item) => isItemActive(item.href))
@@ -217,27 +274,13 @@ export function AdminSidebar({
           )
         })}
 
-        <AdminPluginNavSection groups={pluginNavGroups} onAction={onAction} />
+        {showPluginAccordion ? (
+          <AdminPluginNavSection groups={pluginNavGroups} onAction={onAction} />
+        ) : null}
 
-        {visibleTopLevelItems.slice(2).map((item) => {
-          const isActive = isItemActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onAction}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-none text-sm font-black uppercase tracking-widest transition-all duration-300",
-                isActive
-                  ? "bg-white/15 text-white shadow-lg shadow-black/20"
-                  : "text-neutral-500 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
-              {item.label}
-            </Link>
-          )
-        })}
+        {(shopEnabled ? visibleTopLevelItems.slice(2) : visibleTopLevelItems).map((item) =>
+          renderNavLink(item)
+        )}
       </nav>
 
       <div className="p-4 border-t border-white/5 space-y-2">

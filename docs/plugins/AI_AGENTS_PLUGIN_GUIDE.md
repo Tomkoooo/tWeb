@@ -39,13 +39,32 @@ A plugin is **live** only when all of the following pass:
 
 Middleware blocks `/admin/plugins/...` when not allowlisted. API returns `404 PLUGIN_DISABLED` when `PluginService.isEnabled()` is false.
 
+## Admin home when shop is disabled
+
+Optional on `PluginAdminConfig`:
+
+- `primaryWhenShopDisabled: true` — `/admin` redirects to this plugin (prefer `statsSegment` if set).
+- `statsSegment: "stats"` — `/admin/stats` redirects here; put KPIs on that route.
+
+Add a **Statisztikák** nav item pointing at `statsSegment`. The generic `/admin` dashboard is shop-only.
+
+## Email templates
+
+Plugins can register transactional mail via **`getEmailTemplates()`** on the `PluginModule` (see [`camp-booking`](../../src/plugins/camp-booking/plugin.config.ts)).
+
+- Each seed includes **`tags`** (e.g. `camp-booking`, `transactional`) and **`pluginId`** for the admin list at `/admin/emails`.
+- Use **plugin-specific `type` strings** (e.g. `camp_registration_confirmation`) — do not reuse webshop `order_confirmation`.
+- Send mail with `MailerService.sendEmail({ templateType, ... })` after seeding templates (`initializeMissingEmailTemplates` in admin).
+
+Core shop templates are tagged `shop`; contact templates are tagged `contact`.
+
 ## Storefront / checkout (later)
 
 Use `storefront.flowPages` on the plugin module to contribute `cart` / `checkout` / `profile` overrides (same contract as template `flowPages`). Wire through template bridge when implementing course direct-checkout.
 
 ## Reference plugin
 
-[`src/plugins/ticketing/`](../../src/plugins/ticketing/) — skeleton admin + `GET /api/plugins/ticketing/status`.
+[`src/plugins/camp-booking/`](../../src/plugins/camp-booking/) — tábor foglalás admin, API, storefront wizard.
 
 ## Contract
 

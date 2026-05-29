@@ -6,8 +6,8 @@ import { parsePluginAdminPath, parsePluginApiPath } from "@/lib/features/plugins
 describe("plugin registry contract", () => {
   const pluginIds = listRegisteredPluginIds()
 
-  it("registers at least the ticketing plugin", () => {
-    expect(pluginIds).toContain("ticketing")
+  it("registers camp-booking plugin", () => {
+    expect(pluginIds).toContain("camp-booking")
   })
 
   for (const id of pluginIds) {
@@ -57,21 +57,21 @@ describe("definePlugin validation", () => {
 
 describe("plugin path helpers", () => {
   it("parses admin paths", () => {
-    expect(parsePluginAdminPath("/admin/plugins/ticketing/events")).toEqual({
-      pluginId: "ticketing",
-      path: ["events"],
+    expect(parsePluginAdminPath("/admin/plugins/camp-booking/camps")).toEqual({
+      pluginId: "camp-booking",
+      path: ["camps"],
     })
   })
 
   it("parses api paths", () => {
-    expect(parsePluginApiPath("/api/plugins/ticketing/status")).toEqual({
-      pluginId: "ticketing",
-      path: ["status"],
+    expect(parsePluginApiPath("/api/plugins/camp-booking/admin/dashboard")).toEqual({
+      pluginId: "camp-booking",
+      path: ["admin", "dashboard"],
     })
   })
 
   it("builds admin hrefs", () => {
-    expect(pluginAdminHref("ticketing", "")).toBe("/admin/plugins/ticketing")
-    expect(pluginAdminHref("ticketing", "events")).toBe("/admin/plugins/ticketing/events")
+    expect(pluginAdminHref("camp-booking", "")).toBe("/admin/plugins/camp-booking")
+    expect(pluginAdminHref("camp-booking", "camps")).toBe("/admin/plugins/camp-booking/camps")
   })
 })
