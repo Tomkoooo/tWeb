@@ -1,0 +1,26 @@
+{
+  "defaultDeploymentKey": "default",
+  "deployments": [
+    {
+      "key": "default",
+      "label": "Default storefront",
+      "allowedTemplates": ["default-modern", "atelier-showcase"],
+      "defaultTemplateId": "default-modern",
+      "enabledPlugins": [],
+      "pluginConfig": {}
+    },
+    {
+      "key": "course-seller",
+      "label": "Course seller (ticketing + direct checkout)",
+      "allowedTemplates": ["default-modern", "atelier-showcase"],
+      "defaultTemplateId": "default-modern",
+      "enabledPlugins": ["ticketing"],
+      "pluginConfig": {
+        "ticketing": {
+          "checkoutMode": "direct"
+        }
+      }
+    }
+  ],
+  "hostMap": {}
+}

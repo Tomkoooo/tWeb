@@ -2,6 +2,8 @@ import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 import { NextResponse } from "next/server"
 import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
+import { isPluginAdminPath, parsePluginAdminPath } from "@/lib/features/plugins"
+import { isPluginAllowlistedForDeployment } from "@/config/deployments-registry"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
@@ -54,6 +56,14 @@ export default auth(async (req) => {
       return new NextResponse(null, { status: 404 })
     }
     if (isAdminUser && isShopAdminPath(pathname)) {
+      return new NextResponse(null, { status: 404 })
+    }
+  }
+
+  if (isPluginAdminPath(pathname)) {
+    const parsed = parsePluginAdminPath(pathname)
+    const host = req.headers.get("host")
+    if (!parsed || !isPluginAllowlistedForDeployment(parsed.pluginId, host)) {
       return new NextResponse(null, { status: 404 })
     }
   }

@@ -12,6 +12,8 @@ For **homepage block CMS** internals (data model, `CmsEditProvider`, inline prim
 
 To **import customer-provided copy** into CMS/template content, read [AGENT_CONTENT_IMPORT.md](../cms/AGENT_CONTENT_IMPORT.md) (`npm run cms:inspect`, `npm run cms:apply-import`).
 
+For **which deploys may use your template**, read [AI_AGENTS_DEPLOYMENT_GUIDE.md](../deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md). After registering in `src/templates/registry.ts`, add the template id to **`allowedTemplates`** (and optionally **`defaultTemplateId`**) for each row in [`deployments.config.json`](../../deployments.config.json). Admins only see templates allowed for the active `DEPLOYMENT_KEY`; activation is rejected otherwise.
+
 ## Full-site branding (mandatory for new registry templates)
 
 A new template is **not** “chrome + one static page.” Operators expect a coherent **layout language** everywhere the engine delegates to the template. Work through this list in order; skipping restyled pages while only editing Navbar, Footer, and `/about` is a failed template.
@@ -75,7 +77,9 @@ There is **no** operator-facing CMS for these routes in this repo: [`listEditabl
    ```
 
 2. Modify the generated files under `src/templates/<your-id>/` and add `public/template-previews/<your-id>.svg` for manifest screenshots.
-3. Verify with `npm run test:unit -- templates-contract` and `npx eslint src/templates`. Both must pass before declaring the template done.
+3. Register in `src/templates/registry.ts` and add the id to **`allowedTemplates`** in [`deployments.config.json`](../../deployments.config.json) for each customer deployment that should use it.
+4. Run `npm run deployments:validate`.
+5. Verify with `npm run test:unit -- templates-contract` and `npx eslint src/templates`. Both must pass before declaring the template done.
 
 ## Hard rules (lint-enforced; failures fail CI)
 

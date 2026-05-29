@@ -9,6 +9,9 @@ import { BrandingSettingsService } from "@/services/branding-settings"
 import { FeatureFlagService } from "@/services/feature-flags"
 import { isShopEnabled } from "@/lib/features/shop"
 import { listAllTemplates } from "@/templates/registry"
+import { PluginService } from "@/services/plugin"
+import { pluginAdminHref } from "@/plugins/types"
+import type { PluginNavGroup } from "@/components/admin/AdminPluginNavSection"
 
 export default async function AdminLayout({
   children,
@@ -17,13 +20,19 @@ export default async function AdminLayout({
 }) {
   await listAllTemplates()
   const session = await auth()
-  const [branding, newsletterEnabled, glsParcelPickerEnabled, stripePaymentsEnabled] =
-    await Promise.all([
-      BrandingSettingsService.get(),
-      FeatureFlagService.isEnabled("newsletter", false),
-      FeatureFlagService.isEnabled("glsParcelPicker", false),
-      FeatureFlagService.isEnabled("stripePayments", false),
-    ])
+  const [
+    branding,
+    newsletterEnabled,
+    glsParcelPickerEnabled,
+    stripePaymentsEnabled,
+    pluginsWithAdmin,
+  ] = await Promise.all([
+    BrandingSettingsService.get(),
+    FeatureFlagService.isEnabled("newsletter", false),
+    FeatureFlagService.isEnabled("glsParcelPicker", false),
+    FeatureFlagService.isEnabled("stripePayments", false),
+    PluginService.listEnabledWithAdmin(),
+  ])
   const shopEnabled = isShopEnabled()
   const adminBrandName = branding.brandName || "Generic"
   const enabledFeatures = {
@@ -31,6 +40,14 @@ export default async function AdminLayout({
     glsParcelPicker: glsParcelPickerEnabled,
     stripePayments: stripePaymentsEnabled,
   }
+  const pluginNavGroups: PluginNavGroup[] = pluginsWithAdmin.map((entry) => ({
+    pluginId: entry.id,
+    pluginName: entry.name,
+    items: entry.navItems.map((item) => ({
+      label: item.label,
+      href: pluginAdminHref(entry.id, item.segment),
+    })),
+  }))
 
   if (!session?.user) {
     redirect("/api/auth/signin")
@@ -64,6 +81,7 @@ export default async function AdminLayout({
               brandName={adminBrandName}
               enabledFeatures={enabledFeatures}
               shopEnabled={shopEnabled}
+              pluginNavGroups={pluginNavGroups}
             />
           </SheetContent>
         </Sheet>
@@ -75,6 +93,7 @@ export default async function AdminLayout({
           brandName={adminBrandName}
           enabledFeatures={enabledFeatures}
           shopEnabled={shopEnabled}
+          pluginNavGroups={pluginNavGroups}
         />
       </aside>
 

@@ -1,6 +1,8 @@
 import type { TemplateModule } from "./types"
 import { defaultModern } from "./default-modern/template.config"
 import { atelierShowcase } from "./atelier-showcase/template.config"
+import { validateDeploymentsAgainstRegistries } from "@/config/deployments-registry"
+import { listRegisteredPluginIds } from "@/plugins/registry"
 
 export const FALLBACK_TEMPLATE_ID = "default-modern" as const
 
@@ -60,3 +62,12 @@ export async function listAllTemplates(): Promise<TemplateModule[]> {
   const ids = [FALLBACK_TEMPLATE_ID, "atelier-showcase"] as const
   return Promise.all(ids.map((id) => loadTemplateModule(id)))
 }
+
+export function listRegisteredTemplateIds(): string[] {
+  return Object.keys(syncRegistry).filter(Boolean) as string[]
+}
+
+validateDeploymentsAgainstRegistries({
+  registeredTemplateIds: listRegisteredTemplateIds(),
+  registeredPluginIds: listRegisteredPluginIds(),
+})

@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "create-template": "node scripts/create-template.mjs",
+    "deployments:validate": "node scripts/deployments/validate.mjs",
     "cms:inspect": "npx tsx scripts/cms/inspect.ts",
     "cms:apply-import": "npx tsx scripts/cms/apply-import.ts",
     "metrics:analyze": "npx tsx scripts/dev-metrics/analyze.ts",

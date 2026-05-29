@@ -28,6 +28,10 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
+import {
+  AdminPluginNavSection,
+  type PluginNavGroup,
+} from "@/components/admin/AdminPluginNavSection"
 
 type FeatureKey = "newsletter" | "glsParcelPicker" | "stripePayments"
 
@@ -89,12 +93,14 @@ export function AdminSidebar({
   brandName = "Generic",
   enabledFeatures,
   shopEnabled = true,
+  pluginNavGroups = [],
 }: {
   className?: string
   onAction?: () => void
   brandName?: string
   enabledFeatures?: Partial<Record<FeatureKey, boolean>>
   shopEnabled?: boolean
+  pluginNavGroups?: PluginNavGroup[]
 }) {
   const pathname = usePathname()
   const { data: session } = useSession()
@@ -210,6 +216,8 @@ export function AdminSidebar({
             </div>
           )
         })}
+
+        <AdminPluginNavSection groups={pluginNavGroups} onAction={onAction} />
 
         {visibleTopLevelItems.slice(2).map((item) => {
           const isActive = isItemActive(item.href)

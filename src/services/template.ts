@@ -12,6 +12,12 @@ import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@/lib/storefron
 import type { TemplateModule } from "@/templates/types"
 import { readPreviewTemplateId } from "@/services/template-preview"
 import { ThemeService } from "@/services/theme"
+import {
+  getDefaultTemplateIdForDeployment,
+  isTemplateAllowedForDeployment,
+  listAllowedTemplateIdsForDeployment,
+} from "@/config/deployments-registry"
+import { headers } from "next/headers"
 
 export type ActiveTemplateInfo = {
   templateId: string
@@ -67,6 +73,14 @@ export class TemplateService {
     }
   }
 
+  static async listForDeployment(): Promise<TemplateModule[]> {
+    const host = await TemplateService.getRequestHost()
+    const allowed = new Set(listAllowedTemplateIdsForDeployment(host))
+    const all = await listAllTemplates()
+    return all.filter((t) => allowed.has(t.manifest.id))
+  }
+
+  /** @deprecated Use `listForDeployment()` — returns only templates allowed on this deployment. */
   static list(): TemplateModule[] {
     return listTemplates()
   }
@@ -75,10 +89,26 @@ export class TemplateService {
     return listAllTemplates()
   }
 
+  static async getSuggestedTemplateId(): Promise<string> {
+    const host = await TemplateService.getRequestHost()
+    return getDefaultTemplateIdForDeployment(host)
+  }
+
+  private static async getRequestHost(): Promise<string | null> {
+    try {
+      const h = await headers()
+      return h.get("host")
+    } catch {
+      return null
+    }
+  }
+
   static async activate(templateId: string, activatedBy?: string): Promise<TemplateModule> {
-    const knownIds = new Set([FALLBACK_TEMPLATE_ID, "atelier-showcase"])
-    if (!knownIds.has(templateId)) {
-      throw new Error(`Unknown template id '${templateId}'.`)
+    const host = await TemplateService.getRequestHost()
+    if (!isTemplateAllowedForDeployment(templateId, host)) {
+      throw new Error(
+        `Template '${templateId}' is not allowed for this deployment. Check deployments.config.json and DEPLOYMENT_KEY.`
+      )
     }
     const template = await loadTemplateModule(templateId)
     await dbConnect()

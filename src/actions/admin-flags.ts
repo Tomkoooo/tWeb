@@ -69,6 +69,13 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     description: "Számlázz.hu/szamlazz.ts alapú automatikus számlázás.",
     defaultEnabled: false,
   },
+  {
+    key: "pluginTicketing",
+    label: "Ticketing plugin",
+    description:
+      "Jegyértékesítés plugin (események, közvetlen checkout). A deployment allowlist mellett szükséges, ha a plugin manifest featureFlagKey-t használ.",
+    defaultEnabled: false,
+  },
 ];
 
 async function migrateLegacyCombinedParcelFlag() {

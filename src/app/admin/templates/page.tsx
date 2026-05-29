@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export default async function AdminTemplatesPage() {
   const [templates, activeInfo, previewTemplateId] = await Promise.all([
-    TemplateService.list(),
+    TemplateService.listForDeployment(),
     TemplateService.getActiveInfo(),
     readPreviewTemplateId(),
   ])

@@ -1,0 +1,73 @@
+import { describe, expect, it } from "vitest"
+import { listAllPlugins } from "@/plugins/registry"
+import { definePlugin, pluginAdminHref } from "@/plugins/types"
+import { parsePluginAdminPath, parsePluginApiPath } from "@/lib/features/plugins"
+
+describe("plugin registry contract", () => {
+  const plugins = listAllPlugins()
+
+  it("registers at least the ticketing plugin", () => {
+    expect(plugins.some((p) => p.id === "ticketing")).toBe(true)
+  })
+
+  for (const { id, module } of plugins) {
+    describe(`plugin '${id}'`, () => {
+      it("manifest id matches registry key", () => {
+        expect(module.manifest.id).toBe(id)
+      })
+
+      it("has semver version", () => {
+        expect(module.manifest.version).toMatch(/^\d+\.\d+\.\d+/)
+      })
+
+      it("admin nav segments are valid when admin is defined", () => {
+        if (!module.admin) return
+        for (const item of module.admin.navItems) {
+          expect(item.segment).not.toContain("/")
+        }
+        expect(typeof module.admin.Screen).toBe("function")
+      })
+
+      it("api handle is a function when api is defined", () => {
+        if (!module.api) return
+        expect(typeof module.api.handle).toBe("function")
+      })
+    })
+  }
+})
+
+describe("definePlugin validation", () => {
+  it("rejects invalid semver", () => {
+    expect(() =>
+      definePlugin({
+        manifest: {
+          id: "bad",
+          name: "Bad",
+          version: "not-semver",
+          description: "x",
+        },
+      })
+    ).toThrow()
+  })
+})
+
+describe("plugin path helpers", () => {
+  it("parses admin paths", () => {
+    expect(parsePluginAdminPath("/admin/plugins/ticketing/events")).toEqual({
+      pluginId: "ticketing",
+      path: ["events"],
+    })
+  })
+
+  it("parses api paths", () => {
+    expect(parsePluginApiPath("/api/plugins/ticketing/status")).toEqual({
+      pluginId: "ticketing",
+      path: ["status"],
+    })
+  })
+
+  it("builds admin hrefs", () => {
+    expect(pluginAdminHref("ticketing", "")).toBe("/admin/plugins/ticketing")
+    expect(pluginAdminHref("ticketing", "events")).toBe("/admin/plugins/ticketing/events")
+  })
+})

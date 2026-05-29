@@ -6,9 +6,17 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 
 | Document | Summary |
 | --- | --- |
+| [deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md](deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md) | **Agents:** `DEPLOYMENT_KEY`, deployment matrix, template/plugin access |
 | [deployment/FORK_DEPLOYMENT_ENGINE.md](deployment/FORK_DEPLOYMENT_ENGINE.md) | Fork-and-deploy workflow and engine expectations |
 | [deployment/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md](deployment/VERCEL_CUSTOM_DOMAIN_DEPLOYMENT.md) | Vercel deploy + custom domains |
 | [deployment/PORTABILITY.md](deployment/PORTABILITY.md) | Portability across environments |
+
+## Plugins
+
+| Document | Summary |
+| --- | --- |
+| [plugins/PLUGINS.md](plugins/PLUGINS.md) | Plugin system overview |
+| [plugins/AI_AGENTS_PLUGIN_GUIDE.md](plugins/AI_AGENTS_PLUGIN_GUIDE.md) | **Agents:** add/register/enable plugins |
 
 ## Authentication
 
@@ -30,7 +38,7 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 | Document | Summary |
 | --- | --- |
 | [templates/CREATING_A_TEMPLATE.md](templates/CREATING_A_TEMPLATE.md) | Full template module specification |
-| [templates/AI_AGENTS_TEMPLATE_GUIDE.md](templates/AI_AGENTS_TEMPLATE_GUIDE.md) | Short LLM-oriented template checklist |
+| [templates/AI_AGENTS_TEMPLATE_GUIDE.md](templates/AI_AGENTS_TEMPLATE_GUIDE.md) | Short LLM-oriented template checklist (see deployment guide for `allowedTemplates`) |
 | [templates/MULTI_CUSTOMER_TEMPLATES_AND_DEPLOYS.md](templates/MULTI_CUSTOMER_TEMPLATES_AND_DEPLOYS.md) | Many customers, per-customer templates, redeploy isolation, sharing options |
 
 ## CMS & content

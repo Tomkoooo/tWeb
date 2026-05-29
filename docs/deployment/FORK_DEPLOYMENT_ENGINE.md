@@ -14,6 +14,7 @@ This repository can run as a reusable webshop engine with runtime shop settings.
 - Use the same image/codebase.
 - Keep shop-specific data in each deployment database.
 - Update branding/theme/SEO from `/admin/info` after first login.
+- Set **`DEPLOYMENT_KEY`** to select which row in [`deployments.config.json`](../../deployments.config.json) applies (templates + plugins allowed on that host). See [AI_AGENTS_DEPLOYMENT_GUIDE.md](./AI_AGENTS_DEPLOYMENT_GUIDE.md).
 
 ## 3) Required environment variables
 
