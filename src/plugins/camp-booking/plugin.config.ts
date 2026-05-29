@@ -1,6 +1,6 @@
 import { definePlugin } from "@/plugins/types"
+import type { PluginApiContext } from "@/plugins/types"
 import { CampBookingAdminScreen } from "./admin/CampBookingAdminScreen"
-import { handleCampBookingApi } from "./api/handlers"
 
 export const campBooking = definePlugin({
   manifest: {
@@ -20,6 +20,7 @@ export const campBooking = definePlugin({
     Screen: CampBookingAdminScreen,
   },
   api: {
-    handle: handleCampBookingApi,
+    handle: (context: PluginApiContext) =>
+      import("./api/handlers").then((m) => m.handleCampBookingApi(context)),
   },
 })

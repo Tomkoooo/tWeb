@@ -4,7 +4,12 @@ import Google from "next-auth/providers/google"
 type Role = "ADMIN" | "USER"
 
 export const authConfig = {
-  providers: [Google],
+  providers: [
+    Google({
+      /** Same email may exist from a prior manual/seed user row without a linked OAuth account. */
+      allowDangerousEmailAccountLinking: true,
+    }),
+  ],
   callbacks: {
     async session({ session, token }) {
       if (session.user) {

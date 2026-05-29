@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { calculateCampTotalHuf, seatsRequiredForBooking } from "@/plugins/camp-booking/lib/pricing"
+import {
+  calculateCampOrderTotal,
+  calculateCampTotalHuf,
+  calculateLaptopAddonHuf,
+  hasSiblingPair,
+  isLaptopTicketTypeName,
+  resolveEffectiveUnitPriceHuf,
+  resolveFamilyDiscountPercent,
+  seatsRequiredForBooking,
+} from "@/plugins/camp-booking/lib/pricing"
 import { buildCampRegistrationExportRows } from "@/plugins/camp-booking/lib/camp-registration-export"
 
 describe("camp-booking pricing", () => {
@@ -13,6 +22,97 @@ describe("camp-booking pricing", () => {
 
   it("seats required equals child count", () => {
     expect(seatsRequiredForBooking(3)).toBe(3)
+  })
+
+  it("detects laptop add-on ticket names", () => {
+    expect(isLaptopTicketTypeName("Laptopbérlés")).toBe(true)
+    expect(isLaptopTicketTypeName("TáborJegy")).toBe(false)
+  })
+
+  it("calculates laptop addon total", () => {
+    expect(calculateLaptopAddonHuf(2, 10000)).toBe(20000)
+  })
+
+  it("applies early bird fixed price before deadline", () => {
+    const at = new Date("2026-05-01")
+    const result = resolveEffectiveUnitPriceHuf(
+      {
+        name: "Táborjegy",
+        priceHuf: 75000,
+        pricingMode: "per_child",
+        earlyBirdEndsAt: new Date("2026-06-30"),
+        earlyBirdPriceHuf: 67500,
+      },
+      at
+    )
+    expect(result.unitPriceHuf).toBe(67500)
+    expect(result.earlyBirdActive).toBe(true)
+  })
+
+  it("applies early bird percent when no fixed price", () => {
+    const result = resolveEffectiveUnitPriceHuf({
+      name: "Táborjegy",
+      priceHuf: 100000,
+      pricingMode: "per_child",
+      earlyBirdEndsAt: new Date("2099-01-01"),
+      earlyBirdDiscountPercent: 10,
+    })
+    expect(result.unitPriceHuf).toBe(90000)
+  })
+
+  it("detects siblings by last name token", () => {
+    expect(
+      hasSiblingPair([
+        { name: "Kovács Bence" },
+        { name: "Kovács Lili" },
+      ])
+    ).toBe(true)
+    expect(hasSiblingPair([{ name: "Bence", lastName: "Nagy" }, { name: "Lili", lastName: "Nagy" }])).toBe(
+      true
+    )
+    expect(hasSiblingPair([{ name: "Bence" }, { name: "Lili" }])).toBe(false)
+  })
+
+  it("uses higher of multi-child and sibling discount", () => {
+    const pct = resolveFamilyDiscountPercent(
+      {
+        multiChildDiscountPercent: 5,
+        multiChildMinCount: 2,
+        siblingDiscountPercent: 10,
+        siblingMatchByLastName: true,
+      },
+      2,
+      [{ name: "Kovács A" }, { name: "Kovács B" }]
+    )
+    expect(pct).toBe(10)
+  })
+
+  it("calculates full order with family discount and addons", () => {
+    const order = calculateCampOrderTotal({
+      ticket: {
+        name: "Táborjegy",
+        priceHuf: 100000,
+        pricingMode: "per_child",
+      },
+      childCount: 2,
+      children: [{ name: "Nagy Anna" }, { name: "Nagy Béla" }],
+      campSettings: {
+        multiChildDiscountPercent: 0,
+        multiChildMinCount: 2,
+        siblingDiscountPercent: 10,
+        siblingMatchByLastName: true,
+      },
+      addons: [
+        {
+          ticket: { name: "Laptop", priceHuf: 10000, pricingMode: "per_child", kind: "addon" },
+          quantity: 1,
+        },
+      ],
+    })
+    expect(order.campSubtotalHuf).toBe(200000)
+    expect(order.familyDiscountHuf).toBe(20000)
+    expect(order.addonsHuf).toBe(10000)
+    expect(order.totalHuf).toBe(190000)
   })
 })
 
@@ -29,8 +129,22 @@ describe("camp registration export", () => {
         childCount: 2,
         paidAt: new Date("2026-05-01"),
         children: [
-          { name: "Bence", birthDate: "2015-03-01", dietaryRequest: "", allergies: "mogyoró" },
-          { name: "Lili", birthDate: "2017-08-12", dietaryRequest: "vegetáriánus", allergies: "" },
+          {
+            name: "Bence",
+            birthDate: "2015-03-01",
+            diningOption: "Normál",
+            dietaryRequest: "",
+            allergies: "mogyoró",
+            laptopRental: true,
+          },
+          {
+            name: "Lili",
+            birthDate: "2017-08-12",
+            diningOption: "Vegetáriánus",
+            dietaryRequest: "",
+            allergies: "",
+            laptopRental: false,
+          },
         ],
       } as never,
     ])
@@ -39,5 +153,8 @@ describe("camp registration export", () => {
     expect(rows[0]["Gyerek neve"]).toBe("Bence")
     expect(rows[1]["Gyerek neve"]).toBe("Lili")
     expect(rows[0].Turnus).toBe("I. turnus")
+    expect(rows[0]["Laptop bérlés"]).toBe("Igen")
+    expect(rows[1]["Laptop bérlés"]).toBe("Nem")
+    expect(rows[1].Étkezés).toBe("Vegetáriánus")
   })
 })

@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { isDevMetricsEnabled, recordDevMetric } from "@/lib/dev-metrics";
 
 const MONGODB_URI = process.env.DATABASE_URL;
 
@@ -14,6 +13,7 @@ interface MongooseCache {
 
 declare global {
   var mongoose: MongooseCache | undefined;
+  var mongooseUri: string | undefined;
 }
 
 let cached = global.mongoose;
@@ -22,10 +22,37 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+function resetMongooseCacheIfUriChanged() {
+  if (global.mongooseUri && global.mongooseUri !== MONGODB_URI) {
+    console.warn(
+      "[db] DATABASE_URL changed — resetting Mongoose cache (restart dev server if auth still fails)"
+    );
+    void cached?.conn?.disconnect().catch(() => undefined);
+    cached = global.mongoose = { conn: null, promise: null };
+  }
+  global.mongooseUri = MONGODB_URI;
+}
+
+async function recordDbDevMetric(payload: {
+  source: "server";
+  category: string;
+  name: string;
+  value: number;
+  unit: string;
+  status: "ok" | "error";
+  metadata?: Record<string, unknown>;
+}) {
+  const { isDevMetricsEnabled, recordDevMetric } = await import("@/lib/dev-metrics");
+  if (!isDevMetricsEnabled()) return;
+  await recordDevMetric(payload);
+}
+
 async function dbConnect() {
+  resetMongooseCacheIfUriChanged();
+
   if (cached!.conn) {
-    if (isDevMetricsEnabled()) {
-      void recordDevMetric({
+    if (process.env.NODE_ENV === "development") {
+      void recordDbDevMetric({
         source: "server",
         category: "db",
         name: "connection-reuse",
@@ -52,8 +79,8 @@ async function dbConnect() {
 
   try {
     cached!.conn = await cached!.promise;
-    if (isDevMetricsEnabled()) {
-      await recordDevMetric({
+    if (process.env.NODE_ENV === "development") {
+      await recordDbDevMetric({
         source: "server",
         category: "db",
         name: metricName,
@@ -64,8 +91,8 @@ async function dbConnect() {
     }
   } catch (e) {
     cached!.promise = null;
-    if (isDevMetricsEnabled()) {
-      await recordDevMetric({
+    if (process.env.NODE_ENV === "development") {
+      await recordDbDevMetric({
         source: "server",
         category: "db",
         name: metricName,

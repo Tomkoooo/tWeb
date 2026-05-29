@@ -70,6 +70,20 @@ async function handleCampBookingAdminApi(
 ): Promise<Response> {
   const segment = path[0] ?? ""
 
+  if (segment === "dashboard" && method === "GET" && path.length === 1) {
+    const stats = await CampService.getDashboardStats()
+    return json({
+      ok: true,
+      stats: {
+        ...stats,
+        recentRegistrations: stats.recentRegistrations.map((r) => ({
+          ...r,
+          paidAt: r.paidAt instanceof Date ? r.paidAt.toISOString() : r.paidAt,
+        })),
+      },
+    })
+  }
+
   if (segment === "camps" && method === "GET" && path.length === 1) {
     const camps = await CampService.listCampsAdmin()
     return json({
@@ -82,7 +96,26 @@ async function handleCampBookingAdminApi(
         heroImage: c.heroImage,
         sortOrder: c.sortOrder,
         isPublished: c.isPublished,
+        pricingSettings: c.pricingSettings,
       })),
+    })
+  }
+
+  if (segment === "camps" && path[1] && method === "GET" && path.length === 2) {
+    const camp = await CampService.getCampAdmin(path[1])
+    if (!camp) return json({ error: "Tábor nem található" }, 404)
+    return json({
+      ok: true,
+      camp: {
+        id: String(camp._id),
+        slug: camp.slug,
+        title: camp.title,
+        description: camp.description,
+        heroImage: camp.heroImage,
+        sortOrder: camp.sortOrder,
+        isPublished: camp.isPublished,
+        pricingSettings: camp.pricingSettings,
+      },
     })
   }
 
@@ -148,8 +181,13 @@ async function handleCampBookingAdminApi(
         id: String(t._id),
         sessionId: String(t.sessionId),
         name: t.name,
+        description: t.description ?? "",
         priceHuf: t.priceHuf,
         pricingMode: t.pricingMode,
+        kind: t.kind ?? "base",
+        earlyBirdEndsAt: t.earlyBirdEndsAt?.toISOString() ?? null,
+        earlyBirdPriceHuf: t.earlyBirdPriceHuf ?? null,
+        earlyBirdDiscountPercent: t.earlyBirdDiscountPercent ?? null,
         isActive: t.isActive,
         sortOrder: t.sortOrder,
       })),

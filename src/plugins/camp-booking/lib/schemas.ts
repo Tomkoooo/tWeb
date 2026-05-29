@@ -1,10 +1,24 @@
 import { z } from "zod"
 
+export const campDiningOptionSchema = z.enum([
+  "Normál",
+  "Vegetáriánus",
+  "Gluténmentes",
+  "Laktózmentes",
+  "Egyéb",
+])
+
+export type CampDiningOption = z.infer<typeof campDiningOptionSchema>
+
 export const campChildSchema = z.object({
   name: z.string().min(1, "A gyerek neve kötelező"),
+  lastName: z.string().optional(),
   birthDate: z.string().min(1, "Születési dátum kötelező"),
+  diningOption: campDiningOptionSchema.default("Normál"),
   dietaryRequest: z.string().optional(),
   allergies: z.string().optional(),
+  laptopRental: z.boolean().default(false),
+  addonTicketIds: z.array(z.string()).optional(),
 })
 
 export const createHoldSchema = z.object({

@@ -5,6 +5,8 @@ import { getActiveChrome } from "@/lib/active-chrome"
 import { getStorefrontFooterHydrationProps } from "@/lib/storefront-footer-props"
 import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 import { CampBookingWizard } from "@/plugins/camp-booking/storefront/CampBookingWizard"
+import { pressStart2P } from "@/templates/minecraft-camp/fonts"
+import { loadMineshowSiteConfig } from "@/templates/minecraft-camp/lib/load-site-config"
 
 type Props = { params: Promise<{ sessionId: string }> }
 
@@ -18,7 +20,8 @@ export default async function FoglalasPage({ params }: Props) {
     resolveStorefrontFooterContact(chrome.template),
     getStorefrontFooterHydrationProps(),
   ])
-  const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
+  const { branding, footerSettings, Navbar, Footer, NavbarSearch, template } = chrome
+  const mineshowSite = await loadMineshowSiteConfig(template.manifest.id)
 
   return (
     <>
@@ -27,8 +30,9 @@ export default async function FoglalasPage({ params }: Props) {
         logoSrc={branding.logoNav}
         shopEnabled={false}
         NavbarSearch={NavbarSearch}
+        venueBadge={mineshowSite?.venueShort}
       />
-      <main className="minecraft-page min-h-[70vh] px-4 py-10">
+      <main className={`minecraft-page-mineshow min-h-[70vh] py-10 ${pressStart2P.variable}`}>
         <Suspense fallback={<p className="text-center">Betöltés…</p>}>
           <CampBookingWizard sessionId={sessionId} />
         </Suspense>

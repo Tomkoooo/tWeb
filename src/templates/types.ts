@@ -35,6 +35,8 @@ export type ChromeProps = {
   cmsChromePreview?: boolean
   /** Override engine search UI when the template declares `commerceSlots.NavbarSearch`. */
   NavbarSearch?: ComponentType<NavbarSearchSlotProps>
+  /** Short venue label from homepage CMS (minecraft-camp contact / hero badge). */
+  venueBadge?: string
   children?: ReactNode
 }
 
@@ -444,6 +446,13 @@ const HOMEPAGE_BLOCK_KEYS = new Set([
   "divider",
 ])
 
+/** Accepts function components and Next.js `dynamic()` loaders (object with $$typeof). */
+function isRenderableComponent(value: unknown): boolean {
+  if (typeof value === "function") return true
+  if (typeof value === "object" && value !== null && "$$typeof" in value) return true
+  return false
+}
+
 export function defineTemplate(template: TemplateModule): TemplateModule {
   if (!template.manifest.id) throw new Error("TemplateModule.manifest.id required")
   const { surfaces } = template.manifest
@@ -597,7 +606,7 @@ export function defineTemplate(template: TemplateModule): TemplateModule {
             `Template '${template.manifest.id}': flowPages.${key}.shell.defaultContent fails schema`
           )
         }
-        if (typeof sh.Shell !== "function" || typeof sh.EditorPanel !== "function") {
+        if (!isRenderableComponent(sh.Shell) || !isRenderableComponent(sh.EditorPanel)) {
           throw new Error(
             `Template '${template.manifest.id}': flowPages.${key}.shell must define Shell and EditorPanel`
           )

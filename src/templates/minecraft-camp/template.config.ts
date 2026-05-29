@@ -52,7 +52,7 @@ export const minecraftCamp: TemplateModule = defineTemplate({
       Render: HomeRender,
       EditorPanel: HomeEditorPanel,
       cmsPageKind: "homepage-blocks",
-      allowedBlocks: ["hero"],
+      allowedBlocks: ["hero", "about", "gallery", "contact", "richText"],
     },
     shop: {
       schema: shopSchema,

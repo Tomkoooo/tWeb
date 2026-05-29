@@ -17,7 +17,8 @@ import { saveHomepageDraft } from "@/features/homepage-cms/api/draft-client"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { Breadcrumb } from "@/features/homepage-cms/components/editor/Breadcrumb"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById, loadTemplateModule } from "@/templates/registry"
+import type { TemplateModule } from "@/templates/types"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { ThemeTokens } from "@/services/theme"
@@ -25,6 +26,7 @@ import { CmsEditProvider } from "@/features/homepage-cms/components/editor/cms-e
 import type { HomePageDeps } from "@/templates/types"
 import type { HomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import { resolveContactDisplayField } from "@/lib/contact-display"
+import { extractMineshowSiteConfig } from "@/templates/minecraft-camp/lib/site-config"
 
 type Props = {
   templateId: string
@@ -86,7 +88,23 @@ export function VisualHomepageEditor({
     [snapshot.blocks, selectedBlockId]
   )
 
-  const templateModule = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  const [templateModule, setTemplateModule] = useState<TemplateModule>(
+    () => getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    if (templateId === FALLBACK_TEMPLATE_ID || getTemplateById(templateId)) {
+      setTemplateModule(getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID))
+      return
+    }
+    void loadTemplateModule(templateId).then((loaded) => {
+      if (!cancelled) setTemplateModule(loaded)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [templateId])
   const allowedHomepageBlockTypes = useMemo(
     () => resolveAllowedHomepageBlockTypes(templateModule.pages.home),
     [templateModule]
@@ -98,6 +116,13 @@ export function VisualHomepageEditor({
   const NavbarCmp = templateModule.chrome.Navbar
   const FooterCmp = templateModule.chrome.Footer
   const HomeRender = templateModule.pages.home.Render
+  const mineshowVenueBadge = useMemo(
+    () =>
+      templateId === "minecraft-camp"
+        ? extractMineshowSiteConfig(snapshot).venueShort
+        : undefined,
+    [templateId, snapshot]
+  )
   const patchHeroTopLevelField = (
     data: HeroBlock["data"],
     field: string,
@@ -286,6 +311,7 @@ export function VisualHomepageEditor({
                   logoSrc={branding.logoNav}
                   shopEnabled={shopEnabled}
                   cmsChromePreview
+                  venueBadge={mineshowVenueBadge}
                 />
                 <main className="min-h-0 flex-1 overflow-x-hidden pt-6">
                   <CmsEditProvider
@@ -373,6 +399,7 @@ export function VisualHomepageEditor({
               logoSrc={branding.logoNav}
               shopEnabled={shopEnabled}
               cmsChromePreview
+              venueBadge={mineshowVenueBadge}
             />
             <main className="overflow-x-hidden pt-6">
               <CmsEditProvider

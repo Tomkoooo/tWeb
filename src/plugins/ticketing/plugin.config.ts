@@ -1,6 +1,6 @@
 import { definePlugin } from "@/plugins/types"
+import type { PluginApiContext } from "@/plugins/types"
 import { TicketingAdminScreen } from "./admin/TicketingAdminScreen"
-import { handleTicketingApi } from "./api/handlers"
 
 export const ticketing = definePlugin({
   manifest: {
@@ -20,6 +20,7 @@ export const ticketing = definePlugin({
     Screen: TicketingAdminScreen,
   },
   api: {
-    handle: handleTicketingApi,
+    handle: (context: PluginApiContext) =>
+      import("./api/handlers").then((m) => m.handleTicketingApi(context)),
   },
 })

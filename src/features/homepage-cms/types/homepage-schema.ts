@@ -49,6 +49,13 @@ const heroDataSchema = z.object({
 const aboutDataSchema = z.object({
   title: z.string(),
   paragraph: z.string(),
+  /** Story section image URL (Minecraft camp / custom layouts). */
+  image: z.string().optional(),
+  /** Heading inside the wood content box. */
+  boxHeading: z.string().optional(),
+  ctaLabel: z.string().optional(),
+  ctaHref: z.string().optional(),
+  bannerText: z.string().optional(),
   accordions: z.array(z.object({ title: z.string(), content: z.string() })),
   cards: z.array(z.object({ title: z.string(), description: z.string(), icon: z.string().optional() })),
   visibility: visibilitySchema,
@@ -79,6 +86,10 @@ const contactDataSchema = z.object({
   description: z.string(),
   companyName: z.string(),
   address: z.string(),
+  /** Short venue label for navbar / hero badge (e.g. "Récsei Center, 2026 nyár"). */
+  venueShort: z.string().optional(),
+  /** Google Maps embed iframe `src` URL. */
+  mapEmbedUrl: z.string().optional(),
   phone: z.string(),
   email: z.string(),
   sendButtonLabel: z.string().optional(),

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { CampPricingMode } from "./CampTicketType"
-import type { CampChildDraft } from "./CampCheckoutHold"
+import type { CampChildDraft, CampPriceBreakdown } from "./CampCheckoutHold"
 
 export interface ICampRegistration extends Document {
   campId: Types.ObjectId
@@ -17,6 +17,9 @@ export interface ICampRegistration extends Document {
   pricingMode: CampPricingMode
   childCount: number
   totalHuf: number
+  laptopAddonHuf?: number
+  laptopAddonCount?: number
+  priceBreakdown?: CampPriceBreakdown
   stripeSessionId?: string
   paidAt: Date
   status: "paid" | "cancelled"
@@ -25,9 +28,28 @@ export interface ICampRegistration extends Document {
 const ChildSchema = new Schema<CampChildDraft>(
   {
     name: { type: String, required: true },
+    lastName: { type: String },
     birthDate: { type: String, required: true },
+    diningOption: { type: String, default: "Normál" },
     dietaryRequest: { type: String },
     allergies: { type: String },
+    laptopRental: { type: Boolean, default: false },
+    addonTicketIds: { type: [String], default: [] },
+  },
+  { _id: false }
+)
+
+const PriceBreakdownSchema = new Schema(
+  {
+    campSubtotalHuf: { type: Number, default: 0 },
+    earlyBirdSavingsHuf: { type: Number, default: 0 },
+    familyDiscountHuf: { type: Number, default: 0 },
+    addonsHuf: { type: Number, default: 0 },
+    familyDiscountPercent: { type: Number, default: 0 },
+    lines: {
+      type: [{ label: String, amountHuf: Number }],
+      default: [],
+    },
   },
   { _id: false }
 )
@@ -48,6 +70,9 @@ const CampRegistrationSchema = new Schema<ICampRegistration>(
     pricingMode: { type: String, enum: ["per_child", "flat"], required: true },
     childCount: { type: Number, required: true, min: 1 },
     totalHuf: { type: Number, required: true, min: 0 },
+    laptopAddonHuf: { type: Number, default: 0, min: 0 },
+    laptopAddonCount: { type: Number, default: 0, min: 0 },
+    priceBreakdown: { type: PriceBreakdownSchema },
     stripeSessionId: { type: String },
     paidAt: { type: Date, required: true },
     status: { type: String, enum: ["paid", "cancelled"], default: "paid" },

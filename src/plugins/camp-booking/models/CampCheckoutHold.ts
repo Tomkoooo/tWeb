@@ -12,17 +12,54 @@ export type CampHoldStatus =
 
 export type CampChildDraft = {
   name: string
+  lastName?: string
   birthDate: string
+  diningOption?: string
   dietaryRequest?: string
   allergies?: string
+  laptopRental?: boolean
+  addonTicketIds?: string[]
+}
+
+export type CampPriceBreakdown = {
+  campSubtotalHuf: number
+  earlyBirdSavingsHuf: number
+  familyDiscountHuf: number
+  addonsHuf: number
+  familyDiscountPercent: number
+  lines: Array<{ label: string; amountHuf: number }>
 }
 
 const ChildDraftSchema = new Schema<CampChildDraft>(
   {
     name: { type: String, required: true },
+    lastName: { type: String },
     birthDate: { type: String, required: true },
+    diningOption: { type: String, default: "Normál" },
     dietaryRequest: { type: String },
     allergies: { type: String },
+    laptopRental: { type: Boolean, default: false },
+    addonTicketIds: { type: [String], default: [] },
+  },
+  { _id: false }
+)
+
+const PriceBreakdownSchema = new Schema<CampPriceBreakdown>(
+  {
+    campSubtotalHuf: { type: Number, default: 0 },
+    earlyBirdSavingsHuf: { type: Number, default: 0 },
+    familyDiscountHuf: { type: Number, default: 0 },
+    addonsHuf: { type: Number, default: 0 },
+    familyDiscountPercent: { type: Number, default: 0 },
+    lines: {
+      type: [
+        {
+          label: String,
+          amountHuf: Number,
+        },
+      ],
+      default: [],
+    },
   },
   { _id: false }
 )
@@ -40,6 +77,9 @@ export interface ICampCheckoutHold extends Document {
   sessionLabel: string
   pricingMode: CampPricingMode
   totalHuf: number
+  laptopAddonHuf?: number
+  laptopAddonCount?: number
+  priceBreakdown?: CampPriceBreakdown
   status: CampHoldStatus
   expiresAt: Date
   stripeSessionId?: string
@@ -62,6 +102,9 @@ const CampCheckoutHoldSchema = new Schema<ICampCheckoutHold>(
     sessionLabel: { type: String, required: true },
     pricingMode: { type: String, enum: ["per_child", "flat"], required: true },
     totalHuf: { type: Number, required: true, min: 0 },
+    laptopAddonHuf: { type: Number, default: 0, min: 0 },
+    laptopAddonCount: { type: Number, default: 0, min: 0 },
+    priceBreakdown: { type: PriceBreakdownSchema },
     status: {
       type: String,
       enum: ["created", "checkout_started", "paid", "finalized", "expired", "cancelled", "failed"],

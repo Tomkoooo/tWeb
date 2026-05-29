@@ -1,23 +1,19 @@
 import type { PluginModule } from "./types"
-import { ticketing } from "./ticketing/plugin.config"
-import { campBooking } from "./camp-booking/plugin.config"
+
 export type PluginRegistryEntry = {
   id: string
   module: PluginModule
 }
 
-const syncRegistry: Record<string, PluginModule> = {
-  ticketing,
-  "camp-booking": campBooking,
-}
+const syncRegistry: Record<string, PluginModule> = {}
 
 const pluginLoaders: Record<string, () => Promise<PluginModule>> = {
-  ticketing: async () => ticketing,
-  "camp-booking": async () => campBooking,
+  ticketing: () => import("./ticketing/plugin.config").then((m) => m.ticketing),
+  "camp-booking": () => import("./camp-booking/plugin.config").then((m) => m.campBooking),
 }
 
 export function listRegisteredPluginIds(): string[] {
-  return Object.keys(syncRegistry)
+  return Object.keys(pluginLoaders)
 }
 
 export async function loadPluginModule(id: string): Promise<PluginModule> {

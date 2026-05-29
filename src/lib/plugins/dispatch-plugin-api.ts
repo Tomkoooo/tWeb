@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { PluginService } from "@/services/plugin"
-import { getPluginById } from "@/plugins/registry"
+import { loadPluginModule } from "@/plugins/registry"
 import type { PluginApiContext } from "@/plugins/types"
 
 export async function dispatchPluginApi(
@@ -16,8 +16,16 @@ export async function dispatchPluginApi(
     )
   }
 
-  const plugin = getPluginById(pluginId)
-  if (!plugin?.api?.handle) {
+  let plugin
+  try {
+    plugin = await loadPluginModule(pluginId)
+  } catch {
+    return NextResponse.json(
+      { error: "Unknown plugin", code: "PLUGIN_NOT_FOUND" },
+      { status: 404 }
+    )
+  }
+  if (!plugin.api?.handle) {
     return NextResponse.json(
       { error: "Plugin has no API handler", code: "PLUGIN_NO_API" },
       { status: 404 }

@@ -11,6 +11,8 @@ import {
 import { getAdminStats } from "@/actions/admin-stats"
 import Link from "next/link"
 import { isShopEnabled } from "@/lib/features/shop"
+import { PluginService } from "@/services/plugin"
+import { pluginAdminHref } from "@/plugins/types"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
@@ -64,6 +66,7 @@ async function KpiCard({ title, value, subtitle, change, trend, icon: Icon }: Kp
 
 export default async function AdminDashboard() {
   if (!isShopEnabled()) {
+    const pluginsWithAdmin = await PluginService.listEnabledWithAdmin()
     return (
       <div className="space-y-8 animate-in fade-in duration-700 max-w-xl">
         <div>
@@ -72,10 +75,21 @@ export default async function AdminDashboard() {
           </h1>
           <p className="text-white/40 font-medium italic">
             Csak tartalmi üzemmód: a bolt funkció ki van kapcsolva{" "}
-            <code className="text-neutral-300">ENABLE_SHOP=false</code> környezettel.
+            <code className="text-neutral-300">ENABLE_SHOP=false</code> környezettel. A tábor
+            foglalás és a CMS továbbra is elérhető; a vásárlók nem kellenek bejelentkezzenek a
+            jelentkezéshez.
           </p>
         </div>
         <div className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest">
+          {pluginsWithAdmin.map((plugin) => (
+            <Link
+              key={plugin.id}
+              href={pluginAdminHref(plugin.id)}
+              className="rounded-lg border border-amber-500/30 bg-amber-950/30 px-5 py-4 text-white hover:border-amber-400/50"
+            >
+              {plugin.name}
+            </Link>
+          ))}
           <Link
             href="/admin/templates"
             className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
@@ -87,6 +101,12 @@ export default async function AdminDashboard() {
             className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
           >
             CMS
+          </Link>
+          <Link
+            href="/admin/contact"
+            className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
+          >
+            Kapcsolat
           </Link>
           <Link
             href="/admin/info"

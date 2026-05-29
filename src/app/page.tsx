@@ -1,5 +1,7 @@
 import { getHomepagePageData } from "@/lib/homepage-page-data"
 import { getStorefrontFooterHydrationProps } from "@/lib/storefront-footer-props"
+import { extractMineshowSiteConfig } from "@/templates/minecraft-camp/lib/site-config"
+import { pressStart2P } from "@/templates/minecraft-camp/fonts"
 
 export const revalidate = 60
 
@@ -11,14 +13,20 @@ export default async function LandingPage() {
 
   const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } = chrome
   const HomeRender = template.pages.home.Render
+  const isMinecraftCamp = template.manifest.id === "minecraft-camp"
+  const mineshowSite = isMinecraftCamp ? extractMineshowSiteConfig(content) : null
+  const fontRoot = isMinecraftCamp ? pressStart2P.variable : ""
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden">
+    <div
+      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden ${fontRoot}`}
+    >
       <Navbar
         brandName={branding.brandName}
         logoSrc={branding.logoNav}
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
+        venueBadge={mineshowSite?.venueShort}
       />
 
       <main className="overflow-x-hidden">

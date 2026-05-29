@@ -37,8 +37,12 @@ const readEnabledPluginIds = cache(async (host: string | null): Promise<string[]
   const results: string[] = []
 
   for (const pluginId of allowlisted) {
-    const plugin = getPluginById(pluginId)
-    if (!plugin) continue
+    let plugin: PluginModule
+    try {
+      plugin = await loadPluginModule(pluginId)
+    } catch {
+      continue
+    }
 
     if (plugin.manifest.requiresShop && !isShopEnabled()) {
       continue
@@ -65,8 +69,12 @@ export class PluginService {
     const host = await resolveHost()
     if (!isPluginAllowlistedForDeployment(pluginId, host)) return false
 
-    const plugin = getPluginById(pluginId)
-    if (!plugin) return false
+    let plugin: PluginModule
+    try {
+      plugin = await loadPluginModule(pluginId)
+    } catch {
+      return false
+    }
 
     if (plugin.manifest.requiresShop && !isShopEnabled()) return false
 
@@ -100,15 +108,18 @@ export class PluginService {
   static async listEnabled(): Promise<EnabledPluginInfo[]> {
     const host = await resolveHost()
     const ids = await readEnabledPluginIds(host)
-    return ids.map((id) => {
-      const plugin = getPluginById(id)!
-      return {
+    const entries: EnabledPluginInfo[] = []
+    for (const id of ids) {
+      const plugin = getPluginById(id)
+      if (!plugin) continue
+      entries.push({
         id,
         name: plugin.manifest.name,
         manifest: plugin.manifest,
         config: getPluginConfigForDeployment(id, host),
-      }
-    })
+      })
+    }
+    return entries
   }
 
   static async listEnabledWithAdmin(): Promise<

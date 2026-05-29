@@ -35,6 +35,17 @@ function safeMetadata(metadata: unknown) {
   }
 }
 
+function formatAuthCause(cause: unknown) {
+  if (cause instanceof Error) {
+    return {
+      message: cause.message,
+      name: cause.name,
+      stack: cause.stack,
+    }
+  }
+  return cause
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
@@ -61,7 +72,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return
       }
 
-      console.error("[auth][error]", errorCode, metadata)
+      console.error("[auth][error]", errorCode, metadata, {
+        cause: formatAuthCause(authError.cause),
+        authUrlOrigin: safeOrigin(process.env.AUTH_URL),
+        nextauthUrlOrigin: safeOrigin(process.env.NEXTAUTH_URL),
+        trustHost,
+      })
     },
   },
   events: {

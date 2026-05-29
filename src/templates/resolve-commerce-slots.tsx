@@ -66,15 +66,14 @@ export function resolveCommerceProductDetail(
   return resolveCommerceSlots(template).ProductDetail
 }
 
+import { loadTemplateModuleForCommerce } from "@/templates/template-commerce-loaders"
+
 /**
- * Lazy lookup by id so `pages.pdp.Render` does not import `registry` at module scope (avoids circular init
- * with `TEMPLATE_REGISTRY` ↔ `template.config`).
+ * Async lookup by id — safe from client components (does not import `registry` or plugins).
  */
-export function resolveCommerceProductDetailForId(
+export async function resolveCommerceProductDetailForId(
   templateId: string
-): ComponentType<ProductDetailSlotProps> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const reg = require("@/templates/registry") as typeof import("@/templates/registry")
-  const mod = reg.getTemplateById(templateId)
+): Promise<ComponentType<ProductDetailSlotProps>> {
+  const mod = await loadTemplateModuleForCommerce(templateId)
   return resolveCommerceProductDetail(mod)
 }

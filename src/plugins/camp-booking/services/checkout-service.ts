@@ -9,7 +9,8 @@ import CampSession from "../models/CampSession"
 import CampTicketType from "../models/CampTicketType"
 import Camp from "../models/Camp"
 import { createHoldSchema, type CreateHoldInput } from "../lib/schemas"
-import { calculateCampTotalHuf } from "../lib/pricing"
+import { buildAddonSelections } from "../lib/checkout-addons"
+import { calculateAddonTotalHuf, calculateCampOrderTotal, isAddonTicketType } from "../lib/pricing"
 import { formatSessionLabel } from "../lib/session-label"
 import { CampService } from "./camp-service"
 
@@ -41,20 +42,55 @@ export class CampCheckoutService {
     const camp = await Camp.findOne({ _id: session.campId, isPublished: true }).lean()
     if (!camp) throw new Error("A tábor nem elérhető.")
 
-    const ticketType = await CampTicketType.findOne({
-      _id: ticketOid,
-      sessionId: sessionOid,
-      isActive: true,
-    }).lean()
-    if (!ticketType) throw new Error("A jegytípus nem található.")
+    const sessionTickets = await CampTicketType.find({ sessionId: sessionOid, isActive: true }).lean()
 
-    const seats = CampService.seatsRequired(parsed.childCount)
-    const totalHuf = calculateCampTotalHuf(
-      ticketType.priceHuf,
-      ticketType.pricingMode,
-      parsed.childCount
+    const ticketType = sessionTickets.find((t) => String(t._id) === String(ticketOid))
+    if (!ticketType) throw new Error("A jegytípus nem található.")
+    if (isAddonTicketType({ kind: ticketType.kind, name: ticketType.name })) {
+      throw new Error("A kiegészítő jegy külön választható — válassz táborjegyet.")
+    }
+
+    const laptopTicket = sessionTickets.find((t) =>
+      isAddonTicketType({ kind: t.kind, name: t.name })
+    )
+    const laptopTicketId = laptopTicket ? String(laptopTicket._id) : null
+
+    const addonCounts = buildAddonSelections(
+      parsed.children,
+      sessionTickets,
+      laptopTicketId
     )
 
+    const addonLines: Array<{ ticket: (typeof sessionTickets)[0]; quantity: number }> = []
+    for (const [addonId, quantity] of addonCounts) {
+      const addonTicket = sessionTickets.find((t) => String(t._id) === addonId)
+      if (!addonTicket) continue
+      addonLines.push({ ticket: addonTicket, quantity })
+    }
+
+    const order = calculateCampOrderTotal({
+      ticket: {
+        name: ticketType.name,
+        priceHuf: ticketType.priceHuf,
+        pricingMode: ticketType.pricingMode,
+        kind: ticketType.kind,
+        earlyBirdEndsAt: ticketType.earlyBirdEndsAt,
+        earlyBirdPriceHuf: ticketType.earlyBirdPriceHuf,
+        earlyBirdDiscountPercent: ticketType.earlyBirdDiscountPercent,
+      },
+      childCount: parsed.childCount,
+      children: parsed.children,
+      campSettings: camp.pricingSettings,
+      addons: addonLines.map(({ ticket, quantity }) => ({ ticket, quantity })),
+    })
+
+    const laptopAddonCount = laptopTicketId ? addonCounts.get(laptopTicketId) ?? 0 : 0
+    const laptopAddonHuf =
+      laptopTicket && laptopAddonCount > 0
+        ? calculateAddonTotalHuf([{ ticket: laptopTicket, quantity: laptopAddonCount }])
+        : 0
+
+    const seats = CampService.seatsRequired(parsed.childCount)
     const sessionLabel = formatSessionLabel(session.label, session.startDate, session.endDate)
     const now = new Date()
     const ttlMs = clampReservationTtlMs(null)
@@ -73,21 +109,37 @@ export class CampCheckoutService {
         buyerPhone: parsed.buyerPhone.trim(),
         children: parsed.children.map((c) => ({
           name: c.name.trim(),
+          lastName: c.lastName?.trim() || "",
           birthDate: c.birthDate.trim(),
+          diningOption: c.diningOption || "Normál",
           dietaryRequest: c.dietaryRequest?.trim() || "",
           allergies: c.allergies?.trim() || "",
+          laptopRental: Boolean(c.laptopRental),
+          addonTicketIds: c.addonTicketIds ?? [],
         })),
         ticketTypeName: ticketType.name,
         sessionLabel,
         pricingMode: ticketType.pricingMode,
-        totalHuf,
+        totalHuf: order.totalHuf,
+        laptopAddonHuf,
+        laptopAddonCount,
+        priceBreakdown: {
+          campSubtotalHuf: order.campSubtotalHuf,
+          earlyBirdSavingsHuf: order.earlyBirdSavingsHuf,
+          familyDiscountHuf: order.familyDiscountHuf,
+          addonsHuf: order.addonsHuf,
+          familyDiscountPercent: order.familyDiscountPercent,
+          lines: order.lines,
+        },
         status: "created",
         expiresAt,
       })
 
       return {
         holdId: hold._id.toString(),
-        totalHuf,
+        totalHuf: order.totalHuf,
+        laptopAddonHuf,
+        priceBreakdown: order,
         expiresAt: hold.expiresAt.toISOString(),
         sessionLabel,
         ticketTypeName: ticketType.name,
@@ -125,6 +177,14 @@ export class CampCheckoutService {
     const expiresAtUnix = stripeCheckoutExpiresAtUnix(now, hold.expiresAt)
 
     const lineName = `${hold.sessionLabel} — ${hold.ticketTypeName}`
+    const discountNote =
+      (hold.priceBreakdown?.familyDiscountHuf ?? 0) > 0
+        ? ` (kedvezmény: ${hold.priceBreakdown?.familyDiscountPercent}%)`
+        : ""
+    const addonNote =
+      (hold.laptopAddonCount ?? 0) > 0 || (hold.priceBreakdown?.addonsHuf ?? 0) > 0
+        ? ` (+ kiegészítők)`
+        : ""
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
       success_url: `${baseUrl}/foglalas/siker?holdId=${hold._id.toString()}&session_id={CHECKOUT_SESSION_ID}`,
@@ -148,7 +208,7 @@ export class CampCheckoutService {
             unit_amount: toStripeHufAmount(hold.totalHuf),
             product_data: {
               name: lineName,
-              description: `${hold.childCount} gyerek`,
+              description: `${hold.childCount} gyerek${addonNote}${discountNote}`,
             },
           },
         },
@@ -254,6 +314,9 @@ export class CampCheckoutService {
       pricingMode: hold.pricingMode,
       childCount: hold.childCount,
       totalHuf: hold.totalHuf,
+      laptopAddonHuf: hold.laptopAddonHuf ?? 0,
+      laptopAddonCount: hold.laptopAddonCount ?? 0,
+      priceBreakdown: hold.priceBreakdown,
       stripeSessionId: hold.stripeSessionId,
       paidAt: new Date(),
       status: "paid",

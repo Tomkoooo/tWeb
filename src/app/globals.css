@@ -422,8 +422,6 @@ h6 {
 }
 
 /* Minecraft camp template + camp-booking storefront */
-@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
-
 .minecraft-page {
   background: linear-gradient(180deg, #87ceeb 0%, #c6e89c 45%, #8b6914 100%);
   min-height: 100vh;
@@ -431,7 +429,7 @@ h6 {
 }
 
 .font-minecraft {
-  font-family: "Press Start 2P", system-ui, cursive;
+  font-family: var(--font-press-start), system-ui, cursive;
   line-height: 1.6;
 }
 
@@ -466,7 +464,7 @@ img.pixelated {
   padding: 0.75rem 1.25rem;
   background: #5d9b38;
   color: #fff;
-  font-family: "Press Start 2P", cursive;
+  font-family: var(--font-press-start), cursive;
   font-size: 0.65rem;
   border: 3px solid #2d5016;
   box-shadow: 3px 3px 0 #2d2817;
@@ -486,6 +484,101 @@ img.pixelated {
   font-size: 0.875rem;
 }
 
+.minecraft-page-mineshow .minecraft-input,
+.minecraft-page-mineshow .minecraft-panel-inner {
+  font-family: var(--font-press-start), system-ui, cursive;
+  font-size: 0.6rem;
+  line-height: 1.6;
+}
+
 .minecraft-nav {
   box-shadow: 0 4px 0 #2d5016;
+}
+
+.minecraft-page-mineshow {
+  background: #b8d88a;
+  min-height: 100vh;
+  color: #2d2817;
+  font-family: var(--font-press-start), system-ui, cursive;
+  font-size: 0.7rem;
+  line-height: 1.75;
+}
+
+.minecraft-page-mineshow .font-minecraft-body {
+  font-family: var(--font-press-start), system-ui, cursive;
+  font-size: 0.65rem;
+  line-height: 1.8;
+}
+
+.minecraft-font-root .minecraft-nav,
+.minecraft-font-root .minecraft-nav .font-minecraft {
+  font-family: var(--font-press-start), system-ui, cursive;
+}
+
+.minecraft-panel-wood {
+  background: #a26c47;
+  border: 4px solid #4e311f;
+  box-shadow: 4px 4px 0 #2d1810;
+}
+
+.minecraft-panel-wood-inner {
+  background: #8b5a38;
+  border: 3px solid #4e311f;
+}
+
+.minecraft-btn-blue {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  background: #78b7ff;
+  color: #1a3d5c;
+  font-family: var(--font-press-start), cursive;
+  font-size: 0.65rem;
+  border: 3px solid #1a3d5c;
+  box-shadow: 3px 3px 0 #2d2817;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.minecraft-btn-blue:hover {
+  background: #5a9ee8;
+}
+
+.minecraft-hero-mineshow {
+  position: relative;
+  min-height:  min(70vh, 520px);
+  background: linear-gradient(180deg, #87ceeb 0%, #6eb5e8 35%, #5d9b38 70%, #4a7c2c 100%);
+  border-bottom: 4px solid #3d2817;
+}
+
+.minecraft-faq-item {
+  background: #a26c47;
+  border: 3px solid #4e311f;
+  box-shadow: 3px 3px 0 #2d1810;
+}
+
+.minecraft-faq-item[data-open="true"] {
+  outline: 3px solid #78b7ff;
+  outline-offset: 2px;
+}
+
+.minecraft-map-frame {
+  border: 8px solid #6b4423;
+  box-shadow: inset 0 0 0 4px #4e311f, 6px 6px 0 #2d1810;
+}
+
+.minecraft-social-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  writing-mode: vertical-rl;
+  background: #78b7ff;
+  color: #fff;
+  padding: 0.75rem 0.5rem;
+  font-family: var(--font-press-start), cursive;
+  font-size: 0.5rem;
+  border: 3px solid #1a3d5c;
+  border-right: none;
+  text-decoration: none;
 }

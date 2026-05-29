@@ -18,8 +18,16 @@ export function buildCampRegistrationExportRows(registrations: ICampRegistration
         Telefon: reg.buyerPhone,
         "Gyerek neve": child.name,
         "Születési dátum": child.birthDate,
+        Étkezés: child.diningOption || "Normál",
         "Étkezéssel kapcsolatos kérés": child.dietaryRequest || "",
         Allergia: child.allergies || "",
+        "Laptop bérlés": child.laptopRental ? "Igen" : "Nem",
+        "Családi kedvezmény (Ft)": reg.priceBreakdown?.familyDiscountHuf
+          ? String(reg.priceBreakdown.familyDiscountHuf)
+          : "",
+        "Early bird (Ft)": reg.priceBreakdown?.earlyBirdSavingsHuf
+          ? String(reg.priceBreakdown.earlyBirdSavingsHuf)
+          : "",
         Turnus: reg.sessionLabel,
         Jegytípus: reg.ticketTypeName,
         "Foglalás dátuma": paidAt,

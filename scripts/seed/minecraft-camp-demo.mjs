@@ -26,6 +26,16 @@ if (!uri) {
   process.exit(1)
 }
 
+const CampPricingSettingsSchema = new mongoose.Schema(
+  {
+    multiChildDiscountPercent: { type: Number, default: 0 },
+    multiChildMinCount: { type: Number, default: 2 },
+    siblingDiscountPercent: { type: Number, default: 0 },
+    siblingMatchByLastName: { type: Boolean, default: true },
+  },
+  { _id: false }
+)
+
 const CampSchema = new mongoose.Schema(
   {
     slug: String,
@@ -33,6 +43,7 @@ const CampSchema = new mongoose.Schema(
     description: String,
     sortOrder: Number,
     isPublished: Boolean,
+    pricingSettings: { type: CampPricingSettingsSchema, default: () => ({}) },
   },
   { timestamps: true }
 )
@@ -53,8 +64,13 @@ const CampTicketTypeSchema = new mongoose.Schema(
   {
     sessionId: mongoose.Schema.Types.ObjectId,
     name: String,
+    description: String,
     priceHuf: Number,
     pricingMode: String,
+    kind: { type: String, enum: ["base", "addon"], default: "base" },
+    earlyBirdEndsAt: Date,
+    earlyBirdPriceHuf: Number,
+    earlyBirdDiscountPercent: Number,
     isActive: Boolean,
     sortOrder: Number,
   },
@@ -77,20 +93,34 @@ async function main() {
       "Kreatív építés, csapatjáték és szabad játék professzionális felügyelet mellett.",
     sortOrder: 0,
     isPublished: true,
+    pricingSettings: {
+      multiChildDiscountPercent: 5,
+      multiChildMinCount: 2,
+      siblingDiscountPercent: 10,
+      siblingMatchByLastName: true,
+    },
   })
+
+  const earlyBirdEnds = new Date("2026-06-30T23:59:59.000Z")
 
   const sessions = [
     {
-      label: "I. turnus",
-      startDate: new Date("2026-07-07"),
-      endDate: new Date("2026-07-11"),
-      capacity: 24,
+      label: "1. turnus",
+      startDate: new Date("2026-07-20"),
+      endDate: new Date("2026-07-24"),
+      capacity: 20,
     },
     {
-      label: "II. turnus",
-      startDate: new Date("2026-07-14"),
-      endDate: new Date("2026-07-18"),
-      capacity: 24,
+      label: "2. turnus",
+      startDate: new Date("2026-07-27"),
+      endDate: new Date("2026-07-31"),
+      capacity: 20,
+    },
+    {
+      label: "3. turnus",
+      startDate: new Date("2026-08-03"),
+      endDate: new Date("2026-08-07"),
+      capacity: 20,
     },
   ]
 
@@ -105,19 +135,25 @@ async function main() {
     await CampTicketType.create([
       {
         sessionId: session._id,
-        name: "Teljes turnus",
-        priceHuf: 89000,
+        name: `Táborjegy - ${s.label}`,
+        description: "Teljes turnus részvétel",
+        priceHuf: 75000,
         pricingMode: "per_child",
+        kind: "base",
+        earlyBirdEndsAt: earlyBirdEnds,
+        earlyBirdPriceHuf: 67500,
         isActive: true,
         sortOrder: 0,
       },
       {
         sessionId: session._id,
-        name: "Napi jegy (csak szerda)",
-        priceHuf: 25000,
-        pricingMode: "flat",
+        name: `Laptopbérlés - ${s.label}`,
+        description: "Laptop bérlés a tábor idejére",
+        priceHuf: 10000,
+        pricingMode: "per_child",
+        kind: "addon",
         isActive: true,
-        sortOrder: 1,
+        sortOrder: 10,
       },
     ])
   }

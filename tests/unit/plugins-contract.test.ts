@@ -1,26 +1,29 @@
 import { describe, expect, it } from "vitest"
-import { listAllPlugins } from "@/plugins/registry"
+import { listRegisteredPluginIds, loadPluginModule } from "@/plugins/registry"
 import { definePlugin, pluginAdminHref } from "@/plugins/types"
 import { parsePluginAdminPath, parsePluginApiPath } from "@/lib/features/plugins"
 
 describe("plugin registry contract", () => {
-  const plugins = listAllPlugins()
+  const pluginIds = listRegisteredPluginIds()
 
   it("registers at least the ticketing plugin", () => {
-    expect(plugins.some((p) => p.id === "ticketing")).toBe(true)
+    expect(pluginIds).toContain("ticketing")
   })
 
-  for (const { id, module } of plugins) {
+  for (const id of pluginIds) {
     describe(`plugin '${id}'`, () => {
-      it("manifest id matches registry key", () => {
+      it("manifest id matches registry key", async () => {
+        const module = await loadPluginModule(id)
         expect(module.manifest.id).toBe(id)
       })
 
-      it("has semver version", () => {
+      it("has semver version", async () => {
+        const module = await loadPluginModule(id)
         expect(module.manifest.version).toMatch(/^\d+\.\d+\.\d+/)
       })
 
-      it("admin nav segments are valid when admin is defined", () => {
+      it("admin nav segments are valid when admin is defined", async () => {
+        const module = await loadPluginModule(id)
         if (!module.admin) return
         for (const item of module.admin.navItems) {
           expect(item.segment).not.toContain("/")
@@ -28,7 +31,8 @@ describe("plugin registry contract", () => {
         expect(typeof module.admin.Screen).toBe("function")
       })
 
-      it("api handle is a function when api is defined", () => {
+      it("api handle is a function when api is defined", async () => {
+        const module = await loadPluginModule(id)
         if (!module.api) return
         expect(typeof module.api.handle).toBe("function")
       })
