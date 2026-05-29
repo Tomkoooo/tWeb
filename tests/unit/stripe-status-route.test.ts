@@ -28,12 +28,16 @@ vi.mock("@/services/checkout-finalization", () => ({
     finalizeFromTempOrder: finalizeMock,
   },
 }));
+vi.mock("@/services/inventory-reservation", () => ({
+  confirmPendingReservationsForTempOrder: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe("GET /api/checkout/stripe/status", () => {
   const tempOid = "507f1f77bcf86cd799439011";
   const sessionId = "cs_test_xyz";
 
   beforeEach(() => {
+    findByIdMock.mockReset();
     vi.clearAllMocks();
     dbConnectMock.mockResolvedValue(undefined);
     findOneAndUpdateMock.mockResolvedValue({});

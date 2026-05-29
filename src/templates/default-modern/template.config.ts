@@ -26,13 +26,11 @@ import {
 } from "./pages/flow/FlowWrappers"
 import { defaultModernFlowShellSchema } from "./pages/flow/flow-shell-schema"
 import { DefaultModernFlowBandShell } from "./pages/flow/FlowBandShell"
+import { DefaultModernFlowShellEditorPanel } from "./pages/flow/FlowShellEditorPanel"
 
 const HomeEditorPanel = dynamic(() => import("./pages/home/EditorPanel").then((m) => m.HomeEditorPanel))
 const ShopEditorPanel = dynamic(() => import("./pages/shop/EditorPanel").then((m) => m.ShopEditorPanel))
 const PdpEditorPanel = dynamic(() => import("./pages/pdp/EditorPanel").then((m) => m.PdpEditorPanel))
-const DefaultModernFlowShellEditorPanel = dynamic(() =>
-  import("./pages/flow/FlowShellEditorPanel").then((m) => m.DefaultModernFlowShellEditorPanel)
-)
 
 export const defaultModern: TemplateModule = defineTemplate({
   manifest: {

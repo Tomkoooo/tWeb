@@ -27,6 +27,7 @@ const allocateReservationsMock = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
     expiresAt: new Date(Date.now() + 30 * 60 * 1000),
     ttlMs: 30 * 60 * 1000,
+    allocations: [],
   })
 );
 const releaseReservationsMock = vi.hoisted(() => vi.fn().mockResolvedValue(0));
@@ -37,10 +38,14 @@ vi.mock("@/services/order", () => ({
     createOrder: createOrderMock,
   },
 }));
-vi.mock("@/services/checkout-validation", () => ({
-  STRIPE_FIXED_PAYMENT_METHOD_ID: "stripe_fixed",
-  validateAndNormalizeCheckoutInput: validateCheckoutMock,
-}));
+vi.mock("@/services/checkout-validation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/services/checkout-validation")>();
+  return {
+    ...actual,
+    STRIPE_FIXED_PAYMENT_METHOD_ID: "stripe_fixed",
+    validateAndNormalizeCheckoutInput: validateCheckoutMock,
+  };
+});
 vi.mock("@/services/feature-flags", () => ({
   FeatureFlagService: {
     isEnabled: featureFlagMock,
@@ -67,6 +72,11 @@ vi.mock("@/services/stripe", () => ({
   }),
   getAppBaseUrl: () => "http://localhost:3000",
   getStripeWebhookSecret: () => "secret",
+}));
+vi.mock("@/services/reservation-ttl", () => ({
+  resolveReservationTtlMs: vi.fn().mockResolvedValue(30 * 60 * 1000),
+  reservationEndsAt: (_now: Date, ttlMs: number) => new Date(Date.now() + ttlMs),
+  stripeCheckoutExpiresAtUnix: () => Math.floor(Date.now() / 1000) + 1800,
 }));
 
 describe("checkout and payment routes", () => {
