@@ -1,5 +1,6 @@
 import type { PluginModule } from "./types"
 import { ticketing } from "./ticketing/plugin.config"
+import { campBooking } from "./camp-booking/plugin.config"
 export type PluginRegistryEntry = {
   id: string
   module: PluginModule
@@ -7,10 +8,12 @@ export type PluginRegistryEntry = {
 
 const syncRegistry: Record<string, PluginModule> = {
   ticketing,
+  "camp-booking": campBooking,
 }
 
 const pluginLoaders: Record<string, () => Promise<PluginModule>> = {
   ticketing: async () => ticketing,
+  "camp-booking": async () => campBooking,
 }
 
 export function listRegisteredPluginIds(): string[] {

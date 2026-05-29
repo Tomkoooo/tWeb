@@ -1,6 +1,7 @@
 import type { TemplateModule } from "./types"
 import { defaultModern } from "./default-modern/template.config"
 import { atelierShowcase } from "./atelier-showcase/template.config"
+import { minecraftCamp } from "./minecraft-camp/template.config"
 import { validateDeploymentsAgainstRegistries } from "@/config/deployments-registry"
 import { listRegisteredPluginIds } from "@/plugins/registry"
 
@@ -9,10 +10,12 @@ export const FALLBACK_TEMPLATE_ID = "default-modern" as const
 const syncRegistry: Partial<Record<string, TemplateModule>> = {
   [FALLBACK_TEMPLATE_ID]: defaultModern,
   "atelier-showcase": atelierShowcase,
+  "minecraft-camp": minecraftCamp,
 }
 
 const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
   "atelier-showcase": async () => atelierShowcase,
+  "minecraft-camp": async () => minecraftCamp,
 }
 
 export async function loadTemplateModule(id: string): Promise<TemplateModule> {
@@ -59,7 +62,7 @@ export function listTemplates(): TemplateModule[] {
 }
 
 export async function listAllTemplates(): Promise<TemplateModule[]> {
-  const ids = [FALLBACK_TEMPLATE_ID, "atelier-showcase"] as const
+  const ids = [FALLBACK_TEMPLATE_ID, "atelier-showcase", "minecraft-camp"] as const
   return Promise.all(ids.map((id) => loadTemplateModule(id)))
 }
 

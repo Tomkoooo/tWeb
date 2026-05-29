@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features/shop"
 import { isPluginAdminPath, parsePluginAdminPath } from "@/lib/features/plugins"
 import { isPluginAllowlistedForDeployment } from "@/config/deployments-registry"
+import { isCampOnlyBlockedPath, isCampOnlyStorefront } from "@/lib/features/camp-storefront"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
@@ -60,9 +61,13 @@ export default auth(async (req) => {
     }
   }
 
+  const host = req.headers.get("host")
+  if (isCampOnlyStorefront(host) && isCampOnlyBlockedPath(pathname)) {
+    return new NextResponse(null, { status: 404 })
+  }
+
   if (isPluginAdminPath(pathname)) {
     const parsed = parsePluginAdminPath(pathname)
-    const host = req.headers.get("host")
     if (!parsed || !isPluginAllowlistedForDeployment(parsed.pluginId, host)) {
       return new NextResponse(null, { status: 404 })
     }

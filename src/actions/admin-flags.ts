@@ -76,6 +76,12 @@ const DEFAULT_FLAGS: FlagSeed[] = [
       "Jegyértékesítés plugin (események, közvetlen checkout). A deployment allowlist mellett szükséges, ha a plugin manifest featureFlagKey-t használ.",
     defaultEnabled: false,
   },
+  {
+    key: "pluginCampBooking",
+    label: "Tábor foglalás plugin",
+    description: "Minecraft / tábor turnus foglalás, Stripe checkout, Excel export.",
+    defaultEnabled: false,
+  },
 ];
 
 async function migrateLegacyCombinedParcelFlag() {

@@ -39,7 +39,17 @@ export async function POST(req: NextRequest) {
         case "checkout.session.completed":
         case "checkout.session.async_payment_succeeded": {
           const checkoutSession = event.data.object as any;
-          await handleCheckoutSessionCompletedLike(checkoutSession);
+          if (
+            checkoutSession.metadata?.checkoutKind === "camp_booking" ||
+            checkoutSession.metadata?.campHoldId
+          ) {
+            const { CampCheckoutService } = await import(
+              "@/plugins/camp-booking/services/checkout-service"
+            );
+            await CampCheckoutService.finalizeHoldFromStripeSession(checkoutSession);
+          } else {
+            await handleCheckoutSessionCompletedLike(checkoutSession);
+          }
           break;
         }
         case "checkout.session.expired": {

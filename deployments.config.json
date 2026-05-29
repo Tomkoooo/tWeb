@@ -20,6 +20,19 @@
           "checkoutMode": "direct"
         }
       }
+    },
+    {
+      "key": "minecraft-camp",
+      "label": "Minecraft tábor foglalás",
+      "allowedTemplates": ["minecraft-camp"],
+      "defaultTemplateId": "minecraft-camp",
+      "enabledPlugins": ["camp-booking"],
+      "pluginConfig": {
+        "camp-booking": {
+          "storefrontMode": "campOnly",
+          "currency": "HUF"
+        }
+      }
     }
   ],
   "hostMap": {}

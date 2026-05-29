@@ -11,8 +11,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..")
 
 const config = JSON.parse(readFileSync(join(root, "deployments.config.json"), "utf8"))
 
-const templateIds = new Set(["default-modern", "atelier-showcase"])
-const pluginIds = new Set(["ticketing"])
+const templateIds = new Set(["default-modern", "atelier-showcase", "minecraft-camp"])
+const pluginIds = new Set(["ticketing", "camp-booking"])
 
 const errors = []
 
