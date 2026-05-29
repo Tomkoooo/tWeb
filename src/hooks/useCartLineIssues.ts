@@ -32,6 +32,7 @@ export function useCartLineIssues(items: CartItem[]) {
               variantId: item.variantId,
               quantity: item.quantity,
               name: item.name,
+              price: item.price,
             })),
           }),
         })

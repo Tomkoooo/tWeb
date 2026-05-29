@@ -556,4 +556,67 @@ describe("checkout-validation unit", () => {
       })
     ).rejects.toThrow("Érvénytelen kuponkód");
   });
+
+  it("rejects checkout when the cart still carries an exhausted limited price", async () => {
+    productFindByIdMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({
+        _id: "507f1f77bcf86cd799439011",
+        name: "Limitált termék",
+        isActive: true,
+        isVisible: true,
+        netPrice: 5000,
+        grossPrice: 6350,
+        discount: 0,
+        vatPercent: 27,
+        variants: [
+          {
+            id: "v1",
+            netPrice: 5000,
+            grossPrice: 6350,
+            discount: 0,
+            limitedPrice: {
+              enabled: true,
+              limitQuantity: 10,
+              netPrice: 3000,
+              grossPrice: 3810,
+              claimedCount: 10,
+            },
+          },
+        ],
+      }),
+    });
+
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    await expect(
+      validateAndNormalizeCheckoutInput({
+        items: [
+          {
+            product: "507f1f77bcf86cd799439011",
+            variantId: "v1",
+            quantity: 1,
+            price: 3810,
+          },
+        ],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingAddress: {
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingMethod: "507f1f77bcf86cd799439012",
+        paymentMethod: "507f1f77bcf86cd799439013",
+      })
+    ).rejects.toThrow("limitált ár");
+  });
 });

@@ -2,7 +2,13 @@ import mongoose, { ClientSession } from "mongoose";
 import Product from "@/models/Product";
 import Reservation from "@/models/Reservation";
 import { reservationEndsAt, resolveReservationTtlMs } from "@/services/reservation-ttl";
-import { clampVatPercent, customerGrossFromNetWithDiscount, customerUnitGross } from "@/lib/pricing";
+import {
+  getLimitedPromoRemaining,
+  resolvePromoUnitPrice,
+  resolveRegularUnitPrice,
+  type LimitedPriceCounter,
+  type LimitedPriceRecord,
+} from "@/lib/limited-price-checkout";
 
 export class InventoryReservationError extends Error {
   constructor(
@@ -19,7 +25,7 @@ export type CheckoutReserveItem = {
   variantId?: string;
   quantity: number;
   promoQuantity?: number;
-  promoCounter?: "reserved" | "sold";
+  promoCounter?: LimitedPriceCounter;
 };
 
 export type CheckoutStockAllocation = {
@@ -46,39 +52,6 @@ async function syncVariantAggregateStock(
   if (!p || !Array.isArray((p as any).variants) || (p as any).variants.length === 0) return;
   const sum = (p as any).variants.reduce((s: number, v: any) => s + (v.stock || 0), 0);
   await Product.updateOne({ _id: productId }, { $set: { stock: sum } }, sessionOpt(session));
-}
-
-function resolveVariantRegularUnitPrice(product: any, variant: any) {
-  const pct = clampVatPercent(product.vatPercent ?? 27);
-  return {
-    unitPrice: customerGrossFromNetWithDiscount(
-      Number(variant.netPrice || 0),
-      Number(variant.discount || 0),
-      pct,
-      variant.grossPrice
-    ),
-    vatPercent: pct,
-  };
-}
-
-function resolveVariantPromoUnitPrice(product: any, variant: any) {
-  const limited = variant?.limitedPrice;
-  if (!limited?.enabled) return null;
-  const limit = Math.max(0, Math.round(Number(limited.limitQuantity || 0)));
-  const claimed = Math.max(0, Math.round(Number(limited.claimedCount || 0)));
-  const remaining = Math.max(0, limit - claimed);
-  const promoNet = Number(limited.netPrice || 0);
-  const promoGross = Number(limited.grossPrice || 0);
-  if (limit <= 0 || remaining <= 0 || (promoNet <= 0 && promoGross <= 0)) return null;
-  const pct = clampVatPercent(product.vatPercent ?? 27);
-  return {
-    remaining,
-    unitPrice:
-      promoGross > 0
-        ? customerUnitGross(promoNet, pct, promoGross)
-        : customerUnitGross(promoNet, pct),
-    vatPercent: pct,
-  };
 }
 
 /**
@@ -113,10 +86,10 @@ export async function decrementCheckoutLineStock(
       if (!latest || !variant || variant.isActive === false) {
         throw new InventoryReservationError("A kiválasztott variáns nem elérhető");
       }
-      const regular = resolveVariantRegularUnitPrice(latest, variant);
+      const regular = resolveRegularUnitPrice(latest, variant);
       const counter = item.promoCounter;
-      const promo = counter ? resolveVariantPromoUnitPrice(latest, variant) : null;
-      const promoQuantity = promo ? Math.min(qty, promo.remaining) : 0;
+      const promo = counter ? resolvePromoUnitPrice(latest, variant.limitedPrice) : null;
+      const promoQuantity = promo ? Math.min(qty, getLimitedPromoRemaining(variant.limitedPrice)) : 0;
       const inc: Record<string, number> = { "variants.$[v].stock": -qty };
       const elemMatch: Record<string, unknown> = {
         id: item.variantId,
@@ -166,10 +139,12 @@ export async function decrementCheckoutLineStock(
     if (!latest || !latest.isActive || !latest.isVisible) {
       throw new InventoryReservationError("A termék már nem elérhető");
     }
-    const regular = resolveVariantRegularUnitPrice(latest, latest);
+    const regular = resolveRegularUnitPrice(latest, latest);
     const counter = item.promoCounter;
-    const promo = counter ? resolveVariantPromoUnitPrice(latest, latest) : null;
-    const promoQuantity = promo ? Math.min(qty, promo.remaining) : 0;
+    const promo = counter ? resolvePromoUnitPrice(latest, (latest as { limitedPrice?: LimitedPriceRecord }).limitedPrice) : null;
+    const promoQuantity = promo
+      ? Math.min(qty, getLimitedPromoRemaining((latest as { limitedPrice?: LimitedPriceRecord }).limitedPrice))
+      : 0;
     const inc: Record<string, number> = { stock: -qty };
     const filter: Record<string, unknown> = {
       _id: productId,

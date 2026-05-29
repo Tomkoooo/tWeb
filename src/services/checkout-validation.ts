@@ -20,6 +20,10 @@ import {
   buildGlsParcelOrderShippingAddress,
 } from "@/lib/parcel-locker-checkout-display";
 import { customerGrossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
+import {
+  assertClientCartLinePrice,
+  quoteCheckoutLineForQuantity,
+} from "@/lib/limited-price-checkout";
 import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
 import {
   resolveCountryInput,
@@ -436,6 +440,7 @@ export async function validateAndNormalizeCheckoutInput(
   }
 
   const normalizedItems: CheckoutInputItem[] = [];
+  const priceAllocations: CheckoutPriceAllocation[] = [];
   let subtotal = 0;
 
   for (const item of input.items) {
@@ -454,8 +459,15 @@ export async function validateAndNormalizeCheckoutInput(
     }
 
     const priceInfo = resolveItemPrice(product, item.variantId);
-    const unitPrice = priceInfo.unitPrice;
-    subtotal += unitPrice * quantity;
+    const quote = quoteCheckoutLineForQuantity(product, item.variantId, quantity);
+    assertClientCartLinePrice(item.price, quantity, quote);
+    subtotal += quote.lineTotal;
+    priceAllocations.push({
+      promoQuantity: quote.promoQuantity,
+      regularQuantity: quote.regularQuantity,
+      promoUnitPrice: quote.promoUnitPrice,
+      regularUnitPrice: quote.regularUnitPrice,
+    });
 
     normalizedItems.push({
       product: item.product,
@@ -463,17 +475,43 @@ export async function validateAndNormalizeCheckoutInput(
       variantLabel: item.variantLabel || priceInfo.variantLabel || undefined,
       selectedAttributes: item.selectedAttributes || undefined,
       name: item.name || product.name,
-      price: unitPrice,
+      price: quote.regularUnitPrice,
       quantity,
-      vatPercent: priceInfo.vatPercent,
+      vatPercent: quote.vatPercent,
     });
   }
 
+  let pricedCheckout: ValidatedCheckoutData = {
+    items: normalizedItems,
+    billingInfo: billingInfo as CheckoutInput["billingInfo"],
+    shippingAddress: shippingAddress as CheckoutInput["shippingAddress"],
+    shippingMethod: resolvedShippingMethodId,
+    paymentMethod: paymentMethodId,
+    glsParcelPoint: undefined,
+    foxpostParcelPoint: undefined,
+    couponCodes: [],
+    subtotal: roundCurrency(subtotal),
+    shippingFee: 0,
+    paymentFee: roundCurrency(paymentFee),
+    discount: 0,
+    total: 0,
+    paymentProvider: isStripeFixed ? "stripe" : "standard",
+    saveAddressToProfile: false,
+    billingCountry: "",
+    shippingCountry: "",
+    billingCountryCode: "",
+    shippingCountryCode: "",
+  };
+  pricedCheckout = applyCheckoutPriceAllocations(pricedCheckout, priceAllocations);
+
   const couponCode = Array.isArray(input.couponCodes) ? input.couponCodes[0] : undefined;
-  const couponResult = await validateCoupon(couponCode, subtotal, options?.userId);
+  const couponResult = await validateCoupon(couponCode, pricedCheckout.subtotal, options?.userId);
   const shippingFee = couponResult.freeShipping ? 0 : shippingMethodGrossPrice;
   const discount = Math.max(0, couponResult.discount);
-  const total = Math.max(0, roundCurrency(subtotal + shippingFee + paymentFee - discount));
+  const total = Math.max(
+    0,
+    roundCurrency(pricedCheckout.subtotal + shippingFee + paymentFee - discount)
+  );
 
   const billingResolved = requireResolvedCountry("számlázási", {
     explicitCode: billingInfo.countryCode?.trim(),
@@ -548,7 +586,7 @@ export async function validateAndNormalizeCheckoutInput(
     !isFoxpostParcel
 
   return {
-    items: normalizedItems,
+    items: pricedCheckout.items,
     billingInfo: {
       type: billingInfo.type === "company" ? "company" : "personal",
       name: billingInfo.name.trim(),
@@ -592,7 +630,7 @@ export async function validateAndNormalizeCheckoutInput(
         }
       : undefined,
     couponCodes: couponResult.couponCodes,
-    subtotal: roundCurrency(subtotal),
+    subtotal: pricedCheckout.subtotal,
     shippingFee: roundCurrency(shippingFee),
     paymentFee: roundCurrency(paymentFee),
     discount,
