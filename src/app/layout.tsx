@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
+
+/** App is DB-backed; skip static prerender during Docker/CI build (no Mongo available). */
+export const dynamic = "force-dynamic";
 import "./globals.css";
 import {
   getRequestSeoSettings,

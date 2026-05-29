@@ -56,6 +56,12 @@ export type AboutBlock = HomepageBlockBase<
     paragraph: string
     accordions: Array<{ title: string; content: string }>
     cards: Array<{ title: string; description: string; icon?: string }>
+    /** Story / camp layout (minecraft-camp template) */
+    image?: string
+    boxHeading?: string
+    ctaLabel?: string
+    ctaHref?: string
+    bannerText?: string
     visibility?: FieldVisibility
   }
 >
@@ -103,6 +109,9 @@ export type ContactBlock = HomepageBlockBase<
     nameLabel?: string
     emailLabel?: string
     messageLabel?: string
+    /** Camp / venue layout */
+    venueShort?: string
+    mapEmbedUrl?: string
     visibility?: FieldVisibility
   }
 >

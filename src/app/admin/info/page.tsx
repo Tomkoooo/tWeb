@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { isShopEnabled } from "@/lib/features/shop"
 import {
-  getAccessibleAdminFlagKeys,
   getAccessiblePluginFeatureFlagKeys,
   getAccessiblePluginSettings,
   getDeploymentForAdmin,
+  isAdminFlagKeyAccessible,
 } from "@/lib/admin-settings-access"
 import { PluginService } from "@/services/plugin"
 
@@ -34,12 +34,13 @@ export default async function AdminInfoPage() {
   const host = await PluginService.getHost()
   const deployment = getDeploymentForAdmin(host)
   const shopEnabled = isShopEnabled()
-  const accessibleKeys = new Set(getAccessibleAdminFlagKeys(deployment, shopEnabled))
   const pluginFlagKeys = new Set(getAccessiblePluginFeatureFlagKeys(deployment))
 
   const allFlags = (await getAdminFeatureFlags()) as FeatureFlagRow[]
   const flags = allFlags.filter(
-    (flag) => accessibleKeys.has(flag.key) && !pluginFlagKeys.has(flag.key)
+    (flag) =>
+      isAdminFlagKeyAccessible(flag.key, deployment, shopEnabled) &&
+      !pluginFlagKeys.has(flag.key)
   )
   const flagEnabledByKey = Object.fromEntries(allFlags.map((f) => [f.key, f.enabled]))
 

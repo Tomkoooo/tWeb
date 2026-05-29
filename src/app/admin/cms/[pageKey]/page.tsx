@@ -223,7 +223,7 @@ export default async function CmsPageEditor({
             label={entry.label}
             subtitle="Folyamat oldal · keret szerkesztő"
             editablePages={editablePages}
-            settingsSections={settingsSections}
+            settingsSections={cmsSettingsSections}
             pageKey={pageKey}
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
@@ -253,7 +253,7 @@ export default async function CmsPageEditor({
             label={entry.label}
             subtitle={`Statikus lap · /${staticSlug}`}
             editablePages={editablePages}
-            settingsSections={settingsSections}
+            settingsSections={cmsSettingsSections}
             pageKey={pageKey}
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}

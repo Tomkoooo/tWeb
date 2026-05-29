@@ -14,6 +14,8 @@ import { pluginAdminHref } from "@/plugins/types"
 import type { PluginNavGroup } from "@/components/admin/AdminPluginNavSection"
 import { resolveContentModeSidebarNav } from "@/lib/admin-plugin-navigation"
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminLayout({
   children,
 }: {

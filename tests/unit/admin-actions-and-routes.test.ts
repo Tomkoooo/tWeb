@@ -10,6 +10,7 @@ const featureFindOneMock = vi.fn();
 const featureFindMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const orderFindMock = vi.fn();
+const orderUpdateOneMock = vi.fn();
 const glsCreateLabelMock = vi.fn();
 const foxpostCreateParcelMock = vi.fn();
 const foxpostCreateShipmentMock = vi.fn();
@@ -50,7 +51,7 @@ vi.mock("@/services/foxpost", () => ({
 }));
 vi.mock("@/services/mailer", () => ({ MailerService: { sendEmail: mailerSendMock } }));
 vi.mock("@/models/Order", () => ({
-  default: { findById: orderFindByIdMock, find: orderFindMock },
+  default: { findById: orderFindByIdMock, find: orderFindMock, updateOne: orderUpdateOneMock },
 }));
 vi.mock("@/models/ShippingMethod", () => ({
   default: {
@@ -70,8 +71,11 @@ vi.mock("@/models/Coupon", () => ({ default: { create: couponCreateMock, findByI
 
 describe("admin actions and routes", () => {
   beforeEach(() => {
+    orderFindByIdMock.mockReset();
+    orderUpdateOneMock.mockReset();
     vi.clearAllMocks();
     requireAdminMock.mockResolvedValue({});
+    orderUpdateOneMock.mockResolvedValue({});
     authMock.mockResolvedValue({ user: { role: "ADMIN", id: "507f1f77bcf86cd799439011" } });
     featureFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue(null) });
     featureFindMock.mockReturnValue({ sort: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }) });
@@ -83,6 +87,7 @@ describe("admin actions and routes", () => {
       shippingAddress: { name: "Name" },
       glsParcelPoint: { id: "123", name: "point" },
       save: vi.fn(),
+      set: vi.fn(),
       populate: vi.fn().mockResolvedValue({
         _id: { toString: () => "ord1" },
         status: "pending",
@@ -206,6 +211,7 @@ describe("admin actions and routes", () => {
       foxpostShipment: {},
       shippingAddress: { name: "N", email: "a@a.com", phone: "+36201234567" },
       save: vi.fn(),
+      set: vi.fn(),
     });
     const { generateOrderFoxpostShipment } = await import("@/actions/admin-orders");
     const result = await generateOrderFoxpostShipment("507f1f77bcf86cd799439011");
@@ -298,8 +304,16 @@ describe("admin actions and routes", () => {
       }),
     });
     const { updateOrderStatus } = await import("@/actions/admin-orders");
-    const result = await updateOrderStatus("ord2", "custom_status_new");
+    const result = await updateOrderStatus("ord2", "processing");
     expect(result.success).toBe(true);
+    expect(mailerSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          oldStatus: "custom_status_old",
+          newStatus: "Feldolgozás alatt",
+        }),
+      })
+    );
   });
 
   it("covers update status branch when customer email is missing", async () => {

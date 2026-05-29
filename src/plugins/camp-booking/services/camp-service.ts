@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 import dbConnect from "@/lib/db"
 import Camp from "../models/Camp"
 import CampSession from "../models/CampSession"
-import CampTicketType from "../models/CampTicketType"
+import CampTicketType, { type ICampTicketType } from "../models/CampTicketType"
 import CampRegistration from "../models/CampRegistration"
 import { formatSessionLabel } from "../lib/session-label"
 import { isAddonTicketType, seatsRequiredForBooking } from "../lib/pricing"
@@ -272,13 +272,14 @@ export class CampService {
       isActive?: boolean
       sortOrder?: number
     }
-  ) {
+  ): Promise<ICampTicketType> {
     await dbConnect()
-    const patch = { ...data }
-    if (patch.earlyBirdEndsAt) {
-      patch.earlyBirdEndsAt = new Date(patch.earlyBirdEndsAt)
+    const { earlyBirdEndsAt, ...rest } = data
+    const doc: Record<string, unknown> = { sessionId, ...rest }
+    if (earlyBirdEndsAt) {
+      doc.earlyBirdEndsAt = new Date(earlyBirdEndsAt)
     }
-    return CampTicketType.create({ sessionId, ...patch })
+    return CampTicketType.create(doc)
   }
 
   static async updateTicketType(

@@ -2,6 +2,7 @@ import type { CampPricingMode } from "../models/CampTicketType"
 
 export type CampTicketPriceInput = {
   name: string
+  description?: string
   priceHuf: number
   pricingMode: CampPricingMode
   kind?: "base" | "addon"

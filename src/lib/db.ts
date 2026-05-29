@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import type { DevMetricPayload } from "@/lib/dev-metrics";
 
 const MONGODB_URI = process.env.DATABASE_URL;
 
@@ -33,15 +34,9 @@ function resetMongooseCacheIfUriChanged() {
   global.mongooseUri = MONGODB_URI;
 }
 
-async function recordDbDevMetric(payload: {
-  source: "server";
-  category: string;
-  name: string;
-  value: number;
-  unit: string;
-  status: "ok" | "error";
-  metadata?: Record<string, unknown>;
-}) {
+async function recordDbDevMetric(
+  payload: Pick<DevMetricPayload, "source" | "category" | "name" | "value" | "unit" | "status" | "metadata">
+) {
   const { isDevMetricsEnabled, recordDevMetric } = await import("@/lib/dev-metrics");
   if (!isDevMetricsEnabled()) return;
   await recordDevMetric(payload);

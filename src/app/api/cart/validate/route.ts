@@ -7,6 +7,10 @@ import {
   getCartLineOrderabilityMessage,
   type ProductForCartOrderability,
 } from "@/lib/cart-line-orderability"
+import {
+  getStaleLimitedPriceCartMessage,
+  quoteCheckoutLineForQuantity,
+} from "@/lib/limited-price-checkout"
 import { shopCommerceBlockedResponse } from "@/lib/features/shop"
 
 const lineSchema = z.object({
@@ -15,6 +19,7 @@ const lineSchema = z.object({
   variantId: z.string().optional(),
   quantity: z.number().int().positive(),
   name: z.string().optional(),
+  price: z.number().finite().optional(),
 })
 
 const bodySchema = z.object({
@@ -42,7 +47,9 @@ export async function POST(req: NextRequest) {
     await dbConnect()
     const products = productIds.length
       ? await Product.find({ _id: { $in: productIds } })
-          .select("name isActive isVisible stock requireVariantSelection variants")
+          .select(
+            "name isActive isVisible stock requireVariantSelection variants netPrice grossPrice discount vatPercent limitedPrice"
+          )
           .lean()
       : []
 
@@ -65,7 +72,18 @@ export async function POST(req: NextRequest) {
         },
         productById.get(line.productId) as ProductForCartOrderability | undefined
       )
-      if (message) issues[line.id] = message
+      if (message) {
+        issues[line.id] = message
+        continue
+      }
+
+      const quote = quoteCheckoutLineForQuantity(
+        productById.get(line.productId) as Parameters<typeof quoteCheckoutLineForQuantity>[0],
+        line.variantId,
+        line.quantity
+      )
+      const stalePriceMessage = getStaleLimitedPriceCartMessage(line.price, line.quantity, quote)
+      if (stalePriceMessage) issues[line.id] = stalePriceMessage
     }
 
     return NextResponse.json({ issues })
