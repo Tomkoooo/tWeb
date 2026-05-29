@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { mediaImageSrc } from "@/lib/images"
 
 type Props = {
   title: string
@@ -30,7 +31,7 @@ export function MineshowStory({
         <div className="minecraft-map-frame overflow-hidden bg-[#1a3d5c]/10 min-h-[280px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={image || "/generic-hero.svg"}
+            src={mediaImageSrc(image || "/generic-hero.svg")}
             alt=""
             className="h-full w-full object-cover min-h-[280px] pixelated"
           />

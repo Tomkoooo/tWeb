@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { mediaImageSrc } from "@/lib/images"
 
 type Props = {
   heroImage: string
@@ -9,13 +10,14 @@ type Props = {
 }
 
 export function MineshowHero({ heroImage, badge, ctaLabel, ctaHref, tagline }: Props) {
+  const heroSrc = mediaImageSrc(heroImage)
   return (
     <section className="minecraft-hero-mineshow relative overflow-hidden">
       {heroImage ? (
         <div className="absolute inset-0 opacity-40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={heroImage}
+            src={heroSrc}
             alt=""
             className="h-full w-full object-cover pixelated"
           />
@@ -31,7 +33,7 @@ export function MineshowHero({ heroImage, badge, ctaLabel, ctaHref, tagline }: P
           {heroImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={heroImage}
+              src={heroSrc}
               alt="Mineshow Camp"
               className="max-h-48 md:max-h-64 w-auto object-contain pixelated drop-shadow-[6px_6px_0_#2d5016]"
             />

@@ -68,6 +68,9 @@ Initialize missing templates at **Admin → Emailek** after enabling `pluginCamp
 ## Seed demo data
 
 ```bash
+# Targets SEED_DB_URL when set, otherwise DATABASE_URL (see .env)
+# Uploads marketing images into MongoDB (served at /api/media/…); optional local files under
+# public/minecraft-camp/ or scripts/seed/assets/minecraft-camp/, otherwise fetched from mineshow.hu CDN
 node scripts/seed/minecraft-camp-demo.mjs
 ```
 

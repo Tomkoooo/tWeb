@@ -7,6 +7,8 @@ import type { CampDiningOption } from "../lib/schemas"
 import { buildAddonSelections } from "../lib/checkout-addons"
 import { calculateCampOrderTotal } from "../lib/pricing"
 import type { CampTicketPriceInput } from "../lib/pricing-types"
+import { mediaImageSrc } from "@/lib/images"
+import { campCheckoutCopy } from "@/templates/minecraft-camp/content/checkout-copy"
 
 type TicketType = CampTicketPriceInput & {
   id: string
@@ -23,7 +25,13 @@ type CampPricingSettings = {
 }
 
 type SessionDetail = {
-  camp: { id: string; title: string; slug: string; pricingSettings?: CampPricingSettings }
+  camp: {
+    id: string
+    title: string
+    slug: string
+    heroImage?: string
+    pricingSettings?: CampPricingSettings
+  }
   session: {
     id: string
     label: string
@@ -60,9 +68,9 @@ const VENUE_ADDRESS =
   "Récsei Center Remíz Darts klub, Budapest, Istvánmezei út 6., 1146"
 
 const STEPS = [
-  { id: 0, label: "Ajánlatok" },
-  { id: 1, label: "Adatok megadása" },
-  { id: 2, label: "Áttekintés" },
+  { id: 0, label: campCheckoutCopy.stepOffers },
+  { id: 1, label: campCheckoutCopy.stepDetails },
+  { id: 2, label: campCheckoutCopy.stepReview },
 ] as const
 
 function emptyChild(): ChildForm {
@@ -325,10 +333,19 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
         {/* Left: summary + steps */}
         <aside className="space-y-4">
           <div className="minecraft-panel p-5 space-y-4">
-            <div className="aspect-square max-w-[200px] mx-auto bg-[#5D9B38]/30 border-4 border-[#3d2817] flex items-center justify-center">
-              <span className="font-minecraft text-[10px] text-center text-[#2d5016] px-2">
-                {detail.camp.title}
-              </span>
+            <div className="aspect-square max-w-[200px] mx-auto border-4 border-[#3d2817] overflow-hidden bg-[#5D9B38]/30 flex items-center justify-center">
+              {detail.camp.heroImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mediaImageSrc(detail.camp.heroImage)}
+                  alt={detail.camp.title}
+                  className="h-full w-full object-cover pixelated"
+                />
+              ) : (
+                <span className="font-minecraft text-[10px] text-center text-[#2d5016] px-2">
+                  {detail.camp.title}
+                </span>
+              )}
             </div>
             <p className="font-minecraft text-[10px] text-[#1a3d5c]">{detail.camp.title}</p>
             <h1 className="font-minecraft text-sm text-[#2d5016] leading-relaxed">
@@ -360,9 +377,11 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
 
           {step === 0 && (
             <div className="minecraft-panel p-6 md:p-8 space-y-5">
-              <h2 className="font-minecraft text-sm text-[#2d5016]">Jegyek, bérletek</h2>
+              <h2 className="font-minecraft text-sm text-[#2d5016]">
+                {campCheckoutCopy.ticketsHeading}
+              </h2>
               <label className="block font-minecraft-body text-sm">
-                Jegytípus
+                {campCheckoutCopy.ticketTypeLabel}
                 <select
                   className="minecraft-input w-full mt-1"
                   value={ticketTypeId}
@@ -378,7 +397,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                 </select>
               </label>
               <label className="block font-minecraft-body text-sm">
-                Gyerekek száma
+                {campCheckoutCopy.childCountLabel}
                 <input
                   type="number"
                   min={1}
@@ -390,7 +409,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
               </label>
               {detail.addonTickets.length > 0 ? (
                 <p className="font-minecraft-body text-xs text-[#5c4a32]">
-                  Kiegészítők (laptop stb.) a következő lépésben választhatók gyerekenként.
+                  {campCheckoutCopy.addonsHint}
                 </p>
               ) : null}
               {(pricingSettings?.multiChildDiscountPercent ?? 0) > 0 ||
@@ -414,7 +433,9 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
 
           {step === 1 && (
             <div className="minecraft-panel p-6 md:p-8 space-y-6">
-              <h2 className="font-minecraft text-sm text-[#2d5016]">Kapcsolattartó</h2>
+              <h2 className="font-minecraft text-sm text-[#2d5016]">
+                {campCheckoutCopy.buyerHeading}
+              </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   className="minecraft-input w-full sm:col-span-2"
@@ -437,7 +458,9 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                 />
               </div>
 
-              <h2 className="font-minecraft text-sm text-[#2d5016] pt-2">Gyerekek adatai</h2>
+              <h2 className="font-minecraft text-sm text-[#2d5016] pt-2">
+                {campCheckoutCopy.childrenHeading}
+              </h2>
               <div className="space-y-4">
                 {children.map((child, i) => (
                   <div key={i} className="minecraft-panel-wood p-4 md:p-5 space-y-3">

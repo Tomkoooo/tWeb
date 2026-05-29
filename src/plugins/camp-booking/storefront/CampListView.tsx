@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { mediaImageSrc } from "@/lib/images"
 import type { CampListCamp } from "./camp-list-types"
 
 type Props = {
@@ -24,7 +25,16 @@ export function CampListView({ camps, variant = "default" }: Props) {
               key={session.id}
               className="minecraft-panel-wood px-4 py-4 md:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
-              <div>
+              <div className="flex gap-4 items-start flex-1 min-w-0">
+                {camp.heroImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mediaImageSrc(camp.heroImage)}
+                    alt=""
+                    className="w-20 h-20 md:w-24 md:h-24 object-cover border-4 border-[#3d2817] shrink-0 pixelated"
+                  />
+                ) : null}
+                <div className="min-w-0">
                 <h3 className="font-minecraft text-[10px] md:text-xs text-white">
                   {session.label}
                 </h3>
@@ -34,8 +44,9 @@ export function CampListView({ camps, variant = "default" }: Props) {
                 <p className="font-minecraft-body text-xs text-[#c6e89c] mt-1">
                   {session.spotsLeft} szabad hely
                 </p>
+                </div>
               </div>
-              <div className="flex flex-col sm:items-end gap-2">
+              <div className="flex flex-col sm:items-end gap-2 shrink-0">
                 {session.ticketTypes[0] ? (
                   <p className="font-minecraft-body text-xs text-white">
                     már {session.ticketTypes[0].priceHuf.toLocaleString("hu-HU")} Ft-tól
@@ -61,10 +72,22 @@ export function CampListView({ camps, variant = "default" }: Props) {
     <div id="taborok" className="space-y-12">
       {camps.map((camp) => (
         <section key={camp.id} className="minecraft-panel p-6 md:p-8">
-          <h2 className="font-minecraft text-xl md:text-2xl text-[#2d5016] mb-2">{camp.title}</h2>
-          {camp.description ? (
-            <p className="font-minecraft-body text-[#3d2817] mb-6 max-w-2xl">{camp.description}</p>
-          ) : null}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            {camp.heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mediaImageSrc(camp.heroImage)}
+                alt=""
+                className="w-full sm:w-48 h-32 object-cover border-4 border-[#3d2817] pixelated"
+              />
+            ) : null}
+            <div>
+              <h2 className="font-minecraft text-xl md:text-2xl text-[#2d5016] mb-2">{camp.title}</h2>
+              {camp.description ? (
+                <p className="font-minecraft-body text-[#3d2817] max-w-2xl">{camp.description}</p>
+              ) : null}
+            </div>
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             {camp.sessions.map((session) => (
               <article

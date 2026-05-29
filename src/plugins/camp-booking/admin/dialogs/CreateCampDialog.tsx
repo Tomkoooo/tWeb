@@ -33,6 +33,7 @@ export function CreateCampDialog({ children, onCreated }: Props) {
       .toLowerCase()
       .replace(/\s+/g, "-")
     const description = String(fd.get("description") ?? "").trim()
+    const heroImage = String(fd.get("heroImage") ?? "").trim()
     const isPublished = fd.get("isPublished") === "on"
     const sortOrder = Number(fd.get("sortOrder") ?? 0)
 
@@ -43,6 +44,7 @@ export function CreateCampDialog({ children, onCreated }: Props) {
           title,
           slug,
           description: description || undefined,
+          heroImage: heroImage || undefined,
           isPublished,
           sortOrder,
         }),
@@ -74,6 +76,12 @@ export function CreateCampDialog({ children, onCreated }: Props) {
           </CampAdminField>
           <CampAdminField label="Leírás (opcionális)">
             <CampAdminInput name="description" placeholder="Rövid összefoglaló" />
+          </CampAdminField>
+          <CampAdminField label="Borítókép URL (opcionális)">
+            <CampAdminInput
+              name="heroImage"
+              placeholder="/api/media/… or upload in CMS"
+            />
           </CampAdminField>
           <CampAdminField label="Sorrend">
             <CampAdminInput name="sortOrder" type="number" defaultValue={0} min={0} />

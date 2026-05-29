@@ -1,13 +1,42 @@
 import type { HomeContent } from "./schema"
+import { mineshowFaqItems } from "../../content/mineshow-faq"
 
 const DEFAULT_MAP_EMBED =
-  "https://maps.google.com/maps?q=R%C3%A9csei%20Center,%20Budapest&t=&z=15&ie=UTF8&iwloc=&output=embed"
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d16512.43395838978!2d19.072352850677607!3d47.50229386689003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741dc85dbc2eaf5%3A0x4ae6f260ce6f87bf!2sR%C3%A9csei%20Center!5e0!3m2!1shu!2shu!4v1777970244559!5m2!1shu!2shu"
+
+const CONTACT_EMAIL = "tabor@kockakemp.hu"
+
+/** Marketing copy from https://mineshow.hu/tabor — camp booking dates/tickets are configured in admin/seed separately. */
+const STORY_PARAGRAPH = `Napközis programozótábort indítunk, ahol a délelőttök a programozásról és alkotásról, a délutánok pedig a közös játékról szólnak – a szabadban és az online térben egyaránt, izgalmas, Minecraft-alapú party játékokkal.
+
+Júliusban és augusztusban várjuk a 6–12 éves gyerekeket heti turnusokban, Budapesten, a 14. kerületi Récsei Centerben. A bejárós tábor során minden résztvevő a saját laptopján tanulja meg a Minecraft-modkészítés alapjait. A gyerekek modellező program segítségével új karaktereket alkotnak, megismerkednek pályageneráló eszközökkel, valamint belekóstolnak egy kifejezetten Minecraft-hoz optimalizált animációs programba is, amelyben saját kisfilmeket készítenek.
+
+A gyerekek nemcsak csapatban tanulnak együttműködni, hanem önálló programozási készségeiket is fejlesztik. Délutánonként – a szabadtéri és sportprogramok mellett – MiniGame partykkal készülünk: lesz építőverseny, PvP-alapú harc, akadálypálya és túlélő kihívás is.
+
+Célunk, hogy a nyári szünet ne csak szórakoztató, hanem hasznos is legyen.
+
+Sztárvendégünk zsDav, aki a hét zárásaként egy játékos kvízzel méri fel a megszerzett tudást, emellett fotózásra és dedikálásra is lehetőség lesz.
+
+Jelentkezz még ma, ne maradj le az élményről!`
+
+const PRICING_PARAGRAPH = `A heti turnus 75 000 Ft-ba kerül gyerekenként. A testvéreknek 10% kedvezményt biztosítunk a normál jegyárból.
+
+Június első hetében early bird kedvezménnyel 67 500 FT áron lehet jelentkezni. Jelentkezz még ma, ne maradj le az élményről!
+
+Elfogadjuk mindhárom SZÉP-kártyát, bankkártyát, valamint készpénzes fizetésre is van lehetőség a belvárosi irodánkban.
+
+Amennyiben szükséged van rá, tudsz tőlünk a turnus idejére laptopot kölcsönözni. Ezt a jegyek között 10 000 Ft/hét értékben megtalálod.
+
+Lemondás esetén jegy árát 100%-ban visszafizetjük, a turnus előtt 2 héttel. Azt követően, a turnus kezdéséig a befizetett összeg 50%-át, a turnus alatt pedig a fennmaradó napok 30%-át.`
+
+const PROGRAMS_HTML =
+  "Meet & Greet zsDavval, Build Battle, Speed builedrs, BlockBench, Bedwars, Death Run, World Painter, Splegg, Guess my drawing, Mine lmator, Murder Mystery, Impostor Builders, Kahoot, UHC, Bingo survival, MINIGAME Party!"
 
 export const homeDefaultContent: HomeContent = {
   meta: {
-    seoTitle: "Mineshow tábor — GeekSummer",
+    seoTitle: "KockaKemp tábor | Minecraft napközis tábor Budapest",
     seoDescription:
-      "Minecraft nyári tábor zsDavval Budapesten. Programozás, játék, turnusok a Récsei Centerben.",
+      "KockaKemp — Minecraft nyári tábor zsDavval a Récsei Centerben. Programozás, MiniGame party, jelentkezés online.",
   },
   blocks: [
     {
@@ -35,8 +64,7 @@ export const homeDefaultContent: HomeContent = {
       enabled: true,
       data: {
         title: "Mineshow tábor zsDavval Budapesten",
-        paragraph:
-          "Alkoss, játssz, programozz! Reggelente programozás, délutánonként játék — 6–12 éveseknek, saját vagy bérelt laptopkal.",
+        paragraph: STORY_PARAGRAPH,
         image: "/generic-hero.svg",
         boxHeading: "Alkoss, játssz, programozz!",
         ctaLabel: "Jelentkezés",
@@ -52,7 +80,7 @@ export const homeDefaultContent: HomeContent = {
       enabled: true,
       data: {
         title: "",
-        html: "Meet & Greet zsDavval, Build Battle, Speed builders, BlockBench, Bedwars, Death Run, World Painter, Splegg, Guess my drawing, Mine Imator, Murder Mystery, Impostor Builders, Kahoot, UHC, Bingo survival, MINIGAME Party!",
+        html: PROGRAMS_HTML,
       },
     },
     {
@@ -77,13 +105,7 @@ export const homeDefaultContent: HomeContent = {
       enabled: true,
       data: {
         title: "Árak és fizetés",
-        paragraph: `A tábor heti díja gyerekenként 75 000 Ft. Testvérkedvezmény: 10%. Early bird (májusi jelentkezés): 67 500 Ft.
-
-Fizetés: SZÉP-kártya (három típus), bankkártya, készpénz belvárosi irodában.
-
-Laptop bérlés: 10 000 Ft / hét / gyerek.
-
-Lemondás: a kezdés előtt 2 héttel 100%, a kezdésig 50%, indulás után a hátralévő napok arányában 30%.`,
+        paragraph: PRICING_PARAGRAPH,
         accordions: [],
         cards: [],
       },
@@ -95,48 +117,7 @@ Lemondás: a kezdés előtt 2 héttel 100%, a kezdésig 50%, indulás után a h�
       data: {
         title: "Gyakori Kérdések",
         paragraph: "",
-        accordions: [
-          {
-            title: "Meddig tart egy turnus?",
-            content: "Hétfőtől péntekig, reggel 9-től délután 16-ig.",
-          },
-          {
-            title: "Van testvérkedvezmény?",
-            content: "Igen, 10% kedvezmény a második (és további) gyerekre.",
-          },
-          {
-            title: "Milyen étkezési lehetőségek vannak?",
-            content:
-              "Normál, vegetáriánus, gluténmentes és laktózmentes étkezés kérhető jelentkezéskor.",
-          },
-          {
-            title: "Mit hozzak magammal?",
-            content: "Kényelmes ruha, kulacs, és ha van, saját laptop (vagy bérelhetsz nálunk).",
-          },
-          {
-            title: "Milyen gép kell a saját laptophoz?",
-            content:
-              "Windows 10+, legalább 8 GB RAM, stabil internet — Minecraft Java Edition.",
-          },
-          {
-            title: "Hány fő lesz egy turnuson?",
-            content: "Maximum 20 gyerek turnusonként, 2–3 felnőtt felügyelővel.",
-          },
-          {
-            title: "Mi van, ha a gyerek beteg lesz?",
-            content:
-              "A kezdés előtti lemondási feltételek szerint térítünk, orvosi igazolással egyeztetünk.",
-          },
-          {
-            title: "Hogy lehet eljutni tömegközlekedéssel?",
-            content:
-              "M2 metró Stadionok megálló, majd gyalog vagy busz az Istvánmezei út felé.",
-          },
-          {
-            title: "Hol lehet parkolni?",
-            content: "A Récsei Center környékén utcai parkolás és mélygarázs is elérhető.",
-          },
-        ],
+        accordions: [...mineshowFaqItems],
         cards: [],
       },
     },
@@ -152,7 +133,7 @@ Lemondás: a kezdés előtt 2 héttel 100%, a kezdésig 50%, indulás után a h�
         venueShort: "Récsei Center, 2026 nyár",
         mapEmbedUrl: DEFAULT_MAP_EMBED,
         phone: "",
-        email: "event@playit.hu",
+        email: CONTACT_EMAIL,
       },
     },
   ],

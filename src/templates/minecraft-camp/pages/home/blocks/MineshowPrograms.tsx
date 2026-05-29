@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef } from "react"
+import { mediaImageSrc } from "@/lib/images"
 
 type Item = { image: string; caption: string }
 
@@ -51,7 +52,7 @@ export function MineshowPrograms({
                 <div className="minecraft-map-frame aspect-square overflow-hidden bg-[#4e311f] transition-transform group-hover:scale-105">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={item.image || "/generic-hero.svg"}
+                    src={mediaImageSrc(item.image || "/generic-hero.svg")}
                     alt={item.caption}
                     className="h-full w-full object-cover pixelated"
                   />
