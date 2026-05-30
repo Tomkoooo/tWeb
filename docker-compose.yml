@@ -1,92 +1,185 @@
-version: '3.8'
+version: "3.8"
 
-# =============================================
-# TEMPLATE FOR PORTAINER SWARM STACK
-# =============================================
+# PORTAINER STACK (standalone Docker — single VPS, not Swarm)
+# Paste into: Stacks → Add stack → Web editor
+#
+# Requires Portainer connected to a **local Docker** environment (not Swarm).
+# If you use nginx-proxy, the external network `nginxproxy_default` must exist
+# on the host (`docker network ls`). Remove that network block if you don't use it.
 
 services:
-
-  # ==================== YOUR MAIN APPLICATION ====================
-  your-app-name:                    # ← Change this (service name)
-    image: your-image:tag           # ← Put your image here (e.g. ghcr.io/tomkoooo/tdarts:main)
-    container_name: your-app-name   # ← Container name (recommended to match service name)
+  webshop-engine:
+    image: ${WEBSHOP_IMAGE}
+    container_name: webshop-engine
     restart: unless-stopped
-    
-    # Labels for WUD (What's Up Docker)
+
     labels:
-      - wud.watch=true              # Enable watching this service
-      - wud.tag=include             # Options: include / semver / latest
-    
-    # Healthcheck - VERY IMPORTANT for zero-downtime updates
+      - wud.watch=true
+      - wud.tag=include
+
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]  # ← Change to your real health endpoint
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/feature-flags/maintenance').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
-    # Zero-downtime rolling update configuration (Optional but recommended)
-    deploy:
-      replicas: 2                          # Use 2+ for zero downtime
-      update_config:
-        parallelism: 1                     # Update one container at a time
-        delay: 15s                         # Time between container updates
-        order: start-first                 # Start new BEFORE stopping old → Zero downtime
-        failure_action: rollback
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+    volumes:
+      - webshop-uploads:/app/uploads
 
     environment:
-      # Add your environment variables here
-      - TZ=Europe/Berlin
-      # - KEY=value
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      TZ: Europe/Budapest
+
+      # --- Core (set in Portainer env) ---
+      DATABASE_URL: ${DATABASE_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
+      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
+      AUTH_URL: ${AUTH_URL}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
+
+      # --- Deployment ---
+      DEPLOYMENT_KEY: ${DEPLOYMENT_KEY}
+      ENABLE_SHOP: ${ENABLE_SHOP}
+
+      # --- Maintenance ---
+      MAINTENANCE_MODE: ${MAINTENANCE_MODE}
+      NEXT_PUBLIC_MAINTENANCE_MODE: ${NEXT_PUBLIC_MAINTENANCE_MODE}
+
+      # --- Admin bootstrap ---
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS}
+
+      # --- Analytics ---
+      NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID}
+      NEXT_PUBLIC_META_PIXEL_ID: ${NEXT_PUBLIC_META_PIXEL_ID}
+      NEXT_PUBLIC_ANALYTICS_ENABLED: ${NEXT_PUBLIC_ANALYTICS_ENABLED}
+
+      # --- Email ---
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
+      MAILER_VERIFY_SMTP: ${MAILER_VERIFY_SMTP}
+      MAILER_LOG_STACK: ${MAILER_LOG_STACK}
+      INVOICE_ERROR_ALERT_EMAIL: ${INVOICE_ERROR_ALERT_EMAIL}
+
+      # --- Stripe ---
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+
+      # --- Inventory holds ---
+      RESERVATION_TTL_MIN_MS: ${RESERVATION_TTL_MIN_MS}
+      RESERVATION_TTL_MAX_MS: ${RESERVATION_TTL_MAX_MS}
+      RESERVATION_TTL_MAX_MINUTES: ${RESERVATION_TTL_MAX_MINUTES}
+      RESERVATION_STRIPE_SESSION_BUFFER_SEC: ${RESERVATION_STRIPE_SESSION_BUFFER_SEC}
+      CRON_SECRET: ${CRON_SECRET}
+
+      # --- GLS ---
+      GLS_API_USERNAME: ${GLS_API_USERNAME}
+      GLS_API_PASSWORD: ${GLS_API_PASSWORD}
+      GLS_CLIENT_NUMBER: ${GLS_CLIENT_NUMBER}
+      GLS_API_BASE_URL: ${GLS_API_BASE_URL}
+      GLS_WEBSHOP_ENGINE: ${GLS_WEBSHOP_ENGINE}
+      GLS_PRINTER_TYPE: ${GLS_PRINTER_TYPE}
+      GLS_PICKUP_NAME: ${GLS_PICKUP_NAME}
+      GLS_PICKUP_STREET: ${GLS_PICKUP_STREET}
+      GLS_PICKUP_HOUSE_NUMBER: ${GLS_PICKUP_HOUSE_NUMBER}
+      GLS_PICKUP_HOUSE_NUMBER_INFO: ${GLS_PICKUP_HOUSE_NUMBER_INFO}
+      GLS_PICKUP_CITY: ${GLS_PICKUP_CITY}
+      GLS_PICKUP_ZIP: ${GLS_PICKUP_ZIP}
+      GLS_PICKUP_COUNTRY_ISO: ${GLS_PICKUP_COUNTRY_ISO}
+      GLS_PICKUP_CONTACT_NAME: ${GLS_PICKUP_CONTACT_NAME}
+      GLS_PICKUP_CONTACT_PHONE: ${GLS_PICKUP_CONTACT_PHONE}
+      GLS_PICKUP_CONTACT_EMAIL: ${GLS_PICKUP_CONTACT_EMAIL}
+      GLS_SHIPPING_METHOD_NAME: ${GLS_SHIPPING_METHOD_NAME}
+
+      # --- Foxpost ---
+      FOXPOST_API_USERNAME: ${FOXPOST_API_USERNAME}
+      FOXPOST_API_PASSWORD: ${FOXPOST_API_PASSWORD}
+      FOXPOST_API_KEY: ${FOXPOST_API_KEY}
+      FOXPOST_API_BASE_URL: ${FOXPOST_API_BASE_URL}
+      FOXPOST_SHIPPING_METHOD_NAME: ${FOXPOST_SHIPPING_METHOD_NAME}
+      FOXPOST_PARCEL_SIZE: ${FOXPOST_PARCEL_SIZE}
+      FOXPOST_LABEL_PAGE_SIZE: ${FOXPOST_LABEL_PAGE_SIZE}
+      FOXPOST_IS_WEB: ${FOXPOST_IS_WEB}
+
+      # --- Számlázz.hu ---
+      SZAMLAZZ_AGENT_KEY: ${SZAMLAZZ_AGENT_KEY}
+      SZAMLAZZ_USER: ${SZAMLAZZ_USER}
+      SZAMLAZZ_PASSWORD: ${SZAMLAZZ_PASSWORD}
+      SZAMLAZZ_TIMEOUT_MS: ${SZAMLAZZ_TIMEOUT_MS}
+      SZAMLAZZ_SELLER_BANK_NAME: ${SZAMLAZZ_SELLER_BANK_NAME}
+      SZAMLAZZ_SELLER_BANK_ACCOUNT: ${SZAMLAZZ_SELLER_BANK_ACCOUNT}
+      SZAMLAZZ_ISSUER_NAME: ${SZAMLAZZ_ISSUER_NAME}
+      SZAMLAZZ_EMAIL_SUBJECT: ${SZAMLAZZ_EMAIL_SUBJECT}
+      SZAMLAZZ_EMAIL_MESSAGE: ${SZAMLAZZ_EMAIL_MESSAGE}
+
+      # --- Newsletter ---
+      NEWSLETTER_UNSUBSCRIBE_SECRET: ${NEWSLETTER_UNSUBSCRIBE_SECRET}
+
+      # --- Dev metrics (leave empty in prod) ---
+      DEV_METRICS: ${DEV_METRICS}
+      DEV_METRICS_FILE: ${DEV_METRICS_FILE}
 
     networks:
-      - default
-      - nginxproxy_default               # ← Required for Nginx proxy
+      - nginxproxy_default
 
-  # ==================== ADD MORE SERVICES HERE ====================
-  # Example: Socket Service
-  # your-socket:
-  #   image: ghcr.io/... 
-  #   container_name: your-socket
-  #   ... (copy the same structure as above)
-
-  # ==================== WUD - IMAGE UPDATE WATCHER ====================
   wud:
     image: ghcr.io/getwud/wud:latest
     container_name: wud
     restart: unless-stopped
-    
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    
     ports:
-      - "3004:3000"                     # WUD Web UI
-    
+      - "3004:3000"
     environment:
-      - WUD_WATCHER_LOCAL_CRON=*/2 * * * *   # Check every 2 minutes
-      - WUD_TRIGGER_DOCKER_LOCAL_ENABLED=true
-      - WUD_TRIGGER_DOCKER_LOCAL_THRESHOLD=patch     # Options: major / minor / patch
-      - WUD_TRIGGER_DOCKER_LOCAL_CLEANUP=true
-      - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
-      
-      # Optional: Add notifications
-      # - WUD_NOTIF_DISCORD_WEBHOOK=your-discord-webhook
-      # - WUD_NOTIF_SLACK_WEBHOOK=your-slack-webhook
+      WUD_WATCHER_LOCAL_CRON: "*/2 * * * *"
+      WUD_TRIGGER_DOCKER_LOCAL_ENABLED: "true"
+      WUD_TRIGGER_DOCKER_LOCAL_THRESHOLD: patch
+      WUD_TRIGGER_DOCKER_LOCAL_CLEANUP: "true"
+      WUD_TRIGGER_DOCKER_LOCAL_PRUNE: "true"
 
-    networks:
-      - default
+volumes:
+  webshop-uploads:
 
-# =============================================
-# NETWORKS
-# =============================================
 networks:
-  default:
-    driver: overlay                     # Required for Swarm
-    
   nginxproxy_default:
-    external: true                      # Important - connects to your existing Nginx network
+    external: true
+
+# =============================================================================
+# PORTAINER ENVIRONMENT VARIABLES — copy keys you need into the box below the
+# web editor (one KEY=value per line). Example for minecraft-camp:
+#
+# WEBSHOP_IMAGE=ghcr.io/your-user/webshop-engine:main
+# DATABASE_URL=mongodb+srv://...
+# NEXT_PUBLIC_APP_URL=https://mineshow.example.com
+# NEXTAUTH_URL=https://mineshow.example.com
+# AUTH_URL=https://mineshow.example.com
+# AUTH_SECRET=...
+# AUTH_GOOGLE_ID=...
+# AUTH_GOOGLE_SECRET=...
+# AUTH_TRUST_HOST=true
+# DEPLOYMENT_KEY=minecraft-camp
+# ENABLE_SHOP=false
+# STRIPE_SECRET_KEY=sk_live_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
+# EMAIL_HOST=...
+# EMAIL_PORT=465
+# EMAIL_USER=...
+# EMAIL_PASS=...
+# EMAIL_FROM=...
+# EMAIL_FROM_NAME=...
+# =============================================================================

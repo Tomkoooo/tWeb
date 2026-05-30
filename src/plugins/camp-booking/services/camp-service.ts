@@ -101,6 +101,7 @@ export class CampService {
         id: String(camp._id),
         title: camp.title,
         slug: camp.slug,
+        heroImage: camp.heroImage || "",
         pricingSettings,
       },
       session: {

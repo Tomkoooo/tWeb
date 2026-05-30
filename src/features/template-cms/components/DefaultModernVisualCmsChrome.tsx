@@ -193,7 +193,7 @@ export function DefaultModernVisualCmsChrome({
         <div className="p-4 space-y-4">
           <DevicePreview device={device}>
             <div
-              className="flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground"
+              className="flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview"
               style={themeTokensToCssVars(themeSettings)}
             >
               {wrapLayout("edit", mainEdit)}
@@ -214,10 +214,10 @@ export function DefaultModernVisualCmsChrome({
               Vissza
             </button>
           </div>
-          <div
-            className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground"
-            style={themeTokensToCssVars(themeSettings)}
-          >
+            <div
+              className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground admin-storefront-preview"
+              style={themeTokensToCssVars(themeSettings)}
+            >
             {wrapLayout("review", mainReview)}
           </div>
         </div>

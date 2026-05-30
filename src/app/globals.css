@@ -607,3 +607,54 @@ img.pixelated {
   border-right: none;
   text-decoration: none;
 }
+
+/* Admin chrome: always light text on dark shell (independent of storefront theme tokens on <html>). */
+.admin-shell {
+  --theme-foreground: #fafafa;
+  --theme-muted-foreground: #a3a3a3;
+  --theme-surface-foreground: #fafafa;
+  --theme-primary-foreground: #ffffff;
+  --theme-secondary-foreground: #e5e5e5;
+  --theme-accent-foreground: #fafafa;
+  --foreground: #fafafa;
+  --muted-foreground: #a3a3a3;
+  --card-foreground: #fafafa;
+  --popover-foreground: #fafafa;
+  color: #ffffff;
+}
+
+.admin-shell .text-foreground {
+  color: #fafafa;
+}
+
+.admin-shell .text-muted-foreground {
+  color: #a3a3a3;
+}
+
+.admin-shell .prose {
+  color: #e5e5e5;
+}
+
+/* CMS device preview: restore pale storefront text (minecraft-camp public pages). */
+.admin-storefront-preview.minecraft-camp-preview {
+  --theme-foreground: #2d2817;
+  --theme-muted-foreground: #5c4a32;
+  --theme-surface-foreground: #2d5016;
+  --foreground: #2d2817;
+  --muted-foreground: #5c4a32;
+  color: #2d2817;
+  background-color: #b8d88a;
+}
+
+.admin-storefront-preview.minecraft-camp-preview .text-foreground,
+.admin-storefront-preview.minecraft-camp-preview h1,
+.admin-storefront-preview.minecraft-camp-preview h2,
+.admin-storefront-preview.minecraft-camp-preview h3,
+.admin-storefront-preview.minecraft-camp-preview h4 {
+  color: #2d2817;
+}
+
+.admin-storefront-preview.minecraft-camp-preview .text-muted-foreground,
+.admin-storefront-preview.minecraft-camp-preview .prose {
+  color: #5c4a32;
+}

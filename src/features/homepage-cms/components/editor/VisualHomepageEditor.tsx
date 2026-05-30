@@ -27,6 +27,7 @@ import type { HomePageDeps } from "@/templates/types"
 import type { HomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import { resolveContactDisplayField } from "@/lib/contact-display"
 import { extractMineshowSiteConfig } from "@/templates/minecraft-camp/lib/site-config"
+import { pressStart2P } from "@/templates/minecraft-camp/fonts"
 
 type Props = {
   templateId: string
@@ -123,6 +124,10 @@ export function VisualHomepageEditor({
         : undefined,
     [templateId, snapshot]
   )
+  const isMinecraftCamp = templateId === "minecraft-camp"
+  const previewSurfaceClass = isMinecraftCamp
+    ? `admin-storefront-preview minecraft-camp-preview minecraft-page-mineshow ${pressStart2P.variable}`
+    : "admin-storefront-preview"
   const patchHeroTopLevelField = (
     data: HeroBlock["data"],
     field: string,
@@ -303,7 +308,7 @@ export function VisualHomepageEditor({
           <div className="p-4 space-y-4">
             <DevicePreview device={device}>
               <div
-                className="flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground"
+                className={`flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground ${previewSurfaceClass}`}
                 style={themeTokensToCssVars(themeSettings)}
               >
                 <NavbarCmp
@@ -391,7 +396,7 @@ export function VisualHomepageEditor({
             </button>
           </div>
           <div
-            className="min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground"
+            className={`min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground ${previewSurfaceClass}`}
             style={themeTokensToCssVars(themeSettings)}
           >
             <NavbarCmp

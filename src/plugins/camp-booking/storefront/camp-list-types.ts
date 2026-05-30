@@ -18,5 +18,6 @@ export type CampListCamp = {
   id: string
   title: string
   description?: string
+  heroImage?: string
   sessions: CampListSession[]
 }

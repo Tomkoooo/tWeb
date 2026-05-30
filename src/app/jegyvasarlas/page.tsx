@@ -6,6 +6,7 @@ import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 import { CampList } from "@/plugins/camp-booking/storefront/CampList"
 import { pressStart2P } from "@/templates/minecraft-camp/fonts"
 import { loadMineshowSiteConfig } from "@/templates/minecraft-camp/lib/load-site-config"
+import { campCheckoutCopy } from "@/templates/minecraft-camp/content/checkout-copy"
 
 export default async function JegyvasarlasPage() {
   const enabled = await PluginService.isEnabled("camp-booking")
@@ -31,10 +32,10 @@ export default async function JegyvasarlasPage() {
       <main className={`minecraft-page-mineshow min-h-[70vh] px-4 py-10 ${pressStart2P.variable}`}>
         <div className="max-w-4xl mx-auto">
           <h1 className="font-minecraft text-sm md:text-base text-[#2d2817] mb-2">
-            Jegyek, bérletek
+            {campCheckoutCopy.pageTitle}
           </h1>
           <p className="font-minecraft-body text-sm text-[#5c4a32] mb-8">
-            Válassz turnust, add hozzá a táborjegyet és opcionálisan a laptopbérlést gyerekenként.
+            {campCheckoutCopy.pageIntro}
           </p>
           <CampList variant="mineshow" />
         </div>
