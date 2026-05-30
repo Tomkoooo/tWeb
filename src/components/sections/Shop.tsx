@@ -20,7 +20,7 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 import { MediaLightbox, useMediaLightbox, type MediaLightboxItem } from "@/components/common/MediaLightbox"
 import { MediaZoomButton } from "@/components/common/MediaZoomButton"
 import { mediaImageSrc } from "@/lib/images"
-import { getTemplateById } from "@/templates/registry"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
 import { homepageFeaturedToProductDetail } from "@/features/homepage-cms/render/homepage-product-card-shape"
 import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
@@ -67,7 +67,7 @@ export function Shop({
   const categoryLightbox = useMediaLightbox({ images: categoryLightboxItems })
 
   const ProductCardCmp = React.useMemo(
-    () => resolveCommerceProductCard(getTemplateById(templateId)),
+    () => resolveCommerceProductCard(getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!),
     [templateId]
   )
 

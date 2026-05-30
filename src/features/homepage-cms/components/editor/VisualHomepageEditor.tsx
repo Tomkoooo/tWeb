@@ -89,18 +89,20 @@ export function VisualHomepageEditor({
     [snapshot.blocks, selectedBlockId]
   )
 
-  const [templateModule, setTemplateModule] = useState<TemplateModule>(
-    () => getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
-  )
+  const [templateModule, setTemplateModule] = useState<TemplateModule>(() => {
+    const loaded = getTemplateById(templateId)
+    return loaded ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
+  })
 
   useEffect(() => {
     let cancelled = false
-    if (templateId === FALLBACK_TEMPLATE_ID || getTemplateById(templateId)) {
-      setTemplateModule(getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID))
+    const loaded = getTemplateById(templateId)
+    if (loaded) {
+      setTemplateModule(loaded)
       return
     }
-    void loadTemplateModule(templateId).then((loaded) => {
-      if (!cancelled) setTemplateModule(loaded)
+    void loadTemplateModule(templateId).then((mod) => {
+      if (!cancelled) setTemplateModule(mod)
     })
     return () => {
       cancelled = true
@@ -151,12 +153,25 @@ export function VisualHomepageEditor({
 
   const contactData = useMemo(() => {
     const block = snapshot.blocks.find((item) => item.type === "contact" && item.enabled !== false)
-    const data = block?.data as { email?: string; phone?: string; address?: string } | undefined
+    const data = block?.data as
+      | { email?: string; phone?: string; address?: string }
+      | undefined
     return {
+      blockId: block?.id,
+      email: resolveContactDisplayField(
+        data?.email,
+        dependencies.siteContact.emails[0]?.email || dependencies.company.email
+      ),
       phone: resolveContactDisplayField(data?.phone, dependencies.company.phone),
       address: resolveContactDisplayField(data?.address, dependencies.company.address),
     }
-  }, [dependencies.company.address, dependencies.company.phone, snapshot.blocks])
+  }, [
+    dependencies.company.address,
+    dependencies.company.email,
+    dependencies.company.phone,
+    dependencies.siteContact.emails,
+    snapshot.blocks,
+  ])
 
   const homePageDeps = useMemo(
     (): HomePageDeps => ({ ...dependencies, templateId }),
@@ -208,7 +223,7 @@ export function VisualHomepageEditor({
   }, [reviewOpen])
 
   return (
-    <div className="min-h-screen bg-background-dark text-white">
+    <div className="cms-editor-chrome min-h-screen text-white">
       <TopBar
         dirty={dirty}
         device={device}
@@ -254,7 +269,7 @@ export function VisualHomepageEditor({
         <div className="flex-1 min-w-0">
           <CmsChromeBrandingToolbar branding={branding} setBranding={setBranding} />
           <Breadcrumb block={selectedBlock} />
-          <div className="p-4 border-b border-white/10 space-y-3">
+          <div className="cms-editor-chrome p-4 border-b border-white/10 space-y-3">
             <p className="text-[10px] uppercase tracking-widest text-neutral-400">Szekciók megjelenítése</p>
             <div className="flex flex-wrap gap-2">
               {allowedHomepageBlockTypes.map((sectionType) => {
@@ -308,7 +323,7 @@ export function VisualHomepageEditor({
           <div className="p-4 space-y-4">
             <DevicePreview device={device}>
               <div
-                className={`flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground ${previewSurfaceClass}`}
+                className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground ${isMinecraftCamp ? "bg-[#b8d88a]" : "bg-background"} ${previewSurfaceClass}`}
                 style={themeTokensToCssVars(themeSettings)}
               >
                 <NavbarCmp
@@ -322,10 +337,14 @@ export function VisualHomepageEditor({
                   <CmsEditProvider
                     enabled
                     snapshot={snapshot}
-                    updateField={(blockType, field, value) => {
-                      const target = snapshot.blocks.find(
-                        (item) => item.type === blockType && item.enabled !== false
-                      )
+                    updateField={(blockType, field, value, blockId) => {
+                      const target = blockId
+                        ? snapshot.blocks.find(
+                            (item) => item.id === blockId && item.enabled !== false
+                          )
+                        : snapshot.blocks.find(
+                            (item) => item.type === blockType && item.enabled !== false
+                          )
                       if (!target) return
                       if (blockType === "hero" && target.type === "hero") {
                         const heroPatch = patchHeroTopLevelField(
@@ -340,10 +359,14 @@ export function VisualHomepageEditor({
                       }
                       updateBlockField(target.id, field, value)
                     }}
-                    patchBlockData={(blockType, patch) => {
-                      const target = snapshot.blocks.find(
-                        (item) => item.type === blockType && item.enabled !== false
-                      )
+                    patchBlockData={(blockType, patch, blockId) => {
+                      const target = blockId
+                        ? snapshot.blocks.find(
+                            (item) => item.id === blockId && item.enabled !== false
+                          )
+                        : snapshot.blocks.find(
+                            (item) => item.type === blockType && item.enabled !== false
+                          )
                       if (!target) return
                       updateBlockData(target.id, patch)
                     }}
@@ -357,6 +380,16 @@ export function VisualHomepageEditor({
                   shopEnabled={shopEnabled}
                   footerSettings={footerSettings}
                   cmsEditable
+                  email={contactData.email}
+                  contactVenueAddress={contactData.address}
+                  onContactVenueChange={(value) => {
+                    if (!contactData.blockId) return
+                    updateBlockField(contactData.blockId, "address", value)
+                  }}
+                  onContactEmailChange={(value) => {
+                    if (!contactData.blockId) return
+                    updateBlockField(contactData.blockId, "email", value)
+                  }}
                   onSettingsChange={async (next) => {
                     setFooterSettings(next)
                     await fetch("/api/admin/footer", {
@@ -425,6 +458,8 @@ export function VisualHomepageEditor({
               logoSrc={branding.logoFooter}
               shopEnabled={shopEnabled}
               footerSettings={footerSettings}
+              email={contactData.email}
+              contactVenueAddress={contactData.address}
               categories={dependencies.categories.map((category) => ({
                 id: category.id,
                 name: category.name,

@@ -5,6 +5,7 @@ import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-c
 
 export function EditableListInline<T>({
   blockType,
+  blockId,
   field,
   items,
   onRenderItem,
@@ -12,6 +13,7 @@ export function EditableListInline<T>({
   className,
 }: {
   blockType: HomepageBlock["type"]
+  blockId?: string
   field: string
   items: T[]
   onRenderItem: (item: T, index: number, helpers: { remove: () => void }) => React.ReactNode
@@ -24,14 +26,22 @@ export function EditableListInline<T>({
     <div className={className}>
       {items.map((item, index) =>
         onRenderItem(item, index, {
-          remove: () => cms.updateField(blockType, field, items.filter((_, idx) => idx !== index)),
+          remove: () =>
+            cms.updateField(
+              blockType,
+              field,
+              items.filter((_, idx) => idx !== index),
+              blockId
+            ),
         })
       )}
       {cms.enabled ? (
         <button
           type="button"
-          onClick={() => cms.updateField(blockType, field, [...items, onCreateItem()])}
-          className="px-3 h-8 border border-white/20 text-xs uppercase text-white mt-2"
+          onClick={() =>
+            cms.updateField(blockType, field, [...items, onCreateItem()], blockId)
+          }
+          className="px-3 h-8 border border-primary/40 text-xs uppercase text-inherit mt-2"
         >
           Add item
         </button>
@@ -39,4 +49,3 @@ export function EditableListInline<T>({
     </div>
   )
 }
-

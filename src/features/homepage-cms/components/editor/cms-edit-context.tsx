@@ -6,11 +6,17 @@ import type { HomepageBlock, HomepageSnapshot } from "@/features/homepage-cms/ty
 type CmsEditContextValue = {
   enabled: boolean
   snapshot: HomepageSnapshot | null
-  updateField: (blockType: HomepageBlock["type"], field: string, value: unknown) => void
-  /** Apply several `data` keys at once on the first enabled block of this type */
+  updateField: (
+    blockType: HomepageBlock["type"],
+    field: string,
+    value: unknown,
+    blockId?: string
+  ) => void
+  /** Apply several `data` keys at once; optional `blockId` targets a specific block when multiple share a type. */
   patchBlockData: (
     blockType: HomepageBlock["type"],
-    patch: Record<string, unknown>
+    patch: Record<string, unknown>,
+    blockId?: string
   ) => void
 }
 
@@ -36,7 +42,7 @@ export function CmsEditProvider({
 }) {
   return (
     <CmsEditContext.Provider value={{ enabled, snapshot, updateField, patchBlockData }}>
-      {children}
+      <div data-cms-editing={enabled ? "true" : undefined}>{children}</div>
     </CmsEditContext.Provider>
   )
 }
@@ -44,4 +50,3 @@ export function CmsEditProvider({
 export function useCmsEdit() {
   return useContext(CmsEditContext)
 }
-

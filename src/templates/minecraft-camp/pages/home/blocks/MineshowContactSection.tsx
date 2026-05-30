@@ -1,7 +1,13 @@
+"use client"
+
 import type { SiteContact } from "@/lib/site-contact"
 import { SiteContactEmailsList } from "@/components/site-contact/SiteContactEmailsList"
 import { ContactInquiryForm } from "@/components/site-contact/ContactInquiryForm"
 import { MineshowContactMap } from "./MineshowContactMap"
+import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
+import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
+
+const BLOCK_ID = "contact-venue"
 
 type ContactBlockData = {
   title?: string
@@ -30,13 +36,14 @@ export function MineshowContactSection({
   mapEmbedUrl,
   venueAddress,
 }: Props) {
+  const cms = useCmsEdit()
   const emails = siteContact.emails
   const hasForm = emails.length > 0
   const addressTitle = contactData?.title || contactData?.address || venueAddress
 
   return (
     <section id="contact" className="bg-[#b8d88a] border-t-4 border-[#3d2817]/20">
-      {mapEmbedUrl ? (
+      {mapEmbedUrl || cms.enabled ? (
         <MineshowContactMap
           addressTitle={addressTitle}
           email={contactData?.email}
@@ -49,16 +56,59 @@ export function MineshowContactSection({
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="minecraft-panel p-5 md:p-6 space-y-4 font-minecraft-body text-sm text-[#3d2817]">
             <h2 className="font-minecraft text-xs text-[#2d5016]">
-              {contactData?.title || "Kapcsolat"}
+              <EditableTextInline
+                blockType="contact"
+                blockId={BLOCK_ID}
+                field="title"
+                value={contactData?.title || "Kapcsolat"}
+                className="text-[#2d5016] text-xs font-minecraft"
+              />
             </h2>
-            {contactData?.description ? <p>{contactData.description}</p> : null}
-            {contactData?.companyName ? (
-              <p className="font-semibold">{contactData.companyName}</p>
+            {contactData?.description || cms.enabled ? (
+              <p>
+                <EditableTextInline
+                  blockType="contact"
+                  blockId={BLOCK_ID}
+                  field="description"
+                  value={contactData?.description ?? ""}
+                  multiline
+                  className="text-[#3d2817] text-sm font-minecraft-body"
+                />
+              </p>
             ) : null}
-            {contactData?.address || venueAddress ? (
-              <p>{contactData?.address || venueAddress}</p>
+            {contactData?.companyName || cms.enabled ? (
+              <p className="font-semibold">
+                <EditableTextInline
+                  blockType="contact"
+                  blockId={BLOCK_ID}
+                  field="companyName"
+                  value={contactData?.companyName ?? ""}
+                  className="text-[#3d2817] text-sm font-semibold font-minecraft-body"
+                />
+              </p>
             ) : null}
-            {contactData?.phone ? <p>{contactData.phone}</p> : null}
+            {contactData?.address || venueAddress || cms.enabled ? (
+              <p>
+                <EditableTextInline
+                  blockType="contact"
+                  blockId={BLOCK_ID}
+                  field="address"
+                  value={contactData?.address || venueAddress}
+                  className="text-[#3d2817] text-sm font-minecraft-body"
+                />
+              </p>
+            ) : null}
+            {contactData?.phone || cms.enabled ? (
+              <p>
+                <EditableTextInline
+                  blockType="contact"
+                  blockId={BLOCK_ID}
+                  field="phone"
+                  value={contactData?.phone ?? ""}
+                  className="text-[#3d2817] text-sm font-minecraft-body"
+                />
+              </p>
+            ) : null}
             {emails.length > 0 ? (
               <div>
                 <p className="font-minecraft text-[10px] text-[#2d5016] mb-2">E-mail</p>

@@ -24,6 +24,16 @@ const schema = z.object({
       })
     )
     .optional(),
+  organizerSection: z
+    .object({
+      title: z.string(),
+      companyName: z.string(),
+      registeredAddress: z.string(),
+      mailingAddress: z.string(),
+      openingHours: z.string(),
+    })
+    .optional(),
+  paymentMethodsNote: z.string().optional(),
 })
 
 export async function GET() {

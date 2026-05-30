@@ -12,7 +12,9 @@ import { ShopVisualSurfaceEditor } from "@/features/template-cms/editors/ShopVis
 import { StaticPageVisualSurfaceEditor } from "@/features/template-cms/editors/StaticPageVisualSurfaceEditor"
 import { PdpVisualSurfaceEditor } from "@/features/template-cms/editors/PdpVisualSurfaceEditor"
 import { FlowShellVisualSurfaceEditor } from "@/features/template-cms/editors/FlowShellVisualSurfaceEditor"
+import { CampSurfaceVisualEditor } from "@/features/template-cms/editors/CampSurfaceVisualEditor"
 import { AdminCmsPageNav } from "@/components/admin/AdminCmsPageNav"
+import { PluginService } from "@/services/plugin"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import { BrandingSettingsService } from "@/services/branding-settings"
 import { FooterSettingsService } from "@/services/footer-settings"
@@ -27,6 +29,8 @@ import type { PdpContent } from "@/templates/default-modern/pages/pdp/schema"
 import type { DefaultModernFlowShellContent } from "@/templates/default-modern/pages/flow/flow-shell-schema"
 
 export const dynamic = "force-dynamic"
+
+const CAMP_PAGE_KEYS = new Set(["page:jegyvasarlas", "page:foglalas", "page:foglalas-siker"])
 
 const FLOW_PAGE_ROUTE: Partial<Record<string, FlowRouteKey>> = {
   "page:cart": "cart",
@@ -51,7 +55,8 @@ export default async function CmsPageEditor({
   const template = await TemplateService.getActive()
   const dbActiveTemplate = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
-  const editablePages = listEditablePages(template, shopEnabled)
+  const campBookingEnabled = await PluginService.isEnabled("camp-booking")
+  const editablePages = listEditablePages(template, shopEnabled, campBookingEnabled)
   const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
   const entry = editablePages.find((p) => p.adminSegment === pageKey)
   if (!entry) notFound()
@@ -264,6 +269,35 @@ export default async function CmsPageEditor({
               shopEnabled={shopEnabled}
               pageKey={fullPageKey}
               slug={staticSlug}
+              pageLabel={entry.label}
+              initialDraft={initialDraftUnknown as Record<string, unknown>}
+              branding={branding}
+              footer={footer}
+              seo={seo}
+              theme={theme}
+              themeResetBaseline={themeResetBaseline}
+              homepageDeps={dependencies}
+            />
+          </SurfacePageLayout>
+        )
+      }
+
+      if (CAMP_PAGE_KEYS.has(fullPageKey) && template.campPages) {
+        return (
+          <SurfacePageLayout
+            label={entry.label}
+            subtitle="Tábor foglalás · szövegek"
+            editablePages={editablePages}
+            settingsSections={cmsSettingsSections}
+            pageKey={pageKey}
+            manifestName={template.manifest.name}
+            fullPageKey={fullPageKey}
+          >
+            <CampSurfaceVisualEditor
+              hydrationKey={editorHydrationKey}
+              templateId={template.manifest.id}
+              shopEnabled={shopEnabled}
+              pageKey={fullPageKey}
               pageLabel={entry.label}
               initialDraft={initialDraftUnknown as Record<string, unknown>}
               branding={branding}

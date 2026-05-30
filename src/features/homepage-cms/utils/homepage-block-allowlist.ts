@@ -45,8 +45,8 @@ export function resolveAllowedHomepageBlockTypes(pageDef: HomePageDefPick): Home
 }
 
 /**
- * Drops blocks whose type isn’t allowed, removes duplicate types (first wins before sort),
- * then sorts by `allowedOrder`.
+ * Drops blocks whose type isn't allowed, removes duplicate ids (first wins before sort),
+ * then sorts by `allowedOrder` (multiple blocks of the same type are kept when ids differ).
  */
 export function pruneAndDedupeHomepageBlocks(
   snapshot: HomepageSnapshot,
@@ -54,11 +54,11 @@ export function pruneAndDedupeHomepageBlocks(
 ): HomepageSnapshot {
   if (allowedOrder.length === 0) return snapshot
   const allowed = new Set<HomepageBlockType>(allowedOrder)
-  const seen = new Set<HomepageBlockType>()
+  const seenIds = new Set<string>()
   const kept: HomepageSnapshot["blocks"] = []
   for (const b of snapshot.blocks) {
-    if (!allowed.has(b.type) || seen.has(b.type)) continue
-    seen.add(b.type)
+    if (!allowed.has(b.type) || seenIds.has(b.id)) continue
+    seenIds.add(b.id)
     kept.push(b)
   }
   const rank = (t: HomepageBlockType) => {

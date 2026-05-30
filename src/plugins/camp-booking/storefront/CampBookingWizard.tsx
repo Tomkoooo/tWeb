@@ -8,7 +8,8 @@ import { buildAddonSelections } from "../lib/checkout-addons"
 import { calculateCampOrderTotal } from "../lib/pricing"
 import type { CampTicketPriceInput } from "../lib/pricing-types"
 import { mediaImageSrc } from "@/lib/images"
-import { campCheckoutCopy } from "@/templates/minecraft-camp/content/checkout-copy"
+import { campBookingDefaultContent } from "@/templates/minecraft-camp/pages/camp/defaultContent"
+import type { CampBookingContent } from "@/templates/minecraft-camp/pages/camp/schemas"
 
 type TicketType = CampTicketPriceInput & {
   id: string
@@ -63,15 +64,6 @@ const DINING_OPTIONS: CampDiningOption[] = [
   "Laktózmentes",
   "Egyéb",
 ]
-
-const VENUE_ADDRESS =
-  "Récsei Center Remíz Darts klub, Budapest, Istvánmezei út 6., 1146"
-
-const STEPS = [
-  { id: 0, label: campCheckoutCopy.stepOffers },
-  { id: 1, label: campCheckoutCopy.stepDetails },
-  { id: 2, label: campCheckoutCopy.stepReview },
-] as const
 
 function emptyChild(): ChildForm {
   return {
@@ -133,10 +125,16 @@ function PriceBreakdownSummary({
   )
 }
 
-function StepIndicator({ step }: { step: number }) {
+function StepIndicator({
+  step,
+  steps,
+}: {
+  step: number
+  steps: ReadonlyArray<{ id: number; label: string }>
+}) {
   return (
     <ol className="space-y-3 font-minecraft text-[10px] md:text-xs">
-      {STEPS.map((s, i) => {
+      {steps.map((s, i) => {
         const active = step === s.id
         const done = step > s.id
         return (
@@ -161,7 +159,21 @@ function StepIndicator({ step }: { step: number }) {
   )
 }
 
-export function CampBookingWizard({ sessionId }: { sessionId: string }) {
+export function CampBookingWizard({
+  sessionId,
+  copy = campBookingDefaultContent,
+}: {
+  sessionId: string
+  copy?: CampBookingContent
+}) {
+  const steps = useMemo(
+    () => [
+      { id: 0, label: copy.stepOffers },
+      { id: 1, label: copy.stepDetails },
+      { id: 2, label: copy.stepReview },
+    ],
+    [copy.stepOffers, copy.stepDetails, copy.stepReview]
+  )
   const searchParams = useSearchParams()
   const cancelled = searchParams.get("cancelled")
 
@@ -351,7 +363,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
             <h1 className="font-minecraft text-sm text-[#2d5016] leading-relaxed">
               {detail.session.sessionLabel}
             </h1>
-            <p className="font-minecraft-body text-xs text-[#3d2817]">{VENUE_ADDRESS}</p>
+            <p className="font-minecraft-body text-xs text-[#3d2817]">{copy.venueAddress}</p>
             <p className="font-minecraft-body text-sm">
               Szabad hely:{" "}
               <strong className="text-[#2d5016]">{detail.session.spotsLeft}</strong>
@@ -363,7 +375,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
             ) : null}
           </div>
           <div className="minecraft-panel p-5">
-            <StepIndicator step={step} />
+            <StepIndicator step={step} steps={steps} />
           </div>
         </aside>
 
@@ -378,10 +390,10 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
           {step === 0 && (
             <div className="minecraft-panel p-6 md:p-8 space-y-5">
               <h2 className="font-minecraft text-sm text-[#2d5016]">
-                {campCheckoutCopy.ticketsHeading}
+                {copy.ticketsHeading}
               </h2>
               <label className="block font-minecraft-body text-sm">
-                {campCheckoutCopy.ticketTypeLabel}
+                {copy.ticketTypeLabel}
                 <select
                   className="minecraft-input w-full mt-1"
                   value={ticketTypeId}
@@ -397,7 +409,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                 </select>
               </label>
               <label className="block font-minecraft-body text-sm">
-                {campCheckoutCopy.childCountLabel}
+                {copy.childCountLabel}
                 <input
                   type="number"
                   min={1}
@@ -409,7 +421,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
               </label>
               {detail.addonTickets.length > 0 ? (
                 <p className="font-minecraft-body text-xs text-[#5c4a32]">
-                  {campCheckoutCopy.addonsHint}
+                  {copy.addonsHint}
                 </p>
               ) : null}
               {(pricingSettings?.multiChildDiscountPercent ?? 0) > 0 ||
@@ -426,7 +438,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                 onClick={() => setStep(1)}
                 disabled={!ticketTypeId || detail.session.spotsLeft < 1}
               >
-                Tovább
+                {copy.nextLabel}
               </button>
             </div>
           )}
@@ -434,7 +446,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
           {step === 1 && (
             <div className="minecraft-panel p-6 md:p-8 space-y-6">
               <h2 className="font-minecraft text-sm text-[#2d5016]">
-                {campCheckoutCopy.buyerHeading}
+                {copy.buyerHeading}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
@@ -459,7 +471,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
               </div>
 
               <h2 className="font-minecraft text-sm text-[#2d5016] pt-2">
-                {campCheckoutCopy.childrenHeading}
+                {copy.childrenHeading}
               </h2>
               <div className="space-y-4">
                 {children.map((child, i) => (
@@ -582,7 +594,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
 
               <div className="flex gap-3">
                 <button type="button" className="minecraft-btn flex-1" onClick={() => setStep(0)}>
-                  Vissza
+                  {copy.backLabel}
                 </button>
                 <button
                   type="button"
@@ -590,7 +602,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                   onClick={() => setStep(2)}
                   disabled={!buyerName || !buyerEmail || !buyerPhone}
                 >
-                  Tovább
+                  {copy.nextLabel}
                 </button>
               </div>
             </div>
@@ -598,7 +610,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
 
           {step === 2 && (
             <div className="minecraft-panel p-6 md:p-8 space-y-5">
-              <h2 className="font-minecraft text-sm text-[#2d5016]">Áttekintés</h2>
+              <h2 className="font-minecraft text-sm text-[#2d5016]">{copy.reviewHeading}</h2>
               <div className="minecraft-panel-inner p-4 space-y-2 font-minecraft-body text-sm">
                 <p>
                   <strong>{selectedTicket?.name}</strong> × {childCount} gyerek
@@ -626,7 +638,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
               <PriceBreakdownSummary order={order} total={total} className="border-t-2 border-[#3d2817]/20 pt-4" />
               <div className="flex gap-3">
                 <button type="button" className="minecraft-btn flex-1" onClick={() => setStep(1)}>
-                  Vissza
+                  {copy.backLabel}
                 </button>
                 <button
                   type="button"
@@ -634,7 +646,7 @@ export function CampBookingWizard({ sessionId }: { sessionId: string }) {
                   disabled={submitting || detail.session.spotsLeft < 1}
                   onClick={() => void submit()}
                 >
-                  {submitting ? "Átirányítás…" : "Fizetés Stripe-on"}
+                  {submitting ? copy.payStripeLoading : copy.payStripeCta}
                 </button>
               </div>
             </div>

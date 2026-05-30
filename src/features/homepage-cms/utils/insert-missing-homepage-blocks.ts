@@ -5,21 +5,20 @@ function cloneBlock<T extends HomepageBlock>(block: T): T {
 }
 
 /**
- * Older saves (or migrations) sometimes dropped block types while the template baseline still declares them.
- * Re-insert missing types from **`reference`** (`template.pages.home.defaultContent`) in canonical order relative
- * to neighbours, preserving any extra blocks the merchant added (e.g. testimonials).
+ * Older saves (or migrations) sometimes dropped blocks while the template baseline still declares them.
+ * Re-insert missing blocks from **`reference`** by block id in canonical order relative to neighbours.
  */
 export function insertMissingHomepageBlocks(
   persisted: HomepageSnapshot,
   reference: HomepageSnapshot
 ): HomepageSnapshot {
-  const presentTypes = new Set(persisted.blocks.map((b) => b.type))
-  const missing = reference.blocks.filter((b) => !presentTypes.has(b.type))
+  const presentIds = new Set(persisted.blocks.map((b) => b.id))
+  const missing = reference.blocks.filter((b) => !presentIds.has(b.id))
   if (missing.length === 0) return persisted
 
   const next = [...persisted.blocks]
   for (const block of missing) {
-    const refIdx = reference.blocks.findIndex((b) => b.type === block.type)
+    const refIdx = reference.blocks.findIndex((b) => b.id === block.id)
     const predecessor: HomepageBlock | undefined =
       refIdx > 0 ? reference.blocks[refIdx - 1] : undefined
     const insertion = cloneBlock(block)
@@ -31,7 +30,7 @@ export function insertMissingHomepageBlocks(
 
     let anchor = -1
     for (let i = next.length - 1; i >= 0; i--) {
-      if (next[i]!.type === predecessor.type) {
+      if (next[i]!.id === predecessor.id) {
         anchor = i
         break
       }

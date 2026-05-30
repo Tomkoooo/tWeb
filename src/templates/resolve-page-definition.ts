@@ -25,8 +25,20 @@ export function findPageDefinition(
 
   if (pageKey.startsWith("page:")) {
     const slug = pageKey.slice("page:".length)
-    return (template.staticPages[slug] as PageDefinition<unknown>) ?? null
+    const staticDef = template.staticPages[slug] as PageDefinition<unknown> | undefined
+    if (staticDef) return staticDef
+
+    const campKey = CAMP_PAGE_KEY_TO_CAMP[pageKey as keyof typeof CAMP_PAGE_KEY_TO_CAMP]
+    if (campKey && template.campPages?.[campKey]) {
+      return template.campPages[campKey] as unknown as PageDefinition<unknown>
+    }
   }
 
   return null
 }
+
+const CAMP_PAGE_KEY_TO_CAMP = {
+  "page:jegyvasarlas": "jegyvasarlas",
+  "page:foglalas": "foglalas",
+  "page:foglalas-siker": "foglalasSiker",
+} as const satisfies Record<string, keyof NonNullable<TemplateModule["campPages"]>>

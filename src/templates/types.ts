@@ -259,12 +259,15 @@ export type FlowPageDefinition = {
   RouteChrome?: ComponentType<FlowProfileRouteChromeProps>
 }
 
+export type CampPageDeps = Record<string, never>
+
 export type AnyPageDeps =
   | HomePageDeps
   | ShopPageDeps
   | PdpPageDeps
   | StaticPageDeps
   | FlowShellDeps
+  | CampPageDeps
 
 export type RenderProps<TContent, TDeps extends AnyPageDeps = AnyPageDeps> = {
   content: TContent
@@ -359,6 +362,10 @@ export interface TemplateModule {
       /** Homepage CMS may enable inline footer legal links when the template footer supports it. */
       cmsEditable?: boolean
       onSettingsChange?: (next: FooterSettings) => void | Promise<void>
+      /** Camp footer: venue line synced with homepage contact block */
+      contactVenueAddress?: string
+      onContactVenueChange?: (value: string) => void
+      onContactEmailChange?: (value: string) => void
     }>
   }
   // PageDefinition is intentionally typed with `any` at the engine boundary:
@@ -373,6 +380,14 @@ export interface TemplateModule {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   staticPages: Record<string, PageDefinition<any, StaticPageDeps>>
+  /** Optional camp-booking storefront copy surfaces (jegyvasarlas / foglalas / success). */
+  campPages?: {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    jegyvasarlas?: PageDefinition<any, CampPageDeps>
+    foglalas?: PageDefinition<any, CampPageDeps>
+    foglalasSiker?: PageDefinition<any, CampPageDeps>
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+  }
   /**
    * Optional wrappers for `/cart`, `/checkout`, and `/profile` (layouts use `FlowPageTemplateBridge`).
    * Omit for full passthrough; chrome + footer still come from `getActiveChrome()`.

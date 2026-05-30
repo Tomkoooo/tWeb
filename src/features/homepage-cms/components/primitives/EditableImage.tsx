@@ -38,7 +38,7 @@ export function EditableImage({
         showFallbackOnError={editMode ? false : true}
       />
       {editMode ? (
-        <div className="space-y-2">
+        <div className="cms-admin-control space-y-2">
           <UploadSheet
             onUploaded={onChange}
             label="Upload image"

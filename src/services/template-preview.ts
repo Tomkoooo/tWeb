@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { getTemplateById } from "@/templates/registry"
+import { isRegisteredTemplateId } from "@/templates/registry"
 
 export const TEMPLATE_PREVIEW_COOKIE = "wse_template_preview"
 
@@ -13,7 +13,7 @@ export async function readPreviewTemplateId(): Promise<string | null> {
     const store = await cookies()
     const value = store.get(TEMPLATE_PREVIEW_COOKIE)?.value
     if (!value) return null
-    if (!getTemplateById(value)) return null
+    if (!isRegisteredTemplateId(value)) return null
     return value
   } catch {
     return null

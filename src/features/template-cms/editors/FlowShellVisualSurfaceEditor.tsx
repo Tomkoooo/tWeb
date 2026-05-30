@@ -57,7 +57,7 @@ export function FlowShellVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
   const flowDef = mod.flowPages![flowRoute]!
   const FlowShellPreviewPassthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>
   const Wrapper = flowDef.Wrapper ?? FlowShellPreviewPassthrough

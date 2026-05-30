@@ -5,8 +5,12 @@ import { cn } from "@/lib/utils"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import type { HomepageBlock } from "@/features/homepage-cms/types/block-types"
 
+const editableFieldClass =
+  "w-full border border-dashed border-primary/40 bg-[color-mix(in_oklab,var(--theme-surface)_75%,transparent)] px-2 py-1 text-inherit"
+
 export function EditableTextInline({
   blockType,
+  blockId,
   field,
   value,
   className,
@@ -15,6 +19,7 @@ export function EditableTextInline({
   onCommit,
 }: {
   blockType: HomepageBlock["type"]
+  blockId?: string
   field: string
   value: string
   className?: string
@@ -32,7 +37,7 @@ export function EditableTextInline({
 
   const commit = () => {
     if (onCommit) onCommit(localValue)
-    else cms.updateField(blockType, field, localValue)
+    else cms.updateField(blockType, field, localValue, blockId)
   }
 
   if (!cms.enabled) {
@@ -46,7 +51,8 @@ export function EditableTextInline({
         onChange={(event) => setLocalValue(event.target.value)}
         onBlur={commit}
         placeholder={placeholder}
-        className={cn("w-full border border-dashed border-white/20 bg-black/30 px-2 py-1 text-white", className)}
+        rows={4}
+        className={cn(editableFieldClass, "min-h-24 resize-y", className)}
       />
     )
   }
@@ -57,8 +63,7 @@ export function EditableTextInline({
       onChange={(event) => setLocalValue(event.target.value)}
       onBlur={commit}
       placeholder={placeholder}
-      className={cn("w-full border border-dashed border-white/20 bg-black/30 px-2 py-1 text-white", className)}
+      className={cn(editableFieldClass, className)}
     />
   )
 }
-

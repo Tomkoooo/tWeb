@@ -65,12 +65,24 @@ Initialize missing templates at **Admin → Emailek** after enabling `pluginCamp
 3. **Jegytípusok** — `per_child` or `flat` pricing.
 4. **Excel export** — one row per child with report columns.
 
+## CMS surfaces
+
+| Admin route | Storefront |
+| --- | --- |
+| `/admin/cms/home` | `/` (homepage blocks) |
+| `/admin/cms/jegyvasarlas` | `/jegyvasarlas` ticket list copy |
+| `/admin/cms/foglalas` | `/foglalas/*` booking wizard copy |
+| `/admin/cms/foglalas-siker` | `/foglalas/siker` success/error messages |
+
+Homepage blocks support inline on-canvas editing (hero, story, programs, pricing, FAQ, contact, map embed).
+
 ## Seed demo data
 
 ```bash
 # Targets SEED_DB_URL when set, otherwise DATABASE_URL (see .env)
 # Uploads marketing images into MongoDB (served at /api/media/…); optional local files under
-# public/minecraft-camp/ or scripts/seed/assets/minecraft-camp/, otherwise fetched from mineshow.hu CDN
+# public/minecraft-camp/ or scripts/seed/assets/minecraft-camp/, otherwise fetched from mineshow.hu CDN.
+# Homepage FAQ is scraped from https://mineshow.hu/tabor (bundled fallback if fetch fails).
 node scripts/seed/minecraft-camp-demo.mjs
 ```
 

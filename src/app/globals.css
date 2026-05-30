@@ -635,6 +635,57 @@ img.pixelated {
   color: #e5e5e5;
 }
 
+/* CMS storefront preview: theme tokens from preview wrapper beat admin-shell text overrides */
+.admin-shell .admin-storefront-preview .text-foreground {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+.admin-shell .admin-storefront-preview .text-muted-foreground {
+  color: var(--theme-muted-foreground, var(--muted-foreground));
+}
+
+.admin-shell .admin-storefront-preview .prose {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+[data-cms-editing="true"] input,
+[data-cms-editing="true"] textarea {
+  color: inherit;
+}
+
+/* CMS editor chrome: never use storefront theme background (minecraft sky-blue). */
+.cms-editor-chrome {
+  background-color: #0a0a0b;
+  color: #fafafa;
+}
+
+/* Admin-only controls inside storefront preview — system UI, not pixel font. */
+.cms-admin-control,
+.cms-admin-control input,
+.cms-admin-control textarea,
+.cms-admin-control button,
+.cms-admin-control label,
+.cms-admin-control p,
+.cms-admin-control select {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.admin-storefront-preview [data-cms-editing="true"] .cms-admin-control {
+  position: relative;
+  z-index: 60;
+}
+
+[data-cms-editing="true"] .minecraft-social-tab {
+  display: none;
+}
+
+.admin-storefront-preview [data-cms-editing="true"] textarea:not(.font-minecraft) {
+  min-height: 6rem;
+  resize: vertical;
+}
+
 /* CMS device preview: restore pale storefront text (minecraft-camp public pages). */
 .admin-storefront-preview.minecraft-camp-preview {
   --theme-foreground: #2d2817;

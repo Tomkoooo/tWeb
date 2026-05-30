@@ -1,6 +1,6 @@
 import { TemplateService } from "@/services/template"
 import { readPreviewTemplateId } from "@/services/template-preview"
-import { getTemplateById } from "@/templates/registry"
+import { getTemplateByIdAsync } from "@/templates/registry"
 import { AdminTemplateSessionBar } from "@/components/admin/AdminTemplateSessionBar"
 
 /** Server-only wrapper: template DB vs preview bar for CMS / templates admin areas. */
@@ -9,10 +9,12 @@ export async function AdminTemplateSessionBarSection() {
     TemplateService.getActiveInfo(),
     readPreviewTemplateId(),
   ])
-  const dbActiveName = getTemplateById(activeInfo.templateId).manifest.name
-  const previewTemplateName = previewTemplateId
-    ? getTemplateById(previewTemplateId).manifest.name
-    : null
+  const [dbActiveTemplate, previewTemplate] = await Promise.all([
+    getTemplateByIdAsync(activeInfo.templateId),
+    previewTemplateId ? getTemplateByIdAsync(previewTemplateId) : Promise.resolve(null),
+  ])
+  const dbActiveName = dbActiveTemplate.manifest.name
+  const previewTemplateName = previewTemplate?.manifest.name ?? null
 
   return (
     <AdminTemplateSessionBar

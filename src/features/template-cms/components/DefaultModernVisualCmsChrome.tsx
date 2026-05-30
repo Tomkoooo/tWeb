@@ -8,6 +8,7 @@ import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/Cms
 import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import type { TemplateModule } from "@/templates/types"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
+import { pressStart2P } from "@/templates/minecraft-camp/fonts"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { ContactEmailEntry } from "@/lib/contact-emails"
 import type { ThemeTokens } from "@/services/theme"
@@ -101,9 +102,14 @@ export function DefaultModernVisualCmsChrome({
     return () => window.removeEventListener("keydown", onKey)
   }, [reviewOpen])
 
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
   const NavbarCmp = mod.chrome.Navbar
   const FooterCmp = mod.chrome.Footer
+  const isMinecraftCamp = templateId === "minecraft-camp"
+  const previewSurfaceClass = isMinecraftCamp
+    ? `minecraft-camp-preview minecraft-page-mineshow ${pressStart2P.variable}`
+    : ""
+  const previewBgClass = isMinecraftCamp ? "bg-[#b8d88a]" : "bg-background"
 
   const wrapLayout = (mode: "edit" | "review", main: React.ReactNode) => (
     <>
@@ -168,7 +174,7 @@ export function DefaultModernVisualCmsChrome({
   const mainReview = renderMain(ctxReview)
 
   return (
-    <div className="min-h-screen bg-background-dark text-white">
+    <div className="cms-editor-chrome min-h-screen text-white">
       <TopBar
         dirty={dirty}
         device={device}
@@ -193,7 +199,7 @@ export function DefaultModernVisualCmsChrome({
         <div className="p-4 space-y-4">
           <DevicePreview device={device}>
             <div
-              className="flex min-h-[480px] flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview"
+              className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
               style={themeTokensToCssVars(themeSettings)}
             >
               {wrapLayout("edit", mainEdit)}
@@ -215,7 +221,7 @@ export function DefaultModernVisualCmsChrome({
             </button>
           </div>
             <div
-              className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground admin-storefront-preview"
+              className={`flex min-h-screen flex-col overflow-x-hidden text-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
               style={themeTokensToCssVars(themeSettings)}
             >
             {wrapLayout("review", mainReview)}

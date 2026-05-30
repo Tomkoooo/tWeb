@@ -56,7 +56,7 @@ export function FlowRoutePageClient({
     }
   }, [])
 
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
   const RouteMain = mod.flowPages?.[flowRoute]?.RouteMain
 
   if (RouteMain && shopEnabled === null) {

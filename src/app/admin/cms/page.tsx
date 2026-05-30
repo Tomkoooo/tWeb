@@ -4,12 +4,15 @@ import { listEditablePages } from "@/templates/cms-pages"
 import { isShopEnabled } from "@/lib/features/shop"
 import { getAccessibleCmsSiteSettingsSections } from "@/lib/admin-settings-access"
 
+import { PluginService } from "@/services/plugin"
+
 export const dynamic = "force-dynamic"
 
 export default async function AdminCmsHub() {
   const shopEnabled = isShopEnabled()
+  const campBookingEnabled = await PluginService.isEnabled("camp-booking")
   const template = await TemplateService.getActive()
-  const pages = listEditablePages(template, shopEnabled)
+  const pages = listEditablePages(template, shopEnabled, campBookingEnabled)
   const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
 
   return (

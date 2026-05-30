@@ -6,6 +6,7 @@ import { TemplateService } from "@/services/template"
 import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-schema"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import { isShopEnabled } from "@/lib/features/shop"
+import { PluginService } from "@/services/plugin"
 import { resolveAllowedHomepageBlockTypes } from "@/features/homepage-cms/utils/homepage-block-allowlist"
 import { z } from "zod"
 
@@ -160,7 +161,8 @@ export async function buildCmsInspectReport(
 
   const dbActive = (await TemplateService.getActiveInfo()).templateId
   const shopEnabled = isShopEnabled()
-  const editable = listEditablePages(template, shopEnabled)
+  const campBookingEnabled = await PluginService.isEnabled("camp-booking")
+  const editable = listEditablePages(template, shopEnabled, campBookingEnabled)
 
   const pageKeys = new Set<string>()
   for (const e of editable) pageKeys.add(e.pageKey)
@@ -169,6 +171,11 @@ export async function buildCmsInspectReport(
   pageKeys.add("page:pdp")
   for (const slug of template.manifest.capabilities.staticPages) {
     pageKeys.add(`page:${slug}`)
+  }
+  if (template.campPages) {
+    pageKeys.add("page:jegyvasarlas")
+    pageKeys.add("page:foglalas")
+    pageKeys.add("page:foglalas-siker")
   }
 
   const importablePageKeys: CmsInspectReport["importablePageKeys"] = []

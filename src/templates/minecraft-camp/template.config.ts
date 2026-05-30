@@ -20,6 +20,21 @@ import { pdpSchema } from "./pages/pdp/schema"
 import { pdpDefaultContent } from "./pages/pdp/defaultContent"
 import { PdpRender } from "./pages/pdp/Render"
 
+import {
+  campBookingContentSchema,
+  campListContentSchema,
+  campSuccessContentSchema,
+} from "./pages/camp/schemas"
+import {
+  campBookingDefaultContent,
+  campListDefaultContent,
+  campSuccessDefaultContent,
+} from "./pages/camp/defaultContent"
+import { CampListRender } from "./pages/camp/jegyvasarlas/Render"
+import { CampBookingRender } from "./pages/camp/foglalas/Render"
+import { CampSuccessRender } from "./pages/camp/foglalas-siker/Render"
+import { CampSurfaceEditorPanel } from "./pages/camp/EditorPanel"
+
 const HomeEditorPanel = dynamic(() => import("./pages/home/EditorPanel").then((m) => m.HomeEditorPanel))
 const ShopEditorPanel = dynamic(() => import("./pages/shop/EditorPanel").then((m) => m.ShopEditorPanel))
 const PdpEditorPanel = dynamic(() => import("./pages/pdp/EditorPanel").then((m) => m.PdpEditorPanel))
@@ -68,4 +83,24 @@ export const minecraftCamp: TemplateModule = defineTemplate({
     },
   },
   staticPages: {},
+  campPages: {
+    jegyvasarlas: {
+      schema: campListContentSchema,
+      defaultContent: campListDefaultContent,
+      Render: CampListRender,
+      EditorPanel: CampSurfaceEditorPanel,
+    },
+    foglalas: {
+      schema: campBookingContentSchema,
+      defaultContent: campBookingDefaultContent,
+      Render: CampBookingRender,
+      EditorPanel: CampSurfaceEditorPanel,
+    },
+    foglalasSiker: {
+      schema: campSuccessContentSchema,
+      defaultContent: campSuccessDefaultContent,
+      Render: CampSuccessRender,
+      EditorPanel: CampSurfaceEditorPanel,
+    },
+  },
 })

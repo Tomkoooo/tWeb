@@ -40,6 +40,37 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
           <span className="text-xs uppercase tracking-widest text-neutral-400">copyrightText</span>
           <input value={state.copyrightText} onChange={(event) => setState((prev) => ({ ...prev, copyrightText: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
         </label>
+        <label className="space-y-1 md:col-span-2">
+          <span className="text-xs uppercase tracking-widest text-neutral-400">paymentMethodsNote</span>
+          <input value={state.paymentMethodsNote ?? ""} onChange={(event) => setState((prev) => ({ ...prev, paymentMethodsNote: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="Fizetés: bankkártya (Stripe)" />
+        </label>
+      </div>
+
+      <div className="space-y-2 border border-white/10 p-4 rounded-lg">
+        <p className="text-xs uppercase tracking-widest text-neutral-400">Szervező blokk (Mineshow lábléc)</p>
+        <div className="grid md:grid-cols-2 gap-3">
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-[10px] text-neutral-500">Cím</span>
+            <input value={state.organizerSection?.title ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, title: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+          </label>
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-[10px] text-neutral-500">Cégnév</span>
+            <input value={state.organizerSection?.companyName ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, companyName: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+          </label>
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-[10px] text-neutral-500">Székhely</span>
+            <input value={state.organizerSection?.registeredAddress ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, registeredAddress: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+          </label>
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-[10px] text-neutral-500">Levelezési cím</span>
+            <input value={state.organizerSection?.mailingAddress ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, mailingAddress: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+          </label>
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-[10px] text-neutral-500">Nyitvatartás</span>
+            <input value={state.organizerSection?.openingHours ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, openingHours: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
+          </label>
+        </div>
+        <p className="text-[10px] text-neutral-500">A tábor helyszíne a főoldal Kapcsolat szekciójában szerkeszthető.</p>
       </div>
 
       <div className="space-y-2">

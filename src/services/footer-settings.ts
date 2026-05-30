@@ -7,6 +7,14 @@ export type FooterSocialLink = {
   url: string
 }
 
+export type FooterOrganizerSection = {
+  title: string
+  companyName: string
+  registeredAddress: string
+  mailingAddress: string
+  openingHours: string
+}
+
 export type FooterSettings = {
   tagline: string
   quickLinksTitle: string
@@ -18,7 +26,21 @@ export type FooterSettings = {
   newsletterPlaceholder: string
   copyrightText: string
   socialLinks: FooterSocialLink[]
+  /** Mineshow / camp footer — szervező blokk */
+  organizerSection?: FooterOrganizerSection
+  /** Pl. „Fizetés: bankkártya (Stripe)” */
+  paymentMethodsNote?: string
 }
+
+const DEFAULT_ORGANIZER: FooterOrganizerSection = {
+  title: "A Mineshow szervezője",
+  companyName: "PlayIT Entertainment Kft.",
+  registeredAddress: "Székhely: 1135 Budapest, Szegedi út 37-39.",
+  mailingAddress: "Levelezési cím: 1055 Budapest, Szent István krt. 29. fsz.",
+  openingHours: "Nyitva: H–Cs, 09:00–17:00",
+}
+
+const DEFAULT_PAYMENT_NOTE = "Fizetés: bankkártya (Stripe)"
 
 const DEFAULTS: FooterSettings = {
   tagline: "Minőségi termékek, gyors szállítás.",
@@ -73,6 +95,16 @@ function normalize(settings?: Partial<FooterSettings>): FooterSettings {
     newsletterPlaceholder: settings?.newsletterPlaceholder || DEFAULTS.newsletterPlaceholder,
     copyrightText: settings?.copyrightText || DEFAULTS.copyrightText,
     socialLinks,
+    organizerSection: {
+      title: settings?.organizerSection?.title || DEFAULT_ORGANIZER.title,
+      companyName: settings?.organizerSection?.companyName || DEFAULT_ORGANIZER.companyName,
+      registeredAddress:
+        settings?.organizerSection?.registeredAddress || DEFAULT_ORGANIZER.registeredAddress,
+      mailingAddress:
+        settings?.organizerSection?.mailingAddress || DEFAULT_ORGANIZER.mailingAddress,
+      openingHours: settings?.organizerSection?.openingHours || DEFAULT_ORGANIZER.openingHours,
+    },
+    paymentMethodsNote: settings?.paymentMethodsNote || DEFAULT_PAYMENT_NOTE,
   }
 }
 

@@ -9,7 +9,7 @@ function staticPageAdminLabel(slug: string): string {
     .join(" ")
 }
 
-export type EditableNavCategory = "landing" | "shop" | "static" | "flow"
+export type EditableNavCategory = "landing" | "shop" | "static" | "flow" | "camp"
 
 /** `homepage-blocks` uses {@link VisualHomepageEditor}; `surface-json` uses template JSON surface + chrome. */
 export type CmsAdminEditorKind = "homepage-blocks" | "surface-json"
@@ -29,7 +29,11 @@ const FLOW_META: Record<FlowRouteKey, string> = {
 }
 
 /** Pages listed under `/admin/cms` and editable at `/admin/cms/[adminSegment]`. */
-export function listEditablePages(template: TemplateModule, shopEnabled: boolean): EditablePageNavItem[] {
+export function listEditablePages(
+  template: TemplateModule,
+  shopEnabled: boolean,
+  campBookingEnabled = false
+): EditablePageNavItem[] {
   const pages: EditablePageNavItem[] = []
 
   const homeSegment = template.manifest.surfaces.home.adminSegment
@@ -83,6 +87,28 @@ export function listEditablePages(template: TemplateModule, shopEnabled: boolean
       category: "static",
       editorKind: "surface-json",
     })
+  }
+
+  if (campBookingEnabled && template.campPages) {
+    const campMeta: Array<{
+      key: keyof NonNullable<TemplateModule["campPages"]>
+      adminSegment: string
+      label: string
+    }> = [
+      { key: "jegyvasarlas", adminSegment: "jegyvasarlas", label: "Jegyvásárlás" },
+      { key: "foglalas", adminSegment: "foglalas", label: "Foglalás / regisztráció" },
+      { key: "foglalasSiker", adminSegment: "foglalas-siker", label: "Foglalás siker" },
+    ]
+    for (const entry of campMeta) {
+      if (!template.campPages[entry.key]) continue
+      pages.push({
+        adminSegment: entry.adminSegment,
+        pageKey: `page:${entry.adminSegment}`,
+        label: entry.label,
+        category: "camp",
+        editorKind: "surface-json",
+      })
+    }
   }
 
   return pages

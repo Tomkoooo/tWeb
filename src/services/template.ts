@@ -32,7 +32,7 @@ const readActiveTemplateRecord = cache(async (): Promise<ActiveTemplateInfo> => 
   if (!doc) {
     return {
       templateId: FALLBACK_TEMPLATE_ID,
-      templateVersion: getTemplateById(FALLBACK_TEMPLATE_ID).manifest.version,
+      templateVersion: getTemplateById(FALLBACK_TEMPLATE_ID)!.manifest.version,
       activatedAt: null,
       activatedBy: null,
     }

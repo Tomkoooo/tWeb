@@ -55,7 +55,7 @@ export function PdpVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)
+  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
   const PdpRender = mod.pages.pdp.Render
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(

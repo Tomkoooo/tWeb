@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 
+const editableDocFieldClass =
+  "w-full rounded border border-dashed border-primary/40 bg-[color-mix(in_oklab,var(--theme-surface)_75%,transparent)] px-2 py-1 text-inherit"
+
 export function EditableDocText({
   path,
   value,
@@ -35,10 +38,7 @@ export function EditableDocText({
         onChange={(e) => setLocal(e.target.value)}
         onBlur={() => cms.setPath(path, local)}
         placeholder={placeholder}
-        className={cn(
-          "w-full min-h-[72px] rounded border border-dashed border-white/25 bg-black/35 px-2 py-1.5 text-inherit",
-          className
-        )}
+        className={cn(editableDocFieldClass, "min-h-[72px] py-1.5", className)}
       />
     )
   }
@@ -49,10 +49,7 @@ export function EditableDocText({
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => cms.setPath(path, local)}
       placeholder={placeholder}
-      className={cn(
-        "w-full rounded border border-dashed border-white/25 bg-black/35 px-2 py-1 text-inherit",
-        className
-      )}
+      className={cn(editableDocFieldClass, className)}
     />
   )
 }

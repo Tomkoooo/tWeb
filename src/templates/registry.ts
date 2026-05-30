@@ -21,9 +21,14 @@ export async function loadTemplateModule(id: string): Promise<TemplateModule> {
   return loaded
 }
 
-export function getTemplateById(id: string | undefined | null): TemplateModule {
-  if (!id) return syncRegistry[FALLBACK_TEMPLATE_ID]!
-  return syncRegistry[id] ?? syncRegistry[FALLBACK_TEMPLATE_ID]!
+export function getTemplateById(id: string | undefined | null): TemplateModule | undefined {
+  if (!id) return syncRegistry[FALLBACK_TEMPLATE_ID]
+  return syncRegistry[id]
+}
+
+export function isRegisteredTemplateId(id: string | undefined | null): boolean {
+  if (!id) return false
+  return id === FALLBACK_TEMPLATE_ID || id in templateLoaders
 }
 
 export async function getTemplateByIdAsync(id: string | undefined | null): Promise<TemplateModule> {

@@ -1,6 +1,6 @@
 /**
- * Shared marketing copy from https://mineshow.hu/tabor (FAQ answers scraped from page data).
- * Camp booking dates/tickets use operator spec in minecraft-camp-demo.mjs.
+ * Bundled FAQ fallback when mineshow.hu/tabor is unreachable during seed.
+ * Live FAQ is fetched by scripts/seed/lib/fetch-mineshow-faq.mjs (typo-normalized).
  */
 
 export const MINESHOW_FAQ = [

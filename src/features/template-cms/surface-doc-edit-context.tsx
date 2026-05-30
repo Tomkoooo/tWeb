@@ -19,7 +19,9 @@ export function SurfaceDocEditProvider({
   children: React.ReactNode
 }) {
   return (
-    <SurfaceDocEditContext.Provider value={{ enabled, setPath }}>{children}</SurfaceDocEditContext.Provider>
+    <SurfaceDocEditContext.Provider value={{ enabled, setPath }}>
+      <div data-cms-editing={enabled ? "true" : undefined}>{children}</div>
+    </SurfaceDocEditContext.Provider>
   )
 }
 

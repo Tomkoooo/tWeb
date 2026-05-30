@@ -11,7 +11,8 @@ import mongoose from "mongoose"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { MINESHOW_FAQ } from "./minecraft-camp-content.mjs"
+import { MINESHOW_FAQ as MINESHOW_FAQ_FALLBACK } from "./minecraft-camp-content.mjs"
+import { fetchMineshowFaq } from "./lib/fetch-mineshow-faq.mjs"
 import { seedMinecraftCampMedia } from "./lib/seed-media.mjs"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..")
@@ -81,7 +82,7 @@ Lemondás esetén jegy árát 100%-ban visszafizetjük, a turnus előtt 2 hétte
 const PROGRAMS_HTML =
   "Meet & Greet zsDavval, Build Battle, Speed builedrs, BlockBench, Bedwars, Death Run, World Painter, Splegg, Guess my drawing, Mine lmator, Murder Mystery, Impostor Builders, Kahoot, UHC, Bingo survival, MINIGAME Party!"
 
-function buildHomeContent(img, siteSeo) {
+function buildHomeContent(img, siteSeo, faq) {
   return {
     meta: {
       seoTitle: siteSeo.siteTitle,
@@ -166,7 +167,7 @@ function buildHomeContent(img, siteSeo) {
         data: {
           title: "Gyakori Kérdések",
           paragraph: "",
-          accordions: MINESHOW_FAQ,
+          accordions: faq,
           cards: [],
         },
       },
@@ -448,8 +449,64 @@ async function seedCamp(Camp, CampSession, CampTicketType, img) {
   return { campId: camp._id.toString(), sessionCount: sessions.length, ticketCount }
 }
 
-async function seedHomepageCms(TemplateContent, img, siteSeo) {
-  const homeJson = JSON.stringify(buildHomeContent(img, siteSeo))
+async function seedCampPageContent(TemplateContent, pageKey, valueObj) {
+  const json = JSON.stringify(valueObj)
+  const now = new Date()
+  await TemplateContent.findOneAndUpdate(
+    { templateId: TEMPLATE_ID, pageKey },
+    {
+      templateId: TEMPLATE_ID,
+      pageKey,
+      value: json,
+      draftValue: json,
+      publishedAt: now,
+      publishedBy: "seed:minecraft-camp-demo",
+    },
+    { upsert: true, returnDocument: "after" }
+  )
+}
+
+async function seedCampPages(TemplateContent) {
+  await seedCampPageContent(TemplateContent, "page:jegyvasarlas", {
+    pageTitle: "Jegyvásárlás",
+    pageIntro:
+      "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan online.",
+    meta: { seoTitle: "Jegyvásárlás", seoDescription: "" },
+  })
+  await seedCampPageContent(TemplateContent, "page:foglalas", {
+    stepOffers: "Ajánlatok",
+    stepDetails: "Adatok megadása",
+    stepReview: "Áttekintés",
+    ticketsHeading: "Jegyek, bérletek",
+    ticketTypeLabel: "Jegytípus",
+    childCountLabel: "Gyerekek száma",
+    addonsHint:
+      "Kiegészítők (pl. laptop bérlés) a következő lépésben választhatók gyerekenként.",
+    buyerHeading: "Kapcsolattartó",
+    childrenHeading: "Gyerekek adatai",
+    payCta: "Tovább a fizetéshez",
+    reviewHeading: "Áttekintés",
+    payStripeCta: "Fizetés Stripe-on",
+    payStripeLoading: "Átirányítás…",
+    backLabel: "Vissza",
+    nextLabel: "Tovább",
+    venueAddress: "Récsei Center Remíz Darts klub, Budapest, Istvánmezei út 6., 1146",
+    meta: { seoTitle: "Foglalás", seoDescription: "" },
+  })
+  await seedCampPageContent(TemplateContent, "page:foglalas-siker", {
+    loadingText: "Fizetés ellenőrzése…",
+    successTitle: "Sikeres foglalás!",
+    successBody: "Köszönjük! Visszaigazolást küldünk emailben. Azonosító: {registrationId}",
+    successCta: "Vissza a főoldalra",
+    errorBody:
+      "Nem sikerült megerősíteni a fizetést. Ha levonták az összeget, írjon nekünk.",
+    errorCta: "Főoldal",
+    meta: { seoTitle: "Sikeres foglalás", seoDescription: "" },
+  })
+}
+
+async function seedHomepageCms(TemplateContent, img, siteSeo, faq) {
+  const homeJson = JSON.stringify(buildHomeContent(img, siteSeo, faq))
   const now = new Date()
   await TemplateContent.findOneAndUpdate(
     { templateId: TEMPLATE_ID, pageKey: PAGE_KEY },
@@ -560,6 +617,16 @@ async function main() {
   const ShopContent =
     mongoose.models.ShopContent || mongoose.model("ShopContent", ShopContentSchema)
 
+  let faq = MINESHOW_FAQ_FALLBACK
+  try {
+    faq = await fetchMineshowFaq()
+    console.log(`FAQ: ${faq.length} items from mineshow.hu/tabor`)
+  } catch (err) {
+    console.warn(
+      `FAQ: could not fetch mineshow.hu/tabor (${err instanceof Error ? err.message : err}) — using bundled fallback`
+    )
+  }
+
   console.log("Uploading camp images to MongoDB media collection …")
   const IMG = await seedMinecraftCampMedia(root)
   const siteSeo = buildSiteSeo(IMG)
@@ -568,7 +635,8 @@ async function main() {
   await seedBranding(BrandingSetting, IMG)
   await seedSeo(SeoSetting, siteSeo)
   await seedContactEmails(ShopContent)
-  await seedHomepageCms(TemplateContent, IMG, siteSeo)
+  await seedHomepageCms(TemplateContent, IMG, siteSeo, faq)
+  await seedCampPages(TemplateContent)
   await seedEmailTemplate(EmailTemplate)
 
   console.log("Seeded minecraft-camp deployment:")
@@ -577,7 +645,9 @@ async function main() {
   console.log(`  Branding: ${BRAND_NAME}, logos ${IMG.logo}`)
   console.log(`  SEO: favicon + OG ${siteSeo.favicon}`)
   console.log(`  Contact: ${CONTACT_EMAIL}`)
-  console.log(`  CMS: ${TEMPLATE_ID} / ${PAGE_KEY} (published + draft, media URLs)`)
+  console.log(
+    `  CMS: ${TEMPLATE_ID} / ${PAGE_KEY} (published + draft; FAQ: ${faq.length} accordions)`
+  )
   console.log("  Email: camp_registration_confirmation")
 
   await mongoose.disconnect()

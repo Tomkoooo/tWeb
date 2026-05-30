@@ -13,7 +13,7 @@ import {
 } from "@/features/template-cms/api/template-page-client-api"
 import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
-import type { StaticPageDeps } from "@/templates/types"
+import type { TemplateModule } from "@/templates/types"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { SeoSettings } from "@/services/seo-settings"
 import type { ThemeTokens } from "@/services/theme"
@@ -27,16 +27,19 @@ type Branding = {
 
 type HomepageDeps = Awaited<ReturnType<typeof getHomepageRenderDependencies>>
 
-/**
- * CMS chrome for arbitrary template `staticPages[slug]` (e.g. a future `/about`, legal page, landing).
- * Persisted JSON is edited inline when the Render uses {@link SurfaceDocEditProvider} patterns.
- */
-export function StaticPageVisualSurfaceEditor({
+type CampPageKey = keyof NonNullable<TemplateModule["campPages"]>
+
+const CAMP_PAGE_KEY_MAP: Record<string, CampPageKey> = {
+  "page:jegyvasarlas": "jegyvasarlas",
+  "page:foglalas": "foglalas",
+  "page:foglalas-siker": "foglalasSiker",
+}
+
+export function CampSurfaceVisualEditor({
   hydrationKey,
   templateId,
   shopEnabled,
   pageKey,
-  slug,
   pageLabel,
   initialDraft,
   branding,
@@ -50,7 +53,6 @@ export function StaticPageVisualSurfaceEditor({
   templateId: string
   shopEnabled: boolean
   pageKey: string
-  slug: string
   pageLabel: string
   initialDraft: Record<string, unknown>
   branding: Branding
@@ -60,21 +62,15 @@ export function StaticPageVisualSurfaceEditor({
   themeResetBaseline: ThemeTokens
   homepageDeps: HomepageDeps
 }) {
+  void seo
+  void themeResetBaseline
   const router = useRouter()
   const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const def = mod.staticPages[slug]
-  if (!def)
-    throw new Error(`Static page '${slug}' is not registered on template '${mod.manifest.id}'`)
+  const campKey = CAMP_PAGE_KEY_MAP[pageKey]
+  const def = campKey ? mod.campPages?.[campKey] : undefined
+  if (!def) throw new Error(`Camp page '${pageKey}' is not registered on template '${mod.manifest.id}'`)
 
-  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps: StaticPageDeps }>
-
-  const staticDeps: StaticPageDeps = {
-    branding: {
-      brandName: branding.brandName,
-      logoNav: branding.logoNav,
-      logoFooter: branding.logoFooter,
-    },
-  }
+  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps?: unknown }>
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -97,13 +93,13 @@ export function StaticPageVisualSurfaceEditor({
   }))
 
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs text-neutral-400 space-y-2">
+    <div className="cms-editor-chrome px-4 py-3 border-b border-white/10 text-xs text-neutral-400 space-y-2">
       <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-        Sablon statikus lap: <span className="text-neutral-200">{slug}</span>
+        Tábor oldal: <span className="text-neutral-200">{pageLabel}</span>
       </p>
       <p>
-        A sablon előnézetén közvetlenül szerkeszthetővé tett szöveget és médiumokat itt változtatod —
-        előnézet mód a jobb oldali eszközöknél ellenőrzéshez.
+        A szövegeket közvetlenül az előnézeten szerkesztheted. A turnuslista és a fizetési folyamat
+        működése változatlan marad — csak a megjelenő szövegek módosulnak.
       </p>
     </div>
   )
@@ -157,10 +153,10 @@ export function StaticPageVisualSurfaceEditor({
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>
-            <RenderCmp content={draft} deps={staticDeps} />
+            <RenderCmp content={draft} deps={{}} />
           </SurfaceDocEditProvider>
         ) : (
-          <RenderCmp content={draft} deps={staticDeps} />
+          <RenderCmp content={draft} deps={{}} />
         )
       }
     />

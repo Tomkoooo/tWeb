@@ -6,7 +6,7 @@ import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
 import { CampList } from "@/plugins/camp-booking/storefront/CampList"
 import { pressStart2P } from "@/templates/minecraft-camp/fonts"
 import { loadMineshowSiteConfig } from "@/templates/minecraft-camp/lib/load-site-config"
-import { campCheckoutCopy } from "@/templates/minecraft-camp/content/checkout-copy"
+import { getCampListContent } from "@/lib/camp-page-content"
 
 export default async function JegyvasarlasPage() {
   const enabled = await PluginService.isEnabled("camp-booking")
@@ -14,6 +14,7 @@ export default async function JegyvasarlasPage() {
 
   const chrome = await getActiveChrome()
   const mineshowSite = await loadMineshowSiteConfig(chrome.template.manifest.id)
+  const listCopy = await getCampListContent(chrome.template.manifest.id)
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
     getStorefrontFooterHydrationProps(),
@@ -32,10 +33,10 @@ export default async function JegyvasarlasPage() {
       <main className={`minecraft-page-mineshow min-h-[70vh] px-4 py-10 ${pressStart2P.variable}`}>
         <div className="max-w-4xl mx-auto">
           <h1 className="font-minecraft text-sm md:text-base text-[#2d2817] mb-2">
-            {campCheckoutCopy.pageTitle}
+            {listCopy.pageTitle}
           </h1>
           <p className="font-minecraft-body text-sm text-[#5c4a32] mb-8">
-            {campCheckoutCopy.pageIntro}
+            {listCopy.pageIntro}
           </p>
           <CampList variant="mineshow" />
         </div>
