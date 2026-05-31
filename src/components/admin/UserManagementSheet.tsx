@@ -17,6 +17,7 @@ import {
   sendAdminPasswordReset,
   updateAdminUserPassword,
   updateAdminUserProfile,
+  deleteAdminUser,
 } from "@/actions/admin-users"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
@@ -52,6 +53,8 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
   const [resetError, setResetError] = React.useState<string | null>(null)
   const [resetMessage, setResetMessage] = React.useState<string | null>(null)
   const [resetPending, setResetPending] = React.useState(false)
+  const [deletePending, setDeletePending] = React.useState(false)
+  const [deleteError, setDeleteError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (!open) {
@@ -61,6 +64,7 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
       setPasswordMessage(null)
       setResetError(null)
       setResetMessage(null)
+      setDeleteError(null)
     }
   }, [open])
 
@@ -148,6 +152,28 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
       setResetError(error instanceof Error ? error.message : "Nem sikerült elküldeni a reset emailt.")
     } finally {
       setResetPending(false)
+    }
+  }
+
+  async function handleDeleteUser() {
+    setDeleteError(null)
+    const target = user.email || user.name || "felhasználó"
+    if (
+      !window.confirm(
+        `Biztosan törlöd a(z) ${target} fiókot? A Google bejelentkezéshez tartozó kapcsolat is törlődik.`
+      )
+    ) {
+      return
+    }
+    setDeletePending(true)
+    try {
+      await deleteAdminUser(user._id)
+      setOpen(false)
+      router.refresh()
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Törlés sikertelen.")
+    } finally {
+      setDeletePending(false)
     }
   }
 
@@ -292,6 +318,22 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
             >
               Teljes adatlap megnyitása
             </Link>
+          </div>
+
+          <div className="space-y-4 border-t border-white/10 pt-6">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Veszélyes zóna</h3>
+            {deleteError ? (
+              <p className="text-[11px] font-bold uppercase tracking-widest text-rose-400">{deleteError}</p>
+            ) : null}
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletePending}
+              onClick={handleDeleteUser}
+              className="w-full h-12 rounded-none font-black uppercase tracking-widest text-[10px]"
+            >
+              {deletePending ? "Törlés…" : "Felhasználó törlése"}
+            </Button>
           </div>
         </div>
       </SheetContent>

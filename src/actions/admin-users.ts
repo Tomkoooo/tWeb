@@ -10,6 +10,7 @@ import PasswordResetToken from "@/models/PasswordResetToken";
 import { requireAdmin } from "@/lib/admin-auth";
 import { formatEmailFromHeader } from "@/lib/email-from";
 import { hashPassword, sha256Hex } from "@/lib/password";
+import { repairAuthAccounts } from "@/lib/repair-auth-accounts";
 import {
   buildAdminCustomerRows,
   type AdminCustomerFilters,
@@ -89,6 +90,80 @@ export async function updateUserRole(userId: string, role: string) {
   await User.findByIdAndUpdate(userId, { role: normalizeRole(role) });
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);
+}
+
+export async function createAdminUser(formData: FormData) {
+  await requireAdmin();
+  await dbConnect();
+
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const name = String(formData.get("name") || "").trim();
+  const role = normalizeRole(String(formData.get("role") || "ADMIN"));
+
+  if (!email) throw new Error("Email megadása kötelező.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Adj meg egy érvényes email címet.");
+  }
+
+  const existing = await User.findOne({ email }).lean();
+  if (existing) {
+    await User.findByIdAndUpdate(existing._id, {
+      role,
+      ...(name ? { name } : {}),
+    });
+  } else {
+    await User.create({
+      email,
+      name: name || undefined,
+      role,
+      newsletterSubscribed: false,
+    });
+  }
+
+  revalidatePath("/admin/users");
+}
+
+export async function deleteAdminUser(userId: string) {
+  const session = await requireAdmin();
+  await dbConnect();
+
+  if (session.user?.id === userId) {
+    throw new Error("Saját admin fiókot nem törölhetsz.");
+  }
+
+  const user = await User.findById(userId).lean();
+  if (!user) throw new Error("Felhasználó nem található.");
+
+  if (user.role === "ADMIN") {
+    const adminCount = await User.countDocuments({ role: "ADMIN" });
+    if (adminCount <= 1) {
+      throw new Error("Az utolsó admin fiók nem törölhető.");
+    }
+  }
+
+  const ongoingOrders = await Order.countDocuments({
+    user: userId,
+    status: { $in: ["pending", "processing", "shipped"] },
+  });
+  if (ongoingOrders > 0) {
+    throw new Error("A felhasználónak folyamatban lévő rendelése van — előbb zárd le.");
+  }
+
+  await User.findByIdAndDelete(userId);
+
+  const client = await import("@/lib/mongodb").then((m) => m.default);
+  const db = (await client).db();
+  await db.collection("accounts").deleteMany({ userId: user._id });
+  await db.collection("sessions").deleteMany({ userId: user._id });
+
+  revalidatePath("/admin/users");
+}
+
+export async function syncAuthUserProfiles() {
+  await requireAdmin();
+  const result = await repairAuthAccounts();
+  revalidatePath("/admin/users");
+  return result;
 }
 
 export async function updateAdminUserProfile(userId: string, formData: FormData) {

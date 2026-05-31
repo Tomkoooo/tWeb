@@ -3,6 +3,7 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import clientPromise from "@/lib/mongodb"
 import { authConfig } from "./auth.config"
 import { maybeBootstrapAdmin } from "@/lib/bootstrap-admin"
+import { ensureUserProfile } from "@/lib/ensure-user-profile"
 import { OrderGuestAccessService } from "@/services/order-guest-access"
 
 const trustHost = process.env.AUTH_TRUST_HOST
@@ -81,9 +82,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
+    async createUser({ user }) {
+      try {
+        await ensureUserProfile({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        })
+      } catch (error) {
+        console.error("[auth] ensure user profile on createUser failed", error)
+      }
+    },
     async signIn({ user }) {
       const userId = user.id?.trim()
       const email = user.email?.trim()
+      try {
+        await ensureUserProfile({
+          id: userId,
+          email,
+          name: user.name,
+          image: user.image,
+        })
+      } catch (error) {
+        console.error("[auth] ensure user profile on signIn failed", error)
+      }
       if (!userId || !email) return
       try {
         await OrderGuestAccessService.linkGuestOrdersToUser(userId, email)

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { getAdminUsers } from "@/actions/admin-users";
 import { cn } from "@/lib/utils";
 import { UserManagementSheet } from "@/components/admin/UserManagementSheet";
+import { AdminCreateUserForm, AdminSyncAuthProfilesButton } from "@/components/admin/AdminUserManagementTools";
 import { formatHuf } from "@/lib/pricing";
+import { isShopEnabled } from "@/lib/features/shop";
 
 type AdminUserRow = {
   _id: string;
@@ -32,18 +34,34 @@ type AdminUsersSearchParams = Promise<{
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: AdminUsersSearchParams }) {
   const filters = await searchParams;
+  const shopEnabled = isShopEnabled();
   const users = await getAdminUsers(filters) as AdminUserRow[];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div>
-        <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Vásárlók <span className="admin-headline-accent">Kezelése</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">
-          Regisztrált fiókok és vendég vásárlók vásárlási összefoglalója.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
+            {shopEnabled ? (
+              <>
+                Vásárlók <span className="admin-headline-accent">Kezelése</span>
+              </>
+            ) : (
+              <>
+                Felhasználók <span className="admin-headline-accent">&amp; adminok</span>
+              </>
+            )}
+          </h1>
+          <p className="text-white/40 font-medium italic max-w-2xl">
+            {shopEnabled
+              ? "Regisztrált fiókok és vendég vásárlók vásárlási összefoglalója."
+              : "Admin jogosultságok kezelése. Google bejelentkezés után a felhasználó profil automatikusan létrejön — itt adhatsz ADMIN szerepet."}
+          </p>
+        </div>
+        <AdminSyncAuthProfilesButton />
       </div>
+
+      <AdminCreateUserForm />
 
       <form className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white/5 border border-white/10 p-4">
         <input
@@ -56,6 +74,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
           name="kind"
           defaultValue={filters.kind || "all"}
           className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+          disabled={!shopEnabled}
         >
           <option value="all">Minden vásárló</option>
           <option value="registered">Regisztrált</option>
@@ -74,6 +93,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: A
           name="hasOrders"
           defaultValue={filters.hasOrders || "all"}
           className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
+          disabled={!shopEnabled}
         >
           <option value="all">Rendelés szerint: mind</option>
           <option value="yes">Van rendelése</option>

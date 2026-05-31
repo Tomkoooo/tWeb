@@ -48,10 +48,15 @@ export default async function AdminLayout({
   const pluginNavGroups: PluginNavGroup[] = pluginsWithAdmin.map((entry) => ({
     pluginId: entry.id,
     pluginName: entry.name,
-    items: entry.navItems.map((item) => ({
-      label: item.label,
-      href: pluginAdminHref(entry.id, item.segment),
-    })),
+    items: [
+      ...entry.navItems.map((item) => ({
+        label: item.label,
+        href: pluginAdminHref(entry.id, item.segment),
+      })),
+      ...(entry.id === "camp-booking" && !shopEnabled
+        ? [{ label: "Adminok", href: "/admin/users" }]
+        : []),
+    ],
   }))
 
   if (!session?.user) {

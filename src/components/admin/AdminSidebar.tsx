@@ -49,7 +49,7 @@ const topLevelMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders", requiresShop: true },
   { icon: Mail, label: "Kapcsolat", href: "/admin/contact" },
-  { icon: Users, label: "Vásárlók", href: "/admin/users", requiresShop: true },
+  { icon: Users, label: "Felhasználók", href: "/admin/users" },
   { icon: BarChart3, label: "Statisztikák", href: "/admin/stats", requiresShop: true },
   { icon: MessageSquare, label: "Vélemények", href: "/admin/reviews", requiresShop: true },
   { icon: Settings, label: "Beállítások", href: "/admin/info" },
