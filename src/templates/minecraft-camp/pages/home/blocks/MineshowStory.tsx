@@ -31,6 +31,8 @@ export function MineshowStory({
   bannerHref,
 }: Props) {
   const cms = useCmsEdit()
+  const imageSrc = mediaImageSrc(image || "/generic-hero.svg")
+  const showImage = Boolean(image?.trim()) || cms.enabled
 
   return (
     <section id="rolunk" className="bg-[#b8d88a] px-4 py-12 md:py-16">
@@ -45,66 +47,83 @@ export function MineshowStory({
           />
         </h2>
       ) : null}
-      <div className="max-w-6xl mx-auto grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-stretch">
-        <div className="minecraft-map-frame overflow-hidden bg-[#1a3d5c]/10 flex items-center justify-center min-h-[220px] md:min-h-[260px]">
-          {cms.enabled ? (
-            <EditableImage
-              src={mediaImageSrc(image || "/generic-hero.svg")}
-              alt=""
-              editMode
-              className="max-h-[220px] md:max-h-[260px] w-full object-contain pixelated"
-              flexibleCrop
-              usageLabel="Történet kép"
-              onChange={(next) => cms.patchBlockData("about", { image: next }, BLOCK_ID)}
-            />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mediaImageSrc(image || "/generic-hero.svg")}
-              alt=""
-              className="max-h-[220px] md:max-h-[260px] w-full object-contain pixelated"
-            />
-          )}
-        </div>
-        <div className="flex flex-col min-w-0">
-          <div className="minecraft-panel-wood flex-1 p-6 md:p-8 flex flex-col">
-            {boxHeading || cms.enabled ? (
-              <h3 className="font-minecraft text-sm text-white mb-4">
+
+      <div className="max-w-5xl mx-auto w-full">
+        <div className="flex flex-col">
+          <div className="minecraft-panel-wood overflow-hidden">
+            <div className="p-5 sm:p-6 md:p-8">
+              {showImage ? (
+                <figure className="mb-6 md:mb-4 md:float-right md:ml-8 md:max-w-[min(100%,280px)] lg:max-w-[320px]">
+                  <div className="minecraft-map-frame overflow-hidden bg-[#1a3d5c]/15">
+                    {cms.enabled ? (
+                      <EditableImage
+                        src={imageSrc}
+                        alt=""
+                        editMode
+                        className="w-full h-auto max-h-[240px] sm:max-h-[280px] md:max-h-[360px] object-cover object-center"
+                        flexibleCrop
+                        usageLabel="Történet kép"
+                        onChange={(next) =>
+                          cms.patchBlockData("about", { image: next }, BLOCK_ID)
+                        }
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageSrc}
+                        alt=""
+                        className="w-full h-auto max-h-[240px] sm:max-h-[280px] md:max-h-[360px] object-cover object-center"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                  </div>
+                </figure>
+              ) : null}
+
+              {boxHeading || cms.enabled ? (
+                <h3 className="font-minecraft text-sm text-white mb-4 md:pr-0">
+                  <EditableTextInline
+                    blockType="about"
+                    blockId={BLOCK_ID}
+                    field="boxHeading"
+                    value={boxHeading}
+                    className="text-white text-sm font-minecraft"
+                  />
+                </h3>
+              ) : null}
+
+              <div className="font-minecraft text-white/95 text-xs md:text-sm leading-relaxed md:leading-loose whitespace-pre-line">
                 <EditableTextInline
                   blockType="about"
                   blockId={BLOCK_ID}
-                  field="boxHeading"
-                  value={boxHeading}
-                  className="text-white text-sm font-minecraft"
+                  field="paragraph"
+                  value={body}
+                  multiline
+                  className="text-white/95 text-xs md:text-sm font-minecraft leading-relaxed md:leading-loose"
                 />
-              </h3>
-            ) : null}
-            <p className="font-minecraft text-white/95 text-xs md:text-sm leading-loose flex-1 whitespace-pre-line">
-              <EditableTextInline
-                blockType="about"
-                blockId={BLOCK_ID}
-                field="paragraph"
-                value={body}
-                multiline
-                className="text-white/95 text-xs md:text-sm font-minecraft leading-loose"
-              />
-            </p>
-            {cms.enabled ? (
-              <EditableLinkInline
-                blockType="about"
-                blockId={BLOCK_ID}
-                labelField="ctaLabel"
-                hrefField="ctaHref"
-                label={ctaLabel}
-                href={ctaHref}
-                className="minecraft-btn-blue w-full text-center mt-6"
-              />
-            ) : ctaLabel && ctaHref ? (
-              <Link href={ctaHref} className="minecraft-btn-blue w-full text-center mt-6">
-                {ctaLabel}
-              </Link>
-            ) : null}
+              </div>
+
+              <div className="clear-both pt-6">
+                {cms.enabled ? (
+                  <EditableLinkInline
+                    blockType="about"
+                    blockId={BLOCK_ID}
+                    labelField="ctaLabel"
+                    hrefField="ctaHref"
+                    label={ctaLabel}
+                    href={ctaHref}
+                    className="minecraft-btn-blue w-full text-center"
+                  />
+                ) : ctaLabel && ctaHref ? (
+                  <Link href={ctaHref} className="minecraft-btn-blue w-full text-center block">
+                    {ctaLabel}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
           </div>
+
           {bannerText || bannerHref || cms.enabled ? (
             <div className="bg-[#5D9B38] border-4 border-t-0 border-[#4e311f] px-4 py-3 text-center space-y-2">
               {cms.enabled ? (
