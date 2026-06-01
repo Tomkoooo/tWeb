@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "notes": "KockaKemp client feedback — homepage + jegyvásárlás copy",
+  "publish": true,
+  "pages": [
+    {
+      "pageKey": "page:home",
+      "mode": "merge",
+      "blockPatches": [
+        {
+          "matchBy": "id",
+          "target": "contact-venue",
+          "data": {
+            "companyName": "Eseményszervezés.hu BTL ügynökség Kft"
+          }
+        },
+        {
+          "matchBy": "id",
+          "target": "pricing-info",
+          "data": {
+            "paragraph": "A heti turnus 75 000 Ft-ba kerül gyerekenként. A testvéreknek 10% kedvezményt biztosítunk a normál jegyárból.\n\nJúnius első hetében early bird kedvezménnyel 67 500 FT áron lehet jelentkezni. Jelentkezz még ma, ne maradj le az élményről!\n\nAmennyiben szükséged van rá, tudsz tőlünk a turnus idejére laptopot kölcsönözni. Ezt a jegyek között 10 000 Ft/hét értékben megtalálod.\n\nLemondás esetén jegy árát 100%-ban visszafizetjük, a turnus előtt 2 héttel. Azt követően, a turnus kezdéséig a befizetett összeg 50%-át, a turnus alatt pedig a fennmaradó napok 30%-át."
+          }
+        },
+        {
+          "matchBy": "id",
+          "target": "story-zsdav",
+          "data": {
+            "bannerHref": "https://www.facebook.com/events/2275291626335927/?acontext=%7B%22event_action_history%22%3A[%7B%22surface%22%3A%22search%22%7D%2C%7B%22mechanism%22%3A%22attachment%22%2C%22surface%22%3A%22newsfeed%22%7D]%2C%22ref_notif_type%22%3Anull%7D"
+          }
+        }
+      ]
+    },
+    {
+      "pageKey": "page:jegyvasarlas",
+      "mode": "merge",
+      "content": {
+        "pageIntro": "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan, on-line."
+      }
+    }
+  ]
+}

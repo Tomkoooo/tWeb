@@ -62,6 +62,7 @@ export type AboutBlock = HomepageBlockBase<
     ctaLabel?: string
     ctaHref?: string
     bannerText?: string
+    bannerHref?: string
     visibility?: FieldVisibility
   }
 >

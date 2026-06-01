@@ -11,6 +11,7 @@ import { MineshowPricing } from "./blocks/MineshowPricing"
 import { MineshowFaq } from "./blocks/MineshowFaq"
 import { MineshowContactSection } from "./blocks/MineshowContactSection"
 import { MineshowSocialTab } from "./blocks/MineshowSocialTab"
+import { MINECRAFT_CAMP_FACEBOOK_EVENT_URL } from "../../lib/constants"
 
 function getBlock<T extends { type: string }>(
   snapshot: HomepageSnapshot,
@@ -47,10 +48,12 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
 
   const venueBadge = site.venueShort || heroData?.badges?.[0] || ""
   const legacyCard = storyData?.cards?.[0]
+  const facebookEventUrl =
+    storyData?.bannerHref?.trim() || MINECRAFT_CAMP_FACEBOOK_EVENT_URL
 
   return (
     <div className={`minecraft-page-mineshow ${pressStart2P.variable}`}>
-      <MineshowSocialTab />
+      <MineshowSocialTab href={facebookEventUrl} />
 
       {heroData ? (
         <MineshowHero
@@ -71,6 +74,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           ctaLabel={storyData.ctaLabel || heroData?.primaryCtaLabel || "Jelentkezés"}
           ctaHref={storyData.ctaHref || heroData?.primaryCtaHref || "/jegyvasarlas"}
           bannerText={storyData.bannerText || ""}
+          bannerHref={facebookEventUrl}
         />
       ) : null}
 

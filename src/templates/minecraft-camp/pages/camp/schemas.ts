@@ -10,7 +10,7 @@ export const campListContentSchema = z.object({
   pageIntro: z
     .string()
     .default(
-      "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan online."
+      "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan, on-line."
     ),
   meta: metaSchema.default({ seoTitle: "", seoDescription: "" }),
 })

@@ -136,6 +136,12 @@ export function AboutBlockEditor({
               className="w-full h-9 px-2 bg-black border border-white/20 text-sm text-white"
               placeholder="Zöld sáv szövege alul"
             />
+            <input
+              value={block.data.bannerHref ?? ""}
+              onChange={(e) => onPatch("bannerHref", e.target.value)}
+              className="w-full h-9 px-2 bg-black border border-white/20 text-xs text-white font-mono"
+              placeholder="Facebook esemény URL (zöld sáv + oldalsó tab)"
+            />
           </>
         ) : isPricingBlock ? (
           <EditableText

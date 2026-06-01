@@ -5,7 +5,11 @@ import CampSession from "../models/CampSession"
 import CampTicketType, { type ICampTicketType } from "../models/CampTicketType"
 import CampRegistration from "../models/CampRegistration"
 import { formatSessionLabel } from "../lib/session-label"
-import { isAddonTicketType, seatsRequiredForBooking } from "../lib/pricing"
+import {
+  filterStorefrontBaseTickets,
+  isAddonTicketType,
+  seatsRequiredForBooking,
+} from "../lib/pricing"
 import { serializeTicketTypeForApi } from "../lib/serialize-ticket"
 import type { CampPricingSettings } from "../models/Camp"
 
@@ -60,9 +64,11 @@ export class CampService {
         capacity: session.capacity,
         spotsLeft: spotsLeft(session),
         sessionLabel: formatSessionLabel(session.label, session.startDate, session.endDate),
-        ticketTypes: (ticketsBySession.get(String(session._id)) || [])
-          .filter((tt) => !isAddonTicketType({ kind: tt.kind, name: tt.name }))
-          .map((tt) => serializeTicketTypeForApi(tt)),
+        ticketTypes: filterStorefrontBaseTickets(
+          (ticketsBySession.get(String(session._id)) || []).filter(
+            (tt) => !isAddonTicketType({ kind: tt.kind, name: tt.name })
+          )
+        ).map((tt) => serializeTicketTypeForApi(tt)),
         addonTickets: (ticketsBySession.get(String(session._id)) || [])
           .filter((tt) => isAddonTicketType({ kind: tt.kind, name: tt.name }))
           .map((tt) => serializeTicketTypeForApi(tt)),
@@ -114,9 +120,9 @@ export class CampService {
         sessionLabel: formatSessionLabel(session.label, session.startDate, session.endDate),
       },
       pricingSettings,
-      ticketTypes: ticketTypes
-        .filter((tt) => !isAddonTicketType({ kind: tt.kind, name: tt.name }))
-        .map((tt) => serializeTicketTypeForApi(tt)),
+      ticketTypes: filterStorefrontBaseTickets(
+        ticketTypes.filter((tt) => !isAddonTicketType({ kind: tt.kind, name: tt.name }))
+      ).map((tt) => serializeTicketTypeForApi(tt)),
       addonTickets: ticketTypes
         .filter((tt) => isAddonTicketType({ kind: tt.kind, name: tt.name }))
         .map((tt) => serializeTicketTypeForApi(tt)),

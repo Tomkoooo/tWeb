@@ -4,6 +4,7 @@ import {
   calculateCampTotalHuf,
   calculateLaptopAddonHuf,
   hasSiblingPair,
+  filterStorefrontBaseTickets,
   isLaptopTicketTypeName,
   resolveEffectiveUnitPriceHuf,
   resolveFamilyDiscountPercent,
@@ -27,6 +28,27 @@ describe("camp-booking pricing", () => {
   it("detects laptop add-on ticket names", () => {
     expect(isLaptopTicketTypeName("Laptopbérlés")).toBe(true)
     expect(isLaptopTicketTypeName("TáborJegy")).toBe(false)
+  })
+
+  it("hides normál base tickets while early bird base ticket is active", () => {
+    const tickets = [
+      { name: "1. turnus — early bird jegy", isActive: true },
+      { name: "1. turnus — normál jegy", isActive: true },
+      { name: "1. turnus — testvér jegy", isActive: true },
+    ]
+    const filtered = filterStorefrontBaseTickets(tickets)
+    expect(filtered.map((t) => t.name)).toEqual([
+      "1. turnus — early bird jegy",
+      "1. turnus — testvér jegy",
+    ])
+  })
+
+  it("shows normál when no early bird ticket on session", () => {
+    const tickets = [
+      { name: "1. turnus — normál jegy", isActive: true },
+      { name: "1. turnus — testvér jegy", isActive: true },
+    ]
+    expect(filterStorefrontBaseTickets(tickets)).toHaveLength(2)
   })
 
   it("calculates laptop addon total", () => {

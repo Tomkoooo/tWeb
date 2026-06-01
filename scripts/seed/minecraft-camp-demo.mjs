@@ -14,6 +14,11 @@ import { fileURLToPath } from "node:url"
 import { MINESHOW_FAQ as MINESHOW_FAQ_FALLBACK } from "./minecraft-camp-content.mjs"
 import { fetchMineshowFaq } from "./lib/fetch-mineshow-faq.mjs"
 import { seedMinecraftCampMedia } from "./lib/seed-media.mjs"
+import {
+  buildMinecraftCampFooterDoc,
+  FACEBOOK_EVENT_URL,
+  ORGANIZER_TITLE,
+} from "./lib/minecraft-camp-footer.mjs"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..")
 const envPath = join(root, ".env")
@@ -38,6 +43,8 @@ const TEMPLATE_ID = "minecraft-camp"
 const PAGE_KEY = "page:home"
 const BRAND_NAME = "KockaKemp"
 const CONTACT_EMAIL = "tabor@kockakemp.hu"
+const COMPANY_NAME = "Eseményszervezés.hu BTL ügynökség Kft"
+const LAPTOP_ADDON_DESCRIPTION = "Laptop bérlés, 10 000 Ft/gyerek/turnus"
 
 const DEFAULT_MAP_EMBED =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d16512.43395838978!2d19.072352850677607!3d47.50229386689003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741dc85dbc2eaf5%3A0x4ae6f260ce6f87bf!2sR%C3%A9csei%20Center!5e0!3m2!1shu!2shu!4v1777970244559!5m2!1shu!2shu"
@@ -72,8 +79,6 @@ Jelentkezz még ma, ne maradj le az élményről!`
 const PRICING_PARAGRAPH = `A heti turnus 75 000 Ft-ba kerül gyerekenként. A testvéreknek 10% kedvezményt biztosítunk a normál jegyárból.
 
 Június első hetében early bird kedvezménnyel 67 500 FT áron lehet jelentkezni. Jelentkezz még ma, ne maradj le az élményről!
-
-Elfogadjuk mindhárom SZÉP-kártyát, bankkártyát, valamint készpénzes fizetésre is van lehetőség a belvárosi irodánkban.
 
 Amennyiben szükséged van rá, tudsz tőlünk a turnus idejére laptopot kölcsönözni. Ezt a jegyek között 10 000 Ft/hét értékben megtalálod.
 
@@ -120,6 +125,7 @@ function buildHomeContent(img, siteSeo, faq) {
           ctaLabel: "Jelentkezés",
           ctaHref: "/jegyvasarlas",
           bannerText: "Jelezd, hogy ott leszel, értesülj a friss infókról",
+          bannerHref: FACEBOOK_EVENT_URL,
           accordions: [],
           cards: [],
         },
@@ -178,7 +184,7 @@ function buildHomeContent(img, siteSeo, faq) {
         data: {
           title: "Récsei Center, 1146 Budapest, Istvánmezei út 6.",
           description: "",
-          companyName: "PlayIT Entertainment Kft.",
+          companyName: COMPANY_NAME,
           address: "Récsei Center, 1146 Budapest, Istvánmezei út 6.",
           venueShort: "Récsei Center, 2026 nyár",
           mapEmbedUrl: DEFAULT_MAP_EMBED,
@@ -312,6 +318,37 @@ const ShopContentSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
+const FooterSettingSchema = new mongoose.Schema(
+  {
+    key: { type: String, required: true, unique: true },
+    tagline: String,
+    quickLinksTitle: String,
+    quickLinks: [{ label: String, href: String }],
+    categoriesTitle: String,
+    browseProductsLabel: String,
+    contactTitle: String,
+    newsletterLabel: String,
+    newsletterPlaceholder: String,
+    copyrightText: String,
+    socialLinks: [
+      {
+        platform: { type: String, enum: ["facebook", "instagram", "twitter", "youtube"] },
+        enabled: Boolean,
+        url: String,
+      },
+    ],
+    organizerSection: {
+      title: String,
+      companyName: String,
+      registeredAddress: String,
+      mailingAddress: String,
+      openingHours: String,
+    },
+    paymentMethodsNote: String,
+  },
+  { timestamps: true, strict: false }
+)
+
 const EmailTemplateSchema = new mongoose.Schema(
   {
     type: { type: String, required: true, unique: true },
@@ -354,7 +391,7 @@ function ticketTypesForSession(sessionId, label, startDate, endDate) {
       priceHuf: 75000,
       pricingMode: "per_child",
       kind: "base",
-      isActive: true,
+      isActive: false,
       sortOrder: 1,
     },
     {
@@ -370,7 +407,7 @@ function ticketTypesForSession(sessionId, label, startDate, endDate) {
     {
       sessionId,
       name: `${label} — laptop bérlés`,
-      description: "Elérhető 2026.06.01-től, max 10 db. 10 000 Ft.",
+      description: LAPTOP_ADDON_DESCRIPTION,
       priceHuf: 10000,
       pricingMode: "per_child",
       kind: "addon",
@@ -470,7 +507,7 @@ async function seedCampPages(TemplateContent) {
   await seedCampPageContent(TemplateContent, "page:jegyvasarlas", {
     pageTitle: "Jegyvásárlás",
     pageIntro:
-      "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan online.",
+      "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan, on-line.",
     meta: { seoTitle: "Jegyvásárlás", seoDescription: "" },
   })
   await seedCampPageContent(TemplateContent, "page:foglalas", {
@@ -568,6 +605,11 @@ async function seedContactEmails(ShopContent) {
   )
 }
 
+async function seedFooter(FooterSetting) {
+  const doc = buildMinecraftCampFooterDoc()
+  await FooterSetting.findOneAndUpdate({ key: "footer" }, { $set: doc }, { upsert: true })
+}
+
 async function seedEmailTemplate(EmailTemplate) {
   await EmailTemplate.findOneAndUpdate(
     { type: "camp_registration_confirmation" },
@@ -616,6 +658,8 @@ async function main() {
     mongoose.models.SeoSetting || mongoose.model("SeoSetting", SeoSettingSchema)
   const ShopContent =
     mongoose.models.ShopContent || mongoose.model("ShopContent", ShopContentSchema)
+  const FooterSetting =
+    mongoose.models.FooterSetting || mongoose.model("FooterSetting", FooterSettingSchema)
 
   let faq = MINESHOW_FAQ_FALLBACK
   try {
@@ -635,6 +679,7 @@ async function main() {
   await seedBranding(BrandingSetting, IMG)
   await seedSeo(SeoSetting, siteSeo)
   await seedContactEmails(ShopContent)
+  await seedFooter(FooterSetting)
   await seedHomepageCms(TemplateContent, IMG, siteSeo, faq)
   await seedCampPages(TemplateContent)
   await seedEmailTemplate(EmailTemplate)
@@ -645,6 +690,7 @@ async function main() {
   console.log(`  Branding: ${BRAND_NAME}, logos ${IMG.logo}`)
   console.log(`  SEO: favicon + OG ${siteSeo.favicon}`)
   console.log(`  Contact: ${CONTACT_EMAIL}`)
+  console.log(`  Footer: ${ORGANIZER_TITLE}`)
   console.log(
     `  CMS: ${TEMPLATE_ID} / ${PAGE_KEY} (published + draft; FAQ: ${faq.length} accordions)`
   )

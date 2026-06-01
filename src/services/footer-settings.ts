@@ -33,11 +33,11 @@ export type FooterSettings = {
 }
 
 const DEFAULT_ORGANIZER: FooterOrganizerSection = {
-  title: "A Mineshow szervezője",
-  companyName: "PlayIT Entertainment Kft.",
-  registeredAddress: "Székhely: 1135 Budapest, Szegedi út 37-39.",
-  mailingAddress: "Levelezési cím: 1055 Budapest, Szent István krt. 29. fsz.",
-  openingHours: "Nyitva: H–Cs, 09:00–17:00",
+  title: "A KockaKemp tábor szervezője az Eseményszervezés.hu BTL ügynökség Kft.",
+  companyName: "",
+  registeredAddress: "",
+  mailingAddress: "",
+  openingHours: "",
 }
 
 const DEFAULT_PAYMENT_NOTE = "Fizetés: bankkártya (Stripe)"

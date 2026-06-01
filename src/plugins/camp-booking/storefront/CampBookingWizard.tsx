@@ -5,7 +5,11 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { CampDiningOption } from "../lib/schemas"
 import { buildAddonSelections } from "../lib/checkout-addons"
-import { calculateCampOrderTotal } from "../lib/pricing"
+import {
+  calculateCampOrderTotal,
+  isLaptopTicketTypeName,
+  LAPTOP_ADDON_CHECKOUT_LABEL,
+} from "../lib/pricing"
 import type { CampTicketPriceInput } from "../lib/pricing-types"
 import { mediaImageSrc } from "@/lib/images"
 import { campBookingDefaultContent } from "@/templates/minecraft-camp/pages/camp/defaultContent"
@@ -62,7 +66,7 @@ const DINING_OPTIONS: CampDiningOption[] = [
   "Vegetáriánus",
   "Gluténmentes",
   "Laktózmentes",
-  "Egyéb",
+  "Sertéshúsmentes",
 ]
 
 function emptyChild(): ChildForm {
@@ -284,7 +288,7 @@ export function CampBookingWizard({
             lastName: c.lastName || undefined,
             birthDate: c.birthDate,
             diningOption: c.diningOption,
-            dietaryRequest: c.diningOption === "Egyéb" ? c.dietaryRequest : c.dietaryRequest,
+            dietaryRequest: c.dietaryRequest,
             allergies: c.allergies,
             laptopRental: c.laptopRental,
             addonTicketIds: childAddonIds(c, detail.laptopTicket?.id),
@@ -479,21 +483,11 @@ export function CampBookingWizard({
                     <p className="font-minecraft text-[10px] text-white">Gyerek {i + 1}</p>
                     <input
                       className="minecraft-input w-full"
-                      placeholder="Gyerek neve *"
+                      placeholder="Gyerek teljes neve *"
                       value={child.name}
                       onChange={(e) => {
                         const next = [...children]
                         next[i] = { ...next[i], name: e.target.value }
-                        setChildren(next)
-                      }}
-                    />
-                    <input
-                      className="minecraft-input w-full"
-                      placeholder="Vezetéknév (testvérkedvezményhez, opcionális)"
-                      value={child.lastName}
-                      onChange={(e) => {
-                        const next = [...children]
-                        next[i] = { ...next[i], lastName: e.target.value }
                         setChildren(next)
                       }}
                     />
@@ -528,21 +522,9 @@ export function CampBookingWizard({
                         ))}
                       </select>
                     </label>
-                    {child.diningOption === "Egyéb" ? (
-                      <input
-                        className="minecraft-input w-full"
-                        placeholder="Étkezéssel kapcsolatos megjegyzés"
-                        value={child.dietaryRequest}
-                        onChange={(e) => {
-                          const next = [...children]
-                          next[i] = { ...next[i], dietaryRequest: e.target.value }
-                          setChildren(next)
-                        }}
-                      />
-                    ) : null}
                     <input
                       className="minecraft-input w-full"
-                      placeholder="Allergia"
+                      placeholder="Allergia, étel- vagy gyógyszer érzékenység, bármi fontos infó."
                       value={child.allergies}
                       onChange={(e) => {
                         const next = [...children]
@@ -581,9 +563,10 @@ export function CampBookingWizard({
                             }}
                           />
                           <span>
-                            {addon.description || addon.name} (+
-                            {formatHuf(addon.effectivePriceHuf ?? addon.priceHuf)} Ft
-                            {addon.pricingMode === "per_child" ? " / gyerek" : ""})
+                            {isLaptop ||
+                            isLaptopTicketTypeName(addon.name)
+                              ? LAPTOP_ADDON_CHECKOUT_LABEL
+                              : `${addon.description || addon.name} (+${formatHuf(addon.effectivePriceHuf ?? addon.priceHuf)} Ft${addon.pricingMode === "per_child" ? " / gyerek" : ""})`}
                           </span>
                         </label>
                       )

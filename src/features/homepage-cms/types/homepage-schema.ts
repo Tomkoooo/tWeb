@@ -56,6 +56,8 @@ const aboutDataSchema = z.object({
   ctaLabel: z.string().optional(),
   ctaHref: z.string().optional(),
   bannerText: z.string().optional(),
+  /** Optional link for camp story green promo strip */
+  bannerHref: z.string().optional(),
   accordions: z.array(z.object({ title: z.string(), content: z.string() })),
   cards: z.array(z.object({ title: z.string(), description: z.string(), icon: z.string().optional() })),
   visibility: visibilitySchema,

@@ -52,7 +52,7 @@ export const MINESHOW_FAQ = [
 export const CHECKOUT_COPY = {
   pageTitle: "Jegyvásárlás",
   pageIntro:
-    "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan online.",
+    "Válassz turnust és jegytípust, add meg a vásárló és gyerek adatait, majd fizesd ki a foglalást biztonságosan, on-line.",
   stepOffers: "Ajánlatok",
   stepDetails: "Adatok megadása",
   stepReview: "Áttekintés",

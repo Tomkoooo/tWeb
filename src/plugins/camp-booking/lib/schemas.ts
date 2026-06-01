@@ -5,7 +5,7 @@ export const campDiningOptionSchema = z.enum([
   "Vegetáriánus",
   "Gluténmentes",
   "Laktózmentes",
-  "Egyéb",
+  "Sertéshúsmentes",
 ])
 
 export type CampDiningOption = z.infer<typeof campDiningOptionSchema>

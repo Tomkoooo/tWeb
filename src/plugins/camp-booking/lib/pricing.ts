@@ -33,6 +33,18 @@ export function isLaptopTicketTypeName(name: string): boolean {
   return /laptop/i.test(name)
 }
 
+/** Hide normál base tickets while an active early bird base ticket exists on the session. */
+export function filterStorefrontBaseTickets<
+  T extends { name: string; isActive?: boolean },
+>(tickets: T[]): T[] {
+  const activeBase = tickets.filter((t) => t.isActive !== false)
+  const hasEarlyBird = activeBase.some((t) => /early\s*bird/i.test(t.name))
+  if (!hasEarlyBird) return tickets
+  return tickets.filter((t) => !/normál/i.test(t.name))
+}
+
+export const LAPTOP_ADDON_CHECKOUT_LABEL = "Laptop bérlés, 10 000 Ft/gyerek/turnus"
+
 export function parseChildLastName(child: CampChildPriceInput): string {
   const explicit = child.lastName?.trim()
   if (explicit) return normalizeNameToken(explicit)

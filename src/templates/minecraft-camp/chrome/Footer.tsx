@@ -39,7 +39,10 @@ function OrganizerLine({
   onChange: (value: string) => void
   placeholder?: string
 }) {
-  if (!cmsEditable) return <p>{value}</p>
+  if (!cmsEditable) {
+    if (!value.trim()) return null
+    return <p>{value}</p>
+  }
   return (
     <input
       value={value}
@@ -74,15 +77,15 @@ export function Footer({
   const socialLinks = footerSettings?.socialLinks ?? []
   const facebook = socialLinks.find((l) => l.platform === "facebook")
   const instagram = socialLinks.find((l) => l.platform === "instagram")
-  const facebookUrl = facebook?.enabled && facebook.url ? facebook.url : "https://www.facebook.com/"
-  const instagramUrl = instagram?.enabled && instagram.url ? instagram.url : "https://www.instagram.com/"
+  const facebookUrl = facebook?.enabled && facebook.url?.trim() ? facebook.url : null
+  const instagramUrl = instagram?.enabled && instagram.url?.trim() ? instagram.url : null
 
   const organizer: FooterOrganizerSection = footerSettings?.organizerSection ?? {
-    title: "A Mineshow szervezője",
-    companyName: "PlayIT Entertainment Kft.",
-    registeredAddress: "Székhely: 1135 Budapest, Szegedi út 37-39.",
-    mailingAddress: "Levelezési cím: 1055 Budapest, Szent István krt. 29. fsz.",
-    openingHours: "Nyitva: H–Cs, 09:00–17:00",
+    title: "A KockaKemp tábor szervezője az Eseményszervezés.hu BTL ügynökség Kft.",
+    companyName: "",
+    registeredAddress: "",
+    mailingAddress: "",
+    openingHours: "",
   }
   const paymentNote = footerSettings?.paymentMethodsNote ?? "Fizetés: bankkártya (Stripe)"
 
@@ -141,24 +144,28 @@ export function Footer({
               </div>
             ) : (
               <>
-                <a
-                  href={facebookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-minecraft-body text-xs underline"
-                  aria-label="Facebook"
-                >
-                  Facebook
-                </a>
-                <a
-                  href={instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-minecraft-body text-xs underline"
-                  aria-label="Instagram"
-                >
-                  Instagram
-                </a>
+                {facebookUrl ? (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-minecraft-body text-xs underline"
+                    aria-label="Facebook"
+                  >
+                    Facebook
+                  </a>
+                ) : null}
+                {instagramUrl ? (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-minecraft-body text-xs underline"
+                    aria-label="Instagram"
+                  >
+                    Instagram
+                  </a>
+                ) : null}
               </>
             )}
           </div>

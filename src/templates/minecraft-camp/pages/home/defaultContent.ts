@@ -1,5 +1,9 @@
 import type { HomeContent } from "./schema"
 import { mineshowFaqItems } from "../../content/mineshow-faq"
+import {
+  KOCKAKEMP_COMPANY_NAME,
+  MINECRAFT_CAMP_FACEBOOK_EVENT_URL,
+} from "../../lib/constants"
 
 const DEFAULT_MAP_EMBED =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d16512.43395838978!2d19.072352850677607!3d47.50229386689003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741dc85dbc2eaf5%3A0x4ae6f260ce6f87bf!2sR%C3%A9csei%20Center!5e0!3m2!1shu!2shu!4v1777970244559!5m2!1shu!2shu"
@@ -22,8 +26,6 @@ Jelentkezz még ma, ne maradj le az élményről!`
 const PRICING_PARAGRAPH = `A heti turnus 75 000 Ft-ba kerül gyerekenként. A testvéreknek 10% kedvezményt biztosítunk a normál jegyárból.
 
 Június első hetében early bird kedvezménnyel 67 500 FT áron lehet jelentkezni. Jelentkezz még ma, ne maradj le az élményről!
-
-Elfogadjuk mindhárom SZÉP-kártyát, bankkártyát, valamint készpénzes fizetésre is van lehetőség a belvárosi irodánkban.
 
 Amennyiben szükséged van rá, tudsz tőlünk a turnus idejére laptopot kölcsönözni. Ezt a jegyek között 10 000 Ft/hét értékben megtalálod.
 
@@ -70,6 +72,7 @@ export const homeDefaultContent: HomeContent = {
         ctaLabel: "Jelentkezés",
         ctaHref: "/jegyvasarlas",
         bannerText: "Jelezd, hogy ott leszel, értesülj a friss infókról",
+        bannerHref: MINECRAFT_CAMP_FACEBOOK_EVENT_URL,
         accordions: [],
         cards: [],
       },
@@ -128,7 +131,7 @@ export const homeDefaultContent: HomeContent = {
       data: {
         title: "Récsei Center, 1146 Budapest, Istvánmezei út 6.",
         description: "",
-        companyName: "PlayIT Entertainment Kft.",
+        companyName: KOCKAKEMP_COMPANY_NAME,
         address: "Récsei Center, 1146 Budapest, Istvánmezei út 6.",
         venueShort: "Récsei Center, 2026 nyár",
         mapEmbedUrl: DEFAULT_MAP_EMBED,
