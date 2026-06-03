@@ -34,6 +34,7 @@ const pressStart2P = Press_Start_2P({
 
 import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/sonner";
+import { PopupCampaignService } from "@/services/popup-campaign";
 
 function toAbsoluteUrl(value: string, fallbackBase: string): string {
   if (!value) return fallbackBase;
@@ -100,6 +101,7 @@ export default async function RootLayout({
     ? getEffectiveThemeBase(await loadTemplateModule(previewTemplateId))
     : await getCachedThemeForTemplate(dbActiveTemplate);
   const themeVars = themeTokensToCssVars(theme);
+  const popupCampaigns = await PopupCampaignService.getActiveForStorefront();
 
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
@@ -119,6 +121,7 @@ export default async function RootLayout({
           devMetricsEnabled={
             process.env.DEV_METRICS === "1" || process.env.DEV_METRICS?.toLowerCase() === "true"
           }
+          popupCampaigns={popupCampaigns}
         >
           {children}
           <Toaster position="bottom-right" />

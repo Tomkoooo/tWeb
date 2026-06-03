@@ -28,6 +28,28 @@ export default async function AdminCmsHub() {
       </div>
 
       <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wider text-white">Marketing</h2>
+          <p className="text-xs text-neutral-500 mt-1">Popup modálok oldalankénti megjelenítéssel.</p>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <li>
+            <Link
+              href="/admin/cms/popups"
+              className="block h-full rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-4 transition hover:border-amber-400/40 hover:bg-amber-500/10"
+            >
+              <span className="text-sm font-bold uppercase tracking-widest text-amber-100">
+                Popup bannerek
+              </span>
+              <span className="mt-2 block text-xs font-normal normal-case tracking-normal text-neutral-400">
+                Kép, szöveg, gomb; cél URL-ek beillesztése (főoldal, bolt, kategória, termék).
+              </span>
+            </Link>
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-lg font-black uppercase tracking-wider text-white">Weboldal beállítások</h2>
