@@ -7,6 +7,10 @@ type Props = {
   variant?: "default" | "mineshow"
 }
 
+function sessionThumbnail(session: CampListCamp["sessions"][number], camp: CampListCamp) {
+  return session.imageUrl || camp.heroImage || ""
+}
+
 export function CampListView({ camps, variant = "default" }: Props) {
   if (camps.length === 0) {
     return (
@@ -20,16 +24,18 @@ export function CampListView({ camps, variant = "default" }: Props) {
     return (
       <div className="space-y-6">
         {camps.map((camp) =>
-          camp.sessions.map((session) => (
+          camp.sessions.map((session) => {
+            const thumb = sessionThumbnail(session, camp)
+            return (
             <article
               key={session.id}
               className="minecraft-panel-wood px-4 py-4 md:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
               <div className="flex gap-4 items-start flex-1 min-w-0">
-                {camp.heroImage ? (
+                {thumb ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={mediaImageSrc(camp.heroImage)}
+                    src={mediaImageSrc(thumb)}
                     alt=""
                     className="w-20 h-20 md:w-24 md:h-24 object-cover border-4 border-[#3d2817] shrink-0 pixelated"
                   />
@@ -62,7 +68,8 @@ export function CampListView({ camps, variant = "default" }: Props) {
                 </Link>
               </div>
             </article>
-          ))
+            )
+          })
         )}
       </div>
     )
@@ -89,11 +96,21 @@ export function CampListView({ camps, variant = "default" }: Props) {
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {camp.sessions.map((session) => (
+            {camp.sessions.map((session) => {
+              const thumb = sessionThumbnail(session, camp)
+              return (
               <article
                 key={session.id}
                 className="minecraft-panel-inner p-4 flex flex-col gap-3"
               >
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mediaImageSrc(thumb)}
+                    alt=""
+                    className="w-full h-28 object-cover border-4 border-[#3d2817] pixelated"
+                  />
+                ) : null}
                 <div>
                   <h3 className="font-minecraft text-sm text-[#1a3d5c]">{session.label}</h3>
                   <p className="font-minecraft-body text-xs text-[#5c4a32] mt-1">
@@ -123,7 +140,8 @@ export function CampListView({ camps, variant = "default" }: Props) {
                   {session.spotsLeft < 1 ? "Betelt" : "Foglalás"}
                 </Link>
               </article>
-            ))}
+              )
+            })}
           </div>
         </section>
       ))}

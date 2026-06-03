@@ -59,6 +59,9 @@ export async function handleCampBookingApi(context: PluginApiContext): Promise<R
     return json({ error: "Not found", path }, 404)
   } catch (err) {
     console.error("[camp-booking]", err)
+    if (err instanceof Error && err.message === "Unauthorized") {
+      return json({ error: "Unauthorized" }, 401)
+    }
     return json({ error: errorMessage(err, "Hiba történt") }, 400)
   }
 }
@@ -150,6 +153,7 @@ async function handleCampBookingAdminApi(
         soldCount: s.soldCount,
         reservedCount: s.reservedCount,
         isPublished: s.isPublished,
+        imageUrl: s.imageUrl ?? "",
       })),
     })
   }
@@ -162,6 +166,26 @@ async function handleCampBookingAdminApi(
       endDate: new Date(body.endDate),
     })
     return json({ ok: true, id: String(session._id) })
+  }
+
+  if (segment === "sessions" && path[1] && method === "GET" && path.length === 2) {
+    const session = await CampService.getSessionAdmin(path[1])
+    if (!session) return json({ error: "Turnus nem található" }, 404)
+    return json({
+      ok: true,
+      session: {
+        id: String(session._id),
+        campId: String(session.campId),
+        label: session.label,
+        startDate: session.startDate,
+        endDate: session.endDate,
+        capacity: session.capacity,
+        soldCount: session.soldCount,
+        reservedCount: session.reservedCount,
+        isPublished: session.isPublished,
+        imageUrl: session.imageUrl ?? "",
+      },
+    })
   }
 
   if (segment === "sessions" && path[1] && method === "PUT" && path.length === 2) {

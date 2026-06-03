@@ -18,13 +18,6 @@ export function CampBookingAdminScreen({
   if (segment === "camps") {
     return <CampsAdmin path={path.slice(1)} />
   }
-  if (segment === "registrations") {
-    return (
-      <p className="text-neutral-400 text-sm italic">
-        Válassz turnust a Táborok menüben az exporthoz.
-      </p>
-    )
-  }
 
   return <CampAdminHome />
 }

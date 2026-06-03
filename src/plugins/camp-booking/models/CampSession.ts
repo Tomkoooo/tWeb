@@ -9,6 +9,7 @@ export interface ICampSession extends Document {
   soldCount: number
   reservedCount: number
   isPublished: boolean
+  imageUrl?: string
 }
 
 const CampSessionSchema = new Schema<ICampSession>(
@@ -21,6 +22,7 @@ const CampSessionSchema = new Schema<ICampSession>(
     soldCount: { type: Number, required: true, default: 0, min: 0 },
     reservedCount: { type: Number, required: true, default: 0, min: 0 },
     isPublished: { type: Boolean, default: false },
+    imageUrl: { type: String },
   },
   { timestamps: true }
 )

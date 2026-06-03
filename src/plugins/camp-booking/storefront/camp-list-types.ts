@@ -8,6 +8,7 @@ export type CampListTicketType = {
 export type CampListSession = {
   id: string
   label: string
+  imageUrl?: string
   sessionLabel: string
   spotsLeft: number
   capacity: number

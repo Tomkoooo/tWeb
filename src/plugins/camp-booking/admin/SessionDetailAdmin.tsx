@@ -5,14 +5,18 @@ import { useCallback, useEffect, useState } from "react"
 import { campAdminApi, type AdminTicketType } from "./camp-api"
 import { CampAdminLoading, CampAdminPrimaryButton } from "./camp-admin-ui"
 import { TicketTypeDialog } from "./dialogs/TicketTypeDialog"
+import { SessionRegistrationsTable } from "./SessionRegistrationsTable"
+import { EditSessionDialog } from "./dialogs/EditSessionDialog"
 import { Button } from "@/components/ui/button"
 
 export function SessionDetailAdmin({
   sessionId,
   onBack,
+  onSessionUpdated,
 }: {
   sessionId: string
   onBack: () => void
+  onSessionUpdated?: () => void
 }) {
   const [ticketTypes, setTicketTypes] = useState<AdminTicketType[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,13 +46,43 @@ export function SessionDetailAdmin({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
-      >
-        ← Turnusok
-      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+        >
+          ← Turnusok
+        </button>
+        <EditSessionDialog sessionId={sessionId} onSaved={() => onSessionUpdated?.()}>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+          >
+            Turnus szerkesztése
+          </Button>
+        </EditSessionDialog>
+      </div>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-heading font-black text-white uppercase italic tracking-wider">
+            Régisztrációk
+          </h2>
+          <p className="text-xs text-neutral-400 mt-2 max-w-2xl leading-relaxed">
+            Fizetett jelentkezések ezen a turnuson. Részleteknél a gyerekek adatai.
+          </p>
+        </div>
+        <SessionRegistrationsTable sessionId={sessionId} />
+        <a
+          href={`/api/plugins/camp-booking/admin/sessions/${sessionId}/export`}
+          className="inline-flex items-center h-11 px-6 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+        >
+          Excel export (turnus)
+        </a>
+      </section>
+
       <div>
         <h2 className="text-2xl font-heading font-black text-white uppercase italic tracking-wider">
           Jegytípusok & kiegészítők
@@ -129,13 +163,6 @@ export function SessionDetailAdmin({
           ))}
         </ul>
       )}
-
-      <a
-        href={`/api/plugins/camp-booking/admin/sessions/${sessionId}/export`}
-        className="inline-flex items-center h-11 px-6 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
-      >
-        Excel export (turnus)
-      </a>
     </div>
   )
 }

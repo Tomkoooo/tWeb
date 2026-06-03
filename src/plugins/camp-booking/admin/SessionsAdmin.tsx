@@ -15,15 +15,20 @@ import {
 } from "./camp-admin-ui"
 import { CampPricingForm } from "./CampPricingForm"
 import { CreateSessionDialog } from "./dialogs/CreateSessionDialog"
+import { EditSessionDialog } from "./dialogs/EditSessionDialog"
 import { SessionDetailAdmin } from "./SessionDetailAdmin"
+import { Button } from "@/components/ui/button"
 
 type SessionRow = {
   id: string
   label: string
+  startDate: string
+  endDate: string
   capacity: number
   soldCount: number
   reservedCount: number
   isPublished: boolean
+  imageUrl?: string
 }
 
 export function SessionsAdmin({ campId }: { campId: string }) {
@@ -67,7 +72,11 @@ export function SessionsAdmin({ campId }: { campId: string }) {
 
   if (selectedSession) {
     return (
-      <SessionDetailAdmin sessionId={selectedSession} onBack={() => setSelectedSession(null)} />
+      <SessionDetailAdmin
+        sessionId={selectedSession}
+        onBack={() => setSelectedSession(null)}
+        onSessionUpdated={loadSessions}
+      />
     )
   }
 
@@ -115,13 +124,24 @@ export function SessionsAdmin({ campId }: { campId: string }) {
                   {s.soldCount + s.reservedCount}/{s.capacity} foglalt
                 </p>
               </div>
-              <button
-                type="button"
-                className="text-[10px] font-black uppercase tracking-widest admin-link-accent shrink-0"
-                onClick={() => setSelectedSession(s.id)}
-              >
-                Jegyek & export →
-              </button>
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <EditSessionDialog sessionId={s.id} initial={s} onSaved={loadSessions}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+                  >
+                    Szerkesztés
+                  </Button>
+                </EditSessionDialog>
+                <button
+                  type="button"
+                  className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                  onClick={() => setSelectedSession(s.id)}
+                >
+                  Jegyek & export →
+                </button>
+              </div>
             </li>
           ))}
         </ul>

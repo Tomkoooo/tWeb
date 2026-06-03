@@ -14,7 +14,9 @@ import {
   CampAdminPrimaryButton,
 } from "./camp-admin-ui"
 import { CreateCampDialog } from "./dialogs/CreateCampDialog"
+import { EditCampDialog } from "./dialogs/EditCampDialog"
 import { SessionsAdmin } from "./SessionsAdmin"
+import { Button } from "@/components/ui/button"
 
 type CampRow = {
   id: string
@@ -88,12 +90,23 @@ export function CampsAdmin({ path }: { path: string[] }) {
                     </p>
                   ) : null}
                 </div>
-                <Link
-                  href={`/admin/plugins/camp-booking/camps/${c.id}/sessions`}
-                  className="text-[10px] font-black uppercase tracking-widest admin-link-accent shrink-0"
-                >
-                  Turnusok & árazás →
-                </Link>
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <EditCampDialog campId={c.id} onSaved={load}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+                    >
+                      Szerkesztés
+                    </Button>
+                  </EditCampDialog>
+                  <Link
+                    href={`/admin/plugins/camp-booking/camps/${c.id}/sessions`}
+                    className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                  >
+                    Turnusok & árazás →
+                  </Link>
+                </div>
               </li>
             )
           })}

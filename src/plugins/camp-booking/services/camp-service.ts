@@ -59,6 +59,7 @@ export class CampService {
       sessions: (sessionsByCamp.get(String(camp._id)) || []).map((session) => ({
         id: String(session._id),
         label: session.label,
+        imageUrl: session.imageUrl || "",
         startDate: session.startDate,
         endDate: session.endDate,
         capacity: session.capacity,
@@ -227,6 +228,11 @@ export class CampService {
     return CampSession.find({ campId }).sort({ startDate: 1 }).lean()
   }
 
+  static async getSessionAdmin(id: string) {
+    await dbConnect()
+    return CampSession.findById(id).lean()
+  }
+
   static async createSession(
     campId: string,
     data: {
@@ -235,6 +241,7 @@ export class CampService {
       endDate: Date
       capacity: number
       isPublished?: boolean
+      imageUrl?: string
     }
   ) {
     await dbConnect()
@@ -254,6 +261,7 @@ export class CampService {
       endDate: Date
       capacity: number
       isPublished: boolean
+      imageUrl: string | null
     }>
   ) {
     await dbConnect()

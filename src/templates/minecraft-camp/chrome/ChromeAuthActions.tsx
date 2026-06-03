@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useSession, signIn } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react"
 
 type ChromeAuthActionsProps = {
   className?: string
@@ -41,5 +41,18 @@ export function ChromeAuthActions({ className = "", variant = "footer" }: Chrome
     )
   }
 
-  return null
+  return (
+    <span className={`inline-flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 ${className}`}>
+      <Link href="/auth/admin-login" className={baseClass}>
+        Admin bejelentkezés
+      </Link>
+      <button
+        type="button"
+        className={`${baseClass} bg-transparent border-0 p-0 cursor-pointer text-left`}
+        onClick={() => signOut({ callbackUrl: "/" })}
+      >
+        Kijelentkezés
+      </button>
+    </span>
+  )
 }

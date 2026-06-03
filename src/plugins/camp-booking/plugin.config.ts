@@ -24,7 +24,6 @@ export const campBooking = definePlugin({
       { label: "Kezdőlap", segment: "" },
       { label: "Statisztikák", segment: "stats" },
       { label: "Táborok", segment: "camps" },
-      { label: "Régisztrációk", segment: "registrations" },
     ],
     Screen: CampBookingAdminScreen,
   },
