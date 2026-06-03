@@ -1,4 +1,4 @@
-import { resolveSitemapBaseUrl } from "@/lib/sitemap/resolve-sitemap-base-url";
+import { getPublicAppBaseUrl } from "@/lib/app-base-url";
 
 export const ORDER_GUEST_ACCESS_TTL_MS = 1000 * 60 * 60 * 24 * 90; // 90 days
 
@@ -7,13 +7,13 @@ export function normalizeOrderEmail(email: string): string {
 }
 
 export function buildGuestOrderViewUrl(orderId: string, rawToken: string, baseUrl?: string): string {
-  const base = (baseUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+  const base = (baseUrl ?? getPublicAppBaseUrl()).replace(/\/+$/, "");
   const params = new URLSearchParams({ token: rawToken });
   return `${base}/orders/guest/${orderId}?${params.toString()}`;
 }
 
 export function resolveAppBaseUrl(): string {
-  return resolveSitemapBaseUrl({ canonicalBaseUrl: process.env.NEXT_PUBLIC_APP_URL?.trim() || "" });
+  return getPublicAppBaseUrl();
 }
 
 export function guestOrderPath(orderId: string, rawToken: string): string {

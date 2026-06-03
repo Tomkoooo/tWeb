@@ -4,6 +4,7 @@ import { getStorefrontSiteContact } from "@/lib/site-contact"
 import { getEmailFromAddress } from "@/lib/email-from"
 import { loadPluginModule } from "@/plugins/registry"
 import { PluginService } from "@/services/plugin"
+import { getPublicAppBaseUrl } from "@/lib/app-base-url"
 import type { EmailTemplateSeed } from "@/services/email-template"
 
 function escapeHtml(value: string) {
@@ -16,10 +17,7 @@ function escapeHtml(value: string) {
 }
 
 function getPublicBaseUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
-    /\/+$/,
-    ""
-  )
+  return getPublicAppBaseUrl()
 }
 
 /** Core transactional templates (shop, contact, invoicing). */

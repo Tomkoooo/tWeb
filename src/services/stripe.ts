@@ -23,10 +23,4 @@ export function getStripeWebhookSecret(): string {
   return secret;
 }
 
-export function getAppBaseUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
-  if (!baseUrl) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL (or NEXTAUTH_URL)");
-  }
-  return baseUrl.replace(/\/+$/, "");
-}
+export { getPublicAppBaseUrl as getAppBaseUrl } from "@/lib/app-base-url";

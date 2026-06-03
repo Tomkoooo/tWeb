@@ -20,8 +20,9 @@ import { applyCheckoutPriceAllocations } from "@/services/checkout-validation";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
 import { sendNewOrderNotification } from "@/services/new-order-notification";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
+import { resolvePublicAppBaseUrl } from "@/lib/app-base-url-server";
+import { buildAuthLoginUrl, buildGuestOrderViewUrl } from "@/lib/order-guest-access";
 import { OrderGuestAccessService } from "@/services/order-guest-access";
-import { buildAuthLoginUrl } from "@/lib/order-guest-access";
 
 export type OrderWithGuestAccess = InstanceType<typeof Order> & { guestAccessToken?: string };
 
@@ -242,11 +243,12 @@ export class OrderService {
       const emailSource = userEmail ? "user" : billingEmail ? "billingInfo" : "none";
       const customerName = populatedOrder?.user?.name || orderData.shippingAddress?.name;
       const isGuestOrder = !populatedOrder?.user && Boolean(guestAccessToken);
+      const publicBaseUrl = await resolvePublicAppBaseUrl();
       const orderViewUrl = guestAccessToken
-        ? OrderGuestAccessService.buildViewUrl(orderId, guestAccessToken)
+        ? buildGuestOrderViewUrl(orderId, guestAccessToken, publicBaseUrl)
         : undefined;
-      const linkToAccountUrl = guestAccessToken
-        ? buildAuthLoginUrl(OrderGuestAccessService.buildViewUrl(orderId, guestAccessToken))
+      const linkToAccountUrl = guestAccessToken && orderViewUrl
+        ? buildAuthLoginUrl(orderViewUrl, publicBaseUrl)
         : undefined;
 
       if (!customerEmail) {
