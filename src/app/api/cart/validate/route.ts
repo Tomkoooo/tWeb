@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const products = productIds.length
       ? await Product.find({ _id: { $in: productIds } })
           .select(
-            "name isActive isVisible stock requireVariantSelection variants netPrice grossPrice discount vatPercent limitedPrice"
+            "name isActive isVisible stock requireVariantSelection variants netPrice grossPrice discount vatPercent limitedPrice uniqueNumberedVariants"
           )
           .lean()
       : []

@@ -17,7 +17,7 @@ describe("cart-sync helpers", () => {
   it("cartItemsSyncSignature ignores order and normalizes quantity", () => {
     const a = [
       { id: "p2", productId: "p2", quantity: 0 },
-      { id: "variant-line", productId: "p1", quantity: 2 },
+      { id: "p1", productId: "p1", quantity: 2 },
     ]
     const b = [
       { id: "p1", productId: "p1", quantity: 2 },
@@ -26,6 +26,12 @@ describe("cart-sync helpers", () => {
 
     expect(cartItemsSyncSignature(a)).toBe(cartItemsSyncSignature(b))
     expect(areCartItemsSyncEqual(a, b)).toBe(true)
+  })
+
+  it("cartItemsSyncSignature distinguishes variant lines from product-only lines", () => {
+    const variantLine = [{ id: "p1:v1", productId: "p1", variantId: "v1", quantity: 1 }]
+    const productLine = [{ id: "p1", productId: "p1", quantity: 1 }]
+    expect(cartItemsSyncSignature(variantLine)).not.toBe(cartItemsSyncSignature(productLine))
   })
 
   it("dbCartItemsToCartItems skips inactive products", () => {
@@ -58,6 +64,40 @@ describe("cart-sync helpers", () => {
     expect(items).toHaveLength(1)
     expect(items[0].productId).toBe("p1")
     expect(items[0].quantity).toBe(2)
+  })
+
+  it("mergeLocalAndServerCart keeps both variant lines for same product", () => {
+    const local: CartItem[] = [
+      {
+        id: "p1:v1",
+        productId: "p1",
+        variantId: "v1",
+        name: "A #1",
+        slug: "p1",
+        price: 100,
+        image: "",
+        quantity: 1,
+        stock: 1,
+        netPrice: 80,
+        discount: 0,
+      },
+      {
+        id: "p1:v2",
+        productId: "p1",
+        variantId: "v2",
+        name: "A #2",
+        slug: "p1",
+        price: 100,
+        image: "",
+        quantity: 1,
+        stock: 1,
+        netPrice: 80,
+        discount: 0,
+      },
+    ]
+    const server: CartItem[] = []
+    const merged = mergeLocalAndServerCart(local, server)
+    expect(merged).toHaveLength(2)
   })
 
   it("mergeLocalAndServerCart keeps variant lines and adds server-only products", () => {
@@ -104,8 +144,9 @@ describe("cart-sync helpers", () => {
     ]
 
     const merged = mergeLocalAndServerCart(local, server)
-    expect(merged).toHaveLength(2)
+    expect(merged).toHaveLength(3)
     expect(merged[0].id).toBe("p1:v1")
-    expect(merged[1].productId).toBe("p2")
+    expect(merged.map((l) => l.productId)).toContain("p2")
+    expect(merged.some((l) => l.id === "p1" && !l.variantId)).toBe(true)
   })
 })

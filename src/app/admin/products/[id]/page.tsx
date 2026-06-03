@@ -11,6 +11,9 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   ])
   
   if (!product) return notFound()
-  
-  return <ProductForm categories={categories} initialData={product} isEdit />
+
+  const initialData = JSON.parse(JSON.stringify(product))
+  const plainCategories = JSON.parse(JSON.stringify(categories))
+
+  return <ProductForm categories={plainCategories} initialData={initialData} isEdit />
 }

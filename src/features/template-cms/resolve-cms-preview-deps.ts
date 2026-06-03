@@ -1,3 +1,4 @@
+import { toPlainObject } from "@/lib/to-plain-object"
 import { CategoryService } from "@/services/category"
 import { ProductService } from "@/services/product"
 import type { TemplateModule } from "@/templates/types"
@@ -25,8 +26,8 @@ export async function getShopCmsPreviewDeps(
     CategoryService.getTree(),
   ])
 
-  const products = JSON.parse(JSON.stringify(paginationResult.products))
-  const categories = JSON.parse(JSON.stringify(categoriesResult)) as unknown[]
+  const products = toPlainObject(paginationResult.products)
+  const categories = toPlainObject(categoriesResult) as unknown[]
   const total = paginationResult.total
   const pages = paginationResult.pages
 
@@ -57,5 +58,5 @@ export async function getPdpPreviewProduct() {
   })
   const raw = res.products[0]
   if (!raw) return null
-  return JSON.parse(JSON.stringify(raw))
+  return toPlainObject(raw)
 }

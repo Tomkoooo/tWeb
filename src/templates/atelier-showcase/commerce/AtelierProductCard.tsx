@@ -10,7 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
-import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
+import { isStorefrontProductOrderable } from "@/lib/storefront-catalog"
+import { ProductCardVariantArea } from "@/components/shop/ProductCardVariantArea"
+import { initialCardVariantId } from "@/lib/product-card-variants"
+import {
+  isUniqueNumberedProduct,
+  productRequiresVariantPurchase,
+} from "@/lib/unique-numbered-variants"
 import {
   buildProductListingLines,
   buildRegularProductListingLines,
@@ -18,6 +24,7 @@ import {
   getLimitedPriceOffer,
   getVariantById,
   getVariantLabel,
+  hasPurchasableActiveVariants,
   hasVariants,
   resolveProductView,
 } from "@/lib/product-variants"
@@ -45,9 +52,7 @@ export function AtelierProductCard({
   const variantProduct = hasVariants(p)
   const requiresVariantSelection = Boolean(p.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(p)
-  const [selectedVariantId, setSelectedVariantId] = React.useState(
-    () => activeVariants.find((variant) => variant.isDefault)?.id || activeVariants[0]?.id || ""
-  )
+  const [selectedVariantId, setSelectedVariantId] = React.useState(() => initialCardVariantId(p))
   const selectedVariant = getVariantById(p, selectedVariantId)
   const limitedOffer = variantProduct
     ? selectedVariant
@@ -65,11 +70,19 @@ export function AtelierProductCard({
     compareGross,
   } = listingPriceSummary(listingLines, p.vatPercent)
   const ratingValue = typeof p.rating === "number" ? p.rating : 0
+  const productOrderable = isStorefrontProductOrderable(p)
+  const mustPickVariant = productRequiresVariantPurchase(p)
+  const hasPurchasableVariants = hasPurchasableActiveVariants(p)
+  const canOrder =
+    shopEnabled !== false &&
+    productOrderable &&
+    (!mustPickVariant || hasPurchasableVariants)
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
-    if (shopEnabled === false) return
+    if (!canOrder) return
+    if (selectedVariantId && !selectedVariant) return
     if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${p.slug}`)
       return
@@ -206,7 +219,7 @@ export function AtelierProductCard({
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
             {variantProduct ? (
-              <QuickVariantSelector
+              <ProductCardVariantArea
                 product={p}
                 selectedVariantId={selectedVariantId}
                 onVariantChange={setSelectedVariantId}
@@ -218,11 +231,17 @@ export function AtelierProductCard({
               type="button"
               size="sm"
               onClick={handleAddToCart}
-              disabled={shopEnabled === false}
+              disabled={!canOrder}
               className="rounded-full border-0 bg-primary font-serif text-xs uppercase tracking-wider text-primary-foreground"
             >
               {isAdded ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <ShoppingBag className="mr-1.5 h-3.5 w-3.5" />}
-              {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns" : "Kosárba"}
+              {isAdded
+                ? "Kosárban"
+                : requiresVariantSelection && !selectedVariant
+                  ? isUniqueNumberedProduct(p)
+                    ? "Sorszám"
+                    : "Variáns"
+                  : "Kosárba"}
             </Button>
             <Button variant="outline" size="sm" asChild className="rounded-full border-border font-serif text-xs uppercase">
               <Link href={`/products/${p.slug}`} prefetch={false} onClick={handleProductNavigate}>

@@ -12,6 +12,7 @@ const XLSX_MIME =
 
 type AdminOrdersExportLinkProps = {
   exportQuery: string
+  labelsZipEnabled?: boolean
 }
 
 function parseFilename(contentDisposition: string | null): string | null {
@@ -38,8 +39,12 @@ async function readExportError(response: Response): Promise<string> {
   return `Az export sikertelen (HTTP ${response.status}).`
 }
 
-export function AdminOrdersExportLink({ exportQuery }: AdminOrdersExportLinkProps) {
+export function AdminOrdersExportLink({
+  exportQuery,
+  labelsZipEnabled = false,
+}: AdminOrdersExportLinkProps) {
   const [isExporting, setIsExporting] = useState(false)
+  const [isExportingLabelsZip, setIsExportingLabelsZip] = useState(false)
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -96,20 +101,85 @@ export function AdminOrdersExportLink({ exportQuery }: AdminOrdersExportLinkProp
     }
   }
 
+  const handleLabelsZipExport = async () => {
+    setIsExportingLabelsZip(true)
+    try {
+      const url = exportQuery
+        ? `/api/admin/orders/export-labels?${exportQuery}`
+        : "/api/admin/orders/export-labels"
+
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      })
+
+      if (!response.ok) {
+        throw new Error(await readExportError(response))
+      }
+
+      const blob = await response.blob()
+      if (blob.size < 4) {
+        throw new Error("A címke ZIP üres.")
+      }
+
+      const filename =
+        parseFilename(response.headers.get("content-disposition")) ||
+        `cimkek-${format(new Date(), "yyyy-MM-dd-HHmm")}.zip`
+
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = objectUrl
+      anchor.download = filename
+      anchor.rel = "noopener"
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(objectUrl)
+
+      toast.success("Címke ZIP letöltve.")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "A címke ZIP export nem sikerült."
+      toast.error(message)
+    } finally {
+      setIsExportingLabelsZip(false)
+    }
+  }
+
   return (
-    <Button
-      type="button"
-      variant="outline"
-      disabled={isExporting}
-      onClick={handleExport}
-      className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
-    >
-      {isExporting ? (
-        <LoadingSpinner className="mr-2 h-4 w-4" />
-      ) : (
-        <Download className="mr-2 h-4 w-4" />
-      )}
-      Excel export
-    </Button>
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isExporting || isExportingLabelsZip}
+        onClick={handleExport}
+        className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
+        title="A címke linkekhez admin bejelentkezés szükséges."
+      >
+        {isExporting ? (
+          <LoadingSpinner className="mr-2 h-4 w-4" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" />
+        )}
+        Excel export
+      </Button>
+      {labelsZipEnabled ? (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isExporting || isExportingLabelsZip}
+          onClick={handleLabelsZipExport}
+          className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
+        >
+          {isExportingLabelsZip ? (
+            <LoadingSpinner className="mr-2 h-4 w-4" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Címkék ZIP (szűrés)
+        </Button>
+      ) : null}
+    </div>
   )
 }

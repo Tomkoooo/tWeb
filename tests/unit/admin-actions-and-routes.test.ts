@@ -68,12 +68,20 @@ vi.mock("@/models/PaymentMethod", () => ({
   },
 }));
 vi.mock("@/models/Coupon", () => ({ default: { create: couponCreateMock, findByIdAndDelete: couponDeleteMock } }));
+const glsManagerEnabledMock = vi.fn();
+const foxpostManagerEnabledMock = vi.fn();
+vi.mock("@/lib/parcel-feature-flags", () => ({
+  isGlsParcelManagerEnabled: glsManagerEnabledMock,
+  isFoxpostParcelManagerEnabled: foxpostManagerEnabledMock,
+}));
 
 describe("admin actions and routes", () => {
   beforeEach(() => {
     orderFindByIdMock.mockReset();
     orderUpdateOneMock.mockReset();
     vi.clearAllMocks();
+    glsManagerEnabledMock.mockResolvedValue(true);
+    foxpostManagerEnabledMock.mockResolvedValue(true);
     requireAdminMock.mockResolvedValue({});
     orderUpdateOneMock.mockResolvedValue({});
     authMock.mockResolvedValue({ user: { role: "ADMIN", id: "507f1f77bcf86cd799439011" } });
@@ -346,5 +354,59 @@ describe("admin actions and routes", () => {
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");
     expect(result.success).toBe(false);
     expect(result.error).toContain("sikertelen");
+  });
+
+  it("bulk generates parcel labels for eligible orders and skips existing", async () => {
+    const saveMock = vi.fn();
+    orderFindMock.mockResolvedValueOnce([
+      {
+        _id: { toString: () => "507f1f77bcf86cd799439011" },
+        glsParcelPoint: { id: "gls-1" },
+        glsLabel: {},
+        save: saveMock,
+        set: vi.fn(),
+      },
+      {
+        _id: { toString: () => "507f1f77bcf86cd799439012" },
+        foxpostParcelPoint: { id: "fp-1" },
+        foxpostShipment: { clFoxId: "CLFOX", labelDataBase64: "UERG" },
+        save: saveMock,
+        set: vi.fn(),
+      },
+    ]);
+
+    const { bulkGenerateParcelLabels } = await import("@/actions/admin-orders");
+    const result = await bulkGenerateParcelLabels([
+      "507f1f77bcf86cd799439011",
+      "507f1f77bcf86cd799439012",
+      "invalid",
+    ]);
+
+    expect(result.successCount).toBe(1);
+    expect(result.skippedCount).toBe(1);
+    expect(result.failedCount).toBe(0);
+    expect(glsCreateLabelMock).toHaveBeenCalledTimes(1);
+    expect(foxpostCreateShipmentMock).not.toHaveBeenCalled();
+  });
+
+  it("skips bulk label generation when parcel manager flag is disabled", async () => {
+    glsManagerEnabledMock.mockResolvedValueOnce(false);
+    orderFindMock.mockResolvedValueOnce([
+      {
+        _id: { toString: () => "507f1f77bcf86cd799439011" },
+        glsParcelPoint: { id: "gls-1" },
+        glsLabel: {},
+        save: vi.fn(),
+        set: vi.fn(),
+      },
+    ]);
+
+    const { bulkGenerateParcelLabels } = await import("@/actions/admin-orders");
+    const result = await bulkGenerateParcelLabels(["507f1f77bcf86cd799439011"]);
+
+    expect(result.successCount).toBe(0);
+    expect(result.skippedCount).toBe(1);
+    expect(result.skips[0]?.reason).toBe("manager_disabled");
+    expect(glsCreateLabelMock).not.toHaveBeenCalled();
   });
 });

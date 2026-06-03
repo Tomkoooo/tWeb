@@ -144,6 +144,9 @@ Standard home-delivery methods are unchanged.
 
 - **Orders list** — shipping type column / filter (GLS, Foxpost, standard) and “missing label” style badges when manager flags are on.
 - **Order detail** — “Csomagpont szállítás” panel per provider when the order used that locker and the matching **manager** flag is enabled.
+- **Bulk labels** (when a manager flag is on) — select orders on the list, then **Címkék generálása (kijelöltek)**. Only orders **without** an existing label are processed; GLS and Foxpost are detected per order.
+- **Excel export** — includes `GLS címke link` / `Foxpost címke link` columns (absolute URLs). Opening a link requires an **admin session** in the browser.
+- **Label ZIP** — **Címkék ZIP (szűrés)** uses the current list filters; **Címkék ZIP (kijelöltek)** downloads PDFs for selected orders that already have stored label data.
 
 If managers are off, parcel point data is still shown but label buttons are hidden.
 

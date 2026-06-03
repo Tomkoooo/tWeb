@@ -20,10 +20,11 @@ import { FallbackImage } from "@/components/common/FallbackImage"
 import { MediaLightbox, useMediaLightbox, type MediaLightboxItem } from "@/components/common/MediaLightbox"
 import { MediaZoomButton } from "@/components/common/MediaZoomButton"
 import { mediaImageSrc } from "@/lib/images"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
+import { ProductCard as DefaultProductCard } from "@/components/shop/ProductCard"
+import { loadTemplateModuleForCommerce } from "@/templates/template-commerce-loaders"
 import { resolveCommerceProductCard } from "@/templates/resolve-commerce-slots"
 import { homepageFeaturedToProductDetail } from "@/features/homepage-cms/render/homepage-product-card-shape"
-import type { HomePageDeps, HomePageFeaturedProduct } from "@/templates/types"
+import type { HomePageDeps, HomePageFeaturedProduct, ProductCardSlotProps } from "@/templates/types"
 
 interface ShopProps {
   /** Active template — resolves `commerceSlots.ProductCard` client-side (homepage `deps` includes this). */
@@ -66,10 +67,21 @@ export function Shop({
   )
   const categoryLightbox = useMediaLightbox({ images: categoryLightboxItems })
 
-  const ProductCardCmp = React.useMemo(
-    () => resolveCommerceProductCard(getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!),
-    [templateId]
+  const [ProductCardCmp, setProductCardCmp] = React.useState<React.ComponentType<ProductCardSlotProps>>(
+    () => DefaultProductCard as React.ComponentType<ProductCardSlotProps>
   )
+
+  React.useEffect(() => {
+    let cancelled = false
+    void loadTemplateModuleForCommerce(templateId).then((mod) => {
+      if (!cancelled) {
+        setProductCardCmp(() => resolveCommerceProductCard(mod))
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [templateId])
 
   return (
     <section id="shop" className="py-32 bg-background-dark px-4 overflow-hidden">

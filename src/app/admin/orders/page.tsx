@@ -3,6 +3,10 @@ import { AdminOrdersTable } from "@/components/admin/AdminOrdersTable"
 import { AdminOrdersExportLink } from "@/components/admin/AdminOrdersExportLink"
 import { Button } from "@/components/ui/button"
 import type { AdminOrderFilters } from "@/lib/admin-orders-query"
+import {
+  isFoxpostParcelManagerEnabled,
+  isGlsParcelManagerEnabled,
+} from "@/lib/parcel-feature-flags"
 
 type AdminOrdersSearchParams = Promise<AdminOrderFilters>
 
@@ -28,7 +32,12 @@ function buildExportQuery(filters: AdminOrderFilters) {
 
 export default async function AdminOrders({ searchParams }: { searchParams: AdminOrdersSearchParams }) {
   const filters = await searchParams
-  const [orders, products] = await Promise.all([getOrders(filters), getOrderFilterProducts()])
+  const [orders, products, glsManagerEnabled, foxpostManagerEnabled] = await Promise.all([
+    getOrders(filters),
+    getOrderFilterProducts(),
+    isGlsParcelManagerEnabled(),
+    isFoxpostParcelManagerEnabled(),
+  ])
   const exportQuery = buildExportQuery(filters)
 
   return (
@@ -40,7 +49,10 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
           </h1>
           <p className="text-white/40 font-medium italic">Kísérje figyelemmel a beérkező rendeléseket és frissítse az állapotukat.</p>
         </div>
-        <AdminOrdersExportLink exportQuery={exportQuery} />
+        <AdminOrdersExportLink
+          exportQuery={exportQuery}
+          labelsZipEnabled={glsManagerEnabled || foxpostManagerEnabled}
+        />
       </div>
 
       <form className="grid grid-cols-1 items-end gap-3 bg-white/5 border border-white/10 p-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
@@ -117,7 +129,12 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
         </div>
       </form>
 
-      <AdminOrdersTable orders={orders} />
+      <AdminOrdersTable
+        orders={orders}
+        glsManagerEnabled={glsManagerEnabled}
+        foxpostManagerEnabled={foxpostManagerEnabled}
+        exportQuery={exportQuery}
+      />
     </div>
   )
 }

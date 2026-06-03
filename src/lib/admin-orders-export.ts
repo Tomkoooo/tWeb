@@ -2,6 +2,7 @@ import { format } from "date-fns"
 import { formatOrderNumber } from "@/lib/order-number"
 import { getOrderShippingTypeLabel } from "@/lib/parcel-locker"
 import type { AdminOrderFilters } from "@/lib/admin-orders-query"
+import { extractIssueNumberFromLine } from "@/lib/unique-numbered-variants"
 
 type PopulatedMethod = { name?: string } | string | null | undefined
 
@@ -15,8 +16,20 @@ type ExportOrder = {
   shippingAddress?: Record<string, unknown>
   glsParcelPoint?: Record<string, unknown> | null
   foxpostParcelPoint?: Record<string, unknown> | null
-  glsLabel?: { parcelNumber?: string; parcelNumberWithCheckdigit?: string; pin?: string } | null
-  foxpostShipment?: { clFoxId?: string; refCode?: string; trackingStatus?: string } | null
+  glsLabel?: {
+    parcelNumber?: string
+    parcelNumberWithCheckdigit?: string
+    pin?: string
+    labelUrl?: string
+    generatedAt?: Date | string
+  } | null
+  foxpostShipment?: {
+    clFoxId?: string
+    refCode?: string
+    trackingStatus?: string
+    labelUrl?: string
+    generatedAt?: Date | string
+  } | null
   shippingMethod?: PopulatedMethod
   paymentMethod?: PopulatedMethod
   couponCodes?: string[]
@@ -42,6 +55,17 @@ type ExportOrder = {
     vatPercent?: number
   }>
 }
+
+export function buildAdminLabelAbsoluteUrl(path: string): string {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`
+  return `${base}${normalizedPath}`
+}
+
+const GLS_LABEL_LINK_COLUMN = "GLS címke link"
+const FOXPOST_LABEL_LINK_COLUMN = "Foxpost címke link"
+const GLS_LABEL_GENERATED_COLUMN = "GLS címke generálva"
+const FOXPOST_LABEL_GENERATED_COLUMN = "Foxpost címke generálva"
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Függőben",
@@ -100,6 +124,10 @@ function addItemsAsColumns(
     row[`Tétel ${n} termék ID`] = item?.product != null ? String(item.product) : ""
     row[`Tétel ${n} név`] = item?.name || ""
     row[`Tétel ${n} variáns ID`] = item?.variantId || ""
+    row[`Tétel ${n} sorszám`] = extractIssueNumberFromLine(
+      item?.selectedAttributes,
+      item?.variantLabel
+    )
     row[`Tétel ${n} variáns`] = item?.variantLabel || ""
     row[`Tétel ${n} attribútumok`] = stringifyAttributes(item?.selectedAttributes)
     row[`Tétel ${n} mennyiség`] = item?.quantity != null ? Number(item.quantity || 0) : ""
@@ -158,9 +186,17 @@ function baseOrderRow(order: ExportOrder) {
     "Foxpost cím": String(foxpost.address || ""),
     "GLS csomagszám": order.glsLabel?.parcelNumber || order.glsLabel?.parcelNumberWithCheckdigit || "",
     "GLS PIN": order.glsLabel?.pin || "",
+    [GLS_LABEL_LINK_COLUMN]: order.glsLabel?.labelUrl
+      ? buildAdminLabelAbsoluteUrl(order.glsLabel.labelUrl)
+      : "",
+    [GLS_LABEL_GENERATED_COLUMN]: formatDateTime(order.glsLabel?.generatedAt),
     "Foxpost azonosító": order.foxpostShipment?.clFoxId || "",
     "Foxpost ref": order.foxpostShipment?.refCode || "",
     "Foxpost státusz": order.foxpostShipment?.trackingStatus || "",
+    [FOXPOST_LABEL_LINK_COLUMN]: order.foxpostShipment?.labelUrl
+      ? buildAdminLabelAbsoluteUrl(order.foxpostShipment.labelUrl)
+      : "",
+    [FOXPOST_LABEL_GENERATED_COLUMN]: formatDateTime(order.foxpostShipment?.generatedAt),
     Kuponok: (order.couponCodes || []).join(", "),
     Részösszeg: order.subtotal ?? "",
     "Szállítási díj": order.shippingFee ?? "",
@@ -188,6 +224,34 @@ export function buildAdminOrdersExportRows(orders: ExportOrder[]) {
   return rows
 }
 
+function applyLabelHyperlinksToWorksheet(
+  XLSX: typeof import("xlsx"),
+  worksheet: Record<string, { v?: string | number; l?: { Target: string; Tooltip: string } }>,
+  rows: Record<string, string | number>[]
+) {
+  const linkColumns = [GLS_LABEL_LINK_COLUMN, FOXPOST_LABEL_LINK_COLUMN]
+  if (rows.length === 0) return
+
+  const headers = Object.keys(rows[0])
+  const colIndexes = linkColumns
+    .map((column) => ({ column, index: headers.indexOf(column) }))
+    .filter((entry) => entry.index >= 0)
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex]
+    for (const { column, index } of colIndexes) {
+      const url = String(row[column] || "").trim()
+      if (!url.startsWith("http")) continue
+
+      const cellAddress = XLSX.utils.encode_cell({ r: rowIndex + 1, c: index })
+      const cell = worksheet[cellAddress]
+      if (!cell) continue
+
+      cell.l = { Target: url, Tooltip: "Címke megnyitása" }
+    }
+  }
+}
+
 export async function buildAdminOrdersExcelBuffer(
   orders: ExportOrder[],
   filters: AdminOrderFilters = {}
@@ -195,6 +259,7 @@ export async function buildAdminOrdersExcelBuffer(
   const XLSX = await import("xlsx")
   const rows = buildAdminOrdersExportRows(orders)
   const worksheet = XLSX.utils.json_to_sheet(rows)
+  applyLabelHyperlinksToWorksheet(XLSX, worksheet, rows)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, "Rendelések")
 

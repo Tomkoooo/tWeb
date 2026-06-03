@@ -19,6 +19,9 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:concurrency": "vitest run --config vitest.concurrency.config.ts",
+    "test:concurrency:stripe": "vitest run --config vitest.concurrency.config.ts tests/concurrency/stripe-checkout-race.test.ts",
+    "test:predeploy": "npm run test:integration && npm run test:concurrency",
+    "test:numbered": "vitest run tests/integration/numbered-variant-inventory.integration.test.ts tests/integration/cart-variant-persistence.integration.test.ts && vitest run --config vitest.concurrency.config.ts tests/concurrency/numbered-variant-race.test.ts",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
@@ -41,6 +44,7 @@
     "dotenv": "^17.3.1",
     "embla-carousel-react": "^8.6.0",
     "handlebars": "^4.7.8",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.574.0",
     "mongodb": "^6.12.0",
     "mongoose": "^9.2.1",

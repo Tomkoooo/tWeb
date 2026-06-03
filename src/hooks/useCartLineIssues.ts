@@ -2,6 +2,10 @@
 
 import * as React from "react"
 import type { CartItem } from "@/store/useCartStore"
+import {
+  cartItemsNeedReconcile,
+  reconcileCartItemsWithIssues,
+} from "@/lib/cart-reconcile"
 
 function cartItemsSignature(items: CartItem[]): string {
   return items
@@ -9,9 +13,17 @@ function cartItemsSignature(items: CartItem[]): string {
     .join("|")
 }
 
-export function useCartLineIssues(items: CartItem[]) {
+type Options = {
+  reconcile?: boolean
+  onReconciled?: (items: CartItem[]) => void
+}
+
+export function useCartLineIssues(items: CartItem[], options: Options = {}) {
+  const { reconcile = false, onReconciled } = options
   const [issues, setIssues] = React.useState<Record<string, string>>({})
   const signature = cartItemsSignature(items)
+  const onReconciledRef = React.useRef(onReconciled)
+  onReconciledRef.current = onReconciled
 
   React.useEffect(() => {
     if (items.length === 0) {
@@ -38,7 +50,15 @@ export function useCartLineIssues(items: CartItem[]) {
         })
         if (!response.ok || cancelled) return
         const data = (await response.json()) as { issues?: Record<string, string> }
-        if (!cancelled) setIssues(data.issues ?? {})
+        const nextIssues = data.issues ?? {}
+        if (!cancelled) setIssues(nextIssues)
+
+        if (reconcile && !cancelled && onReconciledRef.current) {
+          const reconciled = reconcileCartItemsWithIssues(items, nextIssues)
+          if (cartItemsNeedReconcile(items, reconciled)) {
+            onReconciledRef.current(reconciled)
+          }
+        }
       } catch {
         if (!cancelled) setIssues({})
       }
@@ -49,7 +69,7 @@ export function useCartLineIssues(items: CartItem[]) {
       window.clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- signature encodes line ids/qty
-  }, [signature])
+  }, [signature, reconcile])
 
   const hasIssues = Object.keys(issues).length > 0
   return { issues, hasIssues }

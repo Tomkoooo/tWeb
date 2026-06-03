@@ -8,6 +8,7 @@ export default defineConfig({
     setupFiles: ["tests/setup/test-env.ts"],
     include: ["tests/**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/dist/**", "tests/concurrency/**"],
+    env: { VITEST_INTEGRATION: "1" },
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],

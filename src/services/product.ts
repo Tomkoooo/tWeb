@@ -9,6 +9,7 @@ import { MediaService } from "./media";
 import Review from "@/models/Review";
 import mongoose from "mongoose";
 import { resolveFeaturedProductIds } from "@/lib/featured-products";
+import { toStorefrontProduct } from "@/lib/storefront-product";
 
 export interface ProductFilters {
   search?: string;
@@ -42,12 +43,14 @@ function normalizeProductForListing(product: Record<string, unknown> | object) {
   const totalVariantStock = needsVariantSelection
     ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
     : Number(row.stock || 0) || 0;
-  return {
+  return toStorefrontProduct({
     ...row,
+    variants,
+    variantOptions: row.variantOptions,
     __displayNetPrice: minVariantNetPrice,
     __displayDiscount: maxVariantDiscount,
     __displayStock: totalVariantStock,
-  } as Record<string, unknown> & {
+  }) as Record<string, unknown> & {
     __displayNetPrice: number
     __displayDiscount: number
     __displayStock: number
@@ -168,10 +171,10 @@ const getCachedProductBySlug = cache(async (slug: string) =>
         .sort({ createdAt: -1 })
         .lean();
 
-      return {
+      return toStorefrontProduct({
         ...product,
         reviews,
-      };
+      } as Record<string, unknown>);
     },
     ["storefront-product-by-slug", slug],
     { revalidate: 60, tags: [STOREFRONT_CACHE_TAGS.products] }

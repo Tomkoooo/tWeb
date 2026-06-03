@@ -4,7 +4,7 @@ type SeoShape = {
   keywords?: string[];
 };
 
-type VariantShape = {
+export type VariantShape = {
   id: string;
   attributes?: Record<string, string>;
   nameOverride?: string;
@@ -35,7 +35,7 @@ type VariantOptionShape = {
   values: string[];
 };
 
-type ProductShape = {
+export type ProductShape = {
   name: string;
   description?: string;
   images?: string[];
@@ -49,6 +49,14 @@ type ProductShape = {
   variantOptions?: VariantOptionShape[];
   variants?: VariantShape[];
   requireVariantSelection?: boolean;
+  uniqueNumberedVariants?: {
+    enabled?: boolean;
+    attributeName?: string;
+    maxQuantityPerLine?: number;
+    descriptionHtml?: string;
+    baseVariantId?: string;
+    numberRanges?: Array<{ from: number; to: number; exclude?: number[] }>;
+  } | null;
 };
 
 import {
@@ -57,6 +65,7 @@ import {
   customerUnitGross,
   priceBreakdownFromGross,
 } from "@/lib/pricing";
+import { resolveVariantDescription } from "@/lib/unique-numbered-variants";
 
 export function hasVariants(product: ProductShape): boolean {
   return Array.isArray(product.variants) && product.variants.length > 0;
@@ -65,6 +74,10 @@ export function hasVariants(product: ProductShape): boolean {
 export function getActiveVariants(product: ProductShape): VariantShape[] {
   if (!hasVariants(product)) return [];
   return (product.variants || []).filter((variant) => variant.isActive !== false);
+}
+
+export function hasPurchasableActiveVariants(product: ProductShape): boolean {
+  return getActiveVariants(product).some((variant) => (Number(variant.stock) || 0) > 0);
 }
 
 export function getVariantById(product: ProductShape, variantId?: string | null): VariantShape | null {
@@ -89,14 +102,24 @@ export function getVariantLabel(variant: VariantShape): string {
 }
 
 export function getVariantOptionGroups(product: ProductShape): VariantOptionShape[] {
+  const activeVariants = getActiveVariants(product);
   const configured = Array.isArray(product.variantOptions) ? product.variantOptions : [];
   const configuredGroups = configured
-    .map((option) => ({
-      name: String(option.name || "").trim(),
-      values: Array.isArray(option.values)
-        ? option.values.map((value) => String(value || "").trim()).filter(Boolean)
-        : [],
-    }))
+    .map((option) => {
+      const name = String(option.name || "").trim();
+      const values = Array.isArray(option.values)
+        ? option.values
+            .map((value) => String(value || "").trim())
+            .filter(
+              (value) =>
+                Boolean(value) &&
+                activeVariants.some(
+                  (variant) => String(variant.attributes?.[name] || "").trim() === value
+                )
+            )
+        : [];
+      return { name, values };
+    })
     .filter((option) => option.name && option.values.length > 0);
   if (configuredGroups.length > 0) return configuredGroups;
 
@@ -267,7 +290,7 @@ export function resolveProductView(product: ProductShape, variantId?: string | n
   const discount = limitedLine ? 0 : selectedVariant?.discount ?? product.discount ?? 0;
   const stock = selectedVariant?.stock ?? product.stock ?? 0;
   const name = selectedVariant?.nameOverride || product.name;
-  const description = selectedVariant?.descriptionOverride || product.description || "";
+  const description = resolveVariantDescription(product, selectedVariant);
   const images = selectedVariant?.images?.length ? selectedVariant.images : product.images || [];
   const variantKeywords = selectedVariant?.seo?.keywords || [];
   const productKeywords = product.seo?.keywords || [];

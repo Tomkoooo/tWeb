@@ -19,13 +19,22 @@ describe("getCartLineOrderabilityMessage", () => {
     ).toBeNull()
   })
 
-  it("flags inactive products", () => {
+  it("flags inactive products (preview / test mode)", () => {
     expect(
       getCartLineOrderabilityMessage(
         { productId: "p1", quantity: 1 },
         { ...baseProduct, isActive: false }
       )
-    ).toContain("nem rendelhető")
+    ).toContain("nem vásárolható")
+  })
+
+  it("flags hidden products", () => {
+    expect(
+      getCartLineOrderabilityMessage(
+        { productId: "p1", quantity: 1 },
+        { ...baseProduct, isVisible: false }
+      )
+    ).toContain("nem elérhető")
   })
 
   it("flags missing products", () => {

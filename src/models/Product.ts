@@ -46,6 +46,16 @@ export interface IProductVariant {
   };
 }
 
+export interface IUniqueNumberedVariants {
+  enabled: boolean;
+  attributeName: string;
+  maxQuantityPerLine: number;
+  /** HTML shown on PDP when a numbered variant is selected; supports {{number}}. Falls back to product description when empty. */
+  descriptionHtml?: string;
+  baseVariantId?: string;
+  numberRanges?: Array<{ from: number; to: number; exclude?: number[] }>;
+}
+
 export interface IProduct extends Document {
   /** VAT % included in gross price calculations (Hungary default 27). */
   vatPercent: number;
@@ -56,6 +66,8 @@ export interface IProduct extends Document {
   variantOptions: IVariantOption[];
   variants: IProductVariant[];
   requireVariantSelection: boolean;
+  /** One-of-a-kind numbered variants (e.g. comic issue numbers), stock 1 per variant. */
+  uniqueNumberedVariants?: IUniqueNumberedVariants;
   stock: number;
   netPrice: number;
   grossPrice?: number;
@@ -132,6 +144,20 @@ const ProductSchema = new Schema<IProduct>(
       },
     ],
     requireVariantSelection: { type: Boolean, default: false },
+    uniqueNumberedVariants: {
+      enabled: { type: Boolean, default: false },
+      attributeName: { type: String, default: "Szám" },
+      maxQuantityPerLine: { type: Number, default: 1, min: 1 },
+      descriptionHtml: { type: String },
+      baseVariantId: { type: String, default: "base" },
+      numberRanges: [
+        {
+          from: { type: Number, required: true },
+          to: { type: Number, required: true },
+          exclude: [{ type: Number }],
+        },
+      ],
+    },
     stock: { type: Number, required: true, default: 0 },
     netPrice: { type: Number, required: true },
     grossPrice: { type: Number },

@@ -22,18 +22,24 @@ export async function generateMetadata({ params, searchParams }: ProductPageProp
   if (!product) {
     return { title: withStorefrontPageTitle("Termék nem található", shopName) }
   }
+  const storefrontProduct = product as {
+    name: string
+    slug: string
+    description: string
+    images?: string[]
+  }
   const view = resolveProductView(product as never, selectedVariantId)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://krauszbarkacs.hu"
-  const canonicalUrl = `${appUrl}/products/${product.slug}`
-  const openGraphImage = view.images?.[0] || product.images?.[0]
+  const canonicalUrl = `${appUrl}/products/${storefrontProduct.slug}`
+  const openGraphImage = view.images?.[0] || storefrontProduct.images?.[0]
 
   return {
-    title: withStorefrontPageTitle(view.seo.title || product.name, shopName),
-    description: view.seo.description || product.description.substring(0, 160),
+    title: withStorefrontPageTitle(view.seo.title || storefrontProduct.name, shopName),
+    description: view.seo.description || storefrontProduct.description.substring(0, 160),
     keywords: view.seo.keywords?.join(", "),
     openGraph: {
-      title: view.name || product.name,
-      description: view.seo.description || product.description.substring(0, 160),
+      title: view.name || storefrontProduct.name,
+      description: view.seo.description || storefrontProduct.description.substring(0, 160),
       images: [mediaImageSrc(openGraphImage)],
     },
     alternates: {

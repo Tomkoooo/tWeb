@@ -25,6 +25,8 @@ import {
   quoteCheckoutLineForQuantity,
 } from "@/lib/limited-price-checkout";
 import { ShopTradingSettingsService } from "@/services/shop-trading-settings";
+import { getCartLineOrderabilityMessage } from "@/lib/cart-line-orderability";
+import { isUniqueNumberedProduct, maxQuantityForCartLine } from "@/lib/unique-numbered-variants";
 import {
   resolveCountryInput,
   formatAllowedCountriesList,
@@ -456,6 +458,32 @@ export async function validateAndNormalizeCheckoutInput(
     if (!product) throw new Error("A kosár egyik terméke már nem található");
     if (!product.isActive || !product.isVisible) {
       throw new Error(`${product.name} jelenleg nem rendelhető`);
+    }
+
+    const orderability = getCartLineOrderabilityMessage(
+      {
+        productId: item.product,
+        variantId: item.variantId,
+        quantity,
+        name: item.name,
+      },
+      product as Parameters<typeof getCartLineOrderabilityMessage>[1]
+    );
+    if (orderability) throw new Error(orderability);
+
+    if (isUniqueNumberedProduct(product)) {
+      const cap = maxQuantityForCartLine(
+        product,
+        item.variantId
+          ? (product as { variants?: { id: string; stock?: number }[] }).variants?.find(
+              (v) => v.id === item.variantId
+            )?.stock
+          : product.stock,
+        item.variantId
+      );
+      if (quantity > cap) {
+        throw new Error(`Ehhez a sorszámhoz legfeljebb ${cap} db rendelhető.`);
+      }
     }
 
     const priceInfo = resolveItemPrice(product, item.variantId);

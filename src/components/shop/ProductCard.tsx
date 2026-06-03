@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
-import { QuickVariantSelector } from "@/components/shop/QuickVariantSelector"
+import { ProductCardVariantArea } from "@/components/shop/ProductCardVariantArea"
+import { initialCardVariantId } from "@/lib/product-card-variants"
+import {
+  isUniqueNumberedProduct,
+  productRequiresVariantPurchase,
+  type UniqueNumberedVariantsLike,
+} from "@/lib/unique-numbered-variants"
+import { hasPurchasableActiveVariants } from "@/lib/product-variants"
 import {
   buildProductListingLines,
   buildRegularProductListingLines,
@@ -23,6 +30,7 @@ import {
 import { clampVatPercent, customerGrossFromNetWithDiscount, formatHuf, listingHasPriceRange, listingPriceSummary } from "@/lib/pricing"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { mediaImageSrc } from "@/lib/images"
+import { isStorefrontProductOrderable } from "@/lib/storefront-catalog"
 
 import { useCartStore } from "@/store/useCartStore"
 import { trackProductSelectFromListing } from "@/lib/analytics/product-events"
@@ -73,6 +81,8 @@ type ProductCardProduct = {
     soldCount?: number
     claimedCount?: number
   }
+  isActive?: boolean
+  uniqueNumberedVariants?: UniqueNumberedVariantsLike | null
 }
 
 interface ProductCardProps {
@@ -89,8 +99,8 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
   const variantProduct = hasVariants(product)
   const requiresVariantSelection = Boolean(product.requireVariantSelection) && variantProduct
   const activeVariants = getActiveVariants(product)
-  const [selectedVariantId, setSelectedVariantId] = React.useState(
-    () => activeVariants.find((variant) => variant.isDefault)?.id || activeVariants[0]?.id || ""
+  const [selectedVariantId, setSelectedVariantId] = React.useState(() =>
+    initialCardVariantId(product)
   )
   const selectedVariant = getVariantById(product, selectedVariantId)
   const limitedOffer = variantProduct
@@ -110,11 +120,19 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
     compareGross,
   } = listingPriceSummary(listingLines, product.vatPercent)
   const ratingValue = typeof product.rating === "number" ? product.rating : 0
+  const productOrderable = isStorefrontProductOrderable(product)
+  const mustPickVariant = productRequiresVariantPurchase(product)
+  const hasPurchasableVariants = hasPurchasableActiveVariants(product)
+  const canOrder =
+    shopEnabled !== false &&
+    productOrderable &&
+    (!mustPickVariant || hasPurchasableVariants)
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
-    if (shopEnabled === false) return
+    if (!canOrder) return
+    if (selectedVariantId && !selectedVariant) return
     if (requiresVariantSelection && !selectedVariant) {
       router.push(`/products/${product.slug}`)
       return
@@ -198,7 +216,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
           </Badge>
           {requiresVariantSelection ? (
             <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 rounded-none py-1 px-2 font-black text-[9px] tracking-[0.2em] uppercase">
-              Variánsos
+              {isUniqueNumberedProduct(product) ? "Sorszámos" : "Variánsos"}
             </Badge>
           ) : null}
           {maxDiscount > 0 && (
@@ -258,7 +276,7 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
 
           <div className="flex flex-col gap-2">
             {variantProduct ? (
-              <QuickVariantSelector
+              <ProductCardVariantArea
                 product={product}
                 selectedVariantId={selectedVariantId}
                 onVariantChange={setSelectedVariantId}
@@ -267,11 +285,21 @@ export function ProductCard({ product: productInput, shopEnabled = true }: Produ
             <Button 
               type="button"
               onClick={handleAddToCart}
-              disabled={shopEnabled === false}
+              disabled={!canOrder}
               className="w-full bg-primary border border-primary-foreground/35 text-white hover:bg-primary/90 hover:border-primary-foreground/90 font-black h-12 btn-krausz transition-all flex items-center justify-center gap-3 text-xs tracking-widest uppercase"
             >
               {isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-              {isAdded ? "Kosárban" : requiresVariantSelection && !selectedVariant ? "Variáns választása" : "Kosárba"}
+              {isAdded
+                ? "Kosárban"
+                : !canOrder && shopEnabled !== false
+                  ? mustPickVariant && productOrderable && !hasPurchasableVariants
+                    ? "Nincs elérhető variáns"
+                    : "Nem rendelhető"
+                  : requiresVariantSelection && !selectedVariant
+                    ? isUniqueNumberedProduct(product)
+                      ? "Sorszám választása"
+                      : "Variáns választása"
+                    : "Kosárba"}
             </Button>
             <Link
               href={`/products/${product.slug}`}

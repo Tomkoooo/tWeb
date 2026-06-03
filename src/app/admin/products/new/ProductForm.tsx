@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload"
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
+import { normalizeUniqueNumberedVariants } from "@/lib/unique-numbered-variants"
 import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields"
 import {
   createProduct,
@@ -68,6 +69,14 @@ type ProductFormInitialData = {
   variantOptions?: ProductVariantOption[]
   variants?: AdminVariantInput[]
   requireVariantSelection?: boolean
+  uniqueNumberedVariants?: {
+    enabled?: boolean
+    attributeName?: string
+    maxQuantityPerLine?: number
+    descriptionHtml?: string
+    baseVariantId?: string
+    numberRanges?: Array<{ from: number; to: number; exclude?: number[] }>
+  } | null
   seo?: {
     title?: string
     description?: string
@@ -455,6 +464,9 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             vatPercent={vatPercent}
             onVatChange={setVatPercent}
             initialRequireVariantSelection={initialData?.requireVariantSelection || false}
+            initialUniqueNumberedVariants={
+              normalizeUniqueNumberedVariants(initialData?.uniqueNumberedVariants) ?? null
+            }
             onModeChange={({ enabled, requireVariantSelection: req }) => {
               setVariantsEnabled(enabled)
               setRequireVariantSelection(req)
@@ -558,10 +570,35 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             <div className="space-y-8">
               <h3 className="text-lg font-heading font-black text-white uppercase italic tracking-widest border-b border-white/5 pb-4">STÁTUSZ</h3>
               <div className="space-y-4">
+                <div className="p-5 bg-amber-500/5 border border-amber-500/20 space-y-3">
+                  <p className="text-[10px] font-black text-amber-200 uppercase tracking-[0.2em]">Teszt / előnézet</p>
+                  <p className="text-[9px] text-neutral-400 leading-relaxed">
+                    Látható + inaktív: a termék megjelenik a boltban és kipróbálható, de senki nem rendelheti (kosár és fizetés tiltva).
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-none border-amber-500/30 text-amber-100 hover:bg-amber-500/10 text-[10px] font-black uppercase tracking-widest"
+                    onClick={() => {
+                      setIsVisible(true)
+                      setIsActive(false)
+                    }}
+                  >
+                    Előnézet mód bekapcsolása
+                  </Button>
+                  {isVisible && !isActive ? (
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">
+                      Előnézet mód aktív — nem rendelhető
+                    </p>
+                  ) : null}
+                </div>
+
                 <div className="flex items-center justify-between p-5 bg-black/20 border border-white/5">
                   <div>
                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">AKTÍV</p>
-                    <p className="text-[8px] text-neutral-600 font-black uppercase tracking-widest mt-1">VÁSÁROLHATÓ-E</p>
+                    <p className="text-[8px] text-neutral-600 font-black uppercase tracking-widest mt-1">
+                      RENDELHETŐ-E (ki = csak böngészés)
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -584,7 +621,9 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
                 <div className="flex items-center justify-between p-5 bg-black/20 border border-white/5">
                   <div>
                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">LÁTHATÓ</p>
-                    <p className="text-[8px] text-neutral-600 font-black uppercase tracking-widest mt-1">MEGJELENIK-E</p>
+                    <p className="text-[8px] text-neutral-600 font-black uppercase tracking-widest mt-1">
+                      BOLT ÉS TERMÉKOLDAL (ki = rejtett)
+                    </p>
                   </div>
                   <button
                     type="button"

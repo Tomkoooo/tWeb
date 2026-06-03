@@ -9,6 +9,9 @@ import {
   deriveProductLevelFromVariants,
   resolveVariantNetPrice,
 } from "@/lib/admin-product-variants";
+import { mergeNumberedVariantsIntoExisting, type GenerateNumberedVariantsInput } from "@/lib/generate-numbered-variants";
+import { ELADHATO_NUMBER_RANGES } from "@/lib/numbered-variant-ranges";
+import { normalizeUniqueNumberedVariants } from "@/lib/unique-numbered-variants";
 
 type VariantOptionInput = { name: string; values: string[] };
 type VariantInput = {
@@ -268,6 +271,18 @@ async function persistProduct(
     requireVariantSelection
   );
 
+  const uniqueNumberedRaw = parseJsonField<{
+    enabled?: boolean;
+    attributeName?: string;
+    maxQuantityPerLine?: number;
+    descriptionHtml?: string;
+    numberRanges?: Array<{ from: number; to: number; exclude?: number[] }>;
+    baseVariantId?: string;
+  }>(formData.get("uniqueNumberedVariantsJson"), { enabled: false });
+  const uniqueNumberedVariants = variantsEnabled
+    ? normalizeUniqueNumberedVariants(uniqueNumberedRaw)
+    : undefined;
+
   const payload = {
     name,
     description,
@@ -285,6 +300,7 @@ async function persistProduct(
     variantOptions,
     variants,
     requireVariantSelection: variantsEnabled ? requireVariantSelection : false,
+    uniqueNumberedVariants,
     isActive,
     isVisible,
     featuredListIndex,
@@ -359,6 +375,46 @@ export async function restoreProduct(id: string) {
   }
   revalidatePath("/admin/products");
   return { success: true };
+}
+
+export async function generateNumberedVariants(
+  productId: string,
+  input: GenerateNumberedVariantsInput & { enableUniqueMode?: boolean }
+) {
+  await requireAdmin();
+
+  const product = await ProductService.getById(productId);
+  if (!product) {
+    throw new Error("A termék nem található.");
+  }
+
+  const { variants, variantOptions, numbers } = mergeNumberedVariantsIntoExisting(
+    Array.isArray(product.variants) ? product.variants : [],
+    input
+  );
+
+  const uniqueNumberedVariants = normalizeUniqueNumberedVariants({
+    enabled: input.enableUniqueMode !== false,
+    attributeName: input.attributeName,
+    maxQuantityPerLine: 1,
+    descriptionHtml:
+      input.descriptionHtml?.trim() ||
+      (product.uniqueNumberedVariants as { descriptionHtml?: string } | undefined)?.descriptionHtml,
+    numberRanges: input.ranges,
+    baseVariantId: (product.uniqueNumberedVariants as { baseVariantId?: string } | undefined)
+      ?.baseVariantId,
+  });
+
+  await ProductService.update(productId, {
+    variants,
+    variantOptions,
+    requireVariantSelection: true,
+    uniqueNumberedVariants,
+  });
+
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  return { success: true, count: numbers.length };
 }
 
 export async function resetProductLimitedPriceCounters(id: string, variantId?: string) {

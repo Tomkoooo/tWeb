@@ -280,14 +280,15 @@ Optional invoicing settings:
 # Development
 npm run dev
 
-# Concurrency / inventory race tests (Mongo memory server; not run in default `npm test` or the Docker CI unit job)
+# Local only (before deploy / after inventory changes): integration + in-memory Mongo race tests.
+# Not run in CI — no database, dev server, or Stripe CLI in the pipeline.
+npm run test:predeploy
+
+# Race tests only (mongodb-memory-server bundled; no external Mongo required)
 npm run test:concurrency
 
-# Optional: parallel Stripe Checkout Session race (live Stripe test mode). `vitest.concurrency.config.ts` loads
-# `.env` from the repo root (Vitest does not do this by default). Set `RUN_STRIPE_RACE_TESTS` to `1`, `true`,
-# or `yes`, and `STRIPE_SECRET_KEY` in `.env` (or export them in the shell). Stripe CLI is only needed if you
-# assert webhook-driven behavior; see tests/concurrency/stripe-checkout-race.test.ts.
-npm run test:concurrency
+# Optional local Stripe checkout race (needs RUN_STRIPE_RACE_TESTS=1 and STRIPE_SECRET_KEY in .env)
+npm run test:concurrency:stripe
 
 # Production build
 npm run build

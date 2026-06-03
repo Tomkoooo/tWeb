@@ -13,3 +13,8 @@ export function isStorefrontCatalogProduct(product: {
 }): boolean {
   return product.isVisible !== false
 }
+
+/** Whether customers may add this product to cart / checkout (preview listings may still be visible). */
+export function isStorefrontProductOrderable(product: { isActive?: boolean }): boolean {
+  return product.isActive !== false
+}

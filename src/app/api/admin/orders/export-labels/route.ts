@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
+import dbConnect from "@/lib/db"
+import Order from "@/models/Order"
+import { format } from "date-fns"
+import mongoose from "mongoose"
+import {
+  buildAdminOrdersMongoQuery,
+  filterAdminOrders,
+  type AdminOrderFilters,
+} from "@/lib/admin-orders-query"
+import { buildAdminOrderLabelsZipBuffer } from "@/lib/admin-orders-labels-zip"
+
+function parseFilters(searchParams: URLSearchParams): AdminOrderFilters {
+  return {
+    q: searchParams.get("q") || undefined,
+    status: searchParams.get("status") || undefined,
+    invoiceStatus: searchParams.get("invoiceStatus") || undefined,
+    shippingType: searchParams.get("shippingType") || undefined,
+    productId: searchParams.get("productId") || undefined,
+    dateFrom: searchParams.get("dateFrom") || undefined,
+    dateTo: searchParams.get("dateTo") || undefined,
+  }
+}
+
+function parseOrderIds(searchParams: URLSearchParams): string[] {
+  const raw = searchParams.get("ids")
+  if (!raw) return []
+
+  return Array.from(
+    new Set(
+      raw
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    )
+  )
+}
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const filters = parseFilters(searchParams)
+    const selectedIds = parseOrderIds(searchParams)
+
+    await dbConnect()
+
+    let orders: Array<{
+      _id: unknown
+      glsLabel?: { labelDataBase64?: string } | null
+      foxpostShipment?: { labelDataBase64?: string } | null
+    }>
+
+    if (selectedIds.length > 0) {
+      orders = await Order.find({ _id: { $in: selectedIds } })
+        .select("_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64")
+        .sort({ createdAt: -1 })
+        .lean()
+    } else {
+      const query = buildAdminOrdersMongoQuery(filters)
+      const rawOrders = await Order.find(query)
+        .select("_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64 createdAt")
+        .sort({ createdAt: -1 })
+        .lean()
+
+      orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
+    }
+
+    const buffer = await buildAdminOrderLabelsZipBuffer(orders)
+    if (!buffer) {
+      return NextResponse.json(
+        { error: "Nincs letölthető címke a kijelölt rendelésekhez." },
+        { status: 404 }
+      )
+    }
+
+    const filename = `cimkek-${format(new Date(), "yyyy-MM-dd-HHmm")}.zip`
+
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": String(buffer.byteLength),
+        "Cache-Control": "no-store",
+      },
+    })
+  } catch (error) {
+    console.error("[admin/orders/export-labels]", error)
+    return NextResponse.json({ error: "Label export failed" }, { status: 500 })
+  }
+}

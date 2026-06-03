@@ -1,3 +1,6 @@
+import { maxQuantityForCartLine, productRequiresVariantPurchase } from "@/lib/unique-numbered-variants"
+import { isStorefrontProductOrderable } from "@/lib/storefront-catalog"
+
 export type CartLineForOrderability = {
   productId: string
   variantId?: string
@@ -11,6 +14,7 @@ export type ProductForCartOrderability = {
   isVisible?: boolean
   stock?: number
   requireVariantSelection?: boolean
+  uniqueNumberedVariants?: { enabled?: boolean; maxQuantityPerLine?: number }
   variants?: Array<{
     id: string
     isActive?: boolean
@@ -29,12 +33,15 @@ export function getCartLineOrderabilityMessage(
     return "A termék már nem található."
   }
 
-  if (product.isActive === false || product.isVisible === false) {
-    return `${label} jelenleg nem rendelhető.`
+  if (product.isVisible === false) {
+    return `${label} már nem elérhető a boltban.`
+  }
+  if (!isStorefrontProductOrderable(product)) {
+    return `${label} jelenleg nem vásárolható (előnézet / teszt mód).`
   }
 
   const hasVariants = Array.isArray(product.variants) && product.variants.length > 0
-  const requireVariantSelection = Boolean(product.requireVariantSelection) && hasVariants
+  const requireVariantSelection = productRequiresVariantPurchase(product)
 
   if (line.variantId) {
     if (!hasVariants) {
@@ -48,11 +55,12 @@ export function getCartLineOrderabilityMessage(
       return `A kiválasztott variáns már nem elérhető: ${label}.`
     }
     const stock = Math.max(0, Number(variant.stock) || 0)
-    if (stock <= 0) {
+    const cap = maxQuantityForCartLine(product, stock, line.variantId)
+    if (cap <= 0) {
       return `${label} jelenleg nincs raktáron.`
     }
-    if (line.quantity > stock) {
-      return `Csak ${stock} db rendelhető (kosárban: ${line.quantity}).`
+    if (line.quantity > cap) {
+      return `Csak ${cap} db rendelhető (kosárban: ${line.quantity}).`
     }
     return null
   }
@@ -62,11 +70,12 @@ export function getCartLineOrderabilityMessage(
   }
 
   const stock = Math.max(0, Number(product.stock) || 0)
-  if (stock <= 0) {
+  const cap = maxQuantityForCartLine(product, stock)
+  if (cap <= 0) {
     return `${label} jelenleg nincs raktáron.`
   }
-  if (line.quantity > stock) {
-    return `Csak ${stock} db rendelhető (kosárban: ${line.quantity}).`
+  if (line.quantity > cap) {
+    return `Csak ${cap} db rendelhető (kosárban: ${line.quantity}).`
   }
 
   return null

@@ -28,6 +28,7 @@ import {
   getVariantOptionGroups,
   getLimitedPriceOffer,
   hasVariants,
+  hasPurchasableActiveVariants,
   isVariantAttributeValueAvailable,
   resolveProductView,
 } from "@/lib/product-variants"
@@ -44,6 +45,17 @@ import type { PdpEditorialPlacement } from "@/templates/types"
 import { EditableDocText } from "@/features/template-cms/primitives/EditableDocText"
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 import { trackViewItem } from "@/lib/analytics/track"
+import { NumberedVariantPicker } from "@/components/shop/NumberedVariantPicker"
+import { ProductDescriptionBlock } from "@/components/shop/ProductDescriptionBlock"
+import {
+  getBaseVariant,
+  hasInStockNumberedVariants,
+  isBaseVariantInStock,
+  isUniqueNumberedProduct,
+  productRequiresVariantPurchase,
+  shouldShowNumberedVariantPicker,
+} from "@/lib/unique-numbered-variants"
+import { isStorefrontProductOrderable } from "@/lib/storefront-catalog"
 
 export type ProductDetailEditorial = {
   eyebrow?: string
@@ -211,7 +223,21 @@ export function ProductDetail({
     galleryImages.findIndex((item) => item.src === activeImage)
   )
   const hasVariantOptions = hasVariants(product)
-  const variantRequired = Boolean(product.requireVariantSelection) && hasVariantOptions
+  const showNumberedPicker = shouldShowNumberedVariantPicker(product)
+  const uniqueVariantUi =
+    isUniqueNumberedProduct(product) &&
+    (showNumberedPicker || isBaseVariantInStock(product))
+  const useNumberedPicker =
+    uniqueVariantUi ||
+    (!isUniqueNumberedProduct(product) && getActiveVariants(product).length > 30)
+  const variantRequired =
+    (isUniqueNumberedProduct(product) &&
+      (hasInStockNumberedVariants(product) || isBaseVariantInStock(product))) ||
+    (Boolean(product.requireVariantSelection) && hasVariantOptions && !isUniqueNumberedProduct(product))
+  const baseFallbackInStock =
+    isUniqueNumberedProduct(product) && isBaseVariantInStock(product) && !showNumberedPicker
+  const numberedAttributeName =
+    product.uniqueNumberedVariants?.attributeName || "Szám"
   const canShowPriceAndStock = !variantRequired || Boolean(selectedVariant)
   const cms = useSurfaceDocEdit()
   const mainImageLoaded = activeImage ? Boolean(loadedImageKeys[activeImage]) : true
@@ -230,12 +256,41 @@ export function ProductDetail({
 
   const cta = editorial?.ctaLabel || "KOSÁRBA TESZEM"
   const added = editorial?.addedLabel || "KOSÁRBA TÉVE"
+  const productOrderable = isStorefrontProductOrderable(product)
+  const mustPickVariant = productRequiresVariantPurchase(product)
+  const hasPurchasableVariants = hasPurchasableActiveVariants(product)
+  const canOrder =
+    shopEnabled !== false &&
+    productOrderable &&
+    (!mustPickVariant || hasPurchasableVariants)
 
   useEffect(() => {
     // Sync deep-linked variant (?variant=) and server prop into pickers — intentional prop→state hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- keep variant UI aligned with URL + SSR props
-    setSelectedVariantId(initialVariantId || "")
-  }, [initialVariantId])
+    const initial = initialVariantId || ""
+    if (initial && !getVariantById(product, initial)) {
+      setSelectedVariantId("")
+      return
+    }
+    setSelectedVariantId(initial)
+  }, [initialVariantId, product])
+
+  useEffect(() => {
+    if (!selectedVariantId) return
+    if (getVariantById(product, selectedVariantId)) return
+    setSelectedVariantId("")
+  }, [product, selectedVariantId])
+
+  useEffect(() => {
+    if (!isUniqueNumberedProduct(product)) return
+    if (showNumberedPicker) return
+    const base = getBaseVariant(product)
+    if (base && (Number(base.stock) || 0) > 0) {
+      setSelectedVariantId(base.id)
+      return
+    }
+    if (!baseFallbackInStock) setSelectedVariantId("")
+  }, [product, showNumberedPicker, baseFallbackInStock])
 
   useEffect(() => {
     // Keep grouped option chips in sync with URL/deep-linked variant state.
@@ -294,8 +349,11 @@ export function ProductDetail({
   }
 
   const handleAddToCart = () => {
-    if (shopEnabled === false) return
+    if (!canOrder) return
     if (variantRequired && !selectedVariant) {
+      return
+    }
+    if (selectedVariantId && !selectedVariant) {
       return
     }
     const productId = product._id.toString()
@@ -591,7 +649,7 @@ export function ProductDetail({
           </div>
 
           <div className="mb-12 max-w-none">
-            <p className="text-lg leading-relaxed text-muted-foreground">{view.description}</p>
+            <ProductDescriptionBlock html={view.description} />
           </div>
 
           {view.seo?.keywords && view.seo.keywords.length > 0 ? (
@@ -608,17 +666,37 @@ export function ProductDetail({
             </div>
           ) : null}
 
-          {hasVariantOptions ? (
+          {baseFallbackInStock && !showNumberedPicker ? (
+            <div className="mb-10 rounded-xl border border-border bg-muted/30 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Az egyedi sorszámok elfogytak — általános példány rendelhető.
+              </p>
+              {selectedVariant ? (
+                <p className="mt-2 text-xs text-foreground">{getVariantLabel(selectedVariant)}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {hasVariantOptions && (uniqueVariantUi || (!isUniqueNumberedProduct(product) && useNumberedPicker)) ? (
             <div className="mb-10 hidden space-y-4 md:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 {variantRequired ? "Variáns kiválasztása (kötelező)" : "Variáns kiválasztása (opcionális)"}
               </p>
-              <VariantOptionPicker
-                product={product}
-                selectedAttributes={selectedAttributes}
-                selectedVariantId={selectedVariantId}
-                onSelect={handleVariantOptionSelect}
-              />
+              {useNumberedPicker ? (
+                <NumberedVariantPicker
+                  product={product}
+                  attributeName={numberedAttributeName}
+                  selectedVariantId={selectedVariantId}
+                  onSelect={(variantId) => handleVariantOptionSelect("__variant", variantId)}
+                />
+              ) : (
+                <VariantOptionPicker
+                  product={product}
+                  selectedAttributes={selectedAttributes}
+                  selectedVariantId={selectedVariantId}
+                  onSelect={handleVariantOptionSelect}
+                />
+              )}
               {!selectedVariant && variantRequired ? (
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
                   Válassz variánst a termék kosárba helyezéséhez.
@@ -663,11 +741,24 @@ export function ProductDetail({
                 Ordering is paused right now.
               </p>
             ) : null}
+            {shopEnabled !== false && !productOrderable ? (
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
+                Ez a termék jelenleg csak előnézetre érhető el — rendelés nem lehetséges.
+              </p>
+            ) : null}
+            {shopEnabled !== false &&
+            productOrderable &&
+            mustPickVariant &&
+            !hasPurchasableVariants ? (
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
+                Jelenleg nincs elérhető variáns — a termék nem rendelhető.
+              </p>
+            ) : null}
             <Button
               size="lg"
               onClick={handleAddToCart}
               disabled={
-                shopEnabled === false ||
+                !canOrder ||
                 isAdded ||
                 (variantRequired && !selectedVariant)
               }
@@ -860,14 +951,29 @@ export function ProductDetail({
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-3 py-3 shadow-2xl backdrop-blur md:hidden">
         <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col gap-3 overflow-y-auto">
-          {hasVariantOptions ? (
-            <VariantOptionPicker
-              product={product}
-              selectedAttributes={selectedAttributes}
-              selectedVariantId={selectedVariantId}
-              onSelect={handleVariantOptionSelect}
-              compact
-            />
+          {baseFallbackInStock && !showNumberedPicker ? (
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Általános példány — sorszámok elfogytak
+            </p>
+          ) : null}
+          {hasVariantOptions && (uniqueVariantUi || (!isUniqueNumberedProduct(product) && useNumberedPicker)) ? (
+            useNumberedPicker ? (
+              <NumberedVariantPicker
+                product={product}
+                attributeName={numberedAttributeName}
+                selectedVariantId={selectedVariantId}
+                onSelect={(variantId) => handleVariantOptionSelect("__variant", variantId)}
+                compact
+              />
+            ) : (
+              <VariantOptionPicker
+                product={product}
+                selectedAttributes={selectedAttributes}
+                selectedVariantId={selectedVariantId}
+                onSelect={handleVariantOptionSelect}
+                compact
+              />
+            )
           ) : null}
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
@@ -890,7 +996,7 @@ export function ProductDetail({
               size="sm"
               onClick={handleAddToCart}
               disabled={
-                shopEnabled === false ||
+                !canOrder ||
                 isAdded ||
                 (variantRequired && !selectedVariant)
               }

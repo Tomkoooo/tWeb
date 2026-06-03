@@ -1,6 +1,16 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import mongoose from "mongoose";
-import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from "../setup/mongo-memory";
+import {
+  clearTestDatabase,
+  connectTestDatabase,
+  disconnectTestDatabase,
+  ensureTestDatabaseReady,
+} from "../setup/mongo-memory";
+import {
+  attemptStripeReservation,
+  countReservationResults,
+  runConcurrentReservationAttempts,
+} from "../helpers/inventory-race";
 import Product from "@/models/Product";
 import Reservation from "@/models/Reservation";
 import StripeWebhookEvent from "@/models/StripeWebhookEvent";
@@ -36,42 +46,30 @@ async function createLimitedProduct(stock: number) {
 describe("inventory reservation concurrency (mongodb-memory-server)", () => {
   beforeAll(async () => {
     await connectTestDatabase();
-  }, 60000);
+  }, 120_000);
 
   afterAll(async () => {
     await disconnectTestDatabase();
-  }, 60000);
+  }, 120_000);
 
   describe("last unit (stock 1)", () => {
     let productId: string;
 
     beforeEach(async () => {
+      await ensureTestDatabaseReady();
       await clearTestDatabase();
       const p = await createLimitedProduct(1);
       productId = p._id.toString();
-    });
+    }, 30_000);
 
     it("allows at most one concurrent reservation for the last unit", async () => {
+      await ensureTestDatabaseReady();
       const attempts = 40;
-      const results = await Promise.all(
-        Array.from({ length: attempts }, async () => {
-          const tempOrderId = new mongoose.Types.ObjectId();
-          try {
-            await allocateReservationsForStripeTempOrder(tempOrderId, [
-              { product: productId, quantity: 1 },
-            ]);
-            return "ok" as const;
-          } catch (e) {
-            if (e instanceof InventoryReservationError && e.code === "INSUFFICIENT_STOCK") {
-              return "sold" as const;
-            }
-            throw e;
-          }
-        })
+      const results = await runConcurrentReservationAttempts(attempts, () =>
+        attemptStripeReservation(productId, { quantity: 1 })
       );
 
-      const wins = results.filter((r) => r === "ok").length;
-      expect(wins).toBe(1);
+      expect(countReservationResults(results).wins).toBe(1);
 
       const p = await Product.findById(productId).lean();
       expect(p?.stock).toBe(0);
@@ -79,9 +77,10 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
 
       const pending = await Reservation.countDocuments({ state: "pending" });
       expect(pending).toBe(1);
-    });
+    }, 60_000);
 
     it("rolls back entire cart when any line cannot be reserved", async () => {
+      await ensureTestDatabaseReady();
       const cat = new mongoose.Types.ObjectId();
       const empty = await Product.create({
         name: "Empty",
@@ -99,6 +98,9 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
         ratings: [],
       });
 
+      await ensureTestDatabaseReady();
+      expect(await Product.countDocuments({})).toBe(2);
+
       const tempOrderId = new mongoose.Types.ObjectId();
       await expect(
         allocateReservationsForStripeTempOrder(tempOrderId, [
@@ -108,9 +110,10 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
       ).rejects.toBeInstanceOf(InventoryReservationError);
 
       const p = await Product.findById(productId).lean();
+      expect(p).not.toBeNull();
       expect(p?.stock).toBe(1);
       expect(await Reservation.countDocuments({})).toBe(0);
-    });
+    }, 30_000);
 
     it("sweepExpiredPendingReservations restores stock idempotently", async () => {
       const tempOrderId = new mongoose.Types.ObjectId();
@@ -128,7 +131,7 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
 
       const n2 = await sweepExpiredPendingReservations(new Date());
       expect(n2).toBe(0);
-    });
+    }, 30_000);
   });
 
   describe("repeated last-unit races (flakiness detector)", () => {
@@ -141,34 +144,21 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
         const p = await createLimitedProduct(1);
         const pid = p._id.toString();
 
-        const results = await Promise.all(
-          Array.from({ length: attemptsPerRound }, async () => {
-            const tempOrderId = new mongoose.Types.ObjectId();
-            try {
-              await allocateReservationsForStripeTempOrder(tempOrderId, [
-                { product: pid, quantity: 1 },
-              ]);
-              return "ok" as const;
-            } catch (e) {
-              if (e instanceof InventoryReservationError && e.code === "INSUFFICIENT_STOCK") {
-                return "sold" as const;
-              }
-              throw e;
-            }
-          })
+        const results = await runConcurrentReservationAttempts(attemptsPerRound, () =>
+          attemptStripeReservation(pid, { quantity: 1 })
         );
 
         const snapshot = await Product.findById(pid).lean();
         expect((snapshot?.stock ?? -1) >= 0).toBe(true);
 
-        expect(results.filter((x) => x === "ok").length).toBe(1);
-        expect(results.filter((x) => x === "sold").length).toBe(attemptsPerRound - 1);
+        expect(countReservationResults(results).wins).toBe(1);
+        expect(countReservationResults(results).sold).toBe(attemptsPerRound - 1);
 
         const finalP = await Product.findById(pid).lean();
         expect(finalP?.stock).toBe(0);
         expect(await Reservation.countDocuments({ state: "pending", product: pid })).toBe(1);
       }
-    }, 30000);
+    }, 120_000);
   });
 
   describe("multi-winner (stock 2)", () => {
@@ -178,35 +168,22 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
       await clearTestDatabase();
       const p = await createLimitedProduct(2);
       productId = p._id.toString();
-    });
+    }, 30_000);
 
     it("allows exactly two concurrent reservations when two units exist", async () => {
       const attempts = 60;
-      const results = await Promise.all(
-        Array.from({ length: attempts }, async () => {
-          const tempOrderId = new mongoose.Types.ObjectId();
-          try {
-            await allocateReservationsForStripeTempOrder(tempOrderId, [
-              { product: productId, quantity: 1 },
-            ]);
-            return "ok" as const;
-          } catch (e) {
-            if (e instanceof InventoryReservationError && e.code === "INSUFFICIENT_STOCK") {
-              return "sold" as const;
-            }
-            throw e;
-          }
-        })
+      const results = await runConcurrentReservationAttempts(attempts, () =>
+        attemptStripeReservation(productId, { quantity: 1 })
       );
 
-      expect(results.filter((x) => x === "ok").length).toBe(2);
-      expect(results.filter((x) => x === "sold").length).toBe(attempts - 2);
+      expect(countReservationResults(results).wins).toBe(2);
+      expect(countReservationResults(results).sold).toBe(attempts - 2);
 
       const p = await Product.findById(productId).lean();
       expect(p?.stock).toBe(0);
       expect((p?.stock ?? 0) >= 0).toBe(true);
       expect(await Reservation.countDocuments({ state: "pending", product: productId })).toBe(2);
-    });
+    }, 60_000);
   });
 
   describe("variant last unit", () => {
@@ -241,29 +218,16 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
         ratings: [],
       });
       productId = p._id.toString();
-    });
+    }, 30_000);
 
     it("allows at most one concurrent reservation for the last variant unit", async () => {
       const attempts = 40;
-      const results = await Promise.all(
-        Array.from({ length: attempts }, async () => {
-          const tempOrderId = new mongoose.Types.ObjectId();
-          try {
-            await allocateReservationsForStripeTempOrder(tempOrderId, [
-              { product: productId, variantId: "v1", quantity: 1 },
-            ]);
-            return "ok" as const;
-          } catch (e) {
-            if (e instanceof InventoryReservationError && e.code === "INSUFFICIENT_STOCK") {
-              return "sold" as const;
-            }
-            throw e;
-          }
-        })
+      const results = await runConcurrentReservationAttempts(attempts, () =>
+        attemptStripeReservation(productId, { variantId: "v1", quantity: 1 })
       );
 
-      expect(results.filter((x) => x === "ok").length).toBe(1);
-      expect(results.filter((x) => x === "sold").length).toBe(attempts - 1);
+      expect(countReservationResults(results).wins).toBe(1);
+      expect(countReservationResults(results).sold).toBe(attempts - 1);
 
       const p = await Product.findById(productId).lean();
       const v = (p?.variants as { id: string; stock: number }[] | undefined)?.find((x) => x.id === "v1");
@@ -273,13 +237,13 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
       expect(await Reservation.countDocuments({ state: "pending", product: productId, variantId: "v1" })).toBe(
         1
       );
-    });
+    }, 60_000);
   });
 
   describe("variant limited price quota", () => {
     beforeEach(async () => {
       await clearTestDatabase();
-    });
+    }, 30_000);
 
     it("does not allocate the 3rd variant unit to a first-2 limited price under concurrency", async () => {
       const cat = new mongoose.Types.ObjectId();
@@ -333,18 +297,18 @@ describe("inventory reservation concurrency (mongodb-memory-server)", () => {
       expect(results.filter((qty) => qty === 0)).toHaveLength(1);
 
       const snapshot = await Product.findById(product._id).lean();
-      const variant = (snapshot?.variants as any[] | undefined)?.find((v) => v.id === "v1");
+      const variant = (snapshot?.variants as { id: string; stock?: number; limitedPrice?: { claimedCount?: number; reservedCount?: number } }[] | undefined)?.find((v) => v.id === "v1");
       expect(variant?.stock).toBe(0);
       expect(variant?.limitedPrice?.claimedCount).toBe(2);
       expect(variant?.limitedPrice?.reservedCount).toBe(2);
       expect(await Reservation.countDocuments({ product: product._id, variantId: "v1", promoQuantity: 1 })).toBe(2);
-    });
+    }, 30_000);
   });
 
   describe("Stripe webhook idempotency (mongo)", () => {
     beforeEach(async () => {
       await clearTestDatabase();
-    });
+    }, 30_000);
 
     it("Stripe webhook dedup collection rejects duplicate stripeEventId", async () => {
       await StripeWebhookEvent.create([

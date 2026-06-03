@@ -19,8 +19,110 @@ import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
 import { formatOrderNumber } from "@/lib/order-number"
+import {
+  getOrderParcelProvider,
+  orderNeedsParcelLabel,
+} from "@/lib/parcel-locker"
+import {
+  isFoxpostParcelManagerEnabled,
+  isGlsParcelManagerEnabled,
+} from "@/lib/parcel-feature-flags"
 
 const ORDER_STATUS_VALUES = ["pending", "processing", "shipped", "delivered", "cancelled"] as const
+
+type ParcelLabelActionResult = { success: true } | { success: false; error: string }
+
+async function applyGlsLabelToOrder(
+  order: InstanceType<typeof Order>,
+  generatedByUserId?: string
+): Promise<ParcelLabelActionResult> {
+  try {
+    const result = await GlsService.createLabelForOrder(order as unknown as IOrder)
+    order.glsLabel = {
+      ...(order.glsLabel || {}),
+      parcelId: result.parcelId,
+      parcelNumber: result.parcelNumber,
+      parcelNumberWithCheckdigit: result.parcelNumberWithCheckdigit,
+      pin: result.pin,
+      labelDataBase64: result.labelDataBase64,
+      labelUrl: `/api/admin/orders/${order._id.toString()}/gls-label`,
+      generatedAt: new Date(),
+      generatedBy: generatedByUserId
+        ? new mongoose.Types.ObjectId(generatedByUserId)
+        : undefined,
+      lastError: undefined,
+    }
+    order.set("glsLabel.lastError", undefined)
+    await order.save()
+    await Order.updateOne({ _id: order._id }, { $unset: { "glsLabel.lastError": "" } })
+    return { success: true }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "A GLS címke létrehozása sikertelen."
+    order.glsLabel = {
+      ...(order.glsLabel || {}),
+      lastError: message,
+    }
+    await order.save()
+    return { success: false, error: message }
+  }
+}
+
+async function applyFoxpostShipmentToOrder(
+  order: InstanceType<typeof Order>,
+  generatedByUserId?: string
+): Promise<ParcelLabelActionResult> {
+  let clFoxId = order.foxpostShipment?.clFoxId
+  let refCode = order.foxpostShipment?.refCode
+
+  try {
+    if (!clFoxId) {
+      const created = await FoxpostService.createParcelForOrder(order as unknown as IOrder)
+      clFoxId = created.clFoxId || created.barcode
+      refCode = created.refCode || order._id.toString().slice(-30)
+      if (!clFoxId) {
+        throw new Error("Foxpost csomag azonosító hiányzik a létrehozás után.")
+      }
+      order.foxpostShipment = {
+        ...(order.foxpostShipment || {}),
+        clFoxId,
+        refCode,
+        lastError: undefined,
+      }
+      await order.save()
+    }
+
+    const result = await FoxpostService.createShipmentForOrder(order as unknown as IOrder)
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      clFoxId: result.clFoxId,
+      refCode: result.refCode || refCode,
+      labelDataBase64: result.labelDataBase64,
+      labelPageSize: result.labelPageSize,
+      trackingStatus: result.trackingStatus,
+      labelUrl: `/api/admin/orders/${order._id.toString()}/foxpost-label`,
+      generatedAt: new Date(),
+      generatedBy: generatedByUserId
+        ? new mongoose.Types.ObjectId(generatedByUserId)
+        : undefined,
+      lastError: undefined,
+    }
+    order.set("foxpostShipment.lastError", undefined)
+    await order.save()
+    await Order.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } })
+    return { success: true }
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "A Foxpost csomag/címke létrehozása sikertelen."
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      clFoxId: clFoxId || order.foxpostShipment?.clFoxId,
+      refCode: refCode || order.foxpostShipment?.refCode,
+      lastError: message,
+    }
+    await order.save()
+    return { success: false, error: message }
+  }
+}
 type OrderStatusValue = (typeof ORDER_STATUS_VALUES)[number]
 
 async function checkAdmin() {
@@ -168,39 +270,11 @@ export async function generateOrderGlsLabel(orderId: string) {
   }
 
   const session = await auth()
-
-  try {
-    const result = await GlsService.createLabelForOrder(order as unknown as IOrder)
-    order.glsLabel = {
-      ...(order.glsLabel || {}),
-      parcelId: result.parcelId,
-      parcelNumber: result.parcelNumber,
-      parcelNumberWithCheckdigit: result.parcelNumberWithCheckdigit,
-      pin: result.pin,
-      labelDataBase64: result.labelDataBase64,
-      labelUrl: `/api/admin/orders/${order._id.toString()}/gls-label`,
-      generatedAt: new Date(),
-      generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
-      lastError: undefined,
-    }
-    order.set("glsLabel.lastError", undefined)
-    await order.save()
-    await Order.updateOne({ _id: order._id }, { $unset: { "glsLabel.lastError": "" } })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "A GLS címke létrehozása sikertelen."
-    order.glsLabel = {
-      ...(order.glsLabel || {}),
-      lastError: message,
-    }
-    await order.save()
-    revalidatePath("/admin/orders")
-    revalidatePath(`/admin/orders/${orderId}`)
-    return { success: false, error: message }
-  }
+  const result = await applyGlsLabelToOrder(order, session?.user?.id)
 
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
-  return { success: true }
+  return result
 }
 
 export async function generateOrderFoxpostShipment(orderId: string) {
@@ -214,61 +288,114 @@ export async function generateOrderFoxpostShipment(orderId: string) {
   }
 
   const session = await auth()
-
-  let clFoxId = order.foxpostShipment?.clFoxId
-  let refCode = order.foxpostShipment?.refCode
-
-  try {
-    if (!clFoxId) {
-      const created = await FoxpostService.createParcelForOrder(order as unknown as IOrder)
-      clFoxId = created.clFoxId || created.barcode
-      refCode = created.refCode || order._id.toString().slice(-30)
-      if (!clFoxId) {
-        throw new Error("Foxpost csomag azonosító hiányzik a létrehozás után.")
-      }
-      order.foxpostShipment = {
-        ...(order.foxpostShipment || {}),
-        clFoxId,
-        refCode,
-        lastError: undefined,
-      }
-      await order.save()
-    }
-
-    const result = await FoxpostService.createShipmentForOrder(order as unknown as IOrder)
-    order.foxpostShipment = {
-      ...(order.foxpostShipment || {}),
-      clFoxId: result.clFoxId,
-      refCode: result.refCode || refCode,
-      labelDataBase64: result.labelDataBase64,
-      labelPageSize: result.labelPageSize,
-      trackingStatus: result.trackingStatus,
-      labelUrl: `/api/admin/orders/${order._id.toString()}/foxpost-label`,
-      generatedAt: new Date(),
-      generatedBy: session?.user?.id ? new mongoose.Types.ObjectId(session.user.id) : undefined,
-      lastError: undefined,
-    }
-    order.set("foxpostShipment.lastError", undefined)
-    await order.save()
-    await Order.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } })
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "A Foxpost csomag/címke létrehozása sikertelen."
-    order.foxpostShipment = {
-      ...(order.foxpostShipment || {}),
-      clFoxId: clFoxId || order.foxpostShipment?.clFoxId,
-      refCode: refCode || order.foxpostShipment?.refCode,
-      lastError: message,
-    }
-    await order.save()
-    revalidatePath("/admin/orders")
-    revalidatePath(`/admin/orders/${orderId}`)
-    return { success: false, error: message }
-  }
+  const result = await applyFoxpostShipmentToOrder(order, session?.user?.id)
 
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
-  return { success: true }
+  return result
+}
+
+export type BulkParcelLabelSkipReason =
+  | "not_found"
+  | "no_parcel_shipping"
+  | "manager_disabled"
+  | "label_exists"
+
+export async function bulkGenerateParcelLabels(
+  orderIds: string[],
+  options?: { skipExisting?: boolean }
+) {
+  await checkAdmin()
+  await dbConnect()
+
+  const skipExisting = options?.skipExisting !== false
+  const [glsManagerEnabled, foxpostManagerEnabled] = await Promise.all([
+    isGlsParcelManagerEnabled(),
+    isFoxpostParcelManagerEnabled(),
+  ])
+
+  const uniqueOrderIds = Array.from(
+    new Set(
+      orderIds
+        .map((orderId) => String(orderId || "").trim())
+        .filter((orderId) => mongoose.Types.ObjectId.isValid(orderId))
+    )
+  )
+
+  if (uniqueOrderIds.length === 0) {
+    throw new Error("No valid orders selected")
+  }
+
+  const session = await auth()
+  const generatedByUserId = session?.user?.id
+
+  const orders = await Order.find({ _id: { $in: uniqueOrderIds } })
+  const ordersById = new Map(orders.map((order) => [order._id.toString(), order]))
+
+  let successCount = 0
+  let skippedCount = 0
+  let failedCount = 0
+  const failures: { orderId: string; error: string }[] = []
+  const skips: { orderId: string; reason: BulkParcelLabelSkipReason }[] = []
+
+  for (const orderId of uniqueOrderIds) {
+    const order = ordersById.get(orderId)
+    if (!order) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "not_found" })
+      continue
+    }
+
+    const provider = getOrderParcelProvider(order)
+    if (!provider) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "no_parcel_shipping" })
+      continue
+    }
+
+    if (provider === "gls" && !glsManagerEnabled) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "manager_disabled" })
+      continue
+    }
+
+    if (provider === "foxpost" && !foxpostManagerEnabled) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "manager_disabled" })
+      continue
+    }
+
+    if (skipExisting && !orderNeedsParcelLabel(order)) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "label_exists" })
+      continue
+    }
+
+    const result =
+      provider === "gls"
+        ? await applyGlsLabelToOrder(order, generatedByUserId)
+        : await applyFoxpostShipmentToOrder(order, generatedByUserId)
+
+    if (result.success) {
+      successCount += 1
+      revalidatePath(`/admin/orders/${orderId}`)
+    } else {
+      failedCount += 1
+      failures.push({ orderId, error: result.error })
+    }
+  }
+
+  revalidatePath("/admin/orders")
+
+  return {
+    success: true,
+    successCount,
+    skippedCount,
+    failedCount,
+    failures,
+    skips,
+    missingCount: uniqueOrderIds.length - orders.length,
+  }
 }
 
 export async function updateOrderInvoiceData(orderId: string, formData: FormData) {

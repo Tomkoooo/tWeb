@@ -17,6 +17,10 @@ import {
 } from "@/lib/admin-product-variants";
 import { formatHuf } from "@/lib/pricing";
 import { resetProductLimitedPriceCounters } from "@/actions/admin-products";
+import { NumberedVariantsGenerator } from "@/components/admin/NumberedVariantsGenerator";
+import { NumberedVariantsManager } from "@/components/admin/NumberedVariantsManager";
+import { isNumberedVariantId, rebuildNumberedVariantOptions } from "@/lib/numbered-variant-ranges";
+import type { UniqueNumberedVariantsConfig } from "@/lib/unique-numbered-variants";
 
 type VariantOption = { name: string; values: string[] };
 
@@ -29,6 +33,7 @@ type Props = {
   defaultNetPrice: number;
   defaultGrossPrice?: number;
   initialRequireVariantSelection?: boolean;
+  initialUniqueNumberedVariants?: UniqueNumberedVariantsConfig | null;
   vatPercent: number;
   onVatChange: (vat: number) => void;
   onModeChange?: (mode: { enabled: boolean; requireVariantSelection: boolean }) => void;
@@ -86,6 +91,7 @@ export function ProductVariantsEditor({
   defaultNetPrice,
   defaultGrossPrice,
   initialRequireVariantSelection = false,
+  initialUniqueNumberedVariants = null,
   vatPercent,
   onVatChange,
   onModeChange,
@@ -103,6 +109,9 @@ export function ProductVariantsEditor({
   const [requireVariantSelection, setRequireVariantSelection] = useState(
     Boolean(initialRequireVariantSelection)
   );
+  const [uniqueNumberedVariants, setUniqueNumberedVariants] = useState<UniqueNumberedVariantsConfig | null>(
+    initialUniqueNumberedVariants?.enabled ? initialUniqueNumberedVariants : null
+  );
   const [options, setOptions] = useState<Array<{ name: string; valuesText: string }>>(
     initialOptions.length > 0
       ? initialOptions.map((option) => ({ name: option.name, valuesText: option.values.join(", ") }))
@@ -112,6 +121,7 @@ export function ProductVariantsEditor({
   const [bulkGrossPrice, setBulkGrossPrice] = useState("");
   const [bulkDiscount, setBulkDiscount] = useState("");
   const [bulkStock, setBulkStock] = useState("");
+  const [numberedListSearch, setNumberedListSearch] = useState("");
   const [activeVariantId, setActiveVariantId] = useState<string>(
     () =>
       initialVariants.find((v) => v.isDefault)?.id ||
@@ -133,6 +143,21 @@ export function ProductVariantsEditor({
     () => variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0),
     [variants]
   );
+  const numberedMode = Boolean(uniqueNumberedVariants?.enabled);
+  const listVariants = useMemo(() => {
+    const baseId = uniqueNumberedVariants?.baseVariantId?.trim() || "base";
+    let list = numberedMode
+      ? variants.filter((v) => isNumberedVariantId(v.id) || v.id === baseId)
+      : variants;
+    const q = numberedListSearch.trim();
+    if (numberedMode && q) {
+      list = list.filter((v) => {
+        const num = v.attributes?.[uniqueNumberedVariants?.attributeName || "Szám"] || "";
+        return num.includes(q) || v.id.includes(q);
+      });
+    }
+    return list;
+  }, [variants, numberedMode, numberedListSearch, uniqueNumberedVariants?.attributeName]);
   const maxDiscount = useMemo(
     () => Math.max(0, ...variants.map((v) => Number(v.discount) || 0)),
     [variants]
@@ -366,6 +391,33 @@ export function ProductVariantsEditor({
     );
   };
 
+  const setAllVariantsActive = (isActive: boolean) => {
+    if (variants.length === 0) return;
+    if (
+      !isActive &&
+      variants.length > 1 &&
+      !window.confirm(
+        `Kikapcsolod mind a ${variants.length} variánst? Egyik sem lesz rendelhető a boltban.`
+      )
+    ) {
+      return;
+    }
+    const next = variants.map((variant) => ({ ...variant, isActive }));
+    setVariants(next);
+    if (numberedMode) {
+      const attr = uniqueNumberedVariants?.attributeName || "Szám";
+      const rebuilt = rebuildNumberedVariantOptions(next, attr);
+      setOptions(
+        rebuilt.length > 0
+          ? rebuilt.map((option) => ({
+              name: option.name,
+              valuesText: option.values.join(", "),
+            }))
+          : [{ name: attr, valuesText: "" }]
+      );
+    }
+  };
+
   return (
     <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
       <div className="flex items-center justify-between gap-4">
@@ -391,6 +443,15 @@ export function ProductVariantsEditor({
       <input type="hidden" name="requireVariantSelection" value={enabled && requireVariantSelection ? "true" : "false"} />
       <input type="hidden" name="variantOptionsJson" value={enabled ? variantOptionsJson : "[]"} />
       <input type="hidden" name="variantsJson" value={enabled ? variantsJson : "[]"} />
+      <input
+        type="hidden"
+        name="uniqueNumberedVariantsJson"
+        value={JSON.stringify(
+          uniqueNumberedVariants?.enabled
+            ? uniqueNumberedVariants
+            : { enabled: false }
+        )}
+      />
 
       {!enabled ? (
         <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
@@ -419,6 +480,42 @@ export function ProductVariantsEditor({
             </p>
           </div>
 
+          <NumberedVariantsGenerator
+            productId={productId}
+            defaultNetPrice={defaultNetPrice}
+            defaultGrossPrice={defaultGrossPrice}
+            variants={variants}
+            onVariantsChange={onVariantsChange}
+            onOptionsChange={(opts) =>
+              setOptions(opts.map((o) => ({ name: o.name, valuesText: o.values.join(", ") })))
+            }
+            uniqueNumberedVariants={uniqueNumberedVariants}
+            onUniqueNumberedChange={setUniqueNumberedVariants}
+            onRequireVariantChange={setRequireVariantSelection}
+          />
+
+          {uniqueNumberedVariants?.enabled ? (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              Egyedi sorszámos készlet mód aktív — max {uniqueNumberedVariants.maxQuantityPerLine} db / sor.
+            </p>
+          ) : null}
+
+          {uniqueNumberedVariants?.enabled ? (
+            <NumberedVariantsManager
+              variants={variants}
+              onVariantsChange={onVariantsChange}
+              onOptionsChange={(opts) =>
+                setOptions(opts.map((o) => ({ name: o.name, valuesText: o.values.join(", ") })))
+              }
+              uniqueNumberedVariants={uniqueNumberedVariants}
+              onUniqueNumberedChange={setUniqueNumberedVariants}
+              defaultNetPrice={defaultNetPrice}
+              defaultGrossPrice={defaultGrossPrice}
+              vatPercent={vatPercent}
+              onActiveVariantChange={setActiveVariantId}
+            />
+          ) : null}
+
           <div className="flex items-center justify-between border border-white/10 p-4">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-white">
@@ -445,6 +542,7 @@ export function ProductVariantsEditor({
             </button>
           </div>
 
+          {!numberedMode ? (
           <div className="space-y-4">
             <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
               Opció dimenziók
@@ -502,6 +600,7 @@ export function ProductVariantsEditor({
               </Button>
             </div>
           </div>
+          ) : null}
 
           {variants.length > 0 ? (
             <>
@@ -515,14 +614,32 @@ export function ProductVariantsEditor({
                       Csak a kitöltött mezők íródnak rá az összes variánsra.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={clearAllVariantPriceOverrides}
-                    className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
-                  >
-                    Árak vissza alapárra
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearAllVariantPriceOverrides}
+                      className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
+                    >
+                      Árak vissza alapárra
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAllVariantsActive(false)}
+                      className="h-10 rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
+                    >
+                      Összes kikapcsolása
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAllVariantsActive(true)}
+                      className="h-10 rounded-none border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest"
+                    >
+                      Összes bekapcsolása
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-5">
                   <AdminFormField label="Nettó ár (Ft)">
@@ -575,7 +692,20 @@ export function ProductVariantsEditor({
 
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
                 <div className="xl:col-span-4 space-y-2 max-h-[460px] overflow-y-auto pr-1">
-                  {variants.map((variant) => (
+                  {numberedMode ? (
+                    <Input
+                      value={numberedListSearch}
+                      onChange={(e) => setNumberedListSearch(e.target.value)}
+                      placeholder="Keresés sorszámra…"
+                      className="mb-2 h-10 rounded-none border-white/5 bg-black text-white text-sm"
+                    />
+                  ) : null}
+                  {listVariants.length === 0 ? (
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-2">
+                      {numberedMode ? "Nincs találat." : "Nincs variáns."}
+                    </p>
+                  ) : null}
+                  {listVariants.map((variant) => (
                     <button
                       key={`selector-${variant.id}`}
                       type="button"
@@ -852,7 +982,7 @@ export function ProductVariantsEditor({
                       </AdminFormField>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-3">
                       <Input
                         value={activeVariant.nameOverride || ""}
                         onChange={(event) =>
@@ -865,7 +995,7 @@ export function ProductVariantsEditor({
                         className="bg-black border-white/5 h-11 text-white rounded-none"
                         placeholder="Név felülírása (opcionális)"
                       />
-                      <Input
+                      <textarea
                         value={activeVariant.descriptionOverride || ""}
                         onChange={(event) =>
                           setVariants((prev) =>
@@ -874,8 +1004,9 @@ export function ProductVariantsEditor({
                             )
                           )
                         }
-                        className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="Leírás felülírása (opcionális)"
+                        rows={3}
+                        className="w-full bg-black border-white/5 text-white rounded-none p-3 text-sm resize-y min-h-[88px]"
+                        placeholder="Leírás felülírása (opcionális, HTML). Sorszámos terméknél felülírja a közös sorszámos leírást."
                       />
                     </div>
 

@@ -8,6 +8,7 @@ import {
   dbCartItemsToCartItems,
   mergeLocalAndServerCart,
 } from "@/lib/cart-sync"
+import { reconcileCartItemsWithIssues, cartItemsNeedReconcile } from "@/lib/cart-reconcile"
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -52,7 +53,34 @@ export function CartSync() {
 
         const dbCart = await response.json()
         const serverItems = dbCartItemsToCartItems(dbCart?.items)
-        const merged = mergeLocalAndServerCart(localItems, serverItems)
+        let merged = mergeLocalAndServerCart(localItems, serverItems)
+
+        try {
+          const validateRes = await fetch("/api/cart/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: merged.map((item) => ({
+                id: item.id,
+                productId: item.productId,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                name: item.name,
+                price: item.price,
+              })),
+            }),
+          })
+          if (validateRes.ok && !cancelled) {
+            const { issues } = (await validateRes.json()) as { issues?: Record<string, string> }
+            const reconciled = reconcileCartItemsWithIssues(merged, issues ?? {})
+            if (cartItemsNeedReconcile(merged, reconciled)) {
+              merged = reconciled
+            }
+          }
+        } catch {
+          /* validation optional on sync */
+        }
+
         const mergedSignature = cartItemsSyncSignature(merged)
         const serverSignature = cartItemsSyncSignature(serverItems)
 

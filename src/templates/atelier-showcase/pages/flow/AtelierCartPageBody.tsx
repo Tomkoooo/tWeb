@@ -36,8 +36,11 @@ const ATELIER_CHECKOUT_SUGGESTION_PRESENTATION: CheckoutSuggestionsDialogPresent
  */
 export function AtelierCartPageBody({ shopEnabled, variant = "page" }: FlowRouteMainProps) {
   const embedded = variant === "embedded"
-  const { items, removeItem, updateQuantity, totalItems } = useCartStore()
-  const { issues, hasIssues } = useCartLineIssues(items)
+  const { items, removeItem, updateQuantity, totalItems, replaceItems } = useCartStore()
+  const { issues, hasIssues } = useCartLineIssues(items, {
+    reconcile: true,
+    onReconciled: replaceItems,
+  })
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions({
     dialogPresentation: ATELIER_CHECKOUT_SUGGESTION_PRESENTATION,
   })

@@ -35,7 +35,7 @@ export function CartPageView({
   showPageHeading?: boolean
 }) {
   const embedded = variant === "embedded"
-  const { items, removeItem, updateQuantity, totalItems } = useCartStore()
+  const { items, removeItem, updateQuantity, totalItems, replaceItems } = useCartStore()
   const [exitingItemId, setExitingItemId] = React.useState<string | null>(null)
 
   const removeItemWithAnimation = React.useCallback(
@@ -52,7 +52,10 @@ export function CartPageView({
     },
     [removeItem]
   )
-  const { issues, hasIssues } = useCartLineIssues(items)
+  const { issues, hasIssues } = useCartLineIssues(items, {
+    reconcile: true,
+    onReconciled: replaceItems,
+  })
   const { beginCheckout, checkoutModalUI, checkoutSuggestionsLoading } = useCheckoutWithSuggestions()
   const [shopEnabled, setShopEnabled] = React.useState<boolean | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)

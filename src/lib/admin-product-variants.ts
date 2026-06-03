@@ -66,6 +66,7 @@ export function hasVariantPriceOverride(
   return defaultNetPrice == null || net !== Number(defaultNetPrice)
 }
 
+/** Plain variant rows for admin client components (no Mongoose subdocument `_id`). */
 export function normalizeAdminVariants(
   variants: AdminVariantInput[],
   defaultNetPrice: number
@@ -75,9 +76,16 @@ export function normalizeAdminVariants(
     const grossRaw = Number(variant.grossPrice)
     const grossPrice = Number.isFinite(grossRaw) && grossRaw > 0 ? grossRaw : undefined
     return {
-      ...variant,
-      id: variant.id || `variant-${index + 1}`,
-      attributes: variant.attributes || {},
+      id: String(variant.id || `variant-${index + 1}`),
+      attributes:
+        variant.attributes && typeof variant.attributes === "object"
+          ? { ...variant.attributes }
+          : {},
+      sku: variant.sku ? String(variant.sku) : undefined,
+      nameOverride: variant.nameOverride ? String(variant.nameOverride) : undefined,
+      descriptionOverride: variant.descriptionOverride
+        ? String(variant.descriptionOverride)
+        : undefined,
       netPrice,
       grossPrice,
       discount: Number(variant.discount ?? 0) || 0,
