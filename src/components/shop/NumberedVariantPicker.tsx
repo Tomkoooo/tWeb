@@ -20,6 +20,10 @@ import {
 import { isNumberedVariantId, resolveNumberRangeChips, type NumberRangeChip } from "@/lib/numbered-variant-ranges";
 import { getBaseVariant } from "@/lib/unique-numbered-variants";
 
+const selectedPickerClass =
+  "border-primary-foreground/35 bg-primary/10 text-primary-foreground";
+const pickerClass = "border-border hover:border-primary-foreground/40";
+
 function variantCustomerGross(product: ProductShape, variantId: string): number {
   const view = resolveProductView(product, variantId);
   const vat = clampVatPercent(product.vatPercent);
@@ -158,13 +162,18 @@ export function NumberedVariantPicker({
             className={cn(
               "w-full border px-4 py-3 text-left transition-colors",
               compact ? "text-xs" : "text-sm",
-              selectedVariantId === baseVariant.id
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border hover:border-primary/40"
+              selectedVariantId === baseVariant.id ? selectedPickerClass : pickerClass
             )}
           >
             <span className="font-semibold uppercase tracking-widest">{baseLabel}</span>
-            <span className="mt-1 block text-[10px] text-muted-foreground">
+            <span
+              className={cn(
+                "mt-1 block text-[10px]",
+                selectedVariantId === baseVariant.id
+                  ? "text-primary-foreground/85"
+                  : "text-muted-foreground"
+              )}
+            >
               Készlet: {Number(baseVariant.stock) || 0} db
             </span>
           </button>
@@ -209,9 +218,7 @@ export function NumberedVariantPicker({
                     }
                     className={cn(
                       "border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border text-muted-foreground hover:border-primary/30"
+                      isSelected ? selectedPickerClass : "border-border text-muted-foreground hover:border-primary/30"
                     )}
                   >
                     <span className="block leading-tight">{chip.label}</span>
@@ -258,9 +265,7 @@ export function NumberedVariantPicker({
                       "border font-semibold tabular-nums transition-colors flex flex-col items-center justify-center gap-0.5",
                       grossLabel ? "min-h-11 py-1" : "min-h-9",
                       compact ? "text-xs px-1" : "text-sm px-2",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border hover:border-primary/50"
+                      isSelected ? selectedPickerClass : pickerClass
                     )}
                   >
                     <span>{label}</span>

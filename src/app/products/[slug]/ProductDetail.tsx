@@ -649,7 +649,10 @@ export function ProductDetail({
           </div>
 
           <div className="mb-12 max-w-none">
-            <ProductDescriptionBlock html={view.description} />
+            <ProductDescriptionBlock
+              key={selectedVariantId || "product"}
+              html={view.description}
+            />
           </div>
 
           {view.seo?.keywords && view.seo.keywords.length > 0 ? (

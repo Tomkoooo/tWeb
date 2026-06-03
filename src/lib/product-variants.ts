@@ -290,7 +290,7 @@ export function resolveProductView(product: ProductShape, variantId?: string | n
   const discount = limitedLine ? 0 : selectedVariant?.discount ?? product.discount ?? 0;
   const stock = selectedVariant?.stock ?? product.stock ?? 0;
   const name = selectedVariant?.nameOverride || product.name;
-  const description = resolveVariantDescription(product, selectedVariant);
+  const description = resolveVariantDescription(product, selectedVariant, variantId);
   const images = selectedVariant?.images?.length ? selectedVariant.images : product.images || [];
   const variantKeywords = selectedVariant?.seo?.keywords || [];
   const productKeywords = product.seo?.keywords || [];

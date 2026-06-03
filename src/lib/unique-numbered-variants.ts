@@ -1,4 +1,8 @@
-import { isNumberedVariantId, type NumberRange } from "@/lib/numbered-variant-ranges";
+import {
+  isNumberedVariantId,
+  issueNumberFromVariantId,
+  type NumberRange,
+} from "@/lib/numbered-variant-ranges";
 import { DEFAULT_BASE_VARIANT_ID, resolveBaseVariantId } from "@/lib/numbered-variant-base";
 
 type VariantLine = {
@@ -90,24 +94,51 @@ export function applyNumberedDescriptionTemplate(
     .replace(new RegExp(`\\{\\{\\s*${attrKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\}\\}`, "gi"), number);
 }
 
+function variantAttributesForDescription(
+  variant: { id?: string; attributes?: Record<string, string> },
+  attributeName: string
+): Record<string, string> {
+  const attrs = { ...(variant.attributes || {}) };
+  const name = attributeName.trim() || "Szám";
+  if (!String(attrs[name] || "").trim() && variant.id) {
+    const fromId = issueNumberFromVariantId(variant.id);
+    if (fromId != null) attrs[name] = String(fromId);
+  }
+  return attrs;
+}
+
 export function resolveVariantDescription(
   product: {
     description?: string;
     uniqueNumberedVariants?: UniqueNumberedVariantsLike | null;
   },
-  variant?: { descriptionOverride?: string; attributes?: Record<string, string> } | null
+  variant?: {
+    id?: string;
+    descriptionOverride?: string;
+    attributes?: Record<string, string>;
+  } | null,
+  selectedVariantId?: string | null
 ): string {
   const fallback = product.description || "";
-  if (!variant) return fallback;
+  const variantId = variant?.id ?? selectedVariantId ?? "";
+  if (!variant && !variantId) return fallback;
 
-  const perVariant = String(variant.descriptionOverride || "").trim();
+  const perVariant = String(variant?.descriptionOverride || "").trim();
   if (perVariant) return perVariant;
 
+  if (isBaseVariantId(variantId, product.uniqueNumberedVariants)) {
+    return fallback;
+  }
+
   const numbered = product.uniqueNumberedVariants;
-  if (numbered?.enabled) {
+  if (numbered?.enabled && variant) {
     const template = String(numbered.descriptionHtml || "").trim();
     if (template) {
-      return applyNumberedDescriptionTemplate(template, variant.attributes, numbered.attributeName);
+      return applyNumberedDescriptionTemplate(
+        template,
+        variantAttributesForDescription(variant, numbered.attributeName || "Szám"),
+        numbered.attributeName
+      );
     }
   }
 
@@ -148,6 +179,7 @@ export function isBaseVariantId(
 ): boolean {
   if (!variantId) return false;
   if (variantId === resolveBaseVariantId(config)) return true;
+  if (config?.enabled) return false;
   return !isNumberedVariantId(variantId);
 }
 
