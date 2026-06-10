@@ -28,6 +28,7 @@ vi.mock("@/models/Order", () => ({
       Object.assign(this, payload);
       this._id = "order1";
       this.save = orderSaveMock;
+      this.populate = vi.fn().mockResolvedValue(this);
     },
     { findById: orderFindByIdMock }
   ),
@@ -55,6 +56,12 @@ vi.mock("@/services/order-guest-access", () => ({
     createForOrder: vi.fn().mockResolvedValue("abc123guesttoken"),
     buildViewUrl: vi.fn().mockReturnValue("http://localhost/orders/guest/o1?token=abc"),
   },
+}));
+vi.mock("@/lib/app-base-url-server", () => ({
+  resolvePublicAppBaseUrl: vi.fn().mockResolvedValue("http://localhost:3000"),
+}));
+vi.mock("@/services/new-order-notification", () => ({
+  sendNewOrderNotification: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/services/inventory-reservation", () => ({
   decrementCheckoutLineStock: (...args: unknown[]) => decrementCheckoutLineStockMock(...args),
@@ -88,7 +95,13 @@ describe("OrderService", () => {
     });
     orderSaveMock.mockResolvedValue(undefined);
     sendEmailMock.mockResolvedValue(undefined);
-    decrementCheckoutLineStockMock.mockResolvedValue(undefined);
+    decrementCheckoutLineStockMock.mockImplementation(async (_session, line) => ({
+      product: String(line?.product ?? "507f1f77bcf86cd799439011"),
+      variantId: line?.variantId,
+      quantity: Number(line?.quantity ?? 1),
+      promoQuantity: 0,
+      regularQuantity: Number(line?.quantity ?? 1),
+    }));
     issueInvoiceMock.mockResolvedValue({ invoiceId: "INV-TEST-1" });
     downloadInvoicePdfMock.mockResolvedValue(Buffer.from("%PDF-1.0"));
     sendInvoiceErrorShopAlertMock.mockResolvedValue(undefined);

@@ -34,7 +34,13 @@ describe("product-card-variants", () => {
           values: Array.from({ length: CARD_VARIANT_PICKER_MAX_CHIPS + 1 }, (_, i) => String(i)),
         },
       ],
-      variants: [{ id: "v1", attributes: { Szám: "1" }, netPrice: 100, stock: 1, isActive: true }],
+      variants: Array.from({ length: CARD_VARIANT_PICKER_MAX_CHIPS + 1 }, (_, i) => ({
+        id: `v${i}`,
+        attributes: { Szám: String(i) },
+        netPrice: 100,
+        stock: 1,
+        isActive: true,
+      })),
     };
     expect(shouldUseCompactVariantPickerOnCard(product)).toBe(true);
   });

@@ -59,6 +59,7 @@
     "react-hook-form": "^7.71.1",
     "react-quill": "^2.0.0",
     "react-use": "^17.6.0",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "stripe": "^22.1.1",
     "szamlazz.js": "^9.2.0",

@@ -45,6 +45,7 @@ describe("checkout-validation unit", () => {
         isVisible: true,
         netPrice: 1000,
         discount: 0,
+        stock: 10,
         variants: [],
       }),
     });
@@ -574,6 +575,8 @@ describe("checkout-validation unit", () => {
             netPrice: 5000,
             grossPrice: 6350,
             discount: 0,
+            stock: 10,
+            isActive: true,
             limitedPrice: {
               enabled: true,
               limitQuantity: 10,

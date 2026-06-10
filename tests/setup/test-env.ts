@@ -1,5 +1,7 @@
 import { afterEach, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 import "./test-env-vars";
 
 afterEach(() => {
