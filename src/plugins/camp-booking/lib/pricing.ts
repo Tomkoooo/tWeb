@@ -33,14 +33,37 @@ export function isLaptopTicketTypeName(name: string): boolean {
   return /laptop/i.test(name)
 }
 
+function isEarlyBirdTicketName(name: string): boolean {
+  return /early\s*bird/i.test(name)
+}
+
+function isNormalTicketName(name: string): boolean {
+  return /normál/i.test(name)
+}
+
+function isEarlyBirdOfferActive<
+  T extends { name: string; isActive?: boolean; earlyBirdEndsAt?: Date | string | null },
+>(ticket: T, at: Date): boolean {
+  if (ticket.isActive === false) return false
+  if (!isEarlyBirdTicketName(ticket.name)) return false
+  const endsAt = ticket.earlyBirdEndsAt ? new Date(ticket.earlyBirdEndsAt) : null
+  if (endsAt && endsAt.getTime() < at.getTime()) return false
+  return true
+}
+
 /** Hide normál base tickets while an active early bird base ticket exists on the session. */
 export function filterStorefrontBaseTickets<
-  T extends { name: string; isActive?: boolean },
->(tickets: T[]): T[] {
-  const activeBase = tickets.filter((t) => t.isActive !== false)
-  const hasEarlyBird = activeBase.some((t) => /early\s*bird/i.test(t.name))
-  if (!hasEarlyBird) return tickets
-  return tickets.filter((t) => !/normál/i.test(t.name))
+  T extends { name: string; isActive?: boolean; earlyBirdEndsAt?: Date | string | null },
+>(tickets: T[], at: Date = new Date()): T[] {
+  const hasActiveEarlyBird = tickets.some((t) => isEarlyBirdOfferActive(t, at))
+  return tickets.filter((t) => {
+    if (isEarlyBirdTicketName(t.name)) {
+      const endsAt = t.earlyBirdEndsAt ? new Date(t.earlyBirdEndsAt) : null
+      if (endsAt && endsAt.getTime() < at.getTime()) return false
+    }
+    if (hasActiveEarlyBird && isNormalTicketName(t.name)) return false
+    return true
+  })
 }
 
 export const LAPTOP_ADDON_CHECKOUT_LABEL = "Laptop bérlés, 10 000 Ft/gyerek/turnus"

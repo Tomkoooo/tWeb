@@ -137,9 +137,19 @@ export function SessionDetailAdmin({
                   {t.priceHuf.toLocaleString("hu-HU")} Ft · {t.pricingMode}
                   {!t.isActive ? " · inaktív" : ""}
                 </p>
-                {t.kind === "base" && t.earlyBirdEndsAt ? (
+                {t.kind === "base" &&
+                (t.earlyBirdEndsAt || /early\s*bird/i.test(t.name)) ? (
                   <p className="text-sky-400 text-xs mt-1">
-                    Early bird: {new Date(t.earlyBirdEndsAt).toLocaleString("hu-HU")}
+                    Early bird
+                    {t.earlyBirdEndsAt
+                      ? `: ${new Date(t.earlyBirdEndsAt).toLocaleString("hu-HU")}`
+                      : ""}
+                    {t.earlyBirdEndsAt &&
+                    new Date(t.earlyBirdEndsAt).getTime() < Date.now() ? (
+                      <span className="text-amber-400"> · lejárt</span>
+                    ) : t.earlyBirdEndsAt ? (
+                      <span className="text-emerald-400"> · aktív</span>
+                    ) : null}
                     {t.earlyBirdPriceHuf != null
                       ? ` → ${t.earlyBirdPriceHuf.toLocaleString("hu-HU")} Ft`
                       : t.earlyBirdDiscountPercent != null

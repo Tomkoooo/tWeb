@@ -380,6 +380,7 @@ function ticketTypesForSession(sessionId, label, startDate, endDate) {
       priceHuf: 67500,
       pricingMode: "per_child",
       kind: "base",
+      earlyBirdEndsAt: new Date("2026-06-07T21:59:00.000Z"),
       isActive: true,
       sortOrder: 0,
     },
@@ -391,7 +392,7 @@ function ticketTypesForSession(sessionId, label, startDate, endDate) {
       priceHuf: 75000,
       pricingMode: "per_child",
       kind: "base",
-      isActive: false,
+      isActive: true,
       sortOrder: 1,
     },
     {

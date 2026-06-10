@@ -51,6 +51,24 @@ describe("camp-booking pricing", () => {
     expect(filterStorefrontBaseTickets(tickets)).toHaveLength(2)
   })
 
+  it("shows normál after early bird end date passes", () => {
+    const at = new Date("2026-06-10")
+    const tickets = [
+      {
+        name: "1. turnus — early bird jegy",
+        isActive: true,
+        earlyBirdEndsAt: new Date("2026-06-07T23:59:00"),
+      },
+      { name: "1. turnus — normál jegy", isActive: true },
+      { name: "1. turnus — testvér jegy", isActive: true },
+    ]
+    const filtered = filterStorefrontBaseTickets(tickets, at)
+    expect(filtered.map((t) => t.name)).toEqual([
+      "1. turnus — normál jegy",
+      "1. turnus — testvér jegy",
+    ])
+  })
+
   it("calculates laptop addon total", () => {
     expect(calculateLaptopAddonHuf(2, 10000)).toBe(20000)
   })

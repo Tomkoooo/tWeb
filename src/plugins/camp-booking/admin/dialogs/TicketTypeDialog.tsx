@@ -136,6 +136,11 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
           {kind === "base" ? (
             <div className="border-t border-white/10 pt-6 space-y-4">
               <p className="text-xs font-black uppercase tracking-widest text-sky-300">Early bird</p>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Ha külön early bird és normál jegytípusod van, az early bird vége után a normál jegy
+                automatikusan megjelenik a foglalásnál (a normál jegy legyen aktív). Egyetlen jegynél
+                a fix ár vagy százalék a határidőig érvényes.
+              </p>
               <CampAdminField label="Early bird vége">
                 <CampAdminInput
                   type="datetime-local"
