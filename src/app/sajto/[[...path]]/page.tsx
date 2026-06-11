@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PluginService } from "@/services/plugin"
-import { BrandingSettingsService } from "@/services/branding-settings"
 import { PressPortalClient } from "@/plugins/press-kit/storefront/PressPortalClient"
 import { getPluginConfigForDeployment } from "@/config/deployments-registry"
+import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
+import { resolveStorefrontFooterContact } from "@/lib/storefront-footer-data"
+import { STOREFRONT_MAIN_TOP_PADDING } from "@/lib/storefront-layout"
+import { getPluginStorefrontSurface } from "@/lib/plugin-storefront-ui"
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -21,19 +24,43 @@ export default async function SajtoPage({ params }: Props) {
   const host = await PluginService.getHost()
   const pluginConfig = getPluginConfigForDeployment("press-kit", host)
   const portalTitle = String(pluginConfig.portalTitle || "Sajtóanyagok")
-  const branding = await BrandingSettingsService.get()
+
+  const {
+    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    footerHydration,
+  } = await getStorefrontChromeBundle()
+  const footerData = await resolveStorefrontFooterContact(template)
+  const surface = getPluginStorefrontSurface(template.manifest.id)
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border px-4 py-4">
-        <div className="mx-auto max-w-4xl flex items-center justify-between">
-          <span className="font-semibold tracking-tight">{branding.brandName}</span>
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
-            {portalTitle}
-          </span>
-        </div>
-      </header>
-      <PressPortalClient tokenFromUrl={tokenFromUrl} portalTitle={portalTitle} />
-    </div>
+    <>
+      <Navbar
+        brandName={branding.brandName}
+        logoSrc={branding.logoNav}
+        shopEnabled={shopEnabled}
+        NavbarSearch={NavbarSearch}
+      />
+      <main className={`${surface.pageMain} ${STOREFRONT_MAIN_TOP_PADDING} pb-20`}>
+        <PressPortalClient
+          tokenFromUrl={tokenFromUrl}
+          portalTitle={portalTitle}
+          templateId={template.manifest.id}
+          brandName={branding.brandName}
+        />
+      </main>
+      <Footer
+        brandName={branding.brandName}
+        logoSrc={branding.logoFooter}
+        shopEnabled={shopEnabled}
+        categories={footerData.categories}
+        footerSettings={footerSettings}
+        email={footerData.email}
+        contactEmails={footerData.contactEmails}
+        phone={footerData.phone}
+        address={footerData.address}
+        newsletterEnabled={footerHydration.newsletterEnabled}
+        legalLinks={footerHydration.legalLinks}
+      />
+    </>
   )
 }

@@ -6,7 +6,9 @@ import { PressPdfViewer } from "./PressPdfViewer"
 import { PressKitPageRender } from "./PressKitPageRender"
 import { pressPortalApi, type PressContentResponse } from "./press-api-client"
 import { Button } from "@/components/ui/button"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { trackPressEvent } from "@/lib/analytics/track"
+import { getPluginStorefrontSurface } from "@/lib/plugin-storefront-ui"
 import {
   normalizePressKitPageContent,
   normalizePressKitPageContentBlocks,
@@ -17,6 +19,8 @@ import type { IPressKitSettings } from "../models/PressKitSettings"
 type Props = {
   tokenFromUrl?: string
   portalTitle: string
+  templateId: string
+  brandName: string
 }
 
 function resolvePageContent(data: PressContentResponse): PressKitPageContent {
@@ -39,7 +43,13 @@ function resolvePageContent(data: PressContentResponse): PressKitPageContent {
   >)
 }
 
-export function PressPortalClient({ tokenFromUrl, portalTitle }: Props) {
+export function PressPortalClient({
+  tokenFromUrl,
+  portalTitle,
+  templateId,
+  brandName,
+}: Props) {
+  const surface = getPluginStorefrontSurface(templateId)
   const [accessMode, setAccessMode] = useState<string>("unique_link")
   const [authenticated, setAuthenticated] = useState(false)
   const [content, setContent] = useState<PressContentResponse | null>(null)
@@ -99,25 +109,36 @@ export function PressPortalClient({ tokenFromUrl, portalTitle }: Props) {
   }
 
   if (loading) {
-    return <p className="text-center text-muted-foreground py-20">Betöltés…</p>
+    return (
+      <div className={`${surface.contentShell} flex min-h-[50vh] items-center justify-center py-20`}>
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   if (!authenticated) {
     return (
-      <PressGate
-        accessMode={accessMode}
-        tokenFromUrl={tokenFromUrl}
-        portalTitle={portalTitle}
-        onSuccess={() => {
-          setLoading(true)
-          loadSession()
-        }}
-      />
+      <div className={`${surface.contentShell} flex min-h-[50vh] items-center justify-center py-12`}>
+        <PressGate
+          accessMode={accessMode}
+          tokenFromUrl={tokenFromUrl}
+          portalTitle={portalTitle}
+          templateId={templateId}
+          onSuccess={() => {
+            setLoading(true)
+            loadSession()
+          }}
+        />
+      </div>
     )
   }
 
   if (error || !content) {
-    return <p className="text-center text-destructive py-20">{error || "Nincs tartalom"}</p>
+    return (
+      <p className={`${surface.contentShell} py-20 text-center text-destructive`}>
+        {error || "Nincs tartalom"}
+      </p>
+    )
   }
 
   const { contact, watermark } = content
@@ -125,25 +146,29 @@ export function PressPortalClient({ tokenFromUrl, portalTitle }: Props) {
   const page = content.content
 
   return (
-    <div>
-      <div className="mx-auto max-w-4xl px-4 pt-6 flex justify-end">
+    <div className={`${surface.contentShell} space-y-10 pb-10`}>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
+        <div className="space-y-1">
+          <p className={surface.eyebrow}>{portalTitle}</p>
+          <p className="text-sm text-muted-foreground">
+            {contact.name} · {contact.outlet}
+          </p>
+        </div>
         <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
           Kilépés
         </Button>
-      </div>
-      <p className="mx-auto max-w-4xl px-4 pb-2 text-sm text-muted-foreground">
-        {contact.name} · {contact.outlet}
-      </p>
+      </header>
 
       <PressKitPageRender
         content={pageContent}
-        previewContact={undefined}
+        brandName={brandName}
         portalTitle={portalTitle}
+        templateId={templateId}
       />
 
       {page.pdfMediaFilename ? (
-        <section className="mx-auto max-w-4xl px-4 py-10 space-y-4">
-          <h2 className="text-2xl font-semibold">Digitális előnézet</h2>
+        <section className="space-y-4 border-t border-border pt-10">
+          <h2 className={surface.sectionTitle}>Digitális előnézet</h2>
           <PressPdfViewer
             allowDownload={page.pdfSettings.allowDownload}
             disableTextSelection={page.pdfSettings.disableTextSelection}

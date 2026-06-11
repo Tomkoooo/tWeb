@@ -58,6 +58,18 @@ Plugins can register transactional mail via **`getEmailTemplates()`** on the `Pl
 
 Core shop templates are tagged `shop`; contact templates are tagged `contact`.
 
+## Storefront UI
+
+Plugin customer pages must look like the active deployment template — reuse engine chrome and shared components.
+
+1. **Chrome** — `getStorefrontChromeBundle()` → template `Navbar` + `Footer` (see [`src/app/jegyvasarlas/page.tsx`](../../src/app/jegyvasarlas/page.tsx), [`src/app/sajto/[[...path]]/page.tsx`](../../src/app/sajto/[[...path]]/page.tsx)).
+2. **Layout** — `STOREFRONT_MAIN_TOP_PADDING` + `container mx-auto` shell; avoid bespoke header bars that skip the logo/nav.
+3. **Surface classes** — `getPluginStorefrontSurface(templateId)` from [`src/lib/plugin-storefront-ui.ts`](../../src/lib/plugin-storefront-ui.ts) for template-aware headings, prose, and cards.
+4. **Primitives** — prefer `@/components/ui/*` (`Button`, `Card`, `Input`, `Label`, `LoadingSpinner`) and `@/components/common/FallbackImage` before new styled divs.
+5. **Tokens** — `bg-background`, `text-muted-foreground`, `border-border`; no ad-hoc `neutral-*` / `rose-*` unless matching an existing template pattern.
+
+Cursor rule: [`.cursor/rules/plugin-storefront-ui.mdc`](../../.cursor/rules/plugin-storefront-ui.mdc).
+
 ## Storefront / checkout (later)
 
 Use `storefront.flowPages` on the plugin module to contribute `cart` / `checkout` / `profile` overrides (same contract as template `flowPages`). Wire through template bridge when implementing course direct-checkout.

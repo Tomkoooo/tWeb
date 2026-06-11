@@ -1,0 +1,40 @@
+---
+description: Plugin storefront pages must reuse engine chrome and shared UI components
+globs: src/plugins/**/storefront/**,src/app/**/page.tsx
+alwaysApply: false
+---
+
+# Plugin storefront UI
+
+Plugin customer-facing pages are part of the active template — not standalone mini-apps.
+
+## Chrome and layout
+
+1. Wire **template Navbar + Footer** via `getStorefrontChromeBundle()` or `getActiveChrome()` (see `src/app/shop/page.tsx`, `src/app/jegyvasarlas/page.tsx`).
+2. Use `STOREFRONT_MAIN_TOP_PADDING` from `@/lib/storefront-layout` under the fixed nav.
+3. Prefer `getPluginStorefrontSurface(templateId)` from `@/lib/plugin-storefront-ui` for typography and section spacing.
+
+## Components (use before inventing new ones)
+
+| Need | Import |
+| --- | --- |
+| Buttons, inputs, labels | `@/components/ui/button`, `input`, `label` |
+| Panels, login forms | `@/components/ui/card` (`Card`, `CardHeader`, `CardTitle`, …) |
+| Loading | `@/components/ui/LoadingSpinner` |
+| Images | `@/components/common/FallbackImage` |
+| Motion | `@/components/motion/css-reveal` |
+
+Do **not** hand-roll `rounded-2xl border bg-card p-8` shells when `Card` fits.
+
+## Tokens and typography
+
+- Use semantic tokens: `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-destructive`.
+- Avoid raw `neutral-*`, `white/*`, `rose-*` except intentional CMS image overlays (`bg-black/50` on hero editors).
+- Match active template voice: `default-modern` → `font-black uppercase`; `atelier-showcase` → `font-serif`; `minecraft-camp` → `minecraft-*` classes.
+
+## New UI in plugins
+
+- Extend an existing component or add a **variant** — do not fork parallel design systems.
+- If a plugin needs a one-off wrapper, keep it in `src/plugins/<id>/storefront/` and still compose shared primitives.
+
+Reference: `docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md` (Storefront UI section).

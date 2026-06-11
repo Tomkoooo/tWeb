@@ -4,16 +4,34 @@ import { useState } from "react"
 import { pressPortalApi } from "./press-api-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { trackPressEvent } from "@/lib/analytics/track"
+import { getPluginStorefrontSurface } from "@/lib/plugin-storefront-ui"
 
 type Props = {
   accessMode: string
   tokenFromUrl?: string
   portalTitle: string
+  templateId: string
   onSuccess: () => void
 }
 
-export function PressGate({ accessMode, tokenFromUrl, portalTitle, onSuccess }: Props) {
+export function PressGate({
+  accessMode,
+  tokenFromUrl,
+  portalTitle,
+  templateId,
+  onSuccess,
+}: Props) {
+  const surface = getPluginStorefrontSurface(templateId)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -47,42 +65,62 @@ export function PressGate({ accessMode, tokenFromUrl, portalTitle, onSuccess }: 
   }
 
   return (
-    <div className="mx-auto max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg">
-      <h1 className="text-2xl font-bold tracking-tight mb-2">{portalTitle}</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Ez az oldal sajtóknak szóló anyagokat tartalmaz. Kérjük, add meg a belépési adataidat.
-      </p>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {accessMode !== "unique_link" ? (
-          <Input
-            type="email"
-            placeholder="E-mail cím"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-        ) : null}
-        {(accessMode === "shared_password" ||
-          accessMode === "password_per_contact" ||
-          accessMode === "unique_link") && (
-          <Input
-            type="password"
-            placeholder={accessMode === "unique_link" ? "Jelszó (ha kaptál)" : "Jelszó"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required={accessMode !== "unique_link"}
-            autoComplete="current-password"
-          />
-        )}
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Belépés…" : "Belépés"}
-        </Button>
+    <Card className="w-full max-w-md border-border shadow-lg">
+      <CardHeader className="text-center">
+        <CardTitle className={surface.gateTitle}>{portalTitle}</CardTitle>
+        <CardDescription>
+          Ez az oldal sajtóknak szóló anyagokat tartalmaz. Kérjük, add meg a belépési adataidat.
+        </CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {accessMode !== "unique_link" ? (
+            <div className="space-y-2 text-left">
+              <Label htmlFor="press-email">E-mail cím</Label>
+              <Input
+                id="press-email"
+                type="email"
+                placeholder="sajto@media.hu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+          ) : null}
+          {(accessMode === "shared_password" ||
+            accessMode === "password_per_contact" ||
+            accessMode === "unique_link") && (
+            <div className="space-y-2 text-left">
+              <Label htmlFor="press-password">
+                {accessMode === "unique_link" ? "Jelszó (ha kaptál)" : "Jelszó"}
+              </Label>
+              <Input
+                id="press-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={accessMode !== "unique_link"}
+                autoComplete="current-password"
+              />
+            </div>
+          )}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <Button
+            type="submit"
+            variant={templateId === "default-modern" ? "krausz" : "default"}
+            className={surface.gateButton}
+            disabled={loading}
+          >
+            {loading ? "Belépés…" : "Belépés"}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            A portál használatát mérjük a sajtószolgálat javítása érdekében.
+          </p>
+        </CardFooter>
       </form>
-      <p className="mt-4 text-xs text-muted-foreground">
-        A portál használatát mérjük a sajtószolgálat javítása érdekében.
-      </p>
-    </div>
+    </Card>
   )
 }

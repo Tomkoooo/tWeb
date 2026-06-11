@@ -7,12 +7,15 @@ import { EditableDocRichText } from "@/features/template-cms/primitives/Editable
 import { PressKitInlineRichEditor } from "../admin/PressKitInlineRichEditor"
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
 import { Button } from "@/components/ui/button"
+import { getPluginStorefrontSurface } from "@/lib/plugin-storefront-ui"
+import { cn } from "@/lib/utils"
 import type { PressKitPageBlock, PressKitPageContent } from "../lib/page-content"
 
 type Props = {
   content: PressKitPageContent
   brandName?: string
   portalTitle?: string
+  templateId?: string
   previewContact?: { name: string; outlet: string }
 }
 
@@ -20,15 +23,17 @@ export function PressKitPageRender({
   content,
   brandName = "",
   portalTitle = "Sajtóanyagok",
+  templateId = "default-modern",
   previewContact,
 }: Props) {
   const cms = useSurfaceDocEdit()
+  const surface = getPluginStorefrontSurface(templateId)
 
   return (
-    <article className="mx-auto max-w-4xl px-4 py-10 space-y-10 text-foreground">
+    <article className={cn(surface.sectionSpacing, "text-foreground")}>
       {cms.enabled ? (
-        <div className="flex flex-wrap gap-2 border border-dashed border-white/20 bg-black/40 p-3 rounded-lg">
-          <p className="w-full text-[10px] uppercase tracking-widest text-neutral-400 mb-1">
+        <div className={surface.cmsBanner}>
+          <p className="mb-1 w-full text-[10px] uppercase tracking-widest text-muted-foreground">
             Blokkok — kattints az előnézeten a szövegek szerkesztéséhez
           </p>
         </div>
@@ -48,6 +53,7 @@ export function PressKitPageRender({
           blocks={content.blocks}
           brandName={brandName}
           portalTitle={portalTitle}
+          templateId={templateId}
         />
       ))}
     </article>
@@ -60,14 +66,17 @@ function PressKitBlockView({
   blocks,
   brandName,
   portalTitle,
+  templateId,
 }: {
   block: PressKitPageBlock
   index: number
   blocks: PressKitPageBlock[]
   brandName: string
   portalTitle: string
+  templateId: string
 }) {
   const cms = useSurfaceDocEdit()
+  const surface = getPluginStorefrontSurface(templateId)
   const base = `blocks.${index}`
 
   const removeBlock = () => {
@@ -88,8 +97,8 @@ function PressKitBlockView({
   }
 
   const blockChrome = cms.enabled ? (
-    <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-white/10 pb-2">
-      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+    <div className={surface.cmsBlockChrome}>
+      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
         {block.type}
       </span>
       <Button type="button" size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => moveBlock(-1)}>
@@ -98,7 +107,13 @@ function PressKitBlockView({
       <Button type="button" size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => moveBlock(1)}>
         ↓
       </Button>
-      <Button type="button" size="sm" variant="ghost" className="h-7 text-[10px] text-rose-400" onClick={removeBlock}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="h-7 text-[10px] text-destructive"
+        onClick={removeBlock}
+      >
         Törlés
       </Button>
     </div>
@@ -106,13 +121,13 @@ function PressKitBlockView({
 
   if (block.type === "hero") {
     return (
-      <section>
+      <section className="border-b border-border pb-12">
         {blockChrome}
         <header className="space-y-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          <p className={surface.eyebrow}>
             <EditableDocText path={`${base}.eyebrow`} value={block.eyebrow} placeholder="Sajtóanyag" />
           </p>
-          <h1 className="text-4xl font-bold tracking-tight">
+          <h1 className={surface.heroTitle}>
             <EditableDocText path={`${base}.pageTitle`} value={block.pageTitle} placeholder={portalTitle} />
           </h1>
           {brandName && !cms.enabled ? (
@@ -120,7 +135,7 @@ function PressKitBlockView({
           ) : null}
         </header>
         {block.heroImage || cms.enabled ? (
-          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border bg-muted">
+          <div className="relative mt-8 aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-muted">
             {block.heroImage ? (
               <FallbackImage
                 src={mediaImageSrc(block.heroImage)}
@@ -130,7 +145,7 @@ function PressKitBlockView({
               />
             ) : null}
             {cms.enabled ? (
-              <div className="absolute bottom-2 left-2 right-2 rounded bg-black/60 p-2 text-xs text-white">
+              <div className="absolute bottom-2 left-2 right-2 rounded bg-black/50 p-2 text-xs text-white">
                 <span className="block text-[10px] uppercase tracking-widest opacity-80">Hero kép URL</span>
                 <EditableDocText path={`${base}.heroImage`} value={block.heroImage} placeholder="/api/media/…" />
               </div>
@@ -155,17 +170,17 @@ function PressKitBlockView({
 
   if (block.type === "richText") {
     return (
-      <section className="space-y-3">
+      <section className="space-y-3 border-b border-border pb-12">
         {blockChrome}
         {(block.title || cms.enabled) && (
-          <h2 className="text-2xl font-semibold">
+          <h2 className={surface.sectionTitle}>
             <EditableDocText path={`${base}.title`} value={block.title} placeholder="Szakasz címe" />
           </h2>
         )}
         <EditableDocRichText
           path={`${base}.bodyHtml`}
           html={block.bodyHtml}
-          className="prose prose-neutral dark:prose-invert max-w-none"
+          className={surface.prose}
         />
       </section>
     )
@@ -175,12 +190,12 @@ function PressKitBlockView({
     const html = block.bodyHtml || (block.body ? `<p>${block.body}</p>` : "")
     if (!html.replace(/<[^>]+>/g, "").trim() && !cms.enabled) return null
     return (
-      <section className="space-y-3">
+      <section className="space-y-3 border-b border-border pb-12">
         {blockChrome}
         <PressKitInlineRichEditor
           path={`${base}.bodyHtml`}
           html={html}
-          className="prose prose-neutral dark:prose-invert max-w-none text-base leading-relaxed"
+          className={cn(surface.prose, "text-base leading-relaxed")}
         />
       </section>
     )
@@ -189,19 +204,19 @@ function PressKitBlockView({
   if (block.type === "highlights") {
     if (block.items.length === 0 && !cms.enabled) return null
     return (
-      <section>
+      <section className="border-b border-border pb-12">
         {blockChrome}
         <div className="grid gap-4 sm:grid-cols-2">
           {block.items.map((item, itemIdx) => (
-            <div key={itemIdx} className="rounded-xl border border-border p-4 space-y-2">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            <div key={itemIdx} className={surface.highlightCard}>
+              <p className={surface.eyebrow}>
                 <EditableDocText
                   path={`${base}.items.${itemIdx}.label`}
                   value={item.label}
                   placeholder="Címke"
                 />
               </p>
-              <p className="font-medium">
+              <p className="font-medium text-foreground">
                 <EditableDocText
                   path={`${base}.items.${itemIdx}.detail`}
                   value={item.detail}

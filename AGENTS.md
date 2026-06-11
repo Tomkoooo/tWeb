@@ -6,7 +6,7 @@ Use these guides when changing templates, plugins, deployments, or CMS content.
 | --- | --- |
 | **Deploy / fork / `DEPLOYMENT_KEY` / access matrix** | [docs/deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md](docs/deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md) |
 | **New or edit layout template** | [docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md](docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md) |
-| **New or enable plugin** | [docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md](docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md) |
+| **New or enable plugin** | [docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md](docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md) (storefront UI: reuse template chrome + `src/lib/plugin-storefront-ui.ts`) |
 | **Import customer copy into CMS** | [docs/cms/AGENT_CONTENT_IMPORT.md](docs/cms/AGENT_CONTENT_IMPORT.md) |
 | **Minecraft camp reference project** | [docs/projects/MINECRAFT_CAMP.md](docs/projects/MINECRAFT_CAMP.md) |
 

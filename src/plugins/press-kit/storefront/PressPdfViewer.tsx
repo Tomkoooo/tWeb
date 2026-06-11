@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import * as pdfjs from "pdfjs-dist"
 import { Button } from "@/components/ui/button"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+import { Card, CardContent } from "@/components/ui/card"
 import { pressPortalApi } from "./press-api-client"
 import { trackPressEvent } from "@/lib/analytics/track"
 import type { PressContactSession } from "./press-api-client"
@@ -113,12 +115,20 @@ export function PressPdfViewer({
     URL.revokeObjectURL(url)
   }
 
-  if (loading) return <p className="text-muted-foreground">PDF betöltése…</p>
+  if (loading) {
+    return (
+      <Card className="border-border py-12">
+        <CardContent className="flex justify-center">
+          <LoadingSpinner />
+        </CardContent>
+      </Card>
+    )
+  }
   if (error) return <p className="text-destructive text-sm">{error}</p>
 
   return (
-    <div
-      className={`relative rounded-xl border border-border overflow-hidden bg-muted/30 ${
+    <Card
+      className={`relative gap-0 overflow-hidden border-border bg-muted/30 py-0 ${
         disableTextSelection ? "select-none press-no-print" : ""
       }`}
       onContextMenu={(e) => {
@@ -166,6 +176,6 @@ export function PressPdfViewer({
           </Button>
         </div>
       ) : null}
-    </div>
+    </Card>
   )
 }
