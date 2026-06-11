@@ -1,6 +1,6 @@
 # Google Tag Manager, GA4, and Meta Pixel
 
-Storefront analytics are **consent-gated**: GTM and Meta load only after the visitor accepts marketing cookies. The app pushes [GA4 recommended ecommerce events](https://developers.google.com/analytics/devguides/collection/ga4/ecommerce) to `window.dataLayer`; your marketing team maps them to GA4 (and optional Google Ads) inside GTM.
+Storefront analytics use **consent mode**: GTM loads on every page (snippet in `<head>` + `<body>` noscript) with default consent denied; ecommerce `dataLayer` events and Meta Pixel load only after the visitor accepts marketing cookies. The app pushes [GA4 recommended ecommerce events](https://developers.google.com/analytics/devguides/collection/ga4/ecommerce) to `window.dataLayer`; your marketing team maps them to GA4 (and optional Google Ads) inside GTM.
 
 ## Environment variables
 
@@ -78,8 +78,8 @@ Verify in [Meta Events Manager](https://business.facebook.com/events_manager) an
 
 ## Testing checklist
 
-- Reject marketing cookies → no requests to `googletagmanager.com` or `connect.facebook.net`.
-- Accept marketing → GTM + Meta load; `page_view` on navigation.
+- Reject marketing cookies → GTM container loads with consent denied; no `connect.facebook.net` requests; no ecommerce `dataLayer` events.
+- Accept marketing → consent update fires; Meta Pixel loads; `page_view` on navigation.
 - Add to cart → `add_to_cart` in GTM Preview.
 - Complete test order (COD and Stripe) → single `purchase` with line items and HUF total.
 

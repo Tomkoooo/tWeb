@@ -12,9 +12,12 @@ export function ensureDataLayer(): Record<string, unknown>[] {
   return window.dataLayer
 }
 
-export function pushDataLayer(payload: Record<string, unknown>): void {
+export function pushDataLayer(
+  payload: Record<string, unknown>,
+  options?: { skipConsentCheck?: boolean }
+): void {
   if (typeof window === "undefined") return
-  if (!hasMarketingConsent()) return
+  if (!options?.skipConsentCheck && !hasMarketingConsent()) return
   ensureDataLayer().push(payload)
 }
 

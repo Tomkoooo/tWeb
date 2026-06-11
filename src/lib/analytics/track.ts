@@ -229,14 +229,17 @@ export function trackPressEvent(
   event: "press_portal_login" | "press_page_view" | "press_pdf_view",
   params: PressEventParams
 ): void {
-  pushDataLayer({
-    event,
-    press_contact_id: params.press_contact_id,
-    press_outlet: params.press_outlet,
-    press_name: params.press_name,
-    ...(params.page_section ? { page_section: params.page_section } : {}),
-    ...(params.pdf_page ? { pdf_page: params.pdf_page } : {}),
-  })
+  pushDataLayer(
+    {
+      event,
+      press_contact_id: params.press_contact_id,
+      press_outlet: params.press_outlet,
+      press_name: params.press_name,
+      ...(params.page_section ? { page_section: params.page_section } : {}),
+      ...(params.pdf_page ? { pdf_page: params.pdf_page } : {}),
+    },
+    { skipConsentCheck: true }
+  )
 }
 
 export type { CheckoutAnalyticsSnapshot, PageViewParams, SelectItemParams, ViewItemParams }

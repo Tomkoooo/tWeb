@@ -42,16 +42,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("cookie-consent-changed", onConsentChange)
   }, [enabled])
 
-  const showScripts =
-    enabled && marketingConsent && scriptIds && (scriptIds.gtmId || scriptIds.metaPixelId)
+  const showMetaPixel =
+    enabled && marketingConsent && scriptIds?.metaPixelId
 
   return (
     <>
-      {showScripts ? (
-        <AnalyticsScripts
-          gtmId={scriptIds.gtmId}
-          metaPixelId={scriptIds.metaPixelId}
-        />
+      {showMetaPixel ? (
+        <AnalyticsScripts metaPixelId={scriptIds.metaPixelId} />
       ) : null}
       {enabled && marketingConsent ? (
         <Suspense fallback={null}>

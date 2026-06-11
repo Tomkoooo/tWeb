@@ -33,6 +33,10 @@ const pressStart2P = Press_Start_2P({
 });
 
 import { Providers } from "@/components/Providers";
+import {
+  GoogleTagManagerBodyNoscript,
+  GoogleTagManagerHead,
+} from "@/components/analytics/GoogleTagManager";
 import { Toaster } from "@/components/ui/sonner";
 import { PopupCampaignService } from "@/services/popup-campaign";
 
@@ -106,6 +110,7 @@ export default async function RootLayout({
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
       <head>
+        <GoogleTagManagerHead />
         <noscript>
           <style
             dangerouslySetInnerHTML={{
@@ -117,6 +122,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} antialiased`}
       >
+        <GoogleTagManagerBodyNoscript />
         <Providers
           devMetricsEnabled={
             process.env.DEV_METRICS === "1" || process.env.DEV_METRICS?.toLowerCase() === "true"
