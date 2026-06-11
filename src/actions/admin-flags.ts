@@ -82,6 +82,12 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     description: "Minecraft / tábor turnus foglalás, Stripe checkout, Excel export.",
     defaultEnabled: false,
   },
+  {
+    key: "pluginPressKit",
+    label: "Sajtóanyagok plugin",
+    description: "Jelszóval védett sajtóportál, CMS, PDF előnézet, meghívók és statisztika.",
+    defaultEnabled: false,
+  },
 ];
 
 async function migrateLegacyCombinedParcelFlag() {

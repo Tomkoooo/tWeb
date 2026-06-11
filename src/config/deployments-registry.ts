@@ -38,7 +38,7 @@ type DeploymentsFile = {
   hostMap?: Record<string, string>
 }
 
-const file = deploymentsFile as DeploymentsFile
+const file = deploymentsFile as unknown as DeploymentsFile
 
 function normalizeDeployment(raw: RawDeployment): DeploymentDefinition {
   const defaultTemplateId = raw.defaultTemplateId ?? raw.templateId
@@ -85,11 +85,19 @@ function resolveDeploymentKeyFromHost(host: string | null | undefined): string |
   return hostMap[normalized] ?? hostMap[host.toLowerCase()] ?? null
 }
 
+/** Maps env typos/aliases (e.g. `nagyarcu_shop`) to canonical deployment keys. */
+function resolveCanonicalDeploymentKey(raw: string): string {
+  if (deploymentsByKey.has(raw)) return raw
+  const hyphenated = raw.replace(/_/g, "-")
+  if (hyphenated !== raw && deploymentsByKey.has(hyphenated)) return hyphenated
+  return raw
+}
+
 export function getDeploymentKey(host?: string | null): string {
   const fromEnv = process.env.DEPLOYMENT_KEY?.trim()
-  if (fromEnv) return fromEnv
+  if (fromEnv) return resolveCanonicalDeploymentKey(fromEnv)
   const fromHost = resolveDeploymentKeyFromHost(host ?? null)
-  if (fromHost) return fromHost
+  if (fromHost) return resolveCanonicalDeploymentKey(fromHost)
   return DEFAULT_DEPLOYMENT_KEY
 }
 
@@ -97,6 +105,12 @@ export function getDeploymentDefinition(host?: string | null): DeploymentDefinit
   const key = getDeploymentKey(host)
   const entry = deploymentsByKey.get(key)
   if (!entry) {
+    if (process.env.NODE_ENV !== "production" && key !== DEFAULT_DEPLOYMENT_KEY) {
+      console.warn(
+        `[deployments] Unknown DEPLOYMENT_KEY '${key}' — falling back to '${DEFAULT_DEPLOYMENT_KEY}'. ` +
+          `Check deployments.config.json for valid keys.`
+      )
+    }
     const fallback = deploymentsByKey.get(DEFAULT_DEPLOYMENT_KEY)
     if (!fallback) {
       throw new Error(

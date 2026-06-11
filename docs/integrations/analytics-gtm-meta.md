@@ -25,8 +25,23 @@ At least one of GTM or Meta IDs should be set. Analytics is enabled by default w
 | `view_cart` | `/cart` |
 | `begin_checkout` | `/checkout` |
 | `purchase` | `/checkout/success` (once per order) |
+| `press_portal_login` | Press-kit `/sajto` — successful journalist login |
+| `press_page_view` | Press-kit portal content viewed |
+| `press_pdf_view` | Press-kit comic PDF opened or page turned |
 
 Ecommerce payloads use `currency: HUF` and GA4 `items[]` (`item_id`, `item_name`, `price`, `quantity`, `item_variant`).
+
+### Press-kit (sajtóportál) GTM notes
+
+Map custom events `press_portal_login`, `press_page_view`, and `press_pdf_view` to GA4 Event tags. Suggested event parameters (register as custom dimensions in GA4):
+
+- `press_contact_id`
+- `press_outlet`
+- `press_name`
+- `page_section` (for `press_page_view`)
+- `pdf_page` (for `press_pdf_view`)
+
+Press events are pushed to `dataLayer` without requiring marketing cookie consent on `/sajto` routes. Disclose measurement in the press invite email.
 
 Consent events: `consent_default` (denied) before choice, `consent_update` (granted) after accept.
 

@@ -16,6 +16,7 @@ export {
   trackBeginCheckout,
   saveCheckoutSnapshotFromCart,
   firePurchaseOnce,
+  trackPressEvent,
 } from "./track"
 export { updateSnapshotTransactionId } from "./checkout-snapshot"
 export { ga4ItemFromProduct, cartItemsToGa4Items } from "./items"

@@ -39,4 +39,13 @@ describe("deployment config", () => {
     process.env.DEPLOYMENT_KEY = "minecraft-camp"
     expect(isPluginAllowlistedForDeployment("camp-booking")).toBe(true)
   })
+
+  it("selects nagyarcu-shop deployment with press-kit", () => {
+    process.env.DEPLOYMENT_KEY = "nagyarcu-shop"
+    const config = getDeploymentDefinition()
+    expect(config.key).toBe("nagyarcu-shop")
+    expect(config.enabledPlugins).toContain("press-kit")
+    expect(getPluginConfigForDeployment("press-kit").routePrefix).toBe("sajto")
+    expect(isPluginAllowlistedForDeployment("press-kit")).toBe(true)
+  })
 })

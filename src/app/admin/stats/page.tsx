@@ -1,9 +1,17 @@
-import { getAdminStats } from "@/actions/admin-stats";
+import { getAdminDailyStats, getAdminStats } from "@/actions/admin-stats";
 import { redirect } from "next/navigation";
 import { isShopEnabled } from "@/lib/features/shop";
 import { resolvePluginStatsRedirect } from "@/lib/admin-plugin-navigation";
+import { resolveAdminStatsDateRange } from "@/lib/admin-stats-date-range";
+import { AdminDailyStatsSection } from "@/components/admin/AdminDailyStatsSection";
 import { TrendingUp, ShoppingCart, Users, Package, MessageSquare, BarChart3 } from "lucide-react";
 import type { ComponentType } from "react";
+
+type AdminStatsSearchParams = Promise<{
+  preset?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}>;
 
 type StatCardProps = {
   title: string;
@@ -57,10 +65,25 @@ function StatCard({ title, value, subtitle, icon: Icon }: StatCardProps) {
   );
 }
 
-export default async function AdminStatsPage() {
+export default async function AdminStatsPage({
+  searchParams,
+}: {
+  searchParams: AdminStatsSearchParams;
+}) {
   if (!isShopEnabled()) {
     const pluginStats = await resolvePluginStatsRedirect();
     if (pluginStats) redirect(pluginStats);
+  }
+
+  const filters = await searchParams;
+  let dailyStatsError: string | null = null;
+  let dailyStats: Awaited<ReturnType<typeof getAdminDailyStats>> | null = null;
+
+  try {
+    const range = resolveAdminStatsDateRange(filters);
+    dailyStats = await getAdminDailyStats(range);
+  } catch (error) {
+    dailyStatsError = error instanceof Error ? error.message : "Nem sikerült betölteni a napi statisztikákat.";
   }
 
   const stats = await getAdminStats() as AdminStatsResult;
@@ -155,6 +178,20 @@ export default async function AdminStatsPage() {
           ))}
         </div>
       </section>
+
+      {dailyStatsError ? (
+        <section className="bg-white/5 border border-rose-500/30 p-6">
+          <h2 className="text-xl font-black uppercase tracking-wider text-white">Napi részletek</h2>
+          <p className="mt-2 text-sm text-rose-300">{dailyStatsError}</p>
+        </section>
+      ) : dailyStats ? (
+        <AdminDailyStatsSection
+          range={dailyStats.range}
+          summary={dailyStats.summary}
+          dailyIncome={dailyStats.dailyIncome}
+          dailyProducts={dailyStats.dailyProducts}
+        />
+      ) : null}
     </div>
   );
 }

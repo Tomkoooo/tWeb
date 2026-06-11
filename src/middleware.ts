@@ -5,6 +5,10 @@ import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@/lib/features
 import { isPluginAdminPath, parsePluginAdminPath } from "@/lib/features/plugins"
 import { isPluginAllowlistedForDeployment } from "@/config/deployments-registry"
 import { isCampOnlyBlockedPath, isCampOnlyStorefront } from "@/lib/features/camp-storefront"
+import {
+  isPressKitPathForDeployment,
+  isPressKitPluginAllowlisted,
+} from "@/lib/features/press-kit-storefront"
 
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
@@ -73,6 +77,10 @@ export default auth(async (req) => {
     if (!parsed || !isPluginAllowlistedForDeployment(parsed.pluginId, host)) {
       return new NextResponse(null, { status: 404 })
     }
+  }
+
+  if (isPressKitPathForDeployment(pathname, host) && !isPressKitPluginAllowlisted(host)) {
+    return new NextResponse(null, { status: 404 })
   }
 
   const previewCookie = req.cookies.get("wse_template_preview")

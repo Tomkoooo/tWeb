@@ -216,4 +216,27 @@ export function firePurchaseOnce(orderId: string | null): boolean {
   return true
 }
 
+export type PressEventParams = {
+  press_contact_id: string
+  press_outlet: string
+  press_name: string
+  page_section?: string
+  pdf_page?: number
+}
+
+/** Press portal events — may run without marketing cookie consent on /sajto routes. */
+export function trackPressEvent(
+  event: "press_portal_login" | "press_page_view" | "press_pdf_view",
+  params: PressEventParams
+): void {
+  pushDataLayer({
+    event,
+    press_contact_id: params.press_contact_id,
+    press_outlet: params.press_outlet,
+    press_name: params.press_name,
+    ...(params.page_section ? { page_section: params.page_section } : {}),
+    ...(params.pdf_page ? { pdf_page: params.pdf_page } : {}),
+  })
+}
+
 export type { CheckoutAnalyticsSnapshot, PageViewParams, SelectItemParams, ViewItemParams }

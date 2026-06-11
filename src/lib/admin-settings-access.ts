@@ -17,6 +17,7 @@ export type AdminFeatureFlagKey =
   | "stripePayments"
   | "szamlazzInvoicing"
   | "pluginCampBooking"
+  | "pluginPressKit"
 
 const SHOP_ONLY_FLAGS: AdminFeatureFlagKey[] = [
   "shopPage",
@@ -83,12 +84,22 @@ const PLUGIN_LABELS: Record<string, { name: string; description: string; feature
       description: "Turnus foglalás, Stripe checkout, Excel export.",
       featureFlagKey: "pluginCampBooking",
     },
+    "press-kit": {
+      name: "Sajtóanyagok",
+      description: "Sajtóportál, CMS, PDF előnézet, meghívók és megnyitás-statisztika.",
+      featureFlagKey: "pluginPressKit",
+    },
   }
 
 const CONFIG_LABELS: Record<string, Record<string, string>> = {
   "camp-booking": {
     storefrontMode: "Storefront mód",
     currency: "Pénznem",
+  },
+  "press-kit": {
+    routePrefix: "URL előtag",
+    portalTitle: "Portál címe",
+    analyticsOnPressPortal: "Analitika a sajtóportálon",
   },
 }
 

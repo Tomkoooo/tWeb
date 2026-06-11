@@ -21,6 +21,20 @@
           "currency": "HUF"
         }
       }
+    },
+    {
+      "key": "nagyarcu-shop",
+      "label": "Nagy Árcu Shop",
+      "allowedTemplates": ["default-modern", "atelier-showcase"],
+      "defaultTemplateId": "default-modern",
+      "enabledPlugins": ["press-kit"],
+      "pluginConfig": {
+        "press-kit": {
+          "routePrefix": "sajto",
+          "portalTitle": "Sajtóanyagok",
+          "analyticsOnPressPortal": true
+        }
+      }
     }
   ],
   "hostMap": {}

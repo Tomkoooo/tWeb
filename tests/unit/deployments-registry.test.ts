@@ -38,4 +38,11 @@ describe("deployments-registry", () => {
     expect(isTemplateAllowedForDeployment("minecraft-camp")).toBe(true)
     expect(getDeploymentKey()).toBe("minecraft-camp")
   })
+
+  it("resolves underscore DEPLOYMENT_KEY aliases to hyphenated keys", () => {
+    process.env.DEPLOYMENT_KEY = "nagyarcu_shop"
+    expect(getDeploymentKey()).toBe("nagyarcu-shop")
+    expect(getDeploymentDefinition().enabledPlugins).toContain("press-kit")
+    expect(isPluginAllowlistedForDeployment("press-kit")).toBe(true)
+  })
 })
