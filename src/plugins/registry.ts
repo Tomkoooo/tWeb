@@ -10,6 +10,7 @@ const syncRegistry: Record<string, PluginModule> = {}
 const pluginLoaders: Record<string, () => Promise<PluginModule>> = {
   "camp-booking": () => import("./camp-booking/plugin.config").then((m) => m.campBooking),
   "press-kit": () => import("./press-kit/plugin.config").then((m) => m.pressKit),
+  "order-lab": () => import("./order-lab/plugin.config").then((m) => m.orderLab),
 }
 
 export function listRegisteredPluginIds(): string[] {

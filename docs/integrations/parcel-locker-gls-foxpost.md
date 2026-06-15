@@ -150,6 +150,42 @@ Standard home-delivery methods are unchanged.
 
 If managers are off, parcel point data is still shown but label buttons are hidden.
 
+### Foxpost shipment workbench (live orders)
+
+On **Order detail** for Foxpost orders, the expanded workbench supports:
+
+- Create parcel + label PDF
+- Refresh tracking (full timeline via `/tracking/tracks/{barcode}`)
+- Label info, delivery note PDF
+- Update recipient / size / comment (`PUT /parcel`)
+- Delete parcel (`DELETE /parcel/{barcode}`)
+- Create return parcel (`POST /re/ext`)
+
+Implementation: `src/components/admin/foxpost/FoxpostShipmentWorkbench.tsx`, actions in `src/actions/foxpost-shipment.ts`.
+
+---
+
+## Order Lab plugin (Foxpost sandbox)
+
+For **nagyarcu-shop** deployment only (allowlisted in `deployments.config.json`):
+
+1. Set `DEPLOYMENT_KEY=nagyarcu-shop` and enable **`pluginOrderLab`** in Admin → Beállítások.
+2. Open **Admin → Plugins → Order Lab → Beállítások** and enter Foxpost **sandbox** API credentials (stored in MongoDB, not env).
+3. Use **Order Lab** overview to test the connection, then seed sandbox orders.
+
+Sandbox orders live in MongoDB collection **`sandbox_orders`** (never mixed with live `orders`).
+
+| Feature | Path |
+| --- | --- |
+| Overview + connection test | `/admin/plugins/order-lab` |
+| Sandbox order list + seed | `/admin/plugins/order-lab/orders` |
+| Order detail + Foxpost workbench | `/admin/plugins/order-lab/orders/{id}` |
+| Seed settings (count, APM) | `/admin/plugins/order-lab/settings` |
+
+**Seed behaviour:** creates local orders with Foxpost APM from [sandbox_foxplus.json](https://cdn.foxpost.hu/sandbox_foxplus.json), filtered to `operator_id` matching `hu` + number **&lt; 1000** (default `hu350`). Line items are snapshots from active catalog products (including variants when available). Parcel/label creation is manual — same workbench as live orders.
+
+Foxpost sandbox portal (external status UI): [webapi-test.foxpost.hu/sandbox](https://webapi-test.foxpost.hu/sandbox/#/login)
+
 ---
 
 ## Troubleshooting
@@ -173,5 +209,7 @@ If managers are off, parcel point data is still shown but label buttons are hidd
 | Validation | `src/services/checkout-validation.ts` |
 | GLS service | `src/services/gls.ts` |
 | Foxpost service | `src/services/foxpost.ts` |
-| Admin UI | `src/components/admin/OrderParcelPanel.tsx` |
+| Foxpost workbench | `src/components/admin/foxpost/FoxpostShipmentWorkbench.tsx` |
+| Order Lab plugin | `src/plugins/order-lab/` |
+| Admin UI (GLS) | `src/components/admin/OrderParcelPanel.tsx` |
 | Admin flags (Beállítások) | `src/app/admin/info/page.tsx` |

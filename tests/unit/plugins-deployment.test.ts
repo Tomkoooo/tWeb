@@ -40,12 +40,14 @@ describe("deployment config", () => {
     expect(isPluginAllowlistedForDeployment("camp-booking")).toBe(true)
   })
 
-  it("selects nagyarcu-shop deployment with press-kit", () => {
+  it("selects nagyarcu-shop deployment with press-kit and order-lab", () => {
     process.env.DEPLOYMENT_KEY = "nagyarcu-shop"
     const config = getDeploymentDefinition()
     expect(config.key).toBe("nagyarcu-shop")
     expect(config.enabledPlugins).toContain("press-kit")
+    expect(config.enabledPlugins).toContain("order-lab")
     expect(getPluginConfigForDeployment("press-kit").routePrefix).toBe("sajto")
     expect(isPluginAllowlistedForDeployment("press-kit")).toBe(true)
+    expect(isPluginAllowlistedForDeployment("order-lab")).toBe(true)
   })
 })

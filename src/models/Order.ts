@@ -77,6 +77,7 @@ export interface IOrder extends Document {
     trackingStatus?: string;
     generatedAt?: Date;
     generatedBy?: mongoose.Types.ObjectId;
+    returnBarcode?: string;
     lastError?: string;
   };
   shippingMethod: mongoose.Types.ObjectId;
@@ -179,6 +180,7 @@ const OrderSchema = new Schema<IOrder>(
       trackingStatus: { type: String },
       generatedAt: { type: Date },
       generatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      returnBarcode: { type: String },
       lastError: { type: String },
     },
     shippingMethod: { type: Schema.Types.ObjectId, ref: "ShippingMethod", required: true },

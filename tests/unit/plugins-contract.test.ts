@@ -10,6 +10,10 @@ describe("plugin registry contract", () => {
     expect(pluginIds).toContain("camp-booking")
   })
 
+  it("registers order-lab plugin", () => {
+    expect(pluginIds).toContain("order-lab")
+  })
+
   for (const id of pluginIds) {
     describe(`plugin '${id}'`, () => {
       it("manifest id matches registry key", async () => {

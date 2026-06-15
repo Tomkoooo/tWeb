@@ -27,7 +27,7 @@
       "label": "Nagy Árcu Shop",
       "allowedTemplates": ["default-modern", "atelier-showcase"],
       "defaultTemplateId": "default-modern",
-      "enabledPlugins": ["press-kit"],
+      "enabledPlugins": ["press-kit", "order-lab"],
       "pluginConfig": {
         "press-kit": {
           "routePrefix": "sajto",

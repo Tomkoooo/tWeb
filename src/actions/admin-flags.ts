@@ -88,6 +88,12 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     description: "Jelszóval védett sajtóportál, CMS, PDF előnézet, meghívók és statisztika.",
     defaultEnabled: false,
   },
+  {
+    key: "pluginOrderLab",
+    label: "Order Lab plugin",
+    description: "Foxpost sandbox rendeléskezelés és csomag/címke teszt külön gyűjteményben.",
+    defaultEnabled: false,
+  },
 ];
 
 async function migrateLegacyCombinedParcelFlag() {

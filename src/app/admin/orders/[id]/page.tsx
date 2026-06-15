@@ -1,5 +1,4 @@
 import {
-  generateOrderFoxpostShipment,
   generateOrderGlsLabel,
   getOrderById,
   resendOrderInvoiceEmail,
@@ -11,6 +10,7 @@ import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar } from "l
 import {
   OrderParcelPanel,
 } from "@/components/admin/OrderParcelPanel"
+import { FoxpostShipmentPanel } from "@/components/admin/foxpost/FoxpostShipmentPanel"
 import { getOrderParcelProvider, getOrderShippingTypeLabel, orderHasParcelShipping } from "@/lib/parcel-locker"
 import { getOrderParcelDeliveryDisplay } from "@/lib/parcel-locker-checkout-display"
 import {
@@ -134,20 +134,12 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   />
                 ) : null}
                 {parcelProvider === "foxpost" ? (
-                  <OrderParcelPanel
-                    parcelManagerEnabled={foxpostManagerEnabled}
-                    provider="foxpost"
+                  <FoxpostShipmentPanel
+                    source="live"
                     orderId={order._id.toString()}
+                    parcelManagerEnabled={foxpostManagerEnabled}
                     foxpostParcelPoint={order.foxpostParcelPoint}
                     foxpostShipment={order.foxpostShipment}
-                    generateGlsAction={async () => {
-                      "use server"
-                      return { success: true }
-                    }}
-                    generateFoxpostAction={async () => {
-                      "use server"
-                      return generateOrderFoxpostShipment(order._id.toString())
-                    }}
                   />
                 ) : null}
               </div>

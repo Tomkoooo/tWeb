@@ -48,6 +48,10 @@ vi.mock("@/services/foxpost", () => ({
     createParcelForOrder: foxpostCreateParcelMock,
     createShipmentForOrder: foxpostCreateShipmentMock,
   },
+  FoxpostApiClient: {
+    createParcelForOrder: foxpostCreateParcelMock,
+    createShipmentForOrder: foxpostCreateShipmentMock,
+  },
 }));
 vi.mock("@/services/mailer", () => ({ MailerService: { sendEmail: mailerSendMock } }));
 vi.mock("@/models/Order", () => ({

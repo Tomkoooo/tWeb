@@ -18,6 +18,7 @@ export type AdminFeatureFlagKey =
   | "szamlazzInvoicing"
   | "pluginCampBooking"
   | "pluginPressKit"
+  | "pluginOrderLab"
 
 const SHOP_ONLY_FLAGS: AdminFeatureFlagKey[] = [
   "shopPage",
@@ -88,6 +89,11 @@ const PLUGIN_LABELS: Record<string, { name: string; description: string; feature
       name: "Sajtóanyagok",
       description: "Sajtóportál, CMS, PDF előnézet, meghívók és megnyitás-statisztika.",
       featureFlagKey: "pluginPressKit",
+    },
+    "order-lab": {
+      name: "Order Lab",
+      description: "Foxpost sandbox rendeléskezelés és csomag/címke teszt külön gyűjteményben.",
+      featureFlagKey: "pluginOrderLab",
     },
   }
 
