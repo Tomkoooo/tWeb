@@ -60,6 +60,7 @@ type OrderParcelPanelProps = {
   foxpostShipment?: FoxpostShipment | null;
   generateGlsAction: () => Promise<ParcelActionResult>;
   generateFoxpostAction: () => Promise<ParcelActionResult>;
+  onUpdated?: () => void;
 };
 
 type GenerateLabelButtonProps = {
@@ -67,6 +68,7 @@ type GenerateLabelButtonProps = {
   pendingLabel: string;
   onGenerate: () => Promise<ParcelActionResult>;
   onResult: (result: ParcelActionResult | null) => void;
+  onUpdated?: () => void;
 };
 
 function GenerateLabelButton({
@@ -74,6 +76,7 @@ function GenerateLabelButton({
   pendingLabel,
   onGenerate,
   onResult,
+  onUpdated,
 }: GenerateLabelButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -89,6 +92,7 @@ function GenerateLabelButton({
           const result = await onGenerate();
           onResult(result);
           router.refresh();
+          if (result.success) onUpdated?.();
         });
       }}
       className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
@@ -113,6 +117,7 @@ export function OrderParcelPanel({
   foxpostShipment,
   generateGlsAction,
   generateFoxpostAction,
+  onUpdated,
 }: OrderParcelPanelProps) {
   void orderId;
   const [lastResult, setLastResult] = useState<ParcelActionResult | null>(null);
@@ -149,6 +154,7 @@ export function OrderParcelPanel({
             pendingLabel="GLS címke készül..."
             onGenerate={generateGlsAction}
             onResult={setLastResult}
+            onUpdated={onUpdated}
           />
         ) : null}
         {successMessage ? (
@@ -218,6 +224,7 @@ export function OrderParcelPanel({
           pendingLabel="Foxpost címke készül..."
           onGenerate={generateFoxpostAction}
           onResult={setLastResult}
+          onUpdated={onUpdated}
         />
       ) : null}
       {successMessage ? (

@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   reactCompiler: true,
+  // Keep Mongoose out of Turbopack bundles for API routes (avoids multi-second compiles on /api/media).
+  serverExternalPackages: ["mongoose", "mongodb", "handlebars", "nodemailer"],
   images: {
     remotePatterns: [
       {

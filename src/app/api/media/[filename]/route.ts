@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { MediaService } from "@/services/media"
+import { getMediaFilePayload } from "@/lib/media-get-file"
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ filename: string }> }
 ) {
   const { filename } = await params
-  const payload = await MediaService.getFilePayload(filename)
+  const payload = await getMediaFilePayload(filename)
 
   if (!payload) {
     return new NextResponse("File not found", { status: 404 })

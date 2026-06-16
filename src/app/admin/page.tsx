@@ -73,6 +73,9 @@ export default async function AdminDashboard() {
     if (landing.kind === "redirect") {
       redirect(landing.href)
     }
+    if (landing.plugins.length === 0) {
+      redirect("/admin/cms/home")
+    }
     return <AdminContentModeHub plugins={landing.plugins} />
   }
 

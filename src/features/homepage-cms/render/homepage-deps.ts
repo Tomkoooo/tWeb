@@ -1,4 +1,5 @@
 import { resolveSiteContactChannels } from "@/lib/site-contact"
+import { isShopEnabled } from "@/lib/features/shop"
 import { ProductService } from "@/services/product"
 import { FeedbackService } from "@/services/feedback"
 import {
@@ -139,10 +140,32 @@ export type HomepageFeaturedResolveOptions = {
 export async function getHomepageRenderDependencies(
   options: HomepageFeaturedResolveOptions = {}
 ): Promise<HomepageDepsInternal> {
-  const [reviews, isShopPageEnabled, content, categoryTree, categoryData] = await Promise.all([
+  const content = await getCachedShopContent()
+  const channels = resolveSiteContactChannels(content)
+  const company = {
+    name: content.brand_name || "Company name",
+    address: channels.address,
+    phone: channels.phone,
+    email: channels.primaryEmail,
+    contactEmails: channels.emails,
+  }
+
+  if (!isShopEnabled()) {
+    return {
+      products: [],
+      categories: [],
+      reviews: [],
+      shopEnabled: false,
+      siteContact: channels,
+      company,
+      shopContentSnapshot: content,
+      categoryTreeSnapshot: [],
+    }
+  }
+
+  const [reviews, isShopPageEnabled, categoryTree, categoryData] = await Promise.all([
     FeedbackService.getHomepageReviews(6),
     getCachedFeatureFlag("shopPage", true),
-    getCachedShopContent(),
     getCachedCategoryTree(),
     getCachedCategories(),
   ])
@@ -179,21 +202,13 @@ export async function getHomepageRenderDependencies(
     products = ordered.map(mapFeaturedProduct)
   }
 
-  const channels = resolveSiteContactChannels(content)
-
   return {
     products,
     categories,
     reviews,
     shopEnabled: isShopPageEnabled,
     siteContact: channels,
-    company: {
-      name: content.brand_name || "Company name",
-      address: channels.address,
-      phone: channels.phone,
-      email: channels.primaryEmail,
-      contactEmails: channels.emails,
-    },
+    company,
     shopContentSnapshot: content,
     categoryTreeSnapshot: categoryTree as CategoryTreeNode[],
   }

@@ -7,20 +7,13 @@ import mongoose from "mongoose"
 import {
   buildAdminOrdersMongoQuery,
   filterAdminOrders,
-  type AdminOrderFilters,
+  parseAdminOrderFiltersFromSearchParams,
+  ADMIN_ORDER_DELETED_STATUS,
 } from "@/lib/admin-orders-query"
 import { buildAdminOrderLabelsZipBuffer } from "@/lib/admin-orders-labels-zip"
 
-function parseFilters(searchParams: URLSearchParams): AdminOrderFilters {
-  return {
-    q: searchParams.get("q") || undefined,
-    status: searchParams.get("status") || undefined,
-    invoiceStatus: searchParams.get("invoiceStatus") || undefined,
-    shippingType: searchParams.get("shippingType") || undefined,
-    productId: searchParams.get("productId") || undefined,
-    dateFrom: searchParams.get("dateFrom") || undefined,
-    dateTo: searchParams.get("dateTo") || undefined,
-  }
+function parseFilters(searchParams: URLSearchParams) {
+  return parseAdminOrderFiltersFromSearchParams(searchParams)
 }
 
 function parseOrderIds(searchParams: URLSearchParams): string[] {
@@ -60,7 +53,10 @@ export async function GET(request: NextRequest) {
     }>
 
     if (selectedIds.length > 0) {
-      orders = await Order.find({ _id: { $in: selectedIds } })
+      orders = await Order.find({
+        _id: { $in: selectedIds },
+        status: { $ne: ADMIN_ORDER_DELETED_STATUS },
+      })
         .select("_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64")
         .sort({ createdAt: -1 })
         .lean()

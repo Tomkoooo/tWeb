@@ -166,6 +166,87 @@ export async function getAdminStats() {
   };
 }
 
+export type OrderedProductRow = {
+  productId: string;
+  productName: string;
+  variantLabel: string | null;
+  totalQuantity: number;
+  totalRevenue: number;
+  orderCount: number;
+};
+
+export type GetOrderedProductsFilters = {
+  sinceDate?: string;
+};
+
+export async function getOrderedProducts(
+  filters: GetOrderedProductsFilters = {}
+): Promise<OrderedProductRow[]> {
+  await requireAdmin();
+  await dbConnect();
+
+  const matchStage: Record<string, unknown> = {
+    status: { $ne: "cancelled" },
+  };
+
+  if (filters.sinceDate) {
+    matchStage.createdAt = { $gte: new Date(filters.sinceDate) };
+  }
+
+  const aggregationResult = await Order.aggregate([
+    { $match: matchStage },
+    { $unwind: "$items" },
+    {
+      $group: {
+        _id: {
+          productId: "$items.product",
+          variantLabel: { $ifNull: ["$items.variantLabel", null] },
+        },
+        itemName: { $first: "$items.name" },
+        totalQuantity: { $sum: "$items.quantity" },
+        totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+        orderIds: { $addToSet: "$_id" },
+      },
+    },
+    { $sort: { totalQuantity: -1 } },
+  ]);
+
+  const productIds = [
+    ...new Set(
+      aggregationResult
+        .map((row) => row._id?.productId)
+        .filter((id): id is string => !!id)
+    ),
+  ];
+
+  const productsRaw =
+    productIds.length > 0
+      ? await Product.find({ _id: { $in: productIds } })
+          .select("name")
+          .lean()
+      : [];
+
+  const productNameById = new Map<string, string>();
+  for (const product of productsRaw) {
+    const id = String((product as { _id: { toString: () => string } })._id);
+    const name = (product as { name?: string }).name;
+    if (name) productNameById.set(id, name);
+  }
+
+  return aggregationResult.map((row) => {
+    const productId = row._id?.productId ? String(row._id.productId) : "unknown";
+    return {
+      productId,
+      productName:
+        productNameById.get(productId) || row.itemName || "Törölt termék",
+      variantLabel: row._id?.variantLabel || null,
+      totalQuantity: row.totalQuantity || 0,
+      totalRevenue: row.totalRevenue || 0,
+      orderCount: Array.isArray(row.orderIds) ? row.orderIds.length : 0,
+    };
+  });
+}
+
 export async function getAdminDailyStats(range: ResolvedAdminStatsDateRange) {
   await requireAdmin();
   await dbConnect();

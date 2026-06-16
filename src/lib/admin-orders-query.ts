@@ -4,22 +4,34 @@ import {
   type OrderShippingTypeFilter,
 } from "@/lib/parcel-locker"
 import { formatOrderNumber } from "@/lib/order-number"
+import {
+  ADMIN_ORDER_DELETED_STATUS,
+  resolveAdminOrderDeletedFilter,
+  type AdminOrderFilters,
+} from "@/lib/admin-orders-filters"
 
-export type AdminOrderFilters = {
-  q?: string
-  status?: string
-  invoiceStatus?: string
-  shippingType?: string
-  dateFrom?: string
-  dateTo?: string
-  productId?: string
-}
+export type {
+  AdminOrderDeletedFilter,
+  AdminOrderFilters,
+} from "@/lib/admin-orders-filters"
+
+export {
+  ADMIN_ORDER_DELETED_STATUS,
+  isAdminDeletedOrder,
+  parseAdminOrderFiltersFromSearchParams,
+  resolveAdminOrderDeletedFilter,
+} from "@/lib/admin-orders-filters"
 
 export function buildAdminOrdersMongoQuery(filters: AdminOrderFilters = {}): Record<string, unknown> {
   const query: Record<string, unknown> = {}
+  const deletedFilter = resolveAdminOrderDeletedFilter(filters)
 
-  if (filters.status && filters.status !== "all") {
+  if (deletedFilter === "deleted") {
+    query.status = ADMIN_ORDER_DELETED_STATUS
+  } else if (filters.status && filters.status !== "all") {
     query.status = filters.status
+  } else {
+    query.status = { $ne: ADMIN_ORDER_DELETED_STATUS }
   }
   if (filters.invoiceStatus && filters.invoiceStatus !== "all") {
     query.invoiceStatus = filters.invoiceStatus

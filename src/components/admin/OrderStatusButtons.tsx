@@ -22,6 +22,7 @@ type OrderStatusValue = (typeof STATUSES)[number]["value"]
 type OrderStatusButtonsProps = {
   orderId: string
   currentStatus: string
+  onUpdated?: () => void
 }
 
 function statusButtonClasses(status: (typeof STATUSES)[number], isActive: boolean) {
@@ -44,7 +45,7 @@ function statusButtonClasses(status: (typeof STATUSES)[number], isActive: boolea
   }
 }
 
-export function OrderStatusButtons({ orderId, currentStatus }: OrderStatusButtonsProps) {
+export function OrderStatusButtons({ orderId, currentStatus, onUpdated }: OrderStatusButtonsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<OrderStatusValue | null>(null)
@@ -57,6 +58,7 @@ export function OrderStatusButtons({ orderId, currentStatus }: OrderStatusButton
     try {
       await updateOrderStatus(orderId, nextStatus)
       router.refresh()
+      onUpdated?.()
       const label = STATUSES.find((s) => s.value === nextStatus)?.label ?? nextStatus
       toast.success(`Rendelés állapota frissítve: ${label}`)
     } catch (error) {

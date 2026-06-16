@@ -10,20 +10,12 @@ import { format } from "date-fns"
 import {
   buildAdminOrdersMongoQuery,
   filterAdminOrders,
-  type AdminOrderFilters,
+  parseAdminOrderFiltersFromSearchParams,
 } from "@/lib/admin-orders-query"
 import { buildAdminOrdersExcelBuffer } from "@/lib/admin-orders-export"
 
-function parseFilters(searchParams: URLSearchParams): AdminOrderFilters {
-  return {
-    q: searchParams.get("q") || undefined,
-    status: searchParams.get("status") || undefined,
-    invoiceStatus: searchParams.get("invoiceStatus") || undefined,
-    shippingType: searchParams.get("shippingType") || undefined,
-    productId: searchParams.get("productId") || undefined,
-    dateFrom: searchParams.get("dateFrom") || undefined,
-    dateTo: searchParams.get("dateTo") || undefined,
-  }
+function parseFilters(searchParams: URLSearchParams) {
+  return parseAdminOrderFiltersFromSearchParams(searchParams)
 }
 
 export const runtime = "nodejs"

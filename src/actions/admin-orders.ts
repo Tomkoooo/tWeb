@@ -14,7 +14,27 @@ import {
   buildAdminOrdersMongoQuery,
   filterAdminOrders,
   type AdminOrderFilters,
+  ADMIN_ORDER_DELETED_STATUS,
+  isAdminDeletedOrder,
+  resolveAdminOrderDeletedFilter,
+  type AdminOrderDeletedFilter,
 } from "@/lib/admin-orders-query"
+import {
+  applyWorkspaceFilters,
+  computeWorkspaceStats,
+  groupOrdersByShippingAndMix,
+  sortWorkspaceOrders,
+  summarizeOrder,
+  type AdminOrderSummary,
+  type BillingTypeFilter,
+  type LabelStateFilter,
+  type OrderMixGroup,
+  type OrderShippingMixSection,
+  type WorkspaceFilters,
+  type WorkspaceSortKey,
+  type WorkspaceStats,
+} from "@/lib/admin-orders-workspace"
+import type { OrderShippingTypeFilter } from "@/lib/parcel-locker"
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
@@ -147,6 +167,124 @@ export async function getOrders(filters: OrderFilters = {}) {
   return filterAdminOrders(orders, filters)
 }
 
+export type AdminOrdersWorkspaceData = {
+  orders: AdminOrderSummary[]
+  mixGroups: OrderMixGroup[]
+  shippingMixSections: OrderShippingMixSection[]
+  stats: WorkspaceStats
+  /** Total orders in the current deleted/active pool. */
+  totalPool: number
+  totalActive: number
+  totalDeleted: number
+  deletedFilter: AdminOrderDeletedFilter
+}
+
+function parseOptionalNumber(value?: string): number | undefined {
+  if (value == null || value === "") return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function toWorkspaceFilters(filters: AdminOrderFilters): WorkspaceFilters {
+  const shippingType = (filters.shippingType || "all") as OrderShippingTypeFilter
+  const labelState = (filters.labelState || "all") as LabelStateFilter
+  const billingType = (filters.billingType || "all") as BillingTypeFilter
+  return {
+    q: filters.q,
+    shippingType,
+    unitsMin: parseOptionalNumber(filters.unitsMin),
+    unitsMax: parseOptionalNumber(filters.unitsMax),
+    kindsMin: parseOptionalNumber(filters.kindsMin),
+    kindsMax: parseOptionalNumber(filters.kindsMax),
+    totalMin: parseOptionalNumber(filters.totalMin),
+    totalMax: parseOptionalNumber(filters.totalMax),
+    labelState,
+    billingType,
+    mix: filters.mix || undefined,
+    sort: (filters.sort as WorkspaceSortKey) || "newest",
+  }
+}
+
+/** Powers the recreated order management workspace (list / mix / assignment views). */
+export async function getOrdersWorkspace(
+  filters: AdminOrderFilters = {}
+): Promise<AdminOrdersWorkspaceData> {
+  await checkAdmin()
+  await dbConnect()
+
+  const deletedFilter = resolveAdminOrderDeletedFilter(filters)
+  const query = buildAdminOrdersMongoQuery(filters)
+  const rawOrders = await Order.find(query)
+    .select("-glsLabel.labelDataBase64 -foxpostShipment.labelDataBase64 -invoicePdfFileName")
+    .sort({ createdAt: -1 })
+    .lean()
+
+  const [totalActive, totalDeleted] = await Promise.all([
+    Order.countDocuments({ status: { $ne: ADMIN_ORDER_DELETED_STATUS } }),
+    Order.countDocuments({ status: ADMIN_ORDER_DELETED_STATUS }),
+  ])
+  const totalPool = deletedFilter === "deleted" ? totalDeleted : totalActive
+
+  const summaries = rawOrders.map((order) =>
+    summarizeOrder(order as unknown as Parameters<typeof summarizeOrder>[0])
+  )
+  const workspaceFilters = toWorkspaceFilters(filters)
+  const filtered = applyWorkspaceFilters(summaries, workspaceFilters)
+  const sorted = sortWorkspaceOrders(filtered, workspaceFilters.sort)
+  const shippingMixSections = groupOrdersByShippingAndMix(sorted)
+  const mixGroups = shippingMixSections.flatMap((section) => section.mixGroups)
+  const stats = computeWorkspaceStats(sorted, mixGroups, shippingMixSections)
+
+  return {
+    orders: sorted,
+    mixGroups,
+    shippingMixSections,
+    stats,
+    totalPool,
+    totalActive,
+    totalDeleted,
+    deletedFilter,
+  }
+}
+
+export async function generateSingleOrderLabel(orderId: string) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) return { success: false, error: "Order not found" }
+  if (isAdminDeletedOrder(order.status)) {
+    return { success: false, error: "Törölt rendeléshez nem generálható címke." }
+  }
+
+  const provider = getOrderParcelProvider(order)
+  if (!provider) return { success: false, error: "No parcel shipping" }
+
+  const session = await auth()
+  const [glsEnabled, foxpostEnabled] = await Promise.all([
+    isGlsParcelManagerEnabled(),
+    isFoxpostParcelManagerEnabled(),
+  ])
+
+  if (provider === "gls" && !glsEnabled) {
+    return { success: false, error: "GLS manager disabled" }
+  }
+  if (provider === "foxpost" && !foxpostEnabled) {
+    return { success: false, error: "Foxpost manager disabled" }
+  }
+
+  const result =
+    provider === "gls"
+      ? await applyGlsLabelToOrder(order, session?.user?.id)
+      : await applyFoxpostShipmentToOrder(order, session?.user?.id)
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath("/admin/orders/processing")
+
+  return result
+}
+
 export async function getOrderById(id: string) {
   await checkAdmin()
   await dbConnect()
@@ -216,6 +354,9 @@ export async function generateOrderGlsLabel(orderId: string) {
 
   const order = await Order.findById(orderId)
   if (!order) throw new Error("Order not found")
+  if (isAdminDeletedOrder(order.status)) {
+    throw new Error("Törölt rendeléshez nem generálható GLS címke.")
+  }
   if (!order.glsParcelPoint?.id) {
     throw new Error("Ehhez a rendeléshez nincs GLS csomagpont mentve.")
   }
@@ -237,6 +378,7 @@ export type BulkParcelLabelSkipReason =
   | "no_parcel_shipping"
   | "manager_disabled"
   | "label_exists"
+  | "deleted"
 
 export async function bulkGenerateParcelLabels(
   orderIds: string[],
@@ -280,6 +422,12 @@ export async function bulkGenerateParcelLabels(
     if (!order) {
       skippedCount += 1
       skips.push({ orderId, reason: "not_found" })
+      continue
+    }
+
+    if (isAdminDeletedOrder(order.status)) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "deleted" })
       continue
     }
 

@@ -19,7 +19,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { orderNeedsParcelLabel } from "@/lib/parcel-locker";
 import type { FoxpostLabelInfo, FoxpostParcelPoint, FoxpostShipment, FoxpostTrack } from "@/lib/foxpost";
-import type { FoxpostShipmentSource } from "@/actions/foxpost-shipment";
+import {
+  createFoxpostReturn,
+  deleteFoxpostParcel,
+  downloadFoxpostDeliveryNote,
+  fetchFoxpostLabelInfo,
+  generateFoxpostShipment,
+  refreshFoxpostTracking,
+  updateFoxpostParcel,
+  type FoxpostShipmentSource,
+} from "@/actions/foxpost-shipment";
 
 type ParcelActionResult = {
   success: boolean;
@@ -33,19 +42,7 @@ type FoxpostShipmentWorkbenchProps = {
   parcelManagerEnabled: boolean;
   foxpostParcelPoint?: FoxpostParcelPoint | null;
   foxpostShipment?: FoxpostShipment | null;
-  generateAction: () => Promise<ParcelActionResult>;
-  refreshTrackingAction: () => Promise<ParcelActionResult>;
-  updateParcelAction: (patch: {
-    recipientName?: string;
-    recipientPhone?: string;
-    recipientEmail?: string;
-    size?: string;
-    comment?: string;
-  }) => Promise<ParcelActionResult>;
-  deleteParcelAction: () => Promise<ParcelActionResult>;
-  createReturnAction: () => Promise<ParcelActionResult>;
-  fetchLabelInfoAction: () => Promise<ParcelActionResult>;
-  downloadDeliveryNoteAction: () => Promise<ParcelActionResult>;
+  onUpdated?: () => void;
 };
 
 function downloadBase64Pdf(base64: string, filename: string) {
@@ -61,14 +58,23 @@ export function FoxpostShipmentWorkbench({
   parcelManagerEnabled,
   foxpostParcelPoint,
   foxpostShipment,
-  generateAction,
-  refreshTrackingAction,
-  updateParcelAction,
-  deleteParcelAction,
-  createReturnAction,
-  fetchLabelInfoAction,
-  downloadDeliveryNoteAction,
+  onUpdated,
 }: FoxpostShipmentWorkbenchProps) {
+  const shipmentRef = { source, id: orderId };
+
+  const generateAction = () => generateFoxpostShipment(shipmentRef);
+  const refreshTrackingAction = () => refreshFoxpostTracking(shipmentRef);
+  const updateParcelAction = (patch: {
+    recipientName?: string;
+    recipientPhone?: string;
+    recipientEmail?: string;
+    size?: string;
+    comment?: string;
+  }) => updateFoxpostParcel({ ...shipmentRef, patch });
+  const deleteParcelAction = () => deleteFoxpostParcel(shipmentRef);
+  const createReturnAction = () => createFoxpostReturn(shipmentRef);
+  const fetchLabelInfoAction = () => fetchFoxpostLabelInfo(shipmentRef);
+  const downloadDeliveryNoteAction = () => downloadFoxpostDeliveryNote(shipmentRef);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [lastResult, setLastResult] = useState<ParcelActionResult | null>(null);
@@ -96,6 +102,7 @@ export function FoxpostShipmentWorkbench({
       if (result.success) {
         onSuccess?.(result);
         router.refresh();
+        onUpdated?.();
       }
     });
   }

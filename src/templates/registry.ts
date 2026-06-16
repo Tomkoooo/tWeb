@@ -10,6 +10,7 @@ const syncRegistry: Partial<Record<string, TemplateModule>> = {
 const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
   "atelier-showcase": () => import("./atelier-showcase/template.config").then((m) => m.atelierShowcase),
   "minecraft-camp": () => import("./minecraft-camp/template.config").then((m) => m.minecraftCamp),
+  sakkmed: () => import("./sakkmed/template.config").then((m) => m.sakkmed),
 }
 
 export async function loadTemplateModule(id: string): Promise<TemplateModule> {

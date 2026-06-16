@@ -23,6 +23,14 @@
       }
     },
     {
+      "key": "sakkmed",
+      "label": "SAKKMED rendezvénytechnika",
+      "allowedTemplates": ["sakkmed"],
+      "defaultTemplateId": "sakkmed",
+      "enabledPlugins": [],
+      "pluginConfig": {}
+    },
+    {
       "key": "nagyarcu-shop",
       "label": "Nagy Árcu Shop",
       "allowedTemplates": ["default-modern", "atelier-showcase"],

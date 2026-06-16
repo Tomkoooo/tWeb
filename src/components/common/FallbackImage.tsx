@@ -57,6 +57,8 @@ export function FallbackImage({
   const isPriority = Boolean(props.priority)
   const loading = props.loading ?? (isPriority ? "eager" : "lazy")
   const fetchPriority = isPriority ? ("high" as const) : props.fetchPriority
+  // DB-backed media URLs should bypass the Next image optimizer (one fewer dev compile + round-trip).
+  const unoptimized = props.unoptimized ?? raw.startsWith("/api/media/")
   const [broken, setBroken] = React.useState(false)
   const [currentSrc, setCurrentSrc] = React.useState(() =>
     showFallbackOnError ? raw || fallbackSrc : raw
@@ -84,6 +86,7 @@ export function FallbackImage({
         sizes={resolvedSizes}
         loading={loading}
         fetchPriority={fetchPriority}
+        unoptimized={unoptimized}
         className={className}
         src={raw}
         onError={(event) => {
@@ -102,6 +105,7 @@ export function FallbackImage({
       sizes={resolvedSizes}
       loading={loading}
       fetchPriority={fetchPriority}
+      unoptimized={unoptimized}
       className={className}
       src={currentSrc}
       onError={(event) => {

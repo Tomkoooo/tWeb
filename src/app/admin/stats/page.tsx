@@ -1,9 +1,10 @@
-import { getAdminDailyStats, getAdminStats } from "@/actions/admin-stats";
+import { getAdminDailyStats, getAdminStats, getOrderedProducts } from "@/actions/admin-stats";
 import { redirect } from "next/navigation";
 import { isShopEnabled } from "@/lib/features/shop";
 import { resolvePluginStatsRedirect } from "@/lib/admin-plugin-navigation";
 import { resolveAdminStatsDateRange } from "@/lib/admin-stats-date-range";
 import { AdminDailyStatsSection } from "@/components/admin/AdminDailyStatsSection";
+import { AdminOrderedProductsSection } from "@/components/admin/AdminOrderedProductsSection";
 import { TrendingUp, ShoppingCart, Users, Package, MessageSquare, BarChart3 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -86,8 +87,16 @@ export default async function AdminStatsPage({
     dailyStatsError = error instanceof Error ? error.message : "Nem sikerült betölteni a napi statisztikákat.";
   }
 
-  const stats = await getAdminStats() as AdminStatsResult;
+  const [stats, orderedProducts] = await Promise.all([
+    getAdminStats() as Promise<AdminStatsResult>,
+    getOrderedProducts(),
+  ]);
   const { kpis } = stats;
+
+  async function fetchOrderedProductsAction(sinceDate: string | null) {
+    "use server";
+    return getOrderedProducts(sinceDate ? { sinceDate } : {});
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -192,6 +201,11 @@ export default async function AdminStatsPage({
           dailyProducts={dailyStats.dailyProducts}
         />
       ) : null}
+
+      <AdminOrderedProductsSection
+        initialProducts={orderedProducts}
+        fetchProducts={fetchOrderedProductsAction}
+      />
     </div>
   );
 }
