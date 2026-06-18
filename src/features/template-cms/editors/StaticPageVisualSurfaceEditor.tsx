@@ -7,11 +7,11 @@ import { DefaultModernVisualCmsChrome } from "@/features/template-cms/components
 import { SurfaceDocEditProvider } from "@/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@/features/template-cms/hooks/use-surface-draft-persistence"
+import { useTemplateModule } from "@/features/template-cms/hooks/use-template-module"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import type { StaticPageDeps } from "@/templates/types"
 import type { FooterSettings } from "@/services/footer-settings"
@@ -61,20 +61,7 @@ export function StaticPageVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const def = mod.staticPages[slug]
-  if (!def)
-    throw new Error(`Static page '${slug}' is not registered on template '${mod.manifest.id}'`)
-
-  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps: StaticPageDeps }>
-
-  const staticDeps: StaticPageDeps = {
-    branding: {
-      brandName: branding.brandName,
-      logoNav: branding.logoNav,
-      logoFooter: branding.logoFooter,
-    },
-  }
+  const mod = useTemplateModule(templateId)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -88,6 +75,29 @@ export function StaticPageVisualSurfaceEditor({
     dirty,
     markSynced,
   })
+
+  if (!mod) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-black/40 px-6 py-10 text-sm text-neutral-400">
+        Sablon betöltése…
+      </div>
+    )
+  }
+
+  const def = mod.staticPages[slug]
+  if (!def) {
+    throw new Error(`Static page '${slug}' is not registered on template '${mod.manifest.id}'`)
+  }
+
+  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps: StaticPageDeps }>
+
+  const staticDeps: StaticPageDeps = {
+    branding: {
+      brandName: branding.brandName,
+      logoNav: branding.logoNav,
+      logoFooter: branding.logoFooter,
+    },
+  }
 
   const categoriesMapped = homepageDeps.categories.map((c) => ({
     id: c.id,

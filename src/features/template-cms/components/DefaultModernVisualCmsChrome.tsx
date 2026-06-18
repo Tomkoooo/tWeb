@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { TopBar } from "@/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@/features/template-cms/components/CmsChromeBrandingToolbar"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
+import { useTemplateModule } from "@/features/template-cms/hooks/use-template-module"
 import type { TemplateModule } from "@/templates/types"
 import { themeTokensToCssVars } from "@/lib/theme-css-vars"
 import { pressStart2P } from "@/templates/minecraft-camp/fonts"
@@ -102,7 +102,16 @@ export function DefaultModernVisualCmsChrome({
     return () => window.removeEventListener("keydown", onKey)
   }, [reviewOpen])
 
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
+  const mod = useTemplateModule(templateId)
+
+  if (!mod) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-black/40 px-6 py-10 text-sm text-neutral-400">
+        Sablon betöltése…
+      </div>
+    )
+  }
+
   const NavbarCmp = mod.chrome.Navbar
   const FooterCmp = mod.chrome.Footer
   const isMinecraftCamp = templateId === "minecraft-camp"

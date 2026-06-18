@@ -109,11 +109,18 @@ export type ContactBlock = HomepageBlockBase<
     sendButtonLabel?: string
     nameLabel?: string
     emailLabel?: string
-    messageLabel?: string
-    /** Camp / venue layout */
-    venueShort?: string
-    mapEmbedUrl?: string
-    visibility?: FieldVisibility
+  messageLabel?: string
+  /** Camp / venue layout */
+  venueShort?: string
+  mapEmbedUrl?: string
+  /** SAKKMED-style contact detail blocks (optional). */
+  warehouseTitle?: string
+  warehouseBody?: string
+  officeTaxId?: string
+  officeManagerLine?: string
+  btlBlock?: string
+  financeBlock?: string
+  visibility?: FieldVisibility
   }
 >
 

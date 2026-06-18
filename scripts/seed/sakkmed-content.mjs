@@ -212,8 +212,8 @@ export function buildSakkmedHomeContent(img) {
         primaryCtaHref: "#contact",
         secondaryCtaLabel: "Szolgáltatások",
         secondaryCtaHref: "#services",
-        heroImage: "/generic-hero.svg",
-        heroImages: ["/generic-hero.svg", "/generic-hero.svg"],
+        heroImage: "",
+        heroImages: [],
         imageDurationSeconds: 5,
         heroDurationSeconds: 6,
         heroSlides: [],
@@ -343,6 +343,14 @@ export function buildSakkmedHomeContent(img) {
         nameLabel: "Név",
         emailLabel: "E-mail",
         messageLabel: "Üzenet",
+        warehouseTitle: "Raktár, árukiadás",
+        warehouseBody:
+          "1194 Budapest, Vásár tér 1.\nNyitvatartás: Hétfő – Péntek 7:15 – 15:15\nBencs János | Logisztikai vezető — bencs.janos@esemenyszervezes.hu\nTömöri Gyula | Technikai vezető — tomori.gyula@esemenyszervezes.hu",
+        officeTaxId: "Adószám: 13543011-2-43",
+        officeManagerLine: "Balázs Gábor | ügyvezető — balazs.gabor@esemenyszervezes.hu",
+        btlBlock:
+          "1095 Budapest, Soroksári út 48. · Adószám: 23729825-2-43\nKovács Henriette | ügyvezető — kovacs.henriette@esemenyszervezes.hu",
+        financeBlock: "Marti Csillag | Pénzügyi vezető — marti.csillag@esemenyszervezes.hu",
         venueShort: "Raktár: 1194 Budapest, Vásár tér 1.",
         mapEmbedUrl:
           "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.5!2d19.089!3d47.46!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTA5NSBCdWRhcGVzdCwgU29yb2tz4bFpcmkgFLrSASA0OC4!5e0!3m2!1shu!2shu!4v1!5m2!1shu!2shu",
@@ -401,7 +409,7 @@ export function buildSakkmedStaticPages(img, crawledPages = {}) {
 function patchHomeImages(content, img) {
   const hero = content.blocks.find((b) => b.id === "hero-sakkmed")
   if (hero?.type === "hero") {
-    hero.data.heroImage = img.hero1
+    hero.data.heroImage = img.heroBackground || img.gallery?.[1] || img.gallery?.[0] || ""
     hero.data.heroImages = [img.hero1, img.hero2]
   }
   const projects = content.blocks.find((b) => b.id === "projects-sakkmed")

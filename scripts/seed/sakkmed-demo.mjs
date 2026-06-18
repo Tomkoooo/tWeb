@@ -11,7 +11,7 @@ import mongoose from "mongoose"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { seedSakkmedPublicAssets } from "./lib/sakkmed-public-assets.mjs"
+import { seedSakkmedMediaAssets } from "./lib/sakkmed-public-assets.mjs"
 import { STATIC_PAGE_SLUGS } from "./sakkmed-constants.mjs"
 import { buildSakkmedHomeContent, buildSakkmedStaticPages } from "./sakkmed-content.mjs"
 
@@ -38,8 +38,8 @@ const BRAND_NAME = "SAKKMED 2005 Kft."
 const CONTACT_EMAIL = "balazs.gabor@esemenyszervezes.hu"
 
 async function seedMedia() {
-  console.log("Downloading SAKKMED images to public/sakkmed/ …")
-  return seedSakkmedPublicAssets(root)
+  console.log("Uploading SAKKMED images to database (media collection) …")
+  return seedSakkmedMediaAssets()
 }
 
 const TemplateContentSchema = new mongoose.Schema(

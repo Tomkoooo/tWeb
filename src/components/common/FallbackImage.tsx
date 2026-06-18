@@ -50,6 +50,8 @@ export function FallbackImage({
   fill,
   alt = "",
   sizes,
+  width,
+  height,
   ...props
 }: FallbackImageProps) {
   const raw = typeof src === "string" ? src.trim() : ""
@@ -74,6 +76,8 @@ export function FallbackImage({
     }
   }, [showFallbackOnError, raw, fallbackSrc])
 
+  const layoutProps = fill ? ({ fill: true } as const) : { width, height }
+
   if (!showFallbackOnError) {
     if (!raw || broken) {
       return <EmptyImageSurface className={className} fill={fill} />
@@ -81,8 +85,8 @@ export function FallbackImage({
     return (
       <Image
         {...props}
+        {...layoutProps}
         alt={alt}
-        fill={fill}
         sizes={resolvedSizes}
         loading={loading}
         fetchPriority={fetchPriority}
@@ -100,8 +104,8 @@ export function FallbackImage({
   return (
     <Image
       {...props}
+      {...layoutProps}
       alt={alt}
-      fill={fill}
       sizes={resolvedSizes}
       loading={loading}
       fetchPriority={fetchPriority}

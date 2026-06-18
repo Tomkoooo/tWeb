@@ -98,6 +98,12 @@ const contactDataSchema = z.object({
   nameLabel: z.string().optional(),
   emailLabel: z.string().optional(),
   messageLabel: z.string().optional(),
+  warehouseTitle: z.string().optional(),
+  warehouseBody: z.string().optional(),
+  officeTaxId: z.string().optional(),
+  officeManagerLine: z.string().optional(),
+  btlBlock: z.string().optional(),
+  financeBlock: z.string().optional(),
   visibility: visibilitySchema,
 })
 
