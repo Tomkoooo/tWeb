@@ -4,6 +4,7 @@ import ActiveTemplate from "@/models/ActiveTemplate"
 import {
   FALLBACK_TEMPLATE_ID,
   getTemplateById,
+  isRegisteredTemplateId,
   loadTemplateModule,
   listTemplates,
   listAllTemplates,
@@ -30,9 +31,14 @@ const readActiveTemplateRecord = cache(async (): Promise<ActiveTemplateInfo> => 
   await dbConnect()
   const doc = await ActiveTemplate.findOne({ key: "active" }).lean()
   if (!doc) {
+    const deploymentDefault = getDefaultTemplateIdForDeployment()
+    const templateId =
+      isRegisteredTemplateId(deploymentDefault) ? deploymentDefault : FALLBACK_TEMPLATE_ID
+    const template =
+      getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
     return {
-      templateId: FALLBACK_TEMPLATE_ID,
-      templateVersion: getTemplateById(FALLBACK_TEMPLATE_ID)!.manifest.version,
+      templateId: template.manifest.id,
+      templateVersion: template.manifest.version,
       activatedAt: null,
       activatedBy: null,
     }

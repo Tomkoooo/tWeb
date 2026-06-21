@@ -26,6 +26,7 @@ import {
   Sparkles,
   ListOrdered,
   Globe2,
+  BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -46,6 +47,7 @@ type MenuItem = {
 }
 
 const topLevelMenuItems: MenuItem[] = [
+  { icon: BookOpen, label: "Súgó", href: "/admin/sugo" },
   { icon: LayoutDashboard, label: "Áttekintés", href: "/admin" },
   { icon: ShoppingCart, label: "Rendelések", href: "/admin/orders", requiresShop: true },
   { icon: Mail, label: "Kapcsolat", href: "/admin/contact" },
@@ -219,8 +221,12 @@ export function AdminSidebar({
           <div className="my-2 border-t border-white/10" />
         ) : null}
 
+        {visibleTopLevelItems[0]
+          ? renderNavLink(visibleTopLevelItems[0])
+          : null}
+
         {shopEnabled
-          ? visibleTopLevelItems.slice(0, 2).map((item) => renderNavLink(item))
+          ? visibleTopLevelItems.slice(1, 3).map((item) => renderNavLink(item))
           : null}
 
         {visibleMenuGroups.map((group) => {
@@ -278,8 +284,8 @@ export function AdminSidebar({
           <AdminPluginNavSection groups={pluginNavGroups} onAction={onAction} />
         ) : null}
 
-        {(shopEnabled ? visibleTopLevelItems.slice(2) : visibleTopLevelItems).map((item) =>
-          renderNavLink(item)
+        {(shopEnabled ? visibleTopLevelItems.slice(3) : visibleTopLevelItems.slice(1)).map(
+          (item) => renderNavLink(item)
         )}
       </nav>
 

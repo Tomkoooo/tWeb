@@ -9,6 +9,7 @@ import { useSession, signIn } from "next-auth/react"
 import { toast } from "sonner"
 import type { FooterSettings } from "@/services/footer-settings"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import { FooterLegalLinks } from "@/templates/chrome/FooterLegalLinks"
 import { hasContactFieldValue } from "@/lib/contact-display"
 import type { ContactEmailEntry } from "@/lib/contact-emails"
 
@@ -430,23 +431,11 @@ export function Footer({
           <p className="text-neutral-600 text-sm font-bold tracking-widest text-center md:text-left">
             {copyrightText}
           </p>
-          <div className="flex gap-8 text-xs font-black text-neutral-600 uppercase tracking-widest">
-            {legalLinks.find((l) => l.key === "gdpr") ? (
-              <Link href={legalLinks.find((l) => l.key === "gdpr")!.href} className="hover:text-foreground transition-colors" target="_blank">
-                GDPR
-              </Link>
-            ) : null}
-            {legalLinks.find((l) => l.key === "terms") ? (
-              <Link href={legalLinks.find((l) => l.key === "terms")!.href} className="hover:text-foreground transition-colors" target="_blank">
-                Terms
-              </Link>
-            ) : null}
-            {legalLinks.find((l) => l.key === "impresszum") ? (
-              <Link href={legalLinks.find((l) => l.key === "impresszum")!.href} className="hover:text-foreground transition-colors" target="_blank">
-                Imprint
-              </Link>
-            ) : null}
-          </div>
+          <FooterLegalLinks
+            legalLinks={legalLinks}
+            linkClassName="hover:text-foreground transition-colors"
+            className="gap-8 text-xs font-black text-neutral-600 uppercase tracking-widest"
+          />
           <Button
             variant="outline"
             size="icon"

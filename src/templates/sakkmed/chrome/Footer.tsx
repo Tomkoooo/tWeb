@@ -3,13 +3,20 @@
 import Link from "next/link"
 import { SAKKMED_FACEBOOK, SAKKMED_INSTAGRAM } from "../lib/constants"
 import type { ChromeProps } from "@/templates/types"
+import { FooterLegalLinks } from "@/templates/chrome/FooterLegalLinks"
 
 export function Footer({
   brandName,
   email,
   phone,
   address,
-}: ChromeProps & { email?: string; phone?: string; address?: string }) {
+  legalLinks = [],
+}: ChromeProps & {
+  email?: string
+  phone?: string
+  address?: string
+  legalLinks?: Array<{ key: string; title: string; href: string }>
+}) {
   return (
     <footer className="border-t border-border/60 bg-surface/50">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-3">
@@ -42,8 +49,14 @@ export function Footer({
           </a>
         </div>
       </div>
-      <div className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} SAKKMED 2005 Kft.
+      <div className="border-t border-border/40 py-4 px-4 space-y-3">
+        <FooterLegalLinks
+          legalLinks={legalLinks}
+          linkClassName="text-xs text-muted-foreground hover:text-primary transition-colors"
+        />
+        <p className="text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} SAKKMED 2005 Kft.
+        </p>
       </div>
     </footer>
   )

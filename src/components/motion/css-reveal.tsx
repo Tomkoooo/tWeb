@@ -9,7 +9,7 @@ export type RevealVariant = "up" | "left" | "right" | "scale" | "fade"
 export const REVEAL_DURATION_MS = 750
 export const REVEAL_STAGGER_MS = 120
 
-export type RevealAs = "div" | "h2" | "p" | "span" | "header"
+export type RevealAs = "div" | "h2" | "p" | "span" | "header" | "li"
 
 export type RevealMode = "scroll" | "mount"
 

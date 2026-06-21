@@ -168,6 +168,7 @@ export type PdpPageDeps = {
 
 export type StaticPageDeps = {
   branding: { brandName: string; logoNav: string; logoFooter: string }
+  contactEmails?: Array<{ id: string; label: string; email: string }>
 }
 
 /** Engine-managed commerce / account flows (cart, checkout, profile) — chrome from template; body is app code. */
@@ -321,6 +322,8 @@ export type TemplateCapabilities = {
   hasBlog: boolean
   staticPages: string[]
   restyles: RestyledPage[]
+  /** When true, each product may have scoped visual CMS at `page:pdp:product:{slug}`. */
+  perProductPdpCms?: boolean
 }
 
 /** Merchant positioning: full commerce vs brochure/landing-only story. Not a deploy guard — `ENABLE_SHOP` still gates APIs. */

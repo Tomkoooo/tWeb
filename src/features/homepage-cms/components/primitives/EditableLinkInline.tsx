@@ -1,11 +1,14 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import type { HomepageBlock } from "@/features/homepage-cms/types/block-types"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { CmsLinkEditPanel } from "@/features/template-cms/primitives/CmsLinkEditPanel"
+import { useCmsFloatingPanel } from "@/features/template-cms/primitives/useCmsFloatingPanel"
 
 export function EditableLinkInline({
   blockType,
@@ -16,6 +19,8 @@ export function EditableLinkInline({
   href,
   className,
   buttonVariant = "default",
+  appearance = "button",
+  suffix,
   onCommitLabel,
   onCommitHref,
 }: {
@@ -27,33 +32,37 @@ export function EditableLinkInline({
   href: string
   className?: string
   buttonVariant?: "default" | "outline"
+  /** `link` renders a single styled anchor/button surface (for template-native CTAs). */
+  appearance?: "button" | "link"
+  suffix?: ReactNode
   onCommitLabel?: (value: string) => void
   onCommitHref?: (value: string) => void
 }) {
   const cms = useCmsEdit()
-  const anchorRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null)
   const [nextHref, setNextHref] = useState(href || "")
   const [nextLabel, setNextLabel] = useState(label || "")
+  const { anchorRef, panelPos } = useCmsFloatingPanel(open)
 
-  useEffect(() => {
-    if (!open) return
-    const updatePosition = () => {
-      const rect = anchorRef.current?.getBoundingClientRect()
-      if (!rect) return
-      setPanelPos({ top: rect.bottom + 8, left: rect.left })
-    }
-    updatePosition()
-    window.addEventListener("scroll", updatePosition, true)
-    window.addEventListener("resize", updatePosition)
-    return () => {
-      window.removeEventListener("scroll", updatePosition, true)
-      window.removeEventListener("resize", updatePosition)
-    }
-  }, [open])
+  const commitLabel = (value: string) => {
+    if (onCommitLabel) onCommitLabel(value)
+    else cms.updateField(blockType, labelField, value, blockId)
+  }
+
+  const commitHref = (value: string) => {
+    if (onCommitHref) onCommitHref(value)
+    else cms.updateField(blockType, hrefField, value, blockId)
+  }
 
   if (!cms.enabled) {
+    if (appearance === "link") {
+      return (
+        <Link href={href || "#"} className={className}>
+          {label}
+          {suffix}
+        </Link>
+      )
+    }
     return (
       <Link href={href || "#"} className={className}>
         <Button variant={buttonVariant}>{label}</Button>
@@ -64,62 +73,55 @@ export function EditableLinkInline({
   const panel =
     open && panelPos
       ? createPortal(
-          <div
-            className="cms-admin-control fixed z-[500] w-72 rounded-md border border-white/15 bg-neutral-900 p-3 shadow-xl space-y-2"
-            style={{ top: panelPos.top, left: panelPos.left }}
-          >
-            <p className="text-[10px] uppercase tracking-widest text-neutral-400">Link settings</p>
-            <input
-              value={nextLabel}
-              onChange={(event) => setNextLabel(event.target.value)}
-              onBlur={() =>
-                onCommitLabel
-                  ? onCommitLabel(nextLabel)
-                  : cms.updateField(blockType, labelField, nextLabel, blockId)
-              }
-              className="w-full h-8 px-2 bg-neutral-800 border border-white/20 text-xs text-white"
-              placeholder="Button label"
-            />
-            <input
-              value={nextHref}
-              onChange={(event) => setNextHref(event.target.value)}
-              onBlur={() =>
-                onCommitHref
-                  ? onCommitHref(nextHref)
-                  : cms.updateField(blockType, hrefField, nextHref, blockId)
-              }
-              className="w-full h-8 px-2 bg-neutral-800 border border-white/20 text-xs text-white"
-              placeholder="/shop"
-            />
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="w-full h-8 border border-white/20 text-xs uppercase text-white"
-            >
-              Done
-            </button>
-          </div>,
+          <CmsLinkEditPanel
+            label={nextLabel}
+            href={nextHref}
+            onLabelChange={setNextLabel}
+            onHrefChange={setNextHref}
+            onLabelCommit={commitLabel}
+            onHrefCommit={commitHref}
+            onClose={() => setOpen(false)}
+            className={className}
+            top={panelPos.top}
+            left={panelPos.left}
+          />,
           document.body
         )
       : null
 
+  const openEditor = (event: React.MouseEvent) => {
+    event.preventDefault()
+    if (!open) {
+      setNextLabel(label || "")
+      setNextHref(href || "")
+    }
+    setOpen((prev) => !prev)
+  }
+
   return (
     <>
-      <div ref={anchorRef} className="relative inline-block">
-        <Button
-          variant={buttonVariant}
-          className={className}
-          onClick={(event) => {
-            event.preventDefault()
-            if (!open) {
-              setNextLabel(label || "")
-              setNextHref(href || "")
-            }
-            setOpen((prev) => !prev)
-          }}
-        >
-          {label || "Button"}
-        </Button>
+      <div ref={anchorRef} className={cn("relative inline-block", appearance === "link" && className?.includes("w-full") && "w-full")}>
+        {appearance === "link" ? (
+          <button
+            type="button"
+            className={cn(
+              className,
+              "cursor-pointer ring-2 ring-primary/30 ring-offset-2 ring-offset-transparent text-left"
+            )}
+            onClick={openEditor}
+          >
+            {label || "Button"}
+            {suffix}
+          </button>
+        ) : (
+          <Button
+            variant={buttonVariant}
+            className={cn(className, "ring-2 ring-primary/30 ring-offset-2 ring-offset-transparent")}
+            onClick={openEditor}
+          >
+            {label || "Button"}
+          </Button>
+        )}
       </div>
       {panel}
     </>

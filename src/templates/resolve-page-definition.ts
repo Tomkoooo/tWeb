@@ -14,6 +14,9 @@ export function findPageDefinition(
   if (pageKey === "page:home") return template.pages.home as PageDefinition<unknown>
   if (pageKey === "page:shop") return template.pages.shop as PageDefinition<unknown>
   if (pageKey === "page:pdp") return template.pages.pdp as PageDefinition<unknown>
+  if (pageKey.startsWith("page:pdp:product:")) {
+    return template.pages.pdp as PageDefinition<unknown>
+  }
 
   const flowRoute = FLOW_PAGE_KEY_TO_ROUTE[pageKey]
   if (flowRoute) {

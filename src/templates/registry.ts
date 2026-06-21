@@ -1,16 +1,20 @@
 import type { TemplateModule } from "./types"
 import { defaultModern } from "./default-modern/template.config"
+import { cabinova } from "./cabinova/template.config"
 
 export const FALLBACK_TEMPLATE_ID = "default-modern" as const
 
 const syncRegistry: Partial<Record<string, TemplateModule>> = {
   [FALLBACK_TEMPLATE_ID]: defaultModern,
+  cabinova,
 }
 
 const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
   "atelier-showcase": () => import("./atelier-showcase/template.config").then((m) => m.atelierShowcase),
   "minecraft-camp": () => import("./minecraft-camp/template.config").then((m) => m.minecraftCamp),
   sakkmed: () => import("./sakkmed/template.config").then((m) => m.sakkmed),
+  erdweg: () => import("./erdweg/template.config").then((m) => m.erdweg),
+  cabinova: () => import("./cabinova/template.config").then((m) => m.cabinova),
 }
 
 export async function loadTemplateModule(id: string): Promise<TemplateModule> {

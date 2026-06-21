@@ -12,6 +12,7 @@ import {
 import { mergeNumberedVariantsIntoExisting, type GenerateNumberedVariantsInput } from "@/lib/generate-numbered-variants";
 import { ELADHATO_NUMBER_RANGES } from "@/lib/numbered-variant-ranges";
 import { normalizeUniqueNumberedVariants } from "@/lib/unique-numbered-variants";
+import { plainTextFromHtml } from "@/lib/plain-text-from-html";
 
 type VariantOptionInput = { name: string; values: string[] };
 type VariantInput = {
@@ -223,6 +224,10 @@ async function persistProduct(
 ) {
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const descriptionPlain = plainTextFromHtml(description);
+  if (!descriptionPlain) {
+    throw new Error("A termék leírása kötelező.");
+  }
   const images = formData.getAll("images") as string[];
   const vatPercent =
     Math.min(100, Math.max(0, Math.round(parseFloat(String(formData.get("vatPercent"))) || 27))) || 27;
@@ -241,7 +246,7 @@ async function persistProduct(
 
   const seo = {
     title: (formData.get("seo_title") as string) || name,
-    description: (formData.get("seo_description") as string) || description.substring(0, 160),
+    description: (formData.get("seo_description") as string) || descriptionPlain.substring(0, 160),
     keywords: ((formData.get("seo_keywords") as string) || "").split(",").map((k) => k.trim()),
   };
 

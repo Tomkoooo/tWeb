@@ -1,0 +1,113 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..500&family=Inter:wght@300..600&family=JetBrains+Mono:wght@400&display=swap");
+
+.cabinova-root {
+  --font-cabinova-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-cabinova-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-cabinova-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: var(--font-cabinova-display);
+  --font-sans: var(--font-cabinova-sans);
+  --font-mono: var(--font-cabinova-mono);
+  font-family: var(--font-sans);
+}
+
+.cabinova-root h1,
+.cabinova-root h2,
+.cabinova-root h3,
+.cabinova-root h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.cabinova-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.cabinova-hairline {
+  height: 1px;
+  width: 100%;
+  background: var(--border);
+}
+
+.cabinova-grain {
+  position: relative;
+}
+
+.cabinova-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+@keyframes cabinova-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.cabinova-marquee {
+  animation: cabinova-marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabinova-marquee {
+    animation: none;
+  }
+}
+
+.cabinova-headline-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.cabinova-headline-word > span {
+  display: inline-block;
+  padding-right: 0.25em;
+  transform: translateY(110%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--word-i, 0) * 50ms);
+}
+
+.sf-reveal--visible .cabinova-headline-word > span {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabinova-headline-word > span {
+    transform: none;
+  }
+}
+
+.cabinova-page {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .cabinova-page {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cabinova-page {
+    padding-left: 5rem;
+    padding-right: 5rem;
+  }
+}

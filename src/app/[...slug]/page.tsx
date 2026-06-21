@@ -76,7 +76,17 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
       />
-      <Render content={content} deps={{ branding }} />
+      <Render
+        content={content}
+        deps={{
+          branding: {
+            brandName: branding.brandName,
+            logoNav: branding.logoNav,
+            logoFooter: branding.logoFooter,
+          },
+          contactEmails: footerData.contactEmails,
+        }}
+      />
       <Footer
         brandName={branding.brandName}
         logoSrc={branding.logoFooter}

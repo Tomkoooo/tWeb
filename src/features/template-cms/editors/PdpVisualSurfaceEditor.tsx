@@ -40,6 +40,8 @@ export function PdpVisualSurfaceEditor({
   theme,
   themeResetBaseline,
   homepageDeps,
+  editorTitle = "Termék oldal · keret",
+  editorSubtitle,
 }: {
   hydrationKey: string
   templateId: string
@@ -53,6 +55,8 @@ export function PdpVisualSurfaceEditor({
   theme: ThemeTokens
   themeResetBaseline: ThemeTokens
   homepageDeps: HomepageDeps
+  editorTitle?: string
+  editorSubtitle?: string
 }) {
   const router = useRouter()
   const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
@@ -88,7 +92,10 @@ export function PdpVisualSurfaceEditor({
 
   const toolbar = (
     <div className="px-4 py-3 border-b border-white/10 bg-black/25 space-y-3">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400">Termék oldal · keret</p>
+      <p className="text-[10px] uppercase tracking-widest text-neutral-400">
+        {editorTitle}
+        {editorSubtitle ? ` · ${editorSubtitle}` : ""}
+      </p>
       <div className="flex flex-wrap gap-4 items-end text-xs text-neutral-200">
         <label className="space-y-1">
           <span className="text-neutral-500">Bevezető helye</span>

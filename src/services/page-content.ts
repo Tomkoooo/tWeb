@@ -168,6 +168,12 @@ export class PageContentService {
     }
   }
 
+  static async hasStoredContent(templateId: string, pageKey: string): Promise<boolean> {
+    await dbConnect()
+    const doc = await TemplateContent.findOne({ templateId, pageKey }).select({ _id: 1 }).lean()
+    return Boolean(doc)
+  }
+
   static async saveDraft<T>(
     templateId: string,
     pageKey: string,

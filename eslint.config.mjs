@@ -50,6 +50,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "landing-templates/**",
+    "landing-templetes/**",
   ]),
   {
     files: ["src/templates/**/*.{ts,tsx}"],

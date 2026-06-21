@@ -43,6 +43,22 @@
           "analyticsOnPressPortal": true
         }
       }
+    },
+    {
+      "key": "cabinova",
+      "label": "Cabinova",
+      "allowedTemplates": ["cabinova"],
+      "defaultTemplateId": "cabinova",
+      "enabledPlugins": [],
+      "pluginConfig": {}
+    },
+    {
+      "key": "erdweg",
+      "label": "Erdweg építőipari",
+      "allowedTemplates": ["erdweg"],
+      "defaultTemplateId": "erdweg",
+      "enabledPlugins": [],
+      "pluginConfig": {}
     }
   ],
   "hostMap": {}

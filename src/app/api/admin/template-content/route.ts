@@ -53,10 +53,14 @@ const actionBodySchema = z.discriminatedUnion("action", [
   resetPublishedSchema,
 ])
 
+import { parseProductSlugFromPdpPageKey } from "@/lib/product-page-content"
+
 function pageKeyToPaths(pageKey: string): string[] {
   if (pageKey === "page:home") return ["/"]
   if (pageKey === "page:shop") return ["/shop"]
   if (pageKey === "page:pdp") return ["/products/[slug]"]
+  const productSlug = parseProductSlugFromPdpPageKey(pageKey)
+  if (productSlug) return [`/products/${productSlug}`]
   if (pageKey.startsWith("page:")) return [`/${pageKey.slice("page:".length)}`]
   return []
 }

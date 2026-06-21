@@ -45,6 +45,7 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 
 | Document | Summary |
 | --- | --- |
+| [admin-user-guide/README.md](admin-user-guide/README.md) | **End users:** in-admin Súgó at `/admin/sugo` (deployment-filtered) |
 | [cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md](cms/HOMEPAGE_BLOCKS_CMS_ARCHITECTURE.md) | Homepage block editor, data model, rendering |
 | [cms/legacy-shop-content-field-inventory.md](cms/legacy-shop-content-field-inventory.md) | Legacy flat `ShopContent` keys (MongoDB); not the live homepage contract |
 

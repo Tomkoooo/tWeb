@@ -117,6 +117,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = (user as { role?: "ADMIN" | "USER" }).role ?? "USER"
+      }
+
+      const lookupEmail =
+        typeof token.email === "string" ? token.email.trim().toLowerCase() : ""
+      if (lookupEmail) {
+        try {
+          const client = await clientPromise
+          const dbUser = await client.db().collection("users").findOne({ email: lookupEmail })
+          if (dbUser?.role) {
+            token.role = dbUser.role as "ADMIN" | "USER"
+          }
+        } catch (error) {
+          console.error("[auth] Failed to sync role into JWT:", error)
+        }
+      }
+
+      return token
+    },
     async session({ session, token }) {
       // Fetch the latest user data from the database to ensure the role is up to date
       // even if the JWT token is old.

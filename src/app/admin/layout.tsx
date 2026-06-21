@@ -13,7 +13,6 @@ import { PluginService } from "@/services/plugin"
 import { pluginAdminHref } from "@/plugins/types"
 import type { PluginNavGroup } from "@/components/admin/AdminPluginNavSection"
 import { resolveContentModeSidebarNav } from "@/lib/admin-plugin-navigation"
-import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied"
 
 export const dynamic = "force-dynamic"
 
@@ -22,8 +21,17 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  await listAllTemplates()
   const session = await auth()
+
+  if (!session?.user) {
+    redirect("/auth/admin-login?callbackUrl=%2Fadmin")
+  }
+
+  if (session.user.role !== "ADMIN") {
+    redirect("/")
+  }
+
+  await listAllTemplates()
   const [
     branding,
     newsletterEnabled,
@@ -59,12 +67,6 @@ export default async function AdminLayout({
         : []),
     ],
   }))
-
-  if (!session?.user) {
-    redirect("/api/auth/signin?callbackUrl=%2Fadmin")
-  }
-
-  const isAdmin = session.user.role === "ADMIN"
 
   return (
     <div className="admin-shell min-h-screen bg-[#0A0A0B] text-white">
@@ -110,7 +112,7 @@ export default async function AdminLayout({
 
       <main className="lg:ml-72 min-h-screen">
         <div className="px-6 py-8 md:px-10 md:py-12 max-w-7xl mx-auto">
-          {isAdmin ? children : <AdminAccessDenied email={session.user.email} />}
+          {children}
         </div>
       </main>
     </div>

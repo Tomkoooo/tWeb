@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Send } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -18,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { SiteContactEntry } from "@/lib/site-contact"
 import { submitContactForm } from "@/actions/contact-form"
+import { CmsEditableButton } from "@/features/template-cms/primitives/CmsEditableButton"
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -38,6 +38,11 @@ type Props = ContactInquiryFormLabels & {
   contactEmails: SiteContactEntry[]
   className?: string
   disabled?: boolean
+  /** Visual CMS: editable send button label + theme hints */
+  cmsSendButton?: {
+    enabled: boolean
+    onLabelCommit: (value: string) => void
+  }
 }
 
 const Textarea = React.forwardRef<
@@ -64,6 +69,7 @@ export function ContactInquiryForm({
   messageLabel = "Message",
   sendButtonLabel = "SEND MESSAGE",
   recipientLabel = "Címzett",
+  cmsSendButton,
 }: Props) {
   const showRecipientPicker = contactEmails.length > 1
 
@@ -108,6 +114,9 @@ export function ContactInquiryForm({
       </p>
     )
   }
+
+  const sendButtonClassName =
+    "w-full bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground h-16 px-12 text-xl border-none disabled:opacity-60 transition-colors duration-500"
 
   return (
     <Form {...form}>
@@ -205,14 +214,15 @@ export function ContactInquiryForm({
             {submitState.message}
           </p>
         ) : null}
-        <Button
+        <CmsEditableButton
+          enabled={Boolean(cmsSendButton?.enabled)}
+          label={isSubmitting ? "Küldés…" : sendButtonLabel}
+          onLabelCommit={(value) => cmsSendButton?.onLabelCommit(value)}
           type="submit"
           disabled={disabled || isSubmitting}
-          className="w-full bg-primary hover:bg-primary text-white h-16 px-12 text-xl btn-krausz border-none disabled:opacity-60"
-        >
-          <Send className="w-5 h-5 mr-3" />
-          {isSubmitting ? "Küldés…" : sendButtonLabel}
-        </Button>
+          className={cn(sendButtonClassName, "inline-flex items-center justify-center font-semibold uppercase tracking-widest")}
+          icon={<Send className="w-5 h-5 mr-3" />}
+        />
       </form>
     </Form>
   )

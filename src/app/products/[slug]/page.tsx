@@ -6,6 +6,10 @@ import { mediaImageSrc } from "@/lib/images"
 import { getStorefrontChromeBundle } from "@/lib/storefront-chrome"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@/lib/storefront-page-title"
 import { getRequestPageContent } from "@/lib/cached-storefront"
+import {
+  getProductPdpContent,
+  templateSupportsPerProductPdpCms,
+} from "@/lib/product-page-content"
 import { timeDevMetric } from "@/lib/dev-metrics"
 
 export const revalidate = 60
@@ -66,12 +70,16 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
     metadata: { slug },
   })
 
+  const usePerProductPdp = templateSupportsPerProductPdpCms(template.manifest.capabilities)
+
   const [product, pdpContent, footerData] = await timeDevMetric(
     "product.dataBundle",
     () =>
       Promise.all([
         ProductService.getBySlug(slug),
-        getRequestPageContent(template.manifest.id, "page:pdp"),
+        usePerProductPdp
+          ? getProductPdpContent(template.manifest.id, slug)
+          : getRequestPageContent(template.manifest.id, "page:pdp"),
         resolveStorefrontFooterContact(template),
       ]),
     {

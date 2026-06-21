@@ -176,7 +176,7 @@ See [docs/integrations/analytics-gtm-meta.md](docs/integrations/analytics-gtm-me
 
 | Variable | Required | Purpose | Example |
 | --- | --- | --- | --- |
-| `BOOTSTRAP_ADMIN_EMAILS` | Optional | Comma-separated allowlist of emails promoted to ADMIN on first login when no ADMIN exists yet. Remove after onboard. | `you@company.com` |
+| `BOOTSTRAP_ADMIN_EMAILS` | Optional | Comma-separated allowlist of emails promoted to ADMIN on sign-in while the env var is set. Remove after onboard. | `you@company.com, teammate@company.com` |
 
 ### Email (for notifications and invoice emails)
 

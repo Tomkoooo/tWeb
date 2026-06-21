@@ -53,7 +53,7 @@ export default auth(async (req) => {
   const isAdminPath = pathname.startsWith("/admin")
 
   if (isAdminPath && !isLoggedIn) {
-    const signInUrl = new URL("/api/auth/signin", req.nextUrl)
+    const signInUrl = new URL("/auth/admin-login", req.nextUrl)
     signInUrl.searchParams.set("callbackUrl", "/admin")
     return NextResponse.redirect(signInUrl)
   }

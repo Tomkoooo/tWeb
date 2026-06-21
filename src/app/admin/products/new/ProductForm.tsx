@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload"
+import { RichTextEditor } from "@/components/admin/RichTextEditor"
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { normalizeUniqueNumberedVariants } from "@/lib/unique-numbered-variants"
 import { AdminPricePairFields } from "@/components/admin/AdminPricePairFields"
@@ -90,6 +91,7 @@ interface ProductFormProps {
   categories: Array<{ _id: IdLike; name: string }>
   initialData?: ProductFormInitialData
   isEdit?: boolean
+  visualPageHref?: string
 }
 
 function getRatingUserName(user: ProductRating["user"]) {
@@ -99,11 +101,12 @@ function getRatingUserName(user: ProductRating["user"]) {
   return "VENDÉG VÁSÁRLÓ"
 }
 
-export default function ProductForm({ categories, initialData, isEdit }: ProductFormProps) {
+export default function ProductForm({ categories, initialData, isEdit, visualPageHref }: ProductFormProps) {
   const router = useRouter()
   const productId = initialData?._id?.toString() || ""
   const productName = initialData?.name || ""
   const [images, setImages] = useState<string[]>(initialData?.images || [])
+  const [description, setDescription] = useState(initialData?.description || "")
   const [isActive, setIsActive] = useState(initialData?.isActive ?? false)
   const [isVisible, setIsVisible] = useState(initialData?.isVisible ?? true)
   const [vatPercent, setVatPercent] = useState(Number(initialData?.vatPercent ?? 27))
@@ -200,7 +203,8 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <Link href="/admin/products">
           <Button variant="ghost" size="icon" className="hover:bg-white/5 text-neutral-400 hover:text-white rounded-none">
             <ArrowLeft className="w-5 h-5" />
@@ -214,6 +218,18 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             </span>
           </h1>
         </div>
+        </div>
+        {visualPageHref ? (
+          <Link href={visualPageHref}>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none border-white/15 bg-white/5 text-white uppercase tracking-widest text-[10px] font-black"
+            >
+              Vizuális oldal
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       <form
@@ -267,15 +283,19 @@ export default function ProductForm({ categories, initialData, isEdit }: Product
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Termék Leírása</label>
-              <textarea
-                name="description"
-                rows={6}
-                required
-                defaultValue={initialData?.description}
+              <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
+                Termék Leírása
+              </label>
+              <p className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest">
+                Formázott szöveg és képek — ugyanaz a szerkesztő, mint az e-maileknél.
+              </p>
+              <RichTextEditor
+                value={description}
+                onChange={setDescription}
                 placeholder="RÉSZLETES LEÍRÁS..."
-                className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all leading-relaxed resize-none"
+                variant="mail"
               />
+              <input type="hidden" name="description" value={description} />
             </div>
           </div>
 

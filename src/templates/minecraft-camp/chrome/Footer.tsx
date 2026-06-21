@@ -4,6 +4,7 @@ import Link from "next/link"
 import type { ChromeProps } from "@/templates/types"
 import type { FooterOrganizerSection, FooterSettings } from "@/services/footer-settings"
 import { ChromeAuthActions } from "./ChromeAuthActions"
+import { FooterLegalLinks } from "@/templates/chrome/FooterLegalLinks"
 
 type FooterProps = ChromeProps & {
   email?: string
@@ -70,9 +71,7 @@ export function Footer({
   const quickLinks =
     footerSettings?.quickLinks?.length && footerSettings.quickLinks.some((l) => l.label.trim())
       ? footerSettings.quickLinks
-      : legalLinks.length > 0
-        ? legalLinks.map((l) => ({ label: l.title, href: l.href }))
-        : DEFAULT_LINKS.map((l) => ({ label: l.title, href: l.href }))
+      : DEFAULT_LINKS.map((l) => ({ label: l.title, href: l.href }))
 
   const socialLinks = footerSettings?.socialLinks ?? []
   const facebook = socialLinks.find((l) => l.platform === "facebook")
@@ -332,16 +331,22 @@ export function Footer({
           </div>
         </div>
       </div>
-      <div className="bg-[#1a120c] py-3 text-center font-minecraft-body text-[10px] text-white/50">
-        powered by{" "}
-        <a
-          href="https://github.com/Tomkoooo/tWeb"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          tWeb
-        </a>
+      <div className="border-t border-white/10 bg-[#1a120c] px-4 py-4 space-y-3">
+        <FooterLegalLinks
+          legalLinks={legalLinks}
+          linkClassName="font-minecraft-body text-[10px] text-white/60 hover:text-white hover:underline"
+        />
+        <p className="text-center font-minecraft-body text-[10px] text-white/50">
+          powered by{" "}
+          <a
+            href="https://github.com/Tomkoooo/tWeb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            tWeb
+          </a>
+        </p>
       </div>
     </footer>
   )
