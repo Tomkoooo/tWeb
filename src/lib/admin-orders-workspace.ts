@@ -9,6 +9,7 @@ import { formatOrderNumberLabel } from "@/lib/order-number"
 import { totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 import {
   getOrderShippingTypeLabel,
+  getOrderShippingLabelError,
   orderHasAnyShippingLabel,
   orderIsGeneratingShippingLabel,
   orderNeedsAnyShippingLabel,
@@ -49,6 +50,7 @@ export type AdminOrderSummary = {
   hasLabel: boolean
   needsLabel: boolean
   isGeneratingLabel: boolean
+  labelError?: string
   billingType?: "personal" | "company"
   mixSignature: string
   mixKey: string
@@ -140,7 +142,7 @@ export const WORKSPACE_SORT_OPTIONS: { value: WorkspaceSortKey; label: string }[
   { value: "mix", label: "Termék-mix szerint" },
 ]
 
-export type LabelStateFilter = "all" | "needs" | "has" | "generating" | "none"
+export type LabelStateFilter = "all" | "needs" | "has" | "generating" | "error" | "none"
 export type BillingTypeFilter = "all" | "personal" | "company"
 
 export type WorkspaceFilters = {
@@ -243,9 +245,9 @@ type RawOrder = {
   shippingAddress?: { city?: string }
   glsParcelPoint?: { id?: string; name?: string; contact?: { city?: string } } | null
   foxpostParcelPoint?: { id?: string; name?: string; city?: string } | null
-  glsLabel?: { parcelNumber?: string; labelDataBase64?: string } | null
-  foxpostShipment?: { clFoxId?: string; labelDataBase64?: string } | null
-  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null
+  glsLabel?: { parcelNumber?: string; labelDataBase64?: string; lastError?: string } | null
+  foxpostShipment?: { clFoxId?: string; labelDataBase64?: string; lastError?: string } | null
+  standardShippingLabel?: { status?: string; labelDataBase64?: string; lastError?: string } | null
   subtotal?: number
   shippingFee?: number
   paymentFee?: number
@@ -321,6 +323,7 @@ export function summarizeOrder(order: RawOrder): AdminOrderSummary {
     hasLabel: hasAnyShippingLabel(order),
     needsLabel: orderNeedsAnyShippingLabel(order),
     isGeneratingLabel: orderIsGeneratingShippingLabel(order),
+    labelError: getOrderShippingLabelError(order),
     billingType,
     mixSignature: mix.signature,
     mixKey: mix.key,
@@ -362,6 +365,8 @@ export function applyWorkspaceFilters(
     result = result.filter((order) => order.hasLabel)
   } else if (labelState === "generating") {
     result = result.filter((order) => order.isGeneratingLabel)
+  } else if (labelState === "error") {
+    result = result.filter((order) => Boolean(order.labelError))
   } else if (labelState === "none") {
     result = result.filter((order) => order.shippingType === "standard")
   }

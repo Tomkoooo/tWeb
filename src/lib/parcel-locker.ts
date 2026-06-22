@@ -84,6 +84,23 @@ export function matchesOrderShippingTypeFilter(
   return !order.glsParcelPoint?.id && !order.foxpostParcelPoint?.id;
 }
 
+export function getOrderShippingLabelError(order: {
+  glsParcelPoint?: { id?: string } | null;
+  foxpostParcelPoint?: { id?: string } | null;
+  glsLabel?: { lastError?: string } | null;
+  foxpostShipment?: { lastError?: string } | null;
+  standardShippingLabel?: { lastError?: string } | null;
+}): string | undefined {
+  const error =
+    order.glsParcelPoint?.id
+      ? order.glsLabel?.lastError
+      : order.foxpostParcelPoint?.id
+        ? order.foxpostShipment?.lastError
+        : order.standardShippingLabel?.lastError;
+  const trimmed = error?.trim();
+  return trimmed || undefined;
+}
+
 export function orderHasStandardShippingLabel(order: {
   standardShippingLabel?: { status?: string; labelDataBase64?: string } | null;
 }): boolean {

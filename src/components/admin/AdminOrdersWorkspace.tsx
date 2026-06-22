@@ -723,6 +723,7 @@ function FilterBar({
             <option value="all">Mindegy</option>
             <option value="needs">Címke hiányzik</option>
             <option value="generating">Címke generálás alatt</option>
+            <option value="error">Címke generálási hiba</option>
             <option value="has">Van címke</option>
             <option value="none">Nincs csomagküldés</option>
           </select>
@@ -1417,14 +1418,22 @@ function ListView({
                     </td>
                     <td className="px-4 py-4 align-top">
                       <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">{order.shippingLabel}</span>
-                      {order.needsLabel && !order.isGeneratingLabel && (
-                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Címke hiányzik</p>
-                      )}
                       {order.isGeneratingLabel && (
                         <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Generálás alatt</p>
                       )}
-                      {order.hasLabel && !order.isGeneratingLabel && (
+                      {order.labelError && !order.isGeneratingLabel && (
+                        <p
+                          className="mt-1 line-clamp-2 text-[9px] font-bold leading-snug text-rose-400"
+                          title={order.labelError}
+                        >
+                          {order.labelError}
+                        </p>
+                      )}
+                      {order.hasLabel && !order.isGeneratingLabel && !order.labelError && (
                         <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Címke kész</p>
+                      )}
+                      {order.needsLabel && !order.isGeneratingLabel && !order.labelError && (
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Címke hiányzik</p>
                       )}
                     </td>
                     <td className="px-4 py-4 align-top">

@@ -51,6 +51,16 @@ describe("applyWorkspaceFilters label states", () => {
     expect(result.map((order) => order.id)).toEqual(["2"])
   })
 
+  it("filters label generation errors", () => {
+    const orders = [
+      baseOrder({ id: "1", labelError: "GLS API hiba" }),
+      baseOrder({ id: "2", labelError: undefined }),
+    ]
+    const result = applyWorkspaceFilters(orders, { labelState: "error" })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe("1")
+  })
+
   it("keeps mix filter when narrowing within the same mix", () => {
     const orders = [
       baseOrder({ id: "1", mixKey: "mix-a", status: "processing" }),
@@ -93,5 +103,20 @@ describe("summarizeOrder standard shipping labels", () => {
       total: 100,
     })
     expect(summary.isGeneratingLabel).toBe(true)
+  })
+
+  it("captures standard label generation errors", () => {
+    const summary = summarizeOrder({
+      _id: "507f1f77bcf86cd799439011",
+      items: [{ name: "X", quantity: 1, price: 100 }],
+      billingInfo: { name: "A" },
+      shippingAddress: { city: "Bp" },
+      standardShippingLabel: { lastError: "A címke generálása sikertelen." },
+      subtotal: 100,
+      shippingFee: 0,
+      paymentFee: 0,
+      total: 100,
+    })
+    expect(summary.labelError).toBe("A címke generálása sikertelen.")
   })
 })
