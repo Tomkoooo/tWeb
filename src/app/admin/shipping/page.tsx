@@ -8,14 +8,19 @@ import {
   createShippingMethod, 
   updateShippingMethod 
 } from "@/actions/admin-checkout"
+import { getShippingLabelSettings } from "@/actions/admin-orders"
 import { MethodDialog } from "@/components/admin/MethodDialog"
+import { ShippingLabelSettingsPanel } from "@/components/admin/ShippingLabelSettingsPanel"
 import { formatHuf, totalsBreakdownFromGross } from "@/lib/pricing"
 import { cn } from "@/lib/utils"
 import { adminHeadlineAccent, adminValue } from "@/lib/admin-ui"
 
 export default async function AdminShippingPage() {
   await dbConnect()
-  const methods = await ShippingMethod.find({}).lean()
+  const [methods, labelSettings] = await Promise.all([
+    ShippingMethod.find({}).lean(),
+    getShippingLabelSettings(),
+  ])
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -37,6 +42,8 @@ export default async function AdminShippingPage() {
           </Button>
         </MethodDialog>
       </div>
+
+      <ShippingLabelSettingsPanel initial={labelSettings} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {methods.map((method: any) => {

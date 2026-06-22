@@ -331,17 +331,22 @@ export function useCheckoutWizardModel(
   )
 
   const parcelLockerSummary = React.useMemo(() => {
-    if (
-      !selectedShipping ||
-      !isParcelShippingMethod(formData.methods.shippingMethod, selectedShipping)
-    ) {
-      return null
+    if (!selectedShipping) return null
+
+    const isParcel = isParcelShippingMethod(formData.methods.shippingMethod, selectedShipping)
+    if (isParcel) {
+      return {
+        methodName: selectedShipping.name as string,
+        descriptionHtml: selectedShipping.descriptionHtml as string | undefined,
+        glsParcelPoint: formData.methods.glsParcelPoint,
+        foxpostParcelPoint: formData.methods.foxpostParcelPoint,
+      }
     }
+
     return {
       methodName: selectedShipping.name as string,
       descriptionHtml: selectedShipping.descriptionHtml as string | undefined,
-      glsParcelPoint: formData.methods.glsParcelPoint,
-      foxpostParcelPoint: formData.methods.foxpostParcelPoint,
+      isStandardShipping: true,
     }
   }, [selectedShipping, formData.methods])
   const selectedPayment = availableMethods?.paymentMethods?.find(

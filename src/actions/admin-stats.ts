@@ -9,18 +9,22 @@ import Review from "@/models/Review";
 import ShopFeedback from "@/models/ShopFeedback";
 import ContactMessage from "@/models/ContactMessage";
 import { requireAdmin } from "@/lib/admin-auth";
-import { summarizeAdminCustomers } from "@/lib/admin-customers";
+import { summarizeAdminCustomersFromOrderEmails } from "@/lib/admin-customers";
 import {
   buildAdminStatsCreatedAtFilter,
   type ResolvedAdminStatsDateRange,
 } from "@/lib/admin-stats-date-range";
-
-type AdminOrder = {
-  status: string;
-  total?: number;
-  user?: { toString: () => string } | string | null;
-  createdAt: string | Date;
-};
+import {
+  buildMonthlyRevenueSeries,
+  sixMonthsAgoStart,
+  type MonthlyRevenueAggRow,
+} from "@/lib/admin-stats-aggregates";
+import {
+  ADMIN_RECENT_ORDERS_PAGE_SIZE,
+  type AdminStatsOptions,
+  type DailyIncomeRow,
+  type DailyProductRow,
+} from "@/lib/admin-stats-types";
 
 type TopProductItem = {
   soldQuantity: number;
@@ -41,20 +45,6 @@ type DailyOrder = {
   items?: DailyOrderItem[];
 };
 
-export type DailyIncomeRow = {
-  date: string;
-  revenue: number;
-  orders: number;
-};
-
-export type DailyProductRow = {
-  date: string;
-  productId: string;
-  productName: string;
-  soldQuantity: number;
-  revenue: number;
-};
-
 function toLocalDateKey(value: string | Date): string {
   const date = new Date(value);
   return format(date, "yyyy-MM-dd");
@@ -65,90 +55,115 @@ function productIdKey(product: DailyOrderItem["product"]): string {
   return typeof product === "string" ? product : product.toString();
 }
 
-export async function getAdminStats() {
+export async function getAdminStats(options: AdminStatsOptions = {}) {
   await requireAdmin();
   await dbConnect();
 
+  const recentPage = Math.max(1, Number(options.recentPage) || 1);
+  const recentSkip = (recentPage - 1) * ADMIN_RECENT_ORDERS_PAGE_SIZE;
+  const sixMonthsAgo = sixMonthsAgoStart();
+
   const [
-    ordersRaw,
+    ordersCount,
+    nonCancelledOrdersCount,
+    deliveredOrdersCount,
+    revenueAggRaw,
+    monthlyAggRaw,
+    recentOrdersRaw,
+    orderEmailsAggRaw,
     customerUsersRaw,
     productsCount,
     reviewsCount,
     shopFeedbackCount,
     topProductsAggRaw,
     unreadContactMessagesRaw,
-  ] =
-    await Promise.all([
-      Order.find({}).sort({ createdAt: -1 }).lean(),
-      User.find({ role: "USER" }).select("_id email role").lean(),
-      Product.countDocuments({}),
-      Review.countDocuments({}),
-      ShopFeedback.countDocuments({}),
-      Order.aggregate([
-        { $match: { status: { $ne: "cancelled" } } },
-        { $unwind: "$items" },
-        {
-          $group: {
-            _id: "$items.product",
-            soldQuantity: { $sum: "$items.quantity" },
-            revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+  ] = await Promise.all([
+    Order.countDocuments({}),
+    Order.countDocuments({ status: { $ne: "cancelled" } }),
+    Order.countDocuments({ status: "delivered" }),
+    Order.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: null, total: { $sum: "$total" } } }]),
+    Order.aggregate([
+      { $match: { status: { $ne: "cancelled" }, createdAt: { $gte: sixMonthsAgo } } },
+      {
+        $group: {
+          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+          revenue: { $sum: "$total" },
+          orders: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.find({})
+      .select("_id createdAt total status")
+      .sort({ createdAt: -1 })
+      .skip(recentSkip)
+      .limit(ADMIN_RECENT_ORDERS_PAGE_SIZE)
+      .lean(),
+    Order.aggregate([
+      { $match: { status: { $ne: "cancelled" } } },
+      {
+        $project: {
+          email: {
+            $toLower: {
+              $trim: {
+                input: {
+                  $ifNull: ["$billingInfo.email", { $ifNull: ["$shippingAddress.email", ""] }],
+                },
+              },
+            },
           },
         },
-        { $sort: { soldQuantity: -1 } },
-        { $limit: 5 },
-        {
-          $lookup: {
-            from: "products",
-            localField: "_id",
-            foreignField: "_id",
-            as: "product",
-          },
+      },
+      { $match: { email: { $ne: "" } } },
+      { $group: { _id: "$email" } },
+    ]),
+    User.find({ role: "USER" }).select("_id email role").lean(),
+    Product.countDocuments({}),
+    Review.countDocuments({}),
+    ShopFeedback.countDocuments({}),
+    Order.aggregate([
+      { $match: { status: { $ne: "cancelled" } } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.product",
+          soldQuantity: { $sum: "$items.quantity" },
+          revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
         },
-        {
-          $project: {
-            soldQuantity: 1,
-            revenue: 1,
-            productName: { $ifNull: [{ $arrayElemAt: ["$product.name", 0] }, "Törölt termék"] },
-          },
+      },
+      { $sort: { soldQuantity: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
         },
-      ]),
-      ContactMessage.find({ status: "unread" }).sort({ createdAt: -1 }).limit(5).lean(),
-    ]);
+      },
+      {
+        $project: {
+          soldQuantity: 1,
+          revenue: 1,
+          productName: { $ifNull: [{ $arrayElemAt: ["$product.name", 0] }, "Törölt termék"] },
+        },
+      },
+    ]),
+    ContactMessage.find({ status: "unread" }).sort({ createdAt: -1 }).limit(5).lean(),
+  ]);
 
-  const orders = ordersRaw as AdminOrder[];
-  const topProductsAgg = topProductsAggRaw as TopProductItem[];
-  const customerSummary = summarizeAdminCustomers(ordersRaw, customerUsersRaw);
-
-  const nonCancelledOrders = orders.filter((order) => order.status !== "cancelled");
-  const deliveredOrders = orders.filter((order) => order.status === "delivered");
-  const totalRevenue = nonCancelledOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-  const avgOrderValue = nonCancelledOrders.length ? totalRevenue / nonCancelledOrders.length : 0;
-
-  const monthlyRevenue = Array.from({ length: 6 }).map((_, index) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - index);
-
-    const month = date.getMonth();
-    const year = date.getFullYear();
-
-    const monthOrders = nonCancelledOrders.filter((order) => {
-      const created = new Date(order.createdAt);
-      return created.getMonth() === month && created.getFullYear() === year;
-    });
-
-    return {
-      label: `${year}.${String(month + 1).padStart(2, "0")}`,
-      revenue: monthOrders.reduce((sum, order) => sum + (order.total || 0), 0),
-      orders: monthOrders.length,
-    };
-  }).reverse();
+  const totalRevenue = Number((revenueAggRaw[0] as { total?: number } | undefined)?.total ?? 0);
+  const avgOrderValue = nonCancelledOrdersCount ? totalRevenue / nonCancelledOrdersCount : 0;
+  const orderEmails = (orderEmailsAggRaw as Array<{ _id: string }>).map((row) => row._id);
+  const customerSummary = summarizeAdminCustomersFromOrderEmails(orderEmails, customerUsersRaw);
+  const monthlyRevenue = buildMonthlyRevenueSeries(monthlyAggRaw as MonthlyRevenueAggRow[]);
+  const recentOrdersTotalPages = Math.max(1, Math.ceil(ordersCount / ADMIN_RECENT_ORDERS_PAGE_SIZE));
 
   return {
     kpis: {
       totalRevenue,
-      ordersCount: orders.length,
-      nonCancelledOrdersCount: nonCancelledOrders.length,
-      deliveredOrdersCount: deliveredOrders.length,
+      ordersCount,
+      nonCancelledOrdersCount,
+      deliveredOrdersCount,
       customersCount: customerSummary.totalCustomersCount,
       activeCustomersCount: customerSummary.totalCustomersCount,
       totalCustomersCount: customerSummary.totalCustomersCount,
@@ -159,9 +174,17 @@ export async function getAdminStats() {
       reviewsCount: reviewsCount + shopFeedbackCount,
       avgOrderValue,
     },
-    topProducts: topProductsAgg,
+    topProducts: topProductsAggRaw as TopProductItem[],
     monthlyRevenue,
-    recentOrders: JSON.parse(JSON.stringify(orders.slice(0, 5))),
+    recentOrders: JSON.parse(JSON.stringify(recentOrdersRaw)),
+    recentOrdersPagination: {
+      page: recentPage,
+      pageSize: ADMIN_RECENT_ORDERS_PAGE_SIZE,
+      totalItems: ordersCount,
+      totalPages: recentOrdersTotalPages,
+      hasPrevious: recentPage > 1,
+      hasNext: recentPage < recentOrdersTotalPages,
+    },
     unreadContactMessages: JSON.parse(JSON.stringify(unreadContactMessagesRaw)),
   };
 }

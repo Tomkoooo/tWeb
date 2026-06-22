@@ -190,6 +190,33 @@ describe("admin actions and routes", () => {
     expect(updateResult.success).toBe(true);
   });
 
+  it("updates order contact info", async () => {
+    const order = {
+      _id: { toString: () => "ord1" },
+      status: "pending",
+      billingInfo: { name: "Old Billing", email: "old@test.hu", phone: "111" },
+      shippingAddress: { name: "Old Ship", email: "ship@test.hu", phone: "222" },
+      save: vi.fn(),
+    };
+    orderFindByIdMock.mockResolvedValue(order);
+
+    const formData = new FormData();
+    formData.set("billingName", "New Billing");
+    formData.set("billingEmail", "new@test.hu");
+    formData.set("billingPhone", "333");
+    formData.set("shippingName", "New Ship");
+    formData.set("shippingEmail", "ship-new@test.hu");
+    formData.set("shippingPhone", "444");
+
+    const { updateOrderContactInfo } = await import("@/actions/admin-orders");
+    const result = await updateOrderContactInfo("ord1", formData);
+
+    expect(result.success).toBe(true);
+    expect(order.billingInfo.name).toBe("New Billing");
+    expect(order.shippingAddress.phone).toBe("444");
+    expect(order.save).toHaveBeenCalled();
+  });
+
   it("generates gls label from admin order action", async () => {
     const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");

@@ -11,6 +11,8 @@ import {
   OrderParcelPanel,
 } from "@/components/admin/OrderParcelPanel"
 import { FoxpostShipmentPanel } from "@/components/admin/foxpost/FoxpostShipmentPanel"
+import { OrderContactEditor } from "@/components/admin/OrderContactEditor"
+import { StandardShippingLabelPanel } from "@/components/admin/StandardShippingLabelPanel"
 import { getOrderParcelProvider, getOrderShippingTypeLabel, orderHasParcelShipping } from "@/lib/parcel-locker"
 import { getOrderParcelDeliveryDisplay } from "@/lib/parcel-locker-checkout-display"
 import {
@@ -24,6 +26,7 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
 import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
+import { isAdminDeletedOrder } from "@/lib/admin-orders-filters"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -36,6 +39,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
   const parcelProvider = order ? getOrderParcelProvider(order) : null
   const parcelDelivery = order ? getOrderParcelDeliveryDisplay(order) : null
   const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
+  const isDeletedOrder = order ? isAdminDeletedOrder(order.status) : false
 
   if (!order) {
     return (
@@ -142,6 +146,19 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     foxpostShipment={order.foxpostShipment}
                   />
                 ) : null}
+              </div>
+            ) : null}
+
+            {!isDeletedOrder && !orderHasParcelShipping(order) ? (
+              <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-300">
+                  Webshop szállítási címke
+                </h3>
+                <StandardShippingLabelPanel
+                  orderId={order._id.toString()}
+                  standardShippingLabel={order.standardShippingLabel}
+                  onUpdated={() => undefined}
+                />
               </div>
             ) : null}
 
@@ -302,20 +319,39 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
             </h2>
             
             <div className="space-y-8">
-              <div className="flex gap-4">
-                <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
-                  <User className="w-5 h-5 admin-icon-accent" />
+              {isDeletedOrder ? (
+                <div className="flex gap-4">
+                  <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
+                    <User className="w-5 h-5 admin-icon-accent" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Számlázási Név</p>
+                    <p className="text-lg font-bold text-white uppercase italic leading-none">{order.billingInfo.name}</p>
+                    <p className="text-neutral-500 text-xs mt-2">{order.billingInfo.email}</p>
+                    <p className="text-neutral-500 text-xs">{order.billingInfo.phone}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">Számlázási Név</p>
-                  <p className="text-lg font-bold text-white uppercase italic leading-none">{order.billingInfo.name}</p>
-                  {order.billingInfo.type === "company" && (
-                    <div className="mt-2 text-[10px] font-black text-white uppercase tracking-[0.2em] bg-white/10 border border-white/20 px-2 py-1 inline-block">
-                      ADÓSZÁM: {order.billingInfo.taxNumber}
-                    </div>
-                  )}
-                </div>
-              </div>
+              ) : (
+                <OrderContactEditor
+                  orderId={order._id.toString()}
+                  billingInfo={{
+                    name: order.billingInfo.name,
+                    email: order.billingInfo.email,
+                    phone: order.billingInfo.phone,
+                  }}
+                  shippingAddress={{
+                    name: order.shippingAddress.name,
+                    email: order.shippingAddress.email,
+                    phone: order.shippingAddress.phone,
+                  }}
+                />
+              )}
+
+              {order.billingInfo.type === "company" && order.billingInfo.taxNumber ? (
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                  Adószám: {order.billingInfo.taxNumber}
+                </p>
+              ) : null}
 
               <div className="flex gap-4">
                 <div className="p-3 admin-icon-well rounded-none grow-0 h-fit">
@@ -337,26 +373,12 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                           {parcelDelivery.idLine}
                         </p>
                       ) : null}
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">
-                          Kapcsolattartó
-                        </p>
-                        <p className="text-white font-bold uppercase italic">{order.shippingAddress.name}</p>
-                        <p className="text-neutral-500 text-xs mt-1">{order.shippingAddress.phone}</p>
-                        <p className="text-neutral-500 text-xs">{order.shippingAddress.email}</p>
-                        {order.shippingAddress.comment ? (
-                          <div className="mt-3 p-3 bg-black/40 border-l-2 border-white/30 text-neutral-400 text-xs italic">
-                            &quot;{order.shippingAddress.comment}&quot;
-                          </div>
-                        ) : null}
-                      </div>
                     </>
                   ) : (
                     <>
                       <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-1">
                         Szállítási Cím
                       </p>
-                      <p className="text-white font-bold uppercase italic">{order.shippingAddress.name}</p>
                       <p className="text-neutral-400 text-sm mt-1">
                         {order.shippingAddress.zip} {order.shippingAddress.city}
                       </p>

@@ -42,7 +42,10 @@ import { formatOrderNumber } from "@/lib/order-number"
 import {
   getOrderParcelProvider,
   orderNeedsParcelLabel,
+  orderNeedsStandardShippingLabel,
 } from "@/lib/parcel-locker"
+import { ShippingLabelSettingsService } from "@/services/shipping-label-settings"
+import { buildStandardShippingLabelPdf } from "@/lib/shipping-label-pdf"
 import {
   isFoxpostParcelManagerEnabled,
   isGlsParcelManagerEnabled,
@@ -215,7 +218,9 @@ export async function getOrdersWorkspace(
   const deletedFilter = resolveAdminOrderDeletedFilter(filters)
   const query = buildAdminOrdersMongoQuery(filters)
   const rawOrders = await Order.find(query)
-    .select("-glsLabel.labelDataBase64 -foxpostShipment.labelDataBase64 -invoicePdfFileName")
+    .select(
+      "-glsLabel.labelDataBase64 -foxpostShipment.labelDataBase64 -standardShippingLabel.labelDataBase64 -invoicePdfFileName"
+    )
     .sort({ createdAt: -1 })
     .lean()
 
@@ -277,6 +282,105 @@ export async function generateSingleOrderLabel(orderId: string) {
     provider === "gls"
       ? await applyGlsLabelToOrder(order, session?.user?.id)
       : await applyFoxpostShipmentToOrder(order, session?.user?.id)
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath("/admin/orders/processing")
+
+  return result
+}
+
+export async function getShippingLabelSettings() {
+  await checkAdmin()
+  return ShippingLabelSettingsService.get()
+}
+
+export async function updateShippingLabelSettings(formData: FormData) {
+  await checkAdmin()
+  const input = {
+    companyName: String(formData.get("companyName") || ""),
+    companyStreet: String(formData.get("companyStreet") || ""),
+    companyZip: String(formData.get("companyZip") || ""),
+    companyCity: String(formData.get("companyCity") || ""),
+    companyCountry: String(formData.get("companyCountry") || ""),
+    companyPhone: String(formData.get("companyPhone") || ""),
+    companyEmail: String(formData.get("companyEmail") || ""),
+    taxNumber: String(formData.get("taxNumber") || ""),
+    footerNote: String(formData.get("footerNote") || ""),
+  }
+  const updated = await ShippingLabelSettingsService.update(input)
+  revalidatePath("/admin/shipping")
+  return updated
+}
+
+async function applyStandardShippingLabelToOrder(
+  order: InstanceType<typeof Order>,
+  generatedByUserId?: string
+): Promise<ParcelLabelActionResult> {
+  if (getOrderParcelProvider(order)) {
+    return { success: false, error: "Csak webshop / házhozszállítás rendeléshez generálható." }
+  }
+
+  const company = await ShippingLabelSettingsService.get()
+  if (!company.companyName.trim()) {
+    return {
+      success: false,
+      error: "Állítsd be a feladó cég adatait a Szállítási módok oldalon.",
+    }
+  }
+
+  order.standardShippingLabel = {
+    ...(order.standardShippingLabel || {}),
+    status: "generating",
+    lastError: undefined,
+  }
+  await order.save()
+
+  try {
+    const pdfBytes = await buildStandardShippingLabelPdf(
+      {
+        billingInfo: order.billingInfo,
+        shippingAddress: order.shippingAddress,
+      },
+      company
+    )
+
+    order.standardShippingLabel = {
+      status: "ready",
+      labelDataBase64: Buffer.from(pdfBytes).toString("base64"),
+      generatedAt: new Date(),
+      generatedBy: generatedByUserId
+        ? new mongoose.Types.ObjectId(generatedByUserId)
+        : undefined,
+      lastError: undefined,
+    }
+    await order.save()
+    return { success: true }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "A szállítási címke generálása sikertelen."
+    await Order.updateOne(
+      { _id: order._id },
+      {
+        $unset: { "standardShippingLabel.status": "", "standardShippingLabel.labelDataBase64": "" },
+        $set: { "standardShippingLabel.lastError": message },
+      }
+    )
+    return { success: false, error: message }
+  }
+}
+
+export async function generateStandardShippingLabel(orderId: string) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) return { success: false, error: "Order not found" }
+  if (isAdminDeletedOrder(order.status)) {
+    return { success: false, error: "Törölt rendeléshez nem generálható címke." }
+  }
+
+  const session = await auth()
+  const result = await applyStandardShippingLabelToOrder(order, session?.user?.id)
 
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
@@ -483,6 +587,92 @@ export async function bulkGenerateParcelLabels(
   }
 }
 
+export type BulkStandardLabelSkipReason =
+  | "not_found"
+  | "parcel_shipping"
+  | "label_exists"
+  | "deleted"
+
+export async function bulkGenerateStandardShippingLabels(
+  orderIds: string[],
+  options?: { skipExisting?: boolean }
+) {
+  await checkAdmin()
+  await dbConnect()
+
+  const skipExisting = options?.skipExisting !== false
+  const uniqueOrderIds = Array.from(
+    new Set(
+      orderIds
+        .map((orderId) => String(orderId || "").trim())
+        .filter((orderId) => mongoose.Types.ObjectId.isValid(orderId))
+    )
+  )
+
+  if (uniqueOrderIds.length === 0) {
+    throw new Error("No valid orders selected")
+  }
+
+  const session = await auth()
+  const generatedByUserId = session?.user?.id
+  const orders = await Order.find({ _id: { $in: uniqueOrderIds } })
+  const ordersById = new Map(orders.map((order) => [order._id.toString(), order]))
+
+  let successCount = 0
+  let skippedCount = 0
+  let failedCount = 0
+  const failures: { orderId: string; error: string }[] = []
+  const skips: { orderId: string; reason: BulkStandardLabelSkipReason }[] = []
+
+  for (const orderId of uniqueOrderIds) {
+    const order = ordersById.get(orderId)
+    if (!order) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "not_found" })
+      continue
+    }
+
+    if (isAdminDeletedOrder(order.status)) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "deleted" })
+      continue
+    }
+
+    if (getOrderParcelProvider(order)) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "parcel_shipping" })
+      continue
+    }
+
+    if (skipExisting && !orderNeedsStandardShippingLabel(order)) {
+      skippedCount += 1
+      skips.push({ orderId, reason: "label_exists" })
+      continue
+    }
+
+    const result = await applyStandardShippingLabelToOrder(order, generatedByUserId)
+    if (result.success) {
+      successCount += 1
+      revalidatePath(`/admin/orders/${orderId}`)
+    } else {
+      failedCount += 1
+      failures.push({ orderId, error: result.error })
+    }
+  }
+
+  revalidatePath("/admin/orders")
+
+  return {
+    success: true,
+    successCount,
+    skippedCount,
+    failedCount,
+    failures,
+    skips,
+    missingCount: uniqueOrderIds.length - orders.length,
+  }
+}
+
 export async function updateOrderInvoiceData(orderId: string, formData: FormData) {
   await checkAdmin()
   await dbConnect()
@@ -546,6 +736,41 @@ export async function uploadManualInvoicePdf(orderId: string, formData: FormData
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
   revalidatePath(`/profile/orders/${orderId}`)
+}
+
+export async function updateOrderContactInfo(orderId: string, formData: FormData) {
+  await checkAdmin()
+  await dbConnect()
+
+  const order = await Order.findById(orderId)
+  if (!order) throw new Error("Order not found")
+  if (isAdminDeletedOrder(order.status)) {
+    throw new Error("Törölt rendelés adatai nem szerkeszthetők.")
+  }
+
+  const billingName = String(formData.get("billingName") || "").trim()
+  const billingEmail = String(formData.get("billingEmail") || "").trim()
+  const billingPhone = String(formData.get("billingPhone") || "").trim()
+  const shippingName = String(formData.get("shippingName") || "").trim()
+  const shippingEmail = String(formData.get("shippingEmail") || "").trim()
+  const shippingPhone = String(formData.get("shippingPhone") || "").trim()
+
+  if (!billingName) throw new Error("A számlázási név kötelező.")
+  if (!shippingName) throw new Error("A szállítási / kapcsolattartó név kötelező.")
+
+  order.billingInfo.name = billingName
+  order.billingInfo.email = billingEmail
+  order.billingInfo.phone = billingPhone
+  order.shippingAddress.name = shippingName
+  order.shippingAddress.email = shippingEmail
+  order.shippingAddress.phone = shippingPhone
+  await order.save()
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath(`/profile/orders/${orderId}`)
+
+  return { success: true as const }
 }
 
 export async function resendOrderInvoiceEmail(orderId: string) {

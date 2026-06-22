@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import type { DailyIncomeRow, DailyProductRow } from "@/actions/admin-stats"
+import type { DailyIncomeRow, DailyProductRow } from "@/lib/admin-stats-types"
 import type { AdminStatsDatePreset } from "@/lib/admin-stats-date-range"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"

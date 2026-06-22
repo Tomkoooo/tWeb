@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       _id: unknown
       glsLabel?: { labelDataBase64?: string } | null
       foxpostShipment?: { labelDataBase64?: string } | null
+      standardShippingLabel?: { labelDataBase64?: string } | null
     }>
 
     if (selectedIds.length > 0) {
@@ -57,13 +58,17 @@ export async function GET(request: NextRequest) {
         _id: { $in: selectedIds },
         status: { $ne: ADMIN_ORDER_DELETED_STATUS },
       })
-        .select("_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64")
+        .select(
+          "_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64 standardShippingLabel.labelDataBase64"
+        )
         .sort({ createdAt: -1 })
         .lean()
     } else {
       const query = buildAdminOrdersMongoQuery(filters)
       const rawOrders = await Order.find(query)
-        .select("_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64 createdAt")
+        .select(
+          "_id glsLabel.labelDataBase64 foxpostShipment.labelDataBase64 standardShippingLabel.labelDataBase64 createdAt"
+        )
         .sort({ createdAt: -1 })
         .lean()
 

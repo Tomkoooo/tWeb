@@ -9,7 +9,9 @@ import { formatOrderNumberLabel } from "@/lib/order-number"
 import { totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
 import {
   getOrderShippingTypeLabel,
-  orderNeedsParcelLabel,
+  orderHasAnyShippingLabel,
+  orderIsGeneratingShippingLabel,
+  orderNeedsAnyShippingLabel,
   type OrderShippingTypeFilter,
 } from "@/lib/parcel-locker"
 import { getOrderDeliveryLocationHint } from "@/lib/parcel-locker-checkout-display"
@@ -46,6 +48,7 @@ export type AdminOrderSummary = {
   shippingLabel: string
   hasLabel: boolean
   needsLabel: boolean
+  isGeneratingLabel: boolean
   billingType?: "personal" | "company"
   mixSignature: string
   mixKey: string
@@ -99,7 +102,7 @@ const SHIPPING_MIX_LANE_META: Record<
 > = {
   standard: {
     label: "Webshop szállítás",
-    description: "Manuális csomagolás és címke — külön munkafolyamat",
+    description: "PDF szállítási címke generálás — feladó adatok az adminban állíthatók",
     canAutoLabel: false,
   },
   foxpost: {
@@ -137,7 +140,7 @@ export const WORKSPACE_SORT_OPTIONS: { value: WorkspaceSortKey; label: string }[
   { value: "mix", label: "Termék-mix szerint" },
 ]
 
-export type LabelStateFilter = "all" | "needs" | "has" | "none"
+export type LabelStateFilter = "all" | "needs" | "has" | "generating" | "none"
 export type BillingTypeFilter = "all" | "personal" | "company"
 
 export type WorkspaceFilters = {
@@ -242,6 +245,7 @@ type RawOrder = {
   foxpostParcelPoint?: { id?: string; name?: string; city?: string } | null
   glsLabel?: { parcelNumber?: string; labelDataBase64?: string } | null
   foxpostShipment?: { clFoxId?: string; labelDataBase64?: string } | null
+  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null
   subtotal?: number
   shippingFee?: number
   paymentFee?: number
@@ -264,6 +268,10 @@ function hasParcelLabel(order: RawOrder): boolean {
       order.foxpostShipment?.clFoxId ||
       order.foxpostShipment?.labelDataBase64
   )
+}
+
+function hasAnyShippingLabel(order: RawOrder): boolean {
+  return hasParcelLabel(order) || orderHasAnyShippingLabel(order)
 }
 
 /** Project a raw order snapshot into a lightweight, client-safe summary. */
@@ -310,8 +318,9 @@ export function summarizeOrder(order: RawOrder): AdminOrderSummary {
     invoiceStatus: order.invoiceStatus,
     shippingType: resolveShippingType(order),
     shippingLabel: getOrderShippingTypeLabel(order),
-    hasLabel: hasParcelLabel(order),
-    needsLabel: orderNeedsParcelLabel(order),
+    hasLabel: hasAnyShippingLabel(order),
+    needsLabel: orderNeedsAnyShippingLabel(order),
+    isGeneratingLabel: orderIsGeneratingShippingLabel(order),
     billingType,
     mixSignature: mix.signature,
     mixKey: mix.key,
@@ -348,9 +357,11 @@ export function applyWorkspaceFilters(
 
   const labelState = filters.labelState ?? "all"
   if (labelState === "needs") {
-    result = result.filter((order) => order.needsLabel)
+    result = result.filter((order) => order.needsLabel && !order.isGeneratingLabel)
   } else if (labelState === "has") {
     result = result.filter((order) => order.hasLabel)
+  } else if (labelState === "generating") {
+    result = result.filter((order) => order.isGeneratingLabel)
   } else if (labelState === "none") {
     result = result.filter((order) => order.shippingType === "standard")
   }

@@ -80,6 +80,14 @@ export interface IOrder extends Document {
     returnBarcode?: string;
     lastError?: string;
   };
+  /** Manual webshop / házhozszállítás shipping label PDF. */
+  standardShippingLabel?: {
+    status?: "generating" | "ready";
+    labelDataBase64?: string;
+    generatedAt?: Date;
+    generatedBy?: mongoose.Types.ObjectId;
+    lastError?: string;
+  };
   shippingMethod: mongoose.Types.ObjectId;
   paymentMethod: mongoose.Types.ObjectId;
   couponCodes?: string[];
@@ -183,6 +191,13 @@ const OrderSchema = new Schema<IOrder>(
       returnBarcode: { type: String },
       lastError: { type: String },
     },
+    standardShippingLabel: {
+      status: { type: String, enum: ["generating", "ready"] },
+      labelDataBase64: { type: String },
+      generatedAt: { type: Date },
+      generatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      lastError: { type: String },
+    },
     shippingMethod: { type: Schema.Types.ObjectId, ref: "ShippingMethod", required: true },
     paymentMethod: { type: Schema.Types.ObjectId, ref: "PaymentMethod", required: true },
     couponCodes: [{ type: String }],
@@ -215,5 +230,8 @@ const OrderSchema = new Schema<IOrder>(
   },
   { timestamps: true }
 );
+
+OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);

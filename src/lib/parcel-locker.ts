@@ -84,6 +84,29 @@ export function matchesOrderShippingTypeFilter(
   return !order.glsParcelPoint?.id && !order.foxpostParcelPoint?.id;
 }
 
+export function orderHasStandardShippingLabel(order: {
+  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null;
+}): boolean {
+  return Boolean(
+    order.standardShippingLabel?.status === "ready" && order.standardShippingLabel?.labelDataBase64
+  );
+}
+
+export function orderIsGeneratingStandardShippingLabel(order: {
+  standardShippingLabel?: { status?: string } | null;
+}): boolean {
+  return order.standardShippingLabel?.status === "generating";
+}
+
+export function orderNeedsStandardShippingLabel(order: {
+  glsParcelPoint?: { id?: string } | null;
+  foxpostParcelPoint?: { id?: string } | null;
+  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null;
+}): boolean {
+  if (order.glsParcelPoint?.id || order.foxpostParcelPoint?.id) return false;
+  return !orderHasStandardShippingLabel(order);
+}
+
 export function orderNeedsParcelLabel(order: {
   glsParcelPoint?: { id?: string } | null;
   foxpostParcelPoint?: { id?: string } | null;
@@ -101,4 +124,32 @@ export function orderNeedsParcelLabel(order: {
     return true;
   }
   return false;
+}
+
+export function orderNeedsAnyShippingLabel(order: {
+  glsParcelPoint?: { id?: string } | null;
+  foxpostParcelPoint?: { id?: string } | null;
+  glsLabel?: { parcelNumber?: string; labelDataBase64?: string } | null;
+  foxpostShipment?: { clFoxId?: string; labelDataBase64?: string } | null;
+  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null;
+}): boolean {
+  return orderNeedsParcelLabel(order) || orderNeedsStandardShippingLabel(order);
+}
+
+export function orderIsGeneratingShippingLabel(order: {
+  standardShippingLabel?: { status?: string } | null;
+}): boolean {
+  return orderIsGeneratingStandardShippingLabel(order);
+}
+
+export function orderHasAnyShippingLabel(order: {
+  glsParcelPoint?: { id?: string } | null;
+  foxpostParcelPoint?: { id?: string } | null;
+  glsLabel?: { parcelNumber?: string; labelDataBase64?: string } | null;
+  foxpostShipment?: { clFoxId?: string; labelDataBase64?: string } | null;
+  standardShippingLabel?: { status?: string; labelDataBase64?: string } | null;
+}): boolean {
+  if (order.glsLabel?.parcelNumber || order.glsLabel?.labelDataBase64) return true;
+  if (order.foxpostShipment?.clFoxId || order.foxpostShipment?.labelDataBase64) return true;
+  return orderHasStandardShippingLabel(order);
 }

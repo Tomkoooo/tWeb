@@ -27,6 +27,8 @@ export type ParcelLockerSummaryPreview = {
   descriptionHtml?: string
   glsParcelPoint?: GlsParcelPoint | null
   foxpostParcelPoint?: FoxpostParcelPoint | null
+  /** True when házhozszállítás / webshop method — show address + description. */
+  isStandardShipping?: boolean
 }
 
 interface SummaryStepProps {
@@ -193,6 +195,25 @@ export function SummaryStep({
                 <div className="space-y-3">
                   <p className={cxSummaryStrong(a)}>{parcelLocker.methodName}</p>
                   <CheckoutRichHtml html={parcelLocker.descriptionHtml} appearance={a} />
+                  {parcelLocker.isStandardShipping ? (
+                    data.shipping.isSameAsBilling ? (
+                      <>
+                        <p className={cxSummaryStrong(a)}>{data.billing.name}</p>
+                        <p>
+                          {data.billing.zip} {data.billing.city}, {data.billing.street}
+                        </p>
+                        {data.shipping.comment ? <p className="text-sm italic">{data.shipping.comment}</p> : null}
+                      </>
+                    ) : (
+                      <>
+                        <p className={cxSummaryStrong(a)}>{data.shipping.name}</p>
+                        <p>
+                          {data.shipping.zip} {data.shipping.city}, {data.shipping.street}
+                        </p>
+                        {data.shipping.comment ? <p className="text-sm italic">{data.shipping.comment}</p> : null}
+                      </>
+                    )
+                  ) : null}
                   {parcelLocker.glsParcelPoint ? (
                     <div className="space-y-1 border border-border/60 bg-muted/20 p-3 text-sm">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

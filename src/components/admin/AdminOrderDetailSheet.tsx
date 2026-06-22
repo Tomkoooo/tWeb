@@ -16,6 +16,8 @@ import {
 } from "@/actions/admin-orders"
 import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
 import { OrderParcelPanel } from "@/components/admin/OrderParcelPanel"
+import { OrderContactEditor } from "@/components/admin/OrderContactEditor"
+import { StandardShippingLabelPanel } from "@/components/admin/StandardShippingLabelPanel"
 import { FoxpostShipmentPanel } from "@/components/admin/foxpost/FoxpostShipmentPanel"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
@@ -254,6 +256,17 @@ export function AdminOrderDetailSheet({
                 </section>
               )}
 
+              {!isDeletedOrder && !orderHasParcelShipping(order) ? (
+                <section className="border border-white/10 bg-white/5 p-5">
+                  <SectionTitle>Webshop szállítási címke</SectionTitle>
+                  <StandardShippingLabelPanel
+                    orderId={orderIdStr}
+                    standardShippingLabel={order.standardShippingLabel}
+                    onUpdated={handleUpdated}
+                  />
+                </section>
+              ) : null}
+
               <section className="border border-white/10 bg-white/5 p-5">
                 <SectionTitle>Rendelt tételek</SectionTitle>
                 <div className="space-y-3">
@@ -340,24 +353,57 @@ export function AdminOrderDetailSheet({
 
               <section className="border border-white/10 bg-white/5 p-5">
                 <SectionTitle>Vásárló adatai</SectionTitle>
-                <div className="space-y-5">
-                  <div className="flex gap-3">
-                    <User className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
-                        Számlázási név
-                      </p>
-                      <p className="font-bold uppercase italic text-white">{order.billingInfo.name}</p>
-                      {order.billingInfo.type === "company" && order.billingInfo.taxNumber ? (
-                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                          Adószám: {order.billingInfo.taxNumber}
+                {isDeletedOrder ? (
+                  <div className="space-y-5">
+                    <div className="flex gap-3">
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                          Számlázási név
                         </p>
-                      ) : null}
-                      <p className="mt-1 text-xs text-neutral-500">{order.billingInfo.email}</p>
-                      <p className="text-xs text-neutral-500">{order.billingInfo.phone}</p>
+                        <p className="font-bold uppercase italic text-white">{order.billingInfo.name}</p>
+                        <p className="mt-1 text-xs text-neutral-500">{order.billingInfo.email}</p>
+                        <p className="text-xs text-neutral-500">{order.billingInfo.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                          Kapcsolattartó
+                        </p>
+                        <p className="font-bold text-white">{order.shippingAddress.name}</p>
+                        <p className="text-xs text-neutral-500">{order.shippingAddress.email}</p>
+                        <p className="text-xs text-neutral-500">{order.shippingAddress.phone}</p>
+                      </div>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <OrderContactEditor
+                      key={orderIdStr}
+                      orderId={orderIdStr}
+                      billingInfo={{
+                        name: order.billingInfo.name,
+                        email: order.billingInfo.email,
+                        phone: order.billingInfo.phone,
+                      }}
+                      shippingAddress={{
+                        name: order.shippingAddress.name,
+                        email: order.shippingAddress.email,
+                        phone: order.shippingAddress.phone,
+                      }}
+                      onSaved={handleUpdated}
+                    />
+                    {order.billingInfo.type === "company" && order.billingInfo.taxNumber ? (
+                      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                        Adószám: {order.billingInfo.taxNumber}
+                      </p>
+                    ) : null}
+                  </>
+                )}
 
+                <div className="mt-6 space-y-5 border-t border-white/5 pt-6">
                   <div className="flex gap-3">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
                     <div>
@@ -380,7 +426,6 @@ export function AdminOrderDetailSheet({
                           <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
                             Szállítási cím
                           </p>
-                          <p className="font-bold text-white">{order.shippingAddress.name}</p>
                           <p className="text-sm text-neutral-400">
                             {order.shippingAddress.zip} {order.shippingAddress.city}
                           </p>

@@ -5,6 +5,7 @@ export type LabelZipOrder = {
   _id: unknown
   glsLabel?: { labelDataBase64?: string } | null
   foxpostShipment?: { labelDataBase64?: string } | null
+  standardShippingLabel?: { labelDataBase64?: string } | null
 }
 
 export async function buildAdminOrderLabelsZipBuffer(orders: LabelZipOrder[]): Promise<Buffer | null> {
@@ -23,6 +24,14 @@ export async function buildAdminOrderLabelsZipBuffer(orders: LabelZipOrder[]): P
       zip.file(
         `${orderNumber}-foxpost.pdf`,
         Buffer.from(order.foxpostShipment.labelDataBase64, "base64")
+      )
+      fileCount += 1
+    }
+
+    if (order.standardShippingLabel?.labelDataBase64) {
+      zip.file(
+        `${orderNumber}-shipping.pdf`,
+        Buffer.from(order.standardShippingLabel.labelDataBase64, "base64")
       )
       fileCount += 1
     }

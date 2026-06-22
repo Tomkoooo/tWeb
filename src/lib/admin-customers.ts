@@ -99,6 +99,17 @@ export function summarizeAdminCustomers(
   orders: AdminCustomerOrderSource[],
   users: AdminCustomerUserSource[]
 ): AdminCustomerMetricSummary {
+  const orderEmails = orders
+    .filter(isNonCancelledOrder)
+    .map(orderEmail)
+    .filter(Boolean);
+  return summarizeAdminCustomersFromOrderEmails(orderEmails, users);
+}
+
+export function summarizeAdminCustomersFromOrderEmails(
+  orderEmails: string[],
+  users: AdminCustomerUserSource[]
+): AdminCustomerMetricSummary {
   const registeredUsers = users.filter((user) => user.role !== "ADMIN");
   const registeredEmails = new Set(
     registeredUsers
@@ -106,10 +117,7 @@ export function summarizeAdminCustomers(
       .filter(Boolean)
   );
   const orderCustomerEmails = new Set(
-    orders
-      .filter(isNonCancelledOrder)
-      .map(orderEmail)
-      .filter(Boolean)
+    orderEmails.map((email) => normalizeCustomerEmail(email)).filter(Boolean)
   );
   const registeredOrderEmails = [...orderCustomerEmails].filter((email) =>
     registeredEmails.has(email)

@@ -186,7 +186,7 @@ export function MethodsStep({
             const breakdown = totalsBreakdownFromGross(method.grossPrice)
             const isParcel = isParcelShippingMethod(method._id, method)
             const isSelected = data.shippingMethod === method._id
-            const parcelHtml = isParcel ? method.descriptionHtml : undefined
+            const descriptionHtml = method.descriptionHtml?.trim() || undefined
             return (
               <div key={method._id} className="space-y-2">
                 <button
@@ -196,12 +196,14 @@ export function MethodsStep({
                 >
                   <div className="min-w-0 text-left">
                     <p className={cxMethodTitle(a)}>{method.name}</p>
-                    {!isSelected || !parcelHtml ? (
-                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {isParcel
-                          ? "Csomagpont / automata — a térképen válaszd ki az átvételi helyet"
-                          : "Házhozszállítás várható ideje: 1-3 munkanap"}
-                      </p>
+                    {!isSelected || descriptionHtml ? (
+                      isSelected && descriptionHtml ? null : (
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          {isParcel
+                            ? "Csomagpont / automata — a térképen válaszd ki az átvételi helyet"
+                            : "Házhozszállítás várható ideje: 1-3 munkanap"}
+                        </p>
+                      )
                     ) : null}
                   </div>
                   <div className="flex w-full shrink-0 items-end justify-between gap-2 sm:block sm:w-auto sm:text-right">
@@ -216,8 +218,8 @@ export function MethodsStep({
                     ) : null}
                   </div>
                 </button>
-                {isSelected && parcelHtml ? (
-                  <CheckoutRichHtml html={parcelHtml} appearance={a} className="px-1 text-left" />
+                {isSelected && descriptionHtml ? (
+                  <CheckoutRichHtml html={descriptionHtml} appearance={a} className="px-1 text-left" />
                 ) : null}
               </div>
             )

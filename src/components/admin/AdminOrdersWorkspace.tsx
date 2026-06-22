@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -23,7 +23,7 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { bulkGenerateParcelLabels, bulkUpdateOrderStatuses } from "@/actions/admin-orders"
+import { bulkGenerateParcelLabels, bulkGenerateStandardShippingLabels, bulkUpdateOrderStatuses } from "@/actions/admin-orders"
 import type { AdminOrdersWorkspaceData } from "@/actions/admin-orders"
 import { AdminOrderDetailSheet } from "@/components/admin/AdminOrderDetailSheet"
 import { Button } from "@/components/ui/button"
@@ -146,6 +146,10 @@ export function AdminOrdersWorkspace({
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
+  useEffect(() => {
+    setDraft(filters)
+  }, [filters])
+
   const openOrderDetail = useCallback((orderId: string) => {
     setDetailOrderId(orderId)
     setDetailOpen(true)
@@ -179,6 +183,12 @@ export function AdminOrdersWorkspace({
     const overrides: Record<string, string | undefined> = {}
     for (const key of FILTER_KEYS) {
       overrides[key] = (draft[key] as string | undefined) || undefined
+    }
+    if (!overrides.mix && filters.mix) {
+      overrides.mix = filters.mix
+    }
+    if (!overrides.shippingType && filters.shippingType && filters.shippingType !== "all") {
+      overrides.shippingType = filters.shippingType
     }
     if (overrides.deletedFilter === "deleted") {
       overrides.view = undefined
@@ -249,7 +259,38 @@ export function AdminOrdersWorkspace({
 
   const clearSelection = () => setSelectedIds(new Set())
 
+  const visibleOrderIds = useMemo(() => visibleOrders.map((order) => order.id), [visibleOrders])
+  const allFilteredOrderIds = useMemo(() => orders.map((order) => order.id), [orders])
+  const selectedVisibleCount = useMemo(
+    () => visibleOrderIds.filter((id) => selectedIds.has(id)).length,
+    [visibleOrderIds, selectedIds]
+  )
+  const allVisibleSelected =
+    visibleOrderIds.length > 0 && selectedVisibleCount === visibleOrderIds.length
+  const allFilteredSelected =
+    allFilteredOrderIds.length > 0 && allFilteredOrderIds.every((id) => selectedIds.has(id))
+
   const selectedCount = selectedIds.size
+
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selectedIds.has(order.id)),
+    [orders, selectedIds]
+  )
+  const selectionHasParcel = selectedOrders.some(
+    (order) => order.shippingType === "gls" || order.shippingType === "foxpost"
+  )
+  const selectionHasStandard = selectedOrders.some((order) => order.shippingType === "standard")
+  const selectionStandardNeedsLabel = selectedOrders.some(
+    (order) => order.shippingType === "standard" && order.needsLabel && !order.isGeneratingLabel
+  )
+  const selectionStandardHasLabel = selectedOrders.some(
+    (order) => order.shippingType === "standard" && order.hasLabel && !order.isGeneratingLabel
+  )
+  const selectionHasLabels = selectedOrders.some((order) => order.hasLabel || order.isGeneratingLabel)
+  const showParcelLabelActions = !isDeletedView && parcelManagerEnabled && selectionHasParcel
+  const showStandardGenerateMissing = !isDeletedView && selectionStandardNeedsLabel
+  const showStandardRegenerate = !isDeletedView && selectionStandardHasLabel
+  const showLabelDownload = !isDeletedView && selectedCount > 0
 
   const handleBulkStatus = async () => {
     const ids = Array.from(selectedIds)
@@ -293,8 +334,44 @@ export function AdminOrdersWorkspace({
     }
   }
 
-  const handleBulkLabels = async () => {
+  const runBulkStandardLabels = async (ids: string[], options?: { skipExisting?: boolean }) => {
+    if (isDeletedView) return
+    const skipExisting = options?.skipExisting !== false
+    const eligible = ids.filter((id) => {
+      const order = orders.find((entry) => entry.id === id)
+      if (!order || isAdminDeletedOrder(order.status) || order.shippingType !== "standard") return false
+      if (skipExisting) return order.needsLabel && !order.isGeneratingLabel
+      return order.hasLabel && !order.isGeneratingLabel
+    })
+    if (eligible.length === 0 || isGeneratingLabels) return
+
+    setIsGeneratingLabels(true)
+    try {
+      const result = await bulkGenerateStandardShippingLabels(eligible, { skipExisting })
+      router.refresh()
+      const actionLabel = skipExisting ? "szállítási címke kész" : "címke újragenerálva"
+      const parts = [`${result.successCount} ${actionLabel}`]
+      if (result.skippedCount > 0) parts.push(`${result.skippedCount} kihagyva`)
+      if (result.failedCount > 0) parts.push(`${result.failedCount} hiba`)
+      if (result.failedCount > 0) toast.error(parts.join(", "))
+      else toast.success(parts.join(", "))
+    } catch {
+      toast.error("A szállítási címkék generálása sikertelen.")
+    } finally {
+      setIsGeneratingLabels(false)
+    }
+  }
+
+  const handleBulkParcelLabels = async () => {
     await runBulkLabels(Array.from(selectedIds))
+  }
+
+  const handleBulkStandardLabels = async () => {
+    await runBulkStandardLabels(Array.from(selectedIds), { skipExisting: true })
+  }
+
+  const handleBulkRegenerateStandardLabels = async () => {
+    await runBulkStandardLabels(Array.from(selectedIds), { skipExisting: false })
   }
 
   const handleDownloadZip = async () => {
@@ -334,7 +411,13 @@ export function AdminOrdersWorkspace({
   }
 
   return (
-    <div className={cn("space-y-6 animate-in fade-in duration-500", isNavigating && "opacity-60")}>
+    <div
+      className={cn(
+        "space-y-6 animate-in fade-in duration-500",
+        isNavigating && "opacity-60",
+        selectedCount > 0 && "pb-28"
+      )}
+    >
       <WorkspaceHeader />
 
       <FilterBar
@@ -372,6 +455,30 @@ export function AdminOrdersWorkspace({
         isDeletedView={isDeletedView}
       />
 
+      {filters.mix && !isDeletedView && (
+        <MixFilterBanner
+          orderCount={orders.length}
+          mixKey={filters.mix}
+          shippingType={filters.shippingType}
+          onClear={() => navigate(buildHref({ mix: undefined }))}
+          onSelectAllFiltered={() => selectMany(allFilteredOrderIds)}
+        />
+      )}
+
+      {effectiveView === "list" && visibleOrderIds.length > 0 && !isDeletedView && (
+        <SelectionToolbar
+          visibleCount={visibleOrderIds.length}
+          filteredCount={allFilteredOrderIds.length}
+          selectedCount={selectedCount}
+          selectedVisibleCount={selectedVisibleCount}
+          allVisibleSelected={allVisibleSelected}
+          allFilteredSelected={allFilteredSelected}
+          onSelectVisible={() => selectMany(visibleOrderIds)}
+          onSelectAllFiltered={() => selectMany(allFilteredOrderIds)}
+          onClear={clearSelection}
+        />
+      )}
+
       {focusedRange && effectiveView === "list" && !isDeletedView && (
         <FocusBanner
           range={focusedRange}
@@ -391,32 +498,21 @@ export function AdminOrdersWorkspace({
         />
       )}
 
-      {selectedCount > 0 && (
-        <BulkActionBar
-          selectedCount={selectedCount}
-          bulkStatus={bulkStatus}
-          setBulkStatus={setBulkStatus}
-          onApplyStatus={handleBulkStatus}
-          onGenerateLabels={handleBulkLabels}
-          onDownloadZip={handleDownloadZip}
-          onClear={clearSelection}
-          isUpdating={isUpdating}
-          isGeneratingLabels={isGeneratingLabels}
-          isDownloadingZip={isDownloadingZip}
-          parcelManagerEnabled={parcelManagerEnabled && !isDeletedView}
-        />
-      )}
-
       {effectiveView === "list" && (
         <ListView
           orders={visibleOrders}
           selectedIds={selectedIds}
           onToggle={toggleOne}
           onToggleAll={() => {
-            const ids = visibleOrders.map((o) => o.id)
-            const allSelected = ids.length > 0 && ids.every((id) => selectedIds.has(id))
-            if (allSelected) clearSelection()
-            else selectMany(ids)
+            if (allVisibleSelected) {
+              setSelectedIds((current) => {
+                const next = new Set(current)
+                visibleOrderIds.forEach((id) => next.delete(id))
+                return next
+              })
+            } else {
+              selectMany(visibleOrderIds, true)
+            }
           }}
           sort={(filters.sort as WorkspaceSortKey) || "newest"}
           onSort={setSort}
@@ -429,7 +525,11 @@ export function AdminOrdersWorkspace({
           sections={shippingMixSections}
           onSelectGroup={(ids) => selectMany(ids)}
           buildMixHref={(mixKey, shippingType) =>
-            buildHref({ mix: mixKey, shippingType, view: undefined })
+            buildHref({
+              mix: mixKey,
+              shippingType,
+              view: undefined,
+            })
           }
           buildShippingHref={(shippingType) =>
             buildHref({ shippingType, mix: undefined, view: undefined })
@@ -437,6 +537,7 @@ export function AdminOrdersWorkspace({
           onNavigate={navigate}
           parcelManagerEnabled={parcelManagerEnabled}
           onGenerateLabels={runBulkLabels}
+          onGenerateStandardLabels={runBulkStandardLabels}
           isGeneratingLabels={isGeneratingLabels}
         />
       )}
@@ -468,6 +569,32 @@ export function AdminOrdersWorkspace({
         foxpostManagerEnabled={foxpostManagerEnabled}
         onOrderUpdated={() => router.refresh()}
       />
+
+      {selectedCount > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/40 bg-black/95 shadow-2xl backdrop-blur lg:left-72">
+          <div className="mx-auto max-w-7xl px-6 py-4 md:px-10">
+            <BulkActionBar
+              selectedCount={selectedCount}
+              bulkStatus={bulkStatus}
+              setBulkStatus={setBulkStatus}
+              onApplyStatus={handleBulkStatus}
+              onGenerateParcelLabels={handleBulkParcelLabels}
+              onGenerateStandardLabels={handleBulkStandardLabels}
+              onRegenerateStandardLabels={handleBulkRegenerateStandardLabels}
+              onDownloadZip={handleDownloadZip}
+              onClear={clearSelection}
+              isUpdating={isUpdating}
+              isGeneratingLabels={isGeneratingLabels}
+              isDownloadingZip={isDownloadingZip}
+              showParcelLabelActions={showParcelLabelActions}
+              showStandardGenerateMissing={showStandardGenerateMissing}
+              showStandardRegenerate={showStandardRegenerate}
+              showLabelDownload={showLabelDownload}
+              selectionHasLabels={selectionHasLabels}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -595,6 +722,7 @@ function FilterBar({
           <select value={draft.labelState || "all"} onChange={(e) => set("labelState", e.target.value)} className={inputClass}>
             <option value="all">Mindegy</option>
             <option value="needs">Címke hiányzik</option>
+            <option value="generating">Címke generálás alatt</option>
             <option value="has">Van címke</option>
             <option value="none">Nincs csomagküldés</option>
           </select>
@@ -833,6 +961,125 @@ function ViewTabs({
   )
 }
 
+function MixFilterBanner({
+  orderCount,
+  mixKey,
+  shippingType,
+  onClear,
+  onSelectAllFiltered,
+}: {
+  orderCount: number
+  mixKey: string
+  shippingType?: string
+  onClear: () => void
+  onSelectAllFiltered: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-3 border border-primary/40 bg-primary/10 p-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex items-start gap-3">
+        <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div>
+          <p className="text-sm font-black uppercase tracking-widest text-white">Termék-mix szűrő aktív</p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-primary/80">
+            {orderCount} rendelés ebben a mixben
+            {shippingType && shippingType !== "all" ? ` · ${shippingType} szállítás` : ""}
+            {" · "}mix #{mixKey}
+          </p>
+          <p className="mt-2 text-xs italic text-neutral-400">
+            A státusz és címke állapot szűrők csak ezen a mixen belül érvényesek. Pl. válaszd a „Címke hiányzik”
+            opciót, majd kattints a Szűrés gombra.
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          onClick={onSelectAllFiltered}
+          className="h-9 rounded-none bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+        >
+          <Boxes className="mr-2 h-4 w-4" />
+          Mix összes kijelölése ({orderCount})
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClear}
+          className="h-9 rounded-none border-white/20 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-200"
+        >
+          <X className="mr-1 h-3.5 w-3.5" /> Mix törlése
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function SelectionToolbar({
+  visibleCount,
+  filteredCount,
+  selectedCount,
+  selectedVisibleCount,
+  allVisibleSelected,
+  allFilteredSelected,
+  onSelectVisible,
+  onSelectAllFiltered,
+  onClear,
+}: {
+  visibleCount: number
+  filteredCount: number
+  selectedCount: number
+  selectedVisibleCount: number
+  allVisibleSelected: boolean
+  allFilteredSelected: boolean
+  onSelectVisible: () => void
+  onSelectAllFiltered: () => void
+  onClear: () => void
+}) {
+  const showScopeButtons = filteredCount > visibleCount
+
+  return (
+    <div className="flex flex-col gap-3 border border-white/10 bg-black/40 p-3 md:flex-row md:items-center md:justify-between">
+      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+        Kijelölés: {selectedCount} rendelés
+        {showScopeButtons
+          ? ` · látható ${selectedVisibleCount}/${visibleCount} · szűrt találat ${filteredCount}`
+          : ` · ${filteredCount} szűrt találat`}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSelectVisible}
+          disabled={allVisibleSelected}
+          className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-200 disabled:opacity-40"
+        >
+          Látható kijelölése ({visibleCount})
+        </Button>
+        {showScopeButtons ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSelectAllFiltered}
+            disabled={allFilteredSelected}
+            className="h-9 rounded-none border-primary/40 px-3 text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-40"
+          >
+            Összes szűrt találat ({filteredCount})
+          </Button>
+        ) : null}
+        {selectedCount > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClear}
+            className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-400"
+          >
+            Kijelölés törlése
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function FocusBanner({
   range,
   count,
@@ -887,35 +1134,47 @@ function BulkActionBar({
   bulkStatus,
   setBulkStatus,
   onApplyStatus,
-  onGenerateLabels,
+  onGenerateParcelLabels,
+  onGenerateStandardLabels,
+  onRegenerateStandardLabels,
   onDownloadZip,
   onClear,
   isUpdating,
   isGeneratingLabels,
   isDownloadingZip,
-  parcelManagerEnabled,
+  showParcelLabelActions,
+  showStandardGenerateMissing,
+  showStandardRegenerate,
+  showLabelDownload,
+  selectionHasLabels,
 }: {
   selectedCount: number
   bulkStatus: OrderStatusValue
   setBulkStatus: (status: OrderStatusValue) => void
   onApplyStatus: () => void
-  onGenerateLabels: () => void
+  onGenerateParcelLabels: () => void
+  onGenerateStandardLabels: () => void
+  onRegenerateStandardLabels: () => void
   onDownloadZip: () => void
   onClear: () => void
   isUpdating: boolean
   isGeneratingLabels: boolean
   isDownloadingZip: boolean
-  parcelManagerEnabled: boolean
+  showParcelLabelActions: boolean
+  showStandardGenerateMissing: boolean
+  showStandardRegenerate: boolean
+  showLabelDownload: boolean
+  selectionHasLabels: boolean
 }) {
   const busy = isUpdating || isGeneratingLabels || isDownloadingZip
   return (
-    <div className="sticky top-2 z-10 flex flex-col gap-3 border border-primary/40 bg-black/95 p-4 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3">
         <span className="flex h-8 w-8 items-center justify-center bg-primary text-sm font-black text-white">
           {selectedCount}
         </span>
         <span className="text-[10px] font-black uppercase tracking-widest text-white">rendelés kijelölve</span>
-        <button type="button" onClick={onClear} className="text-neutral-500 hover:text-white">
+        <button type="button" onClick={onClear} className="text-neutral-500 hover:text-white" aria-label="Kijelölés törlése">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -941,30 +1200,55 @@ function BulkActionBar({
           {isUpdating ? <LoadingSpinner size="xs" className="mr-2" /> : null}
           Státusz
         </Button>
-        {parcelManagerEnabled && (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onGenerateLabels}
-              disabled={busy}
-              className="h-10 rounded-none border-amber-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-500/10"
-            >
-              {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <Printer className="mr-2 h-4 w-4" />}
-              Címkék
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onDownloadZip}
-              disabled={busy}
-              className="h-10 rounded-none border-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-white"
-            >
-              {isDownloadingZip ? <LoadingSpinner size="xs" className="mr-2" /> : <Download className="mr-2 h-4 w-4" />}
-              ZIP
-            </Button>
-          </>
-        )}
+        {showParcelLabelActions ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onGenerateParcelLabels}
+            disabled={busy}
+            className="h-10 rounded-none border-amber-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-500/10"
+          >
+            {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <Printer className="mr-2 h-4 w-4" />}
+            Csomagcímkék
+          </Button>
+        ) : null}
+        {showStandardGenerateMissing ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onGenerateStandardLabels}
+            disabled={busy}
+            className="h-10 rounded-none border-emerald-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10"
+          >
+            {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <Tag className="mr-2 h-4 w-4" />}
+            PDF címkék
+          </Button>
+        ) : null}
+        {showStandardRegenerate ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onRegenerateStandardLabels}
+            disabled={busy}
+            className="h-10 rounded-none border-emerald-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/10"
+          >
+            {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+            PDF újragenerálás
+          </Button>
+        ) : null}
+        {showLabelDownload ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onDownloadZip}
+            disabled={busy}
+            className="h-10 rounded-none border-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-white"
+            title={selectionHasLabels ? undefined : "A kijelölésben még nincs letölthető címke"}
+          >
+            {isDownloadingZip ? <LoadingSpinner size="xs" className="mr-2" /> : <Download className="mr-2 h-4 w-4" />}
+            Címkék ZIP
+          </Button>
+        ) : null}
       </div>
     </div>
   )
@@ -1133,10 +1417,13 @@ function ListView({
                     </td>
                     <td className="px-4 py-4 align-top">
                       <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">{order.shippingLabel}</span>
-                      {order.needsLabel && (
+                      {order.needsLabel && !order.isGeneratingLabel && (
                         <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Címke hiányzik</p>
                       )}
-                      {order.hasLabel && (
+                      {order.isGeneratingLabel && (
+                        <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Generálás alatt</p>
+                      )}
+                      {order.hasLabel && !order.isGeneratingLabel && (
                         <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Címke kész</p>
                       )}
                     </td>
@@ -1184,6 +1471,7 @@ function MixView({
   onNavigate,
   parcelManagerEnabled,
   onGenerateLabels,
+  onGenerateStandardLabels,
   isGeneratingLabels,
 }: {
   sections: OrderShippingMixSection[]
@@ -1193,6 +1481,7 @@ function MixView({
   onNavigate: (href: string) => void
   parcelManagerEnabled: boolean
   onGenerateLabels: (orderIds: string[]) => void | Promise<void>
+  onGenerateStandardLabels: (orderIds: string[], options?: { skipExisting?: boolean }) => void | Promise<void>
   isGeneratingLabels: boolean
 }) {
   const totalMixGroups = sections.reduce((sum, section) => sum + section.mixGroups.length, 0)
@@ -1259,9 +1548,14 @@ function MixView({
                         </span>
                       </>
                     ) : (
-                      <span className="border border-white/10 bg-black/40 px-2 py-1 text-neutral-400">
-                        Manuális feldolgozás
-                      </span>
+                      <>
+                        <span className="border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-amber-300">
+                          {section.needsLabel} címke hiányzik
+                        </span>
+                        <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                          {section.hasLabel} címkés
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1298,6 +1592,38 @@ function MixView({
                       <Printer className="mr-2 h-4 w-4" />
                     )}
                     Hiányzó címkék ({section.needsLabel})
+                  </Button>
+                ) : null}
+                {!section.canAutoLabel && section.needsLabel > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isGeneratingLabels}
+                    onClick={() => void onGenerateStandardLabels(sectionOrderIds, { skipExisting: true })}
+                    className="h-9 rounded-none border-amber-500/30 px-3 text-[10px] font-black uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
+                  >
+                    {isGeneratingLabels ? (
+                      <LoadingSpinner size="xs" className="mr-2" />
+                    ) : (
+                      <Printer className="mr-2 h-4 w-4" />
+                    )}
+                    PDF címkék ({section.needsLabel})
+                  </Button>
+                ) : null}
+                {!section.canAutoLabel && section.hasLabel > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isGeneratingLabels}
+                    onClick={() => void onGenerateStandardLabels(sectionOrderIds, { skipExisting: false })}
+                    className="h-9 rounded-none border-emerald-500/30 px-3 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/10"
+                  >
+                    {isGeneratingLabels ? (
+                      <LoadingSpinner size="xs" className="mr-2" />
+                    ) : (
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                    )}
+                    PDF újragenerálás ({section.hasLabel})
                   </Button>
                 ) : null}
               </div>
