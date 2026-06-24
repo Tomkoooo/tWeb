@@ -103,6 +103,21 @@ async function applyFoxpostShipment(
   let refCode = order.foxpostShipment?.refCode;
   const foxpostConfig = await resolveFoxpostConfig(source);
 
+  if (order.foxpostShipment?.lastError) {
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      lastError: undefined,
+    };
+    await order.save();
+    if (source === "live") {
+      await Order.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } });
+    } else {
+      const { default: SandboxOrder } = await import("@/plugins/order-lab/models/SandboxOrder");
+      await SandboxOrder.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } });
+    }
+    revalidateFoxpostOrder(source, id);
+  }
+
   try {
     if (!clFoxId) {
       const created = await FoxpostApiClient.createParcelForOrder(
@@ -176,6 +191,34 @@ export async function generateFoxpostShipment(input: {
   await assertFoxpostManagerEnabled();
   const order = await loadFoxpostOrder(input.source, input.id);
   return applyFoxpostShipment(order, input.source, session.user?.id);
+}
+
+export async function clearFoxpostShipmentError(input: {
+  source: FoxpostShipmentSource;
+  id: string;
+}): Promise<ParcelActionResult> {
+  await checkAdmin();
+  await assertFoxpostManagerEnabled();
+  const order = await loadFoxpostOrder(input.source, input.id);
+  if (!order.foxpostShipment?.lastError) {
+    return { success: true };
+  }
+
+  order.foxpostShipment = {
+    ...(order.foxpostShipment || {}),
+    lastError: undefined,
+  };
+  await order.save();
+
+  if (input.source === "live") {
+    await Order.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } });
+  } else {
+    const { default: SandboxOrder } = await import("@/plugins/order-lab/models/SandboxOrder");
+    await SandboxOrder.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } });
+  }
+
+  revalidateFoxpostOrder(input.source, input.id);
+  return { success: true };
 }
 
 export async function generateOrderFoxpostShipment(orderId: string): Promise<ParcelActionResult> {

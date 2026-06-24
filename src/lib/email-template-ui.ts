@@ -80,6 +80,14 @@ export type EmailTemplateRelation = {
 }
 
 export const EMAIL_TEMPLATE_RELATIONS: Record<string, EmailTemplateRelation> = {
+  order_status_change: {
+    relatedTypes: ["order_cancelled"],
+    note: "Általános állapotváltozás. Admin törlésnél a vásárló ezt és a „Rendelés törlése” sablont is megkapja.",
+  },
+  order_cancelled: {
+    relatedTypes: ["order_status_change"],
+    note: "Admin rendelés törlés — opcionális indoklással. Az állapotváltozás email a párja.",
+  },
   invoice_sent: {
     relatedTypes: ["invoice_issue"],
     note: "Sikeres Számlázz.hu számla — PDF csatolmánnyal. Ha a kiállítás/küldés elbukik, a vásárló a „Számlázási probléma” sablont kapja (pár sablon).",

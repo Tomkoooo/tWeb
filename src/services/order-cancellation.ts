@@ -12,6 +12,10 @@ import { InvoicingSzamlazzService } from "@/services/invoicing-szamlazz";
 import { MailerService } from "@/services/mailer";
 import { getStripeClient } from "@/services/stripe";
 
+export type CancelOrderOptions = {
+  reason?: string;
+};
+
 export type CancelOrderResult = {
   success: true;
   refunded: boolean;
@@ -19,13 +23,22 @@ export type CancelOrderResult = {
   invoiceReversed: boolean;
   reversalInvoiceId?: string;
   stockRestored: boolean;
+  cancellationReason?: string;
 };
+
+const MAX_CANCELLATION_REASON_LENGTH = 2000;
 
 function isIssuedInvoice(order: { invoiceId?: string; invoiceStatus?: string }): boolean {
   if (!order.invoiceId?.trim()) return false;
   if (order.invoiceStatus === "reversed") return false;
   const status = order.invoiceStatus || "pending";
   return status === "issued" || status === "manual";
+}
+
+function normalizeCancellationReason(reason?: string): string | undefined {
+  const trimmed = String(reason || "").trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, MAX_CANCELLATION_REASON_LENGTH);
 }
 
 async function resolveStripePaymentIntentId(orderId: mongoose.Types.ObjectId): Promise<string | null> {
@@ -42,27 +55,6 @@ async function orderUsesStripePayment(order: InstanceType<typeof Order>): Promis
   return name.includes("stripe");
 }
 
-async function notifyOrderCancelled(order: InstanceType<typeof Order>, oldStatus: string) {
-  try {
-    const customerEmail = (order as { user?: { email?: string } }).user?.email || order.billingInfo?.email;
-    const customerName = (order as { user?: { name?: string } }).user?.name || order.shippingAddress?.name;
-    if (!customerEmail) return;
-
-    await MailerService.sendEmail({
-      to: customerEmail,
-      templateType: "order_status_change",
-      data: {
-        orderNumber: formatOrderNumber(order._id),
-        customerName,
-        oldStatus: getStatusLabel(oldStatus),
-        newStatus: getStatusLabel(ADMIN_ORDER_DELETED_STATUS),
-      },
-    });
-  } catch (error) {
-    console.error("Failed to send order cancellation email:", error);
-  }
-}
-
 function getStatusLabel(status: string) {
   const labels: Record<string, string> = {
     pending: "Függőben",
@@ -74,13 +66,53 @@ function getStatusLabel(status: string) {
   return labels[status] || status;
 }
 
+async function notifyOrderCancelled(
+  order: InstanceType<typeof Order>,
+  oldStatus: string,
+  cancellationReason?: string
+) {
+  const customerEmail = (order as { user?: { email?: string } }).user?.email || order.billingInfo?.email;
+  const customerName = (order as { user?: { name?: string } }).user?.name || order.shippingAddress?.name;
+  if (!customerEmail) return;
+
+  const emailData = {
+    orderNumber: formatOrderNumber(order._id),
+    customerName,
+    oldStatus: getStatusLabel(oldStatus),
+    newStatus: getStatusLabel(ADMIN_ORDER_DELETED_STATUS),
+    cancellationReason,
+  };
+
+  try {
+    await MailerService.sendEmail({
+      to: customerEmail,
+      templateType: "order_status_change",
+      data: emailData,
+    });
+  } catch (error) {
+    console.error("Failed to send order status change email:", error);
+  }
+
+  try {
+    await MailerService.sendEmail({
+      to: customerEmail,
+      templateType: "order_cancelled",
+      data: emailData,
+    });
+  } catch (error) {
+    console.error("Failed to send order cancellation email:", error);
+  }
+}
+
 export class OrderCancellationService {
-  static async cancel(orderId: string): Promise<CancelOrderResult> {
+  static async cancel(orderId: string, options: CancelOrderOptions = {}): Promise<CancelOrderResult> {
     await dbConnect();
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new Error("Érvénytelen rendelés azonosító");
     }
+
+    const cancellationReason = normalizeCancellationReason(options.reason);
 
     const order = await Order.findById(orderId).populate("user");
     if (!order) throw new Error("A rendelés nem található");
@@ -150,9 +182,10 @@ export class OrderCancellationService {
 
     order.status = ADMIN_ORDER_DELETED_STATUS;
     order.cancelledAt = order.cancelledAt ?? new Date();
+    order.cancellationReason = cancellationReason;
     await order.save();
 
-    await notifyOrderCancelled(order, oldStatus);
+    await notifyOrderCancelled(order, oldStatus, cancellationReason);
 
     return {
       success: true,
@@ -161,6 +194,7 @@ export class OrderCancellationService {
       invoiceReversed,
       reversalInvoiceId,
       stockRestored,
+      cancellationReason,
     };
   }
 }

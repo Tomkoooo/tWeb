@@ -412,9 +412,9 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   return { success: true }
 }
 
-export async function cancelOrder(orderId: string) {
+export async function cancelOrder(orderId: string, reason?: string) {
   await checkAdmin()
-  const result = await OrderCancellationService.cancel(orderId)
+  const result = await OrderCancellationService.cancel(orderId, { reason })
 
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)

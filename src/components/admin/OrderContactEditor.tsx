@@ -50,6 +50,9 @@ export function OrderContactEditor({
       formData.set("shippingPhone", shippingPhone)
       await updateOrderContactInfo(orderId, formData)
       toast.success("Kapcsolati adatok mentve.")
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(`order-contact-updated:${orderId}`))
+      }
       onSaved?.()
       router.refresh()
     } catch (error) {
@@ -155,7 +158,8 @@ export function OrderContactEditor({
       </div>
 
       <p className="text-[10px] italic text-neutral-500">
-        A módosítások a szállítási PDF címkén is megjelennek — címke újragenerálás szükséges lehet.
+        A módosítások a Foxpost címkén is megjelennek — hiba esetén mentsd az adatokat, majd használd a „Címke
+        újragenerálása” gombot.
       </p>
 
       <Button

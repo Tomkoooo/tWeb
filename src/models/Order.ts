@@ -98,6 +98,7 @@ export interface IOrder extends Document {
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   cancelledAt?: Date;
+  cancellationReason?: string;
   stripeRefundId?: string;
   invoiceMode?: "automatic" | "manual" | "none";
   invoiceId?: string;
@@ -215,6 +216,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "pending",
     },
     cancelledAt: { type: Date },
+    cancellationReason: { type: String },
     stripeRefundId: { type: String },
     invoiceMode: {
       type: String,

@@ -97,6 +97,33 @@ describe("OrderCancellationService", () => {
     expect(order.stripeRefundId).toBe("re_123");
     expect(order.invoiceReversalId).toBe("STORNO-001");
     expect(orderSaveMock).toHaveBeenCalled();
+    expect(mailerSendMock).toHaveBeenCalledTimes(2);
+    expect(mailerSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({ templateType: "order_status_change" })
+    );
+    expect(mailerSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({ templateType: "order_cancelled" })
+    );
+  });
+
+  it("stores optional cancellation reason and includes it in emails", async () => {
+    const order = makeOrder();
+    orderFindByIdMock.mockReturnValue({
+      populate: vi.fn().mockResolvedValue(order),
+    });
+
+    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    await OrderCancellationService.cancel("507f1f77bcf86cd799439011", {
+      reason: "  Hibás szállítási cím  ",
+    });
+
+    expect(order.cancellationReason).toBe("Hibás szállítási cím");
+    expect(mailerSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateType: "order_cancelled",
+        data: expect.objectContaining({ cancellationReason: "Hibás szállítási cím" }),
+      })
+    );
   });
 
   it("rejects already cancelled orders", async () => {
@@ -134,5 +161,6 @@ describe("OrderCancellationService", () => {
       variantId: undefined,
       quantity: 2,
     });
+    expect(mailerSendMock).toHaveBeenCalledTimes(2);
   });
 });

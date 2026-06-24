@@ -111,6 +111,15 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <div className="mt-6 border-t border-white/10 pt-6">
                 <OrderCancelButton orderId={order._id.toString()} />
               </div>
+            ) : order.cancellationReason ? (
+              <div className="mt-6 border-t border-white/10 pt-6">
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                  Törlés indoka
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-300">
+                  {order.cancellationReason}
+                </p>
+              </div>
             ) : null}
             {orderHasParcelShipping(order) ||
             order.glsLabel?.parcelNumber ||

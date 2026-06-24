@@ -112,6 +112,34 @@ export async function buildCoreEmailTemplateSeeds(): Promise<EmailTemplateSeed[]
       variables: ["orderNumber", "customerName", "oldStatus", "newStatus"],
     },
     {
+      type: "order_cancelled",
+      pluginId: null,
+      tags: ["core", "shop", "order"],
+      subject: `${branding.brandName} rendelés törölve - #{{orderNumber}}`,
+      body: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:${background};color:${foreground};">
+          <h1 style="color:${primaryForeground};text-transform:uppercase;">Rendelés törölve</h1>
+          <p>Kedves {{customerName}},</p>
+          <p>A(z) ${shopName} értesít, hogy a #{{orderNumber}} számú rendelésed törölve lett.</p>
+          <div style="background:${secondary};color:${secondaryForeground};padding:15px;margin:20px 0;text-align:center;border:1px solid ${border};">
+            <p style="margin:0;font-size:14px;">Régi állapot: {{oldStatus}}</p>
+            <p style="margin:10px 0;font-size:24px;font-weight:bold;color:${primaryForeground};">Új állapot: {{newStatus}}</p>
+          </div>
+          {{#if cancellationReason}}
+          <div style="background:${background};padding:15px;margin:20px 0;border:1px solid ${border};">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:bold;text-transform:uppercase;color:${mutedForeground};">Indoklás</p>
+            <p style="margin:0;white-space:pre-wrap;line-height:1.6;">{{cancellationReason}}</p>
+          </div>
+          {{/if}}
+          <p>Ha kártyás fizetéssel rendeltél, a visszatérítés a bankod szabályai szerint jelenik meg.</p>
+          ${footer}
+        </div>
+      `,
+      description:
+        "Admin rendelés törlés — a vásárló kapja meg az állapotváltozás mellett (opcionális indoklással). Pár: order_status_change.",
+      variables: ["orderNumber", "customerName", "oldStatus", "newStatus", "cancellationReason"],
+    },
+    {
       type: "invoice_sent",
       pluginId: null,
       tags: ["core", "shop", "invoicing", "szamlazz"],
@@ -242,6 +270,7 @@ export async function buildAllEmailTemplateSeeds(): Promise<EmailTemplateSeed[]>
 export const EMAIL_TEMPLATE_TYPE_LABELS: Record<string, string> = {
   order_confirmation: "Rendelés visszaigazolása (webshop)",
   order_status_change: "Rendelés állapot (webshop)",
+  order_cancelled: "Rendelés törlése (webshop — admin)",
   invoice_sent: "Számla elküldve (Számlázz — siker)",
   invoice_issue: "Számlázási probléma (Számlázz — hiba pár)",
   contact_form_notification: "Kapcsolatfelvétel (belső)",

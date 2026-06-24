@@ -218,6 +218,15 @@ export function AdminOrderDetailSheet({
                   <div className="mt-4 border-t border-white/5 pt-4">
                     <OrderCancelButton orderId={orderIdStr} onCancelled={handleUpdated} />
                   </div>
+                ) : order.cancellationReason ? (
+                  <div className="mt-4 border-t border-white/5 pt-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                      Törlés indoka
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-300">
+                      {order.cancellationReason}
+                    </p>
+                  </div>
                 ) : null}
               </section>
 
