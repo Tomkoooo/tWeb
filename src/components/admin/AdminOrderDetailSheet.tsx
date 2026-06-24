@@ -15,6 +15,7 @@ import {
   uploadManualInvoicePdf,
 } from "@/actions/admin-orders"
 import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
+import { OrderCancelButton } from "@/components/admin/OrderCancelButton"
 import { OrderParcelPanel } from "@/components/admin/OrderParcelPanel"
 import { OrderContactEditor } from "@/components/admin/OrderContactEditor"
 import { StandardShippingLabelPanel } from "@/components/admin/StandardShippingLabelPanel"
@@ -213,6 +214,11 @@ export function AdminOrderDetailSheet({
                   currentStatus={order.status}
                   onUpdated={handleUpdated}
                 />
+                {!isDeletedOrder ? (
+                  <div className="mt-4 border-t border-white/5 pt-4">
+                    <OrderCancelButton orderId={orderIdStr} onCancelled={handleUpdated} />
+                  </div>
+                ) : null}
               </section>
 
               {(orderHasParcelShipping(order) ||
@@ -514,6 +520,7 @@ export function AdminOrderDetailSheet({
                     <option value="issued">issued</option>
                     <option value="failed">failed</option>
                     <option value="manual">manual</option>
+                    <option value="reversed">reversed</option>
                   </select>
                   <Button
                     type="submit"

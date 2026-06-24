@@ -6,6 +6,7 @@ import {
   uploadManualInvoicePdf,
 } from "@/actions/admin-orders"
 import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
+import { OrderCancelButton } from "@/components/admin/OrderCancelButton"
 import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar } from "lucide-react"
 import {
   OrderParcelPanel,
@@ -106,6 +107,11 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               orderId={order._id.toString()}
               currentStatus={order.status}
             />
+            {!isDeletedOrder ? (
+              <div className="mt-6 border-t border-white/10 pt-6">
+                <OrderCancelButton orderId={order._id.toString()} />
+              </div>
+            ) : null}
             {orderHasParcelShipping(order) ||
             order.glsLabel?.parcelNumber ||
             order.glsLabel?.lastError ||
@@ -180,6 +186,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                   <option value="issued">issued</option>
                   <option value="failed">failed</option>
                   <option value="manual">manual</option>
+                  <option value="reversed">reversed</option>
                 </select>
                 <Button className="h-11 rounded-none bg-primary hover:bg-primary/80 text-white text-[10px] font-black uppercase tracking-widest md:col-span-2">
                   Számla adatok mentése

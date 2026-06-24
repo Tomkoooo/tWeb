@@ -213,6 +213,25 @@ export class InvoicingSzamlazzService {
     return null;
   }
 
+  static async reverseInvoice(invoiceId: string): Promise<{ invoiceId: string }> {
+    const trimmed = invoiceId.trim();
+    if (!trimmed) {
+      throw new Error("Számla sztornózás sikertelen: hiányzó számlaszám.");
+    }
+
+    const client = this.getClient(false);
+    const response = await client.reverseInvoice({
+      invoiceId: trimmed,
+      eInvoice: true,
+      requestInvoiceDownload: false,
+    });
+    const reversalId = String((response as { invoiceId?: string }).invoiceId || "");
+    if (!reversalId) {
+      throw new Error("Számla sztornózás sikertelen: hiányzó sztornó számla azonosító.");
+    }
+    return { invoiceId: reversalId };
+  }
+
   static async downloadInvoicePdf(params: {
     invoiceId?: string;
     orderNumber?: string;

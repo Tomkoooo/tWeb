@@ -97,11 +97,14 @@ export interface IOrder extends Document {
   discount: number;
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  cancelledAt?: Date;
+  stripeRefundId?: string;
   invoiceMode?: "automatic" | "manual" | "none";
   invoiceId?: string;
   invoiceExternalId?: string;
+  invoiceReversalId?: string;
   invoiceIssuedAt?: Date;
-  invoiceStatus?: "pending" | "issued" | "failed" | "manual";
+  invoiceStatus?: "pending" | "issued" | "failed" | "manual" | "reversed";
   invoicePdfFileName?: string;
   invoiceLastError?: string;
   invoiceEmailSentAt?: Date;
@@ -211,6 +214,8 @@ const OrderSchema = new Schema<IOrder>(
       enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    cancelledAt: { type: Date },
+    stripeRefundId: { type: String },
     invoiceMode: {
       type: String,
       enum: ["automatic", "manual", "none"],
@@ -218,10 +223,11 @@ const OrderSchema = new Schema<IOrder>(
     },
     invoiceId: { type: String },
     invoiceExternalId: { type: String },
+    invoiceReversalId: { type: String },
     invoiceIssuedAt: { type: Date },
     invoiceStatus: {
       type: String,
-      enum: ["pending", "issued", "failed", "manual"],
+      enum: ["pending", "issued", "failed", "manual", "reversed"],
       default: "pending",
     },
     invoicePdfFileName: { type: String },

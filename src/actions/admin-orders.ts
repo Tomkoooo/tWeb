@@ -50,6 +50,7 @@ import {
   isFoxpostParcelManagerEnabled,
   isGlsParcelManagerEnabled,
 } from "@/lib/parcel-feature-flags"
+import { OrderCancellationService } from "@/services/order-cancellation"
 
 const ORDER_STATUS_VALUES = ["pending", "processing", "shipped", "delivered", "cancelled"] as const
 
@@ -409,6 +410,17 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   revalidatePath(`/admin/orders/${orderId}`)
   
   return { success: true }
+}
+
+export async function cancelOrder(orderId: string) {
+  await checkAdmin()
+  const result = await OrderCancellationService.cancel(orderId)
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath("/admin/orders/processing")
+
+  return result
 }
 
 export async function bulkUpdateOrderStatuses(orderIds: string[], newStatus: string) {

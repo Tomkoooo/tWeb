@@ -1,0 +1,138 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const dbConnectMock = vi.fn();
+const orderFindByIdMock = vi.fn();
+const orderSaveMock = vi.fn();
+const tempOrderFindOneMock = vi.fn();
+const reverseInvoiceMock = vi.fn();
+const releaseReservationsMock = vi.fn();
+const restoreCheckoutLineStockMock = vi.fn();
+const stripeRefundsListMock = vi.fn();
+const stripeRefundsCreateMock = vi.fn();
+const mailerSendMock = vi.fn();
+
+vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@/models/Order", () => ({
+  default: { findById: (...args: unknown[]) => orderFindByIdMock(...args) },
+}));
+vi.mock("@/models/TempOrder", () => ({
+  default: { findOne: (...args: unknown[]) => tempOrderFindOneMock(...args) },
+}));
+vi.mock("@/services/invoicing-szamlazz", () => ({
+  InvoicingSzamlazzService: {
+    reverseInvoice: (...args: unknown[]) => reverseInvoiceMock(...args),
+  },
+}));
+vi.mock("@/services/inventory-reservation", () => ({
+  releaseReservationsForTempOrder: (...args: unknown[]) => releaseReservationsMock(...args),
+  restoreCheckoutLineStock: (...args: unknown[]) => restoreCheckoutLineStockMock(...args),
+}));
+vi.mock("@/services/mailer", () => ({
+  MailerService: { sendEmail: (...args: unknown[]) => mailerSendMock(...args) },
+}));
+vi.mock("@/services/stripe", () => ({
+  getStripeClient: () => ({
+    refunds: {
+      list: (...args: unknown[]) => stripeRefundsListMock(...args),
+      create: (...args: unknown[]) => stripeRefundsCreateMock(...args),
+    },
+  }),
+}));
+
+function makeOrder(overrides: Record<string, unknown> = {}) {
+  return {
+    _id: { toString: () => "507f1f77bcf86cd799439011" },
+    status: "processing",
+    items: [{ product: "prod1", quantity: 2 }],
+    billingInfo: { email: "buyer@test.hu" },
+    shippingAddress: { name: "Buyer" },
+    invoiceId: "INV-2024-001",
+    invoiceStatus: "issued",
+    populate: vi.fn().mockResolvedValue(undefined),
+    save: orderSaveMock,
+    ...overrides,
+  };
+}
+
+describe("OrderCancellationService", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dbConnectMock.mockResolvedValue(undefined);
+    orderSaveMock.mockResolvedValue(undefined);
+    mailerSendMock.mockResolvedValue(undefined);
+    tempOrderFindOneMock.mockImplementation(() => ({
+      lean: vi.fn().mockResolvedValue({
+        _id: { toString: () => "temp1" },
+        stripePaymentIntentId: "pi_123",
+      }),
+    }));
+    stripeRefundsListMock.mockResolvedValue({ data: [] });
+    stripeRefundsCreateMock.mockResolvedValue({ id: "re_123" });
+    reverseInvoiceMock.mockResolvedValue({ invoiceId: "STORNO-001" });
+    releaseReservationsMock.mockResolvedValue(2);
+  });
+
+  it("refunds stripe, reverses invoice, restores stock, and cancels order", async () => {
+    const order = makeOrder();
+    orderFindByIdMock.mockReturnValue({
+      populate: vi.fn().mockResolvedValue(order),
+    });
+
+    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const result = await OrderCancellationService.cancel("507f1f77bcf86cd799439011");
+
+    expect(result).toEqual({
+      success: true,
+      refunded: true,
+      refundId: "re_123",
+      invoiceReversed: true,
+      reversalInvoiceId: "STORNO-001",
+      stockRestored: true,
+    });
+    expect(stripeRefundsCreateMock).toHaveBeenCalledWith({ payment_intent: "pi_123" });
+    expect(reverseInvoiceMock).toHaveBeenCalledWith("INV-2024-001");
+    expect(releaseReservationsMock).toHaveBeenCalledWith("temp1", { states: ["confirmed"] });
+    expect(order.status).toBe("cancelled");
+    expect(order.invoiceStatus).toBe("reversed");
+    expect(order.stripeRefundId).toBe("re_123");
+    expect(order.invoiceReversalId).toBe("STORNO-001");
+    expect(orderSaveMock).toHaveBeenCalled();
+  });
+
+  it("rejects already cancelled orders", async () => {
+    orderFindByIdMock.mockReturnValue({
+      populate: vi.fn().mockResolvedValue(makeOrder({ status: "cancelled" })),
+    });
+
+    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    await expect(OrderCancellationService.cancel("507f1f77bcf86cd799439011")).rejects.toThrow(
+      "már törölve"
+    );
+  });
+
+  it("skips stripe refund and invoice storno when not applicable", async () => {
+    const order = makeOrder({
+      invoiceId: undefined,
+      invoiceStatus: "pending",
+    });
+    orderFindByIdMock.mockReturnValue({
+      populate: vi.fn().mockResolvedValue(order),
+    });
+    tempOrderFindOneMock.mockImplementation(() => ({
+      lean: vi.fn().mockResolvedValue(null),
+    }));
+
+    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const result = await OrderCancellationService.cancel("507f1f77bcf86cd799439011");
+
+    expect(result.refunded).toBe(false);
+    expect(result.invoiceReversed).toBe(false);
+    expect(stripeRefundsCreateMock).not.toHaveBeenCalled();
+    expect(reverseInvoiceMock).not.toHaveBeenCalled();
+    expect(restoreCheckoutLineStockMock).toHaveBeenCalledWith({
+      product: "prod1",
+      variantId: undefined,
+      quantity: 2,
+    });
+  });
+});
