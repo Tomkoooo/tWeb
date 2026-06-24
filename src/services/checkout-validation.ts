@@ -15,6 +15,7 @@ import {
 } from "@/lib/parcel-feature-flags";
 import { GLS_FIXED_SHIPPING_METHOD_ID, GlsParcelPoint } from "@/lib/gls";
 import { FOXPOST_FIXED_SHIPPING_METHOD_ID, FoxpostParcelPoint } from "@/lib/foxpost";
+import { resolveFoxpostParcelPointForCheckout } from "@/lib/foxpost-apm-catalog";
 import {
   buildFoxpostParcelOrderShippingAddress,
   buildGlsParcelOrderShippingAddress,
@@ -422,6 +423,13 @@ export async function validateAndNormalizeCheckoutInput(
     throw new Error("A kupon használata Stripe fizetésnél jelenleg nem támogatott.");
   }
 
+  let resolvedFoxpostParcelPoint: FoxpostParcelPoint | undefined;
+  if (isFoxpostParcel && input.foxpostParcelPoint) {
+    resolvedFoxpostParcelPoint = await resolveFoxpostParcelPointForCheckout(input.foxpostParcelPoint, {
+      forceRefresh: true,
+    });
+  }
+
   let paymentMethodId = "";
   let paymentFee = 0;
   if (isStripeFixed) {
@@ -555,9 +563,9 @@ export async function validateAndNormalizeCheckoutInput(
       explicitCode: input.glsParcelPoint.contact.countryCode.trim(),
       freeText: undefined,
     })
-  } else if (isFoxpostParcel && input.foxpostParcelPoint?.countryCode) {
+  } else if (isFoxpostParcel && resolvedFoxpostParcelPoint?.countryCode) {
     shippingResolved = requireResolvedCountry("szállítási (Foxpost)", {
-      explicitCode: input.foxpostParcelPoint.countryCode.trim(),
+      explicitCode: resolvedFoxpostParcelPoint.countryCode.trim(),
       freeText: undefined,
     })
   } else if (isGlsParcel || isFoxpostParcel) {
@@ -589,10 +597,10 @@ export async function validateAndNormalizeCheckoutInput(
           input.glsParcelPoint,
           shippingResolved
         )
-      : isFoxpostParcel && input.foxpostParcelPoint
+      : isFoxpostParcel && resolvedFoxpostParcelPoint
         ? buildFoxpostParcelOrderShippingAddress(
             parcelShippingContact,
-            input.foxpostParcelPoint,
+            resolvedFoxpostParcelPoint,
             shippingResolved
           )
         : {
@@ -646,15 +654,15 @@ export async function validateAndNormalizeCheckoutInput(
             : undefined,
         }
       : undefined,
-    foxpostParcelPoint: isFoxpostParcel
+    foxpostParcelPoint: isFoxpostParcel && resolvedFoxpostParcelPoint
       ? {
-          id: ensureString(input.foxpostParcelPoint?.id, "foxpostParcelPoint.id"),
-          name: ensureString(input.foxpostParcelPoint?.name, "foxpostParcelPoint.name"),
-          address: input.foxpostParcelPoint?.address?.trim() || undefined,
-          zip: input.foxpostParcelPoint?.zip?.trim() || undefined,
-          city: input.foxpostParcelPoint?.city?.trim() || undefined,
-          findme: input.foxpostParcelPoint?.findme?.trim() || undefined,
-          load: input.foxpostParcelPoint?.load?.trim() || undefined,
+          id: resolvedFoxpostParcelPoint.id,
+          name: resolvedFoxpostParcelPoint.name,
+          address: resolvedFoxpostParcelPoint.address,
+          zip: resolvedFoxpostParcelPoint.zip,
+          city: resolvedFoxpostParcelPoint.city,
+          findme: resolvedFoxpostParcelPoint.findme,
+          load: resolvedFoxpostParcelPoint.load,
         }
       : undefined,
     couponCodes: couponResult.couponCodes,

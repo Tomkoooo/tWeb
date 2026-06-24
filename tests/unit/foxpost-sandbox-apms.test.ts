@@ -5,10 +5,12 @@ import {
   FOXPOST_SANDBOX_DEFAULT_APM_ID,
   clearSandboxApmCache,
 } from "@/lib/foxpost-sandbox-apms";
+import { clearFoxpostApmCatalogMemoryCache } from "@/lib/foxpost-apm-catalog";
 
 describe("foxpost-sandbox-apms", () => {
   beforeEach(() => {
     clearSandboxApmCache();
+    clearFoxpostApmCatalogMemoryCache("sandbox");
   });
 
   it("accepts hu350 and rejects hu5264", () => {

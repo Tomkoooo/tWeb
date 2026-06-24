@@ -446,6 +446,74 @@ export async function getFoxpostConnectionStatusAction() {
   return getFoxpostConnectionStatus();
 }
 
+export async function updateFoxpostParcelPointOnOrder(input: {
+  source: FoxpostShipmentSource;
+  id: string;
+  apmId: string;
+}): Promise<ParcelActionResult> {
+  await checkAdmin();
+  await assertFoxpostManagerEnabled();
+
+  const apmId = input.apmId.trim();
+  if (!apmId) {
+    return { success: false, error: "Válassz Foxpost csomagautomatát." };
+  }
+
+  const order = await loadFoxpostOrder(input.source, input.id);
+  if (order.foxpostShipment?.clFoxId) {
+    return {
+      success: false,
+      error: "A csomagpont csak akkor módosítható, ha még nincs Foxpost csomag létrehozva. Előbb töröld a csomagot.",
+    };
+  }
+
+  const { findFoxpostApmById, resolveFoxpostApmCatalogMode } = await import("@/lib/foxpost-apm-catalog");
+  const catalogMode =
+    input.source === "sandbox" ? ("sandbox" as const) : await resolveFoxpostApmCatalogMode();
+  const point = await findFoxpostApmById(apmId, {
+    mode: catalogMode,
+    forceRefresh: true,
+  });
+  if (!point) {
+    return {
+      success: false,
+      error: "Az automata nem található a friss Foxpost listában. Válassz másik pontot.",
+    };
+  }
+
+  order.foxpostParcelPoint = {
+    id: point.id,
+    name: point.name,
+    address: point.address,
+    zip: point.zip,
+    city: point.city,
+    findme: point.findme,
+    load: point.load,
+  };
+
+  if (order.foxpostShipment?.lastError) {
+    order.foxpostShipment = {
+      ...(order.foxpostShipment || {}),
+      lastError: undefined,
+    };
+  }
+
+  await order.save();
+
+  if (input.source === "live") {
+    await Order.updateOne(
+      { _id: order._id },
+      { $unset: { "foxpostShipment.lastError": "" } }
+    );
+  } else {
+    const { default: SandboxOrder } = await import("@/plugins/order-lab/models/SandboxOrder");
+    await SandboxOrder.updateOne({ _id: order._id }, { $unset: { "foxpostShipment.lastError": "" } });
+  }
+
+  revalidateFoxpostOrder(input.source, input.id);
+  return { success: true, data: { foxpostParcelPoint: point } };
+}
+
 export async function testFoxpostConnectionAction() {
   await checkAdmin();
   try {

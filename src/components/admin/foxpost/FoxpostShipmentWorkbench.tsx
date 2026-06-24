@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { orderNeedsParcelLabel } from "@/lib/parcel-locker";
 import type { FoxpostLabelInfo, FoxpostParcelPoint, FoxpostShipment, FoxpostTrack } from "@/lib/foxpost";
+import { FoxpostParcelPointEditor } from "@/components/admin/foxpost/FoxpostParcelPointEditor";
 import {
   clearFoxpostShipmentError,
   createFoxpostReturn,
@@ -209,6 +210,15 @@ export function FoxpostShipmentWorkbench({
 
       {parcelManagerEnabled && foxpostParcelPoint?.id ? (
         <div className="flex flex-wrap gap-2">
+          <FoxpostParcelPointEditor
+            source={source}
+            orderId={orderId}
+            currentPoint={foxpostParcelPoint}
+            parcelLocked={Boolean(foxpostShipment?.clFoxId)}
+            disabled={isPending}
+            onUpdated={onUpdated}
+          />
+
           {!hasLabelError ? (
             <Button
               type="button"
@@ -361,6 +371,12 @@ export function FoxpostShipmentWorkbench({
             </>
           ) : null}
         </div>
+      ) : null}
+
+      {foxpostShipment?.clFoxId ? (
+        <p className="text-[10px] text-neutral-500">
+          A csomagpont csak Foxpost csomag törlése után módosítható.
+        </p>
       ) : null}
 
       {showUpdateForm && foxpostShipment?.clFoxId ? (

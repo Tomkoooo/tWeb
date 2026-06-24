@@ -1,6 +1,30 @@
 export const FOXPOST_FIXED_SHIPPING_METHOD_ID = "foxpost_fixed";
 export const FOXPOST_APT_FINDER_ORIGIN = "https://cdn.foxpost.hu";
+/** @deprecated Prefer buildFoxpostAptFinderUrl() so each embed can bust browser/CDN cache. */
 export const FOXPOST_APT_FINDER_URL = `${FOXPOST_APT_FINDER_ORIGIN}/apt-finder/v1/app/?lang=hu`;
+
+export type FoxpostAptFinderUrlOptions = {
+  lang?: string;
+  theme?: "dark" | "default";
+  /** Unique per dialog open — forces a fresh iframe navigation. */
+  reloadToken?: string | number;
+};
+
+/** Foxpost-hosted APT finder iframe URL (see cdn.foxpost.hu/apt-finder/v1/documentation/). */
+export function buildFoxpostAptFinderUrl(options?: FoxpostAptFinderUrlOptions): string {
+  const params = new URLSearchParams({
+    lang: options?.lang ?? "hu",
+    noHeader: "1",
+    noSearchTitle: "1",
+  });
+  if (options?.theme) {
+    params.set("theme", options.theme);
+  }
+  if (options?.reloadToken != null && String(options.reloadToken).trim()) {
+    params.set("_reload", String(options.reloadToken));
+  }
+  return `${FOXPOST_APT_FINDER_ORIGIN}/apt-finder/v1/app/?${params.toString()}`;
+}
 
 /** Raw APT selection payload from Foxpost iframe postMessage. */
 export type FoxpostApmSelection = {

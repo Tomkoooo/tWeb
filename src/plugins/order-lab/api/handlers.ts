@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import type { PluginApiContext } from "@/plugins/types";
 import { FoxpostApiClient } from "@/services/foxpost";
 import { listSandboxApms } from "@/lib/foxpost-sandbox-apms";
+import { listFoxpostApms } from "@/lib/foxpost-apm-catalog";
 import { PluginService } from "@/services/plugin";
 import { OrderLabSettingsService } from "../services/order-lab-settings-service";
 import {
@@ -112,8 +113,9 @@ export async function handleOrderLabApi(context: PluginApiContext): Promise<Resp
     }
 
     if (segment === "apms" && method === "GET") {
-      const apms = await listSandboxApms();
-      return json({ apms });
+      const forceRefresh = new URL(request.url).searchParams.get("refresh") === "1";
+      const snapshot = await listFoxpostApms({ mode: "sandbox", forceRefresh });
+      return json({ apms: snapshot.apms, fetchedAt: snapshot.fetchedAt, mode: snapshot.mode });
     }
 
     if (segment === "stats" && method === "GET") {
