@@ -121,17 +121,30 @@ async function loadApmsFromCdn(mode: FoxpostApmCatalogMode): Promise<FoxpostParc
   return sortApms(apms);
 }
 
-const getCachedProductionApms = unstable_cache(
-  async () => loadApmsFromCdn("production"),
-  ["foxpost-apm-catalog-production"],
-  { revalidate: FOXPOST_APM_CACHE_REVALIDATE_SEC }
-);
+type ApmLoader = () => Promise<FoxpostParcelPoint[]>;
 
-const getCachedSandboxApms = unstable_cache(
-  async () => loadApmsFromCdn("sandbox"),
-  ["foxpost-apm-catalog-sandbox"],
-  { revalidate: FOXPOST_APM_CACHE_REVALIDATE_SEC }
-);
+let productionApmLoader: ApmLoader | null = null;
+let sandboxApmLoader: ApmLoader | null = null;
+
+function createApmLoader(mode: FoxpostApmCatalogMode): ApmLoader {
+  const load = () => loadApmsFromCdn(mode);
+  if (process.env.VITEST === "true") {
+    return load;
+  }
+  const cacheKey =
+    mode === "sandbox" ? "foxpost-apm-catalog-sandbox" : "foxpost-apm-catalog-production";
+  return unstable_cache(load, [cacheKey], { revalidate: FOXPOST_APM_CACHE_REVALIDATE_SEC });
+}
+
+function getProductionApmLoader(): ApmLoader {
+  productionApmLoader ??= createApmLoader("production");
+  return productionApmLoader;
+}
+
+function getSandboxApmLoader(): ApmLoader {
+  sandboxApmLoader ??= createApmLoader("sandbox");
+  return sandboxApmLoader;
+}
 
 export function clearFoxpostApmCatalogMemoryCache(mode?: FoxpostApmCatalogMode): void {
   if (mode) {
@@ -162,8 +175,8 @@ export async function listFoxpostApms(options?: {
   const apms = options?.forceRefresh
     ? await loadApmsFromCdn(mode)
     : mode === "sandbox"
-      ? await getCachedSandboxApms()
-      : await getCachedProductionApms();
+      ? await getSandboxApmLoader()()
+      : await getProductionApmLoader()();
 
   memoryCache.set(mode, { fetchedAt: now, apms });
   return {

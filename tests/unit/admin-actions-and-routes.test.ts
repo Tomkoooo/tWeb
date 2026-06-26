@@ -29,6 +29,7 @@ const revalidateTagMock = vi.fn();
 vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
   revalidateTag: revalidateTagMock,
+  unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
 }));
 vi.mock("@/lib/admin-auth", () => ({ requireAdmin: requireAdminMock }));
 vi.mock("@/auth", () => ({ auth: authMock }));

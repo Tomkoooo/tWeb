@@ -10,6 +10,14 @@ const resolveGlsMethodMock = vi.fn();
 const resolveFoxpostMethodMock = vi.fn();
 const flagEnabledMock = vi.fn();
 
+const resolveFoxpostParcelPointForCheckoutMock = vi.fn(
+  async (point: { id?: string; name?: string; zip?: string; city?: string; address?: string }) => point
+);
+
+vi.mock("@/lib/foxpost-apm-catalog", () => ({
+  resolveFoxpostParcelPointForCheckout: (...args: unknown[]) =>
+    resolveFoxpostParcelPointForCheckoutMock(...args),
+}));
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
 vi.mock("@/models/Product", () => ({ default: { findById: productFindByIdMock } }));
 vi.mock("@/models/ShippingMethod", () => ({ default: { findOne: shippingFindOneMock } }));
@@ -37,6 +45,7 @@ vi.mock("@/services/feature-flags", () => ({ FeatureFlagService: { isEnabled: fl
 describe("checkout-validation unit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resolveFoxpostParcelPointForCheckoutMock.mockImplementation(async (point) => point);
     productFindByIdMock.mockReturnValue({
       lean: vi.fn().mockResolvedValue({
         _id: "p1",
