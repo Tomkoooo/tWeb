@@ -17,6 +17,7 @@ import {
   type CheckoutStockAllocation,
 } from "@/services/inventory-reservation";
 import { applyCheckoutPriceAllocations } from "@/services/checkout-validation";
+import { recordCouponRedemptions } from "@/lib/coupon-usage";
 import { sendInvoiceErrorShopAlert } from "@/services/invoice-error-alert";
 import { sendNewOrderNotification } from "@/services/new-order-notification";
 import { sendOrderPlacementErrorShopAlert } from "@/services/order-placement-error-alert";
@@ -78,6 +79,11 @@ export class OrderService {
       }
       await order.save();
       orderPersisted = true;
+
+      await recordCouponRedemptions(orderPayload.couponCodes, {
+        userId,
+        email: orderData.billingInfo?.email,
+      });
 
       if (userId && saveAddressToProfile === true) {
         await this.persistUserAddressesFromCheckout(userId, orderData, {

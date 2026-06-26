@@ -4,6 +4,9 @@ import dbConnect from "@/lib/db";
 import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
 import Coupon from "@/models/Coupon";
+import Product from "@/models/Product";
+import { normalizeCouponPayload } from "@/lib/coupon-validation";
+import { getActiveVariants, getVariantLabel } from "@/lib/product-variants";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -111,11 +114,83 @@ export async function createCoupon(data: any) {
 
   try {
     await dbConnect();
-    await Coupon.create(data);
+    const payload = normalizeCouponPayload(data);
+    const existing = await Coupon.findOne({ code: payload.code });
+    if (existing) {
+      throw new Error("Ez a kuponkód már létezik");
+    }
+    await Coupon.create(payload);
   } catch (error) {
     console.error("Error creating coupon:", error);
+    throw error;
   }
   revalidatePath("/admin/coupons");
+}
+
+export async function updateCoupon(id: string, data: any) {
+  await requireAdmin();
+
+  if (!id?.trim()) {
+    throw new Error("Érvénytelen kupon azonosító");
+  }
+
+  try {
+    await dbConnect();
+    const payload = normalizeCouponPayload(data);
+    const existing = await Coupon.findOne({ code: payload.code, _id: { $ne: id } });
+    if (existing) {
+      throw new Error("Ez a kuponkód már létezik");
+    }
+
+    const updated = await Coupon.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          code: payload.code,
+          type: payload.type,
+          value: payload.value,
+          minCartValue: payload.minCartValue,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          maxUses: payload.maxUses,
+          maxUsesPerUser: payload.maxUsesPerUser,
+          isActive: payload.isActive,
+          productPriceRules: payload.productPriceRules ?? [],
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      throw new Error("Kupon nem található");
+    }
+  } catch (error) {
+    console.error("Error updating coupon:", error);
+    throw error;
+  }
+  revalidatePath("/admin/coupons");
+}
+
+export async function getProductForCouponRule(productId: string) {
+  await requireAdmin();
+  await dbConnect();
+
+  const product = await Product.findById(productId)
+    .select("name variants requireVariantSelection")
+    .lean();
+  if (!product) return null;
+
+  const variants = getActiveVariants(product as never).map((variant) => ({
+    id: variant.id,
+    label: getVariantLabel(variant),
+  }));
+
+  return {
+    id: product._id.toString(),
+    name: product.name,
+    requiresVariant: Boolean(product.requireVariantSelection) && variants.length > 0,
+    variants,
+  };
 }
 
 export async function deleteCoupon(id: string) {

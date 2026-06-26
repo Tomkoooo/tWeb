@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import mongoose from "mongoose"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/admin-auth"
-import { shopCommerceBlockedResponse } from "@/lib/features/shop"
 import dbConnect from "@/lib/db"
 import Product from "@/models/Product"
 import { mediaImageSrc } from "@/lib/images"
@@ -15,8 +14,6 @@ const bodySchema = z.object({
  * Admin-only: resolve product ids to display labels (name, slug, thumb) for pickers and CMS.
  */
 export async function POST(request: Request) {
-  const blocked = shopCommerceBlockedResponse()
-  if (blocked) return blocked
   await requireAdmin()
 
   const json = await request.json().catch(() => ({}))

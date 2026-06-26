@@ -70,7 +70,14 @@ export function SummaryStep({
         body: JSON.stringify({
           code: couponCode,
           cartValue: totalPrice,
-          items: cartItems.map((i) => i.productId || i.id),
+          email: data.billing?.email || data.shipping?.email,
+          items: cartItems.map((i) => ({
+            productId: i.productId || i.id,
+            variantId: i.variantId,
+            quantity: i.quantity,
+            price: i.price,
+            vatPercent: i.vatPercent,
+          })),
         }),
       })
 

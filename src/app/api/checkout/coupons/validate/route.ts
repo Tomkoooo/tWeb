@@ -1,58 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
-import Coupon, { DiscountType } from "@/models/Coupon";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
+import { validateAndApplyCoupon } from "@/lib/coupon-validation";
 
 export async function POST(req: NextRequest) {
   const blocked = shopCommerceBlockedResponse();
   if (blocked) return blocked;
   const session = await auth();
-  
+
   try {
     await dbConnect();
-    const { code, cartValue, items } = await req.json();
+    const { code, cartValue, items, email } = await req.json();
 
-    const coupon = await Coupon.findOne({ 
-      code: code.toUpperCase(), 
-      isActive: true 
+    const cartLines = Array.isArray(items)
+      ? items.map((item: {
+          productId?: string;
+          product?: string;
+          id?: string;
+          variantId?: string;
+          quantity?: number;
+          price?: number;
+          vatPercent?: number;
+        }) => {
+          const rawId = item.productId || item.product || item.id || "";
+          const [productId, variantFromId] = String(rawId).includes(":")
+            ? String(rawId).split(":", 2)
+            : [String(rawId), undefined];
+          return {
+            product: productId,
+            variantId: item.variantId || variantFromId,
+            quantity: Number(item.quantity || 1),
+            price: Number(item.price || 0),
+            vatPercent: item.vatPercent,
+          };
+        })
+      : [];
+
+    const result = await validateAndApplyCoupon(String(code || ""), Number(cartValue || 0), {
+      userId: session?.user?.id,
+      email: (typeof email === "string" ? email : session?.user?.email) || undefined,
+      items: cartLines,
     });
-
-    if (!coupon) {
-      return NextResponse.json({ error: "Érvénytelen kuponkód" }, { status: 404 });
-    }
-
-    const now = new Date();
-    if (now < coupon.startDate || now > coupon.endDate) {
-      return NextResponse.json({ error: "A kupon lejárt vagy még nem érvényes" }, { status: 400 });
-    }
-
-    if (coupon.minCartValue && cartValue < coupon.minCartValue) {
-      return NextResponse.json({ 
-        error: `A kupon használatához minimum ${coupon.minCartValue.toLocaleString("hu-HU")} FT értékű kosár szükséges` 
-      }, { status: 400 });
-    }
-
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-      return NextResponse.json({ error: "A kupon felhasználási limitje elfogyott" }, { status: 400 });
-    }
-
-    if (coupon.applicableUsers && coupon.applicableUsers.length > 0) {
-      if (!session?.user?.id || !coupon.applicableUsers.includes(session.user.id as any)) {
-        return NextResponse.json({ error: "Ez a kupon az Ön számára nem elérhető" }, { status: 403 });
-      }
-    }
-
-    // Product specific logic could be added here if coupon.applicableProducts has length > 0
 
     return NextResponse.json({
-      code: coupon.code,
-      type: coupon.type,
-      value: coupon.value
+      code: result.couponCodes[0],
+      type:
+        result.type === "fixed_amount"
+          ? "fixed"
+          : result.type === "product_price"
+            ? "product_price"
+            : result.type,
+      value: result.discount,
+      discount: result.discount,
+      freeShipping: result.freeShipping,
+      adjustedSubtotal: result.adjustedSubtotal,
+      lineAdjustments: result.lineAdjustments,
     });
-
   } catch (error) {
-    console.error("Coupon validation error:", error);
-    return NextResponse.json({ error: "Belső szerverhiba" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Érvénytelen kuponkód";
+    const status = message.includes("nem elérhető") ? 403 : 400;
+    if (message === "Érvénytelen kuponkód") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+    return NextResponse.json({ error: message }, { status });
   }
 }

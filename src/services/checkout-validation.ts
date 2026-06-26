@@ -5,6 +5,9 @@ import ShippingMethod from "@/models/ShippingMethod";
 import PaymentMethod from "@/models/PaymentMethod";
 import Coupon, { DiscountType } from "@/models/Coupon";
 import {
+  validateAndApplyCoupon,
+} from "@/lib/coupon-validation";
+import {
   resolveConfiguredGlsShippingMethod,
 } from "@/services/gls-shipping";
 import { resolveConfiguredFoxpostShippingMethod } from "@/services/foxpost-shipping";
@@ -20,7 +23,7 @@ import {
   buildFoxpostParcelOrderShippingAddress,
   buildGlsParcelOrderShippingAddress,
 } from "@/lib/parcel-locker-checkout-display";
-import { customerGrossFromNetWithDiscount, clampVatPercent } from "@/lib/pricing";
+import { customerGrossFromNetWithDiscount, clampVatPercent, distributeCheckoutDiscountToItems, roundHuf } from "@/lib/pricing";
 import {
   assertClientCartLinePrice,
   quoteCheckoutLineForQuantity,
@@ -224,49 +227,21 @@ function resolveItemPrice(
 async function validateCoupon(
   code: string | undefined,
   subtotal: number,
-  userId?: string
-): Promise<{ couponCodes: string[]; discount: number; freeShipping: boolean }> {
-  if (!code) {
-    return { couponCodes: [], discount: 0, freeShipping: false };
-  }
-
-  const normalizedCode = code.toUpperCase().trim();
-  const coupon = await Coupon.findOne({ code: normalizedCode, isActive: true });
-  if (!coupon) {
-    throw new Error("Érvénytelen kuponkód");
-  }
-
-  const now = new Date();
-  if (now < coupon.startDate || now > coupon.endDate) {
-    throw new Error("A kupon lejárt vagy még nem érvényes");
-  }
-  if (coupon.minCartValue && subtotal < coupon.minCartValue) {
-    throw new Error(`A kupon használatához minimum ${coupon.minCartValue.toLocaleString("hu-HU")} FT értékű kosár szükséges`);
-  }
-  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-    throw new Error("A kupon felhasználási limitje elfogyott");
-  }
-  if (Array.isArray(coupon.applicableUsers) && coupon.applicableUsers.length > 0) {
-    if (!userId || !coupon.applicableUsers.some((entry: any) => entry.toString() === userId)) {
-      throw new Error("Ez a kupon az Ön számára nem elérhető");
-    }
-  }
-
-  if (coupon.type === DiscountType.FREE_SHIPPING) {
-    return { couponCodes: [coupon.code], discount: 0, freeShipping: true };
-  }
-  if (coupon.type === DiscountType.PERCENTAGE) {
-    return {
-      couponCodes: [coupon.code],
-      discount: roundCurrency(subtotal * (coupon.value / 100)),
-      freeShipping: false,
-    };
-  }
-  return {
-    couponCodes: [coupon.code],
-    discount: Math.max(0, roundCurrency(coupon.value)),
-    freeShipping: false,
-  };
+  userId?: string,
+  items?: CheckoutInputItem[],
+  email?: string
+) {
+  return validateAndApplyCoupon(code, subtotal, {
+    userId,
+    email,
+    items: (items || []).map((item) => ({
+      product: item.product,
+      variantId: item.variantId,
+      quantity: item.quantity,
+      price: item.price ?? 0,
+      vatPercent: item.vatPercent,
+    })),
+  });
 }
 
 async function resolveStripePaymentMethodId(): Promise<string> {
@@ -419,9 +394,6 @@ export async function validateAndNormalizeCheckoutInput(
   if (isStripeFixed && !options?.allowStripeFixed) {
     throw new Error("A kiválasztott fizetési mód nem támogatott");
   }
-  if (isStripeFixed && Array.isArray(input.couponCodes) && input.couponCodes.length > 0) {
-    throw new Error("A kupon használata Stripe fizetésnél jelenleg nem támogatott.");
-  }
 
   let resolvedFoxpostParcelPoint: FoxpostParcelPoint | undefined;
   if (isFoxpostParcel && input.foxpostParcelPoint) {
@@ -541,13 +513,43 @@ export async function validateAndNormalizeCheckoutInput(
   pricedCheckout = applyCheckoutPriceAllocations(pricedCheckout, priceAllocations);
 
   const couponCode = Array.isArray(input.couponCodes) ? input.couponCodes[0] : undefined;
-  const couponResult = await validateCoupon(couponCode, pricedCheckout.subtotal, options?.userId);
+  const originalSubtotal = pricedCheckout.subtotal;
+  const couponResult = await validateCoupon(
+    couponCode,
+    originalSubtotal,
+    options?.userId,
+    pricedCheckout.items,
+    billingInfo.email
+  );
+
+  if (couponResult.type === DiscountType.PRODUCT_PRICE && couponResult.adjustedLines) {
+    pricedCheckout.items = pricedCheckout.items.map((item, index) => ({
+      ...item,
+      price: couponResult.adjustedLines![index]?.price ?? item.price,
+    }));
+    pricedCheckout.subtotal = couponResult.adjustedSubtotal ?? pricedCheckout.subtotal;
+  }
+
   const shippingFee = couponResult.freeShipping ? 0 : shippingMethodGrossPrice;
   const discount = Math.max(0, couponResult.discount);
-  const total = Math.max(
-    0,
-    roundCurrency(pricedCheckout.subtotal + shippingFee + paymentFee - discount)
-  );
+  const isCartWideCoupon =
+    couponResult.type === DiscountType.PERCENTAGE ||
+    couponResult.type === DiscountType.FIXED_AMOUNT;
+
+  if (isCartWideCoupon && discount > 0) {
+    pricedCheckout.items = distributeCheckoutDiscountToItems(
+      pricedCheckout.items,
+      discount
+    ) as typeof pricedCheckout.items;
+    pricedCheckout.subtotal = roundHuf(
+      pricedCheckout.items.reduce(
+        (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+        0
+      )
+    );
+  }
+
+  const total = Math.max(0, roundCurrency(pricedCheckout.subtotal + shippingFee + paymentFee));
 
   const billingResolved = requireResolvedCountry("számlázási", {
     explicitCode: billingInfo.countryCode?.trim(),

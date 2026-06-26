@@ -1,11 +1,12 @@
 import * as React from "react"
 import dbConnect from "@/lib/db"
 import Coupon from "@/models/Coupon"
-import { Plus, Trash2, Tag, Calendar, Users, ShoppingBag } from "lucide-react"
+import { Plus, Tag, Calendar, Users, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { deleteCoupon, createCoupon } from "@/actions/admin-checkout"
 import { CouponDialog } from "@/components/admin/CouponDialog"
+import { CouponRowActions } from "@/components/admin/CouponRowActions"
 
 export default async function AdminCouponsPage() {
   await dbConnect()
@@ -51,9 +52,23 @@ export default async function AdminCouponsPage() {
                   </div>
                   <p className="admin-value font-black uppercase tracking-widest text-xs">
                     {coupon.type === "percentage" ? `${coupon.value}% KEDVEZMÉNY` : 
-                     coupon.type === "fixed" ? `${coupon.value.toLocaleString("hu-HU")} FT KEDVEZMÉNY` : 
+                     coupon.type === "fixed_amount" ? `${coupon.value.toLocaleString("hu-HU")} FT KEDVEZMÉNY` : 
+                     coupon.type === "product_price" ? (
+                       `${(coupon.productPriceRules || []).length} TERMÉKÁRAS SZABÁLY`
+                     ) :
                      "INGYENES SZÁLLÍTÁS"}
                   </p>
+                  {coupon.type === "product_price" && Array.isArray(coupon.productPriceRules) && coupon.productPriceRules.length > 0 ? (
+                    <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
+                      {coupon.productPriceRules.map((rule: { mode: string; value: number; variantId?: string }, i: number) => (
+                        <span key={i}>
+                          {i > 0 ? " · " : ""}
+                          {rule.mode === "percentage" ? `${rule.value}%` : rule.mode === "fixed_net" ? `${rule.value} FT nettó` : `${rule.value} FT bruttó`}
+                          {rule.variantId ? " (1 variáns)" : " (összes variáns)"}
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -81,13 +96,17 @@ export default async function AdminCouponsPage() {
                   <p className="text-[10px] text-white font-bold uppercase">
                     {coupon.usedCount} / {coupon.maxUses || "∞"}
                   </p>
+                  <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">
+                    E-mail limit: {coupon.maxUsesPerUser || "∞"}
+                  </p>
                 </div>
                 <div className="space-y-1 text-right">
-                   <form action={deleteCoupon.bind(null, coupon._id.toString())}>
-                    <Button variant="ghost" className="h-10 text-neutral-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-none text-[10px] font-black uppercase tracking-widest">
-                      <Trash2 className="w-4 h-4 mr-2" /> TÖRLÉS
-                    </Button>
-                  </form>
+                  <CouponRowActions
+                    coupon={{
+                      ...coupon,
+                      _id: coupon._id.toString(),
+                    }}
+                  />
                 </div>
               </div>
             </div>

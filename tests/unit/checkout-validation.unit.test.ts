@@ -6,6 +6,7 @@ const shippingFindOneMock = vi.fn();
 const paymentFindOneMock = vi.fn();
 const paymentCreateMock = vi.fn();
 const couponFindOneMock = vi.fn();
+const orderCountDocumentsMock = vi.fn();
 const resolveGlsMethodMock = vi.fn();
 const resolveFoxpostMethodMock = vi.fn();
 const flagEnabledMock = vi.fn();
@@ -26,7 +27,15 @@ vi.mock("@/models/PaymentMethod", () => ({
 }));
 vi.mock("@/models/Coupon", () => ({
   default: { findOne: couponFindOneMock },
-  DiscountType: { FREE_SHIPPING: "free_shipping", PERCENTAGE: "percentage", FIXED: "fixed" },
+  DiscountType: {
+    FREE_SHIPPING: "free_shipping",
+    PERCENTAGE: "percentage",
+    FIXED_AMOUNT: "fixed_amount",
+    PRODUCT_PRICE: "product_price",
+  },
+}));
+vi.mock("@/models/Order", () => ({
+  default: { countDocuments: orderCountDocumentsMock },
 }));
 vi.mock("@/services/gls-shipping", () => ({ resolveConfiguredGlsShippingMethod: resolveGlsMethodMock }));
 vi.mock("@/services/foxpost-shipping", () => ({
@@ -61,6 +70,7 @@ describe("checkout-validation unit", () => {
     shippingFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue({ _id: { toString: () => "ship1" }, grossPrice: 999 }) });
     paymentFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue({ _id: { toString: () => "pay1" }, grossPrice: 0 }) });
     couponFindOneMock.mockResolvedValue(null);
+    orderCountDocumentsMock.mockResolvedValue(0);
     flagEnabledMock.mockResolvedValue(true);
     resolveGlsMethodMock.mockResolvedValue({ id: "ship_gls", grossPrice: 1200 });
     resolveFoxpostMethodMock.mockResolvedValue({ id: "ship_fox", grossPrice: 990 });
@@ -498,6 +508,168 @@ describe("checkout-validation unit", () => {
         paymentMethod: "507f1f77bcf86cd799439013",
       })
     ).rejects.toThrow("A kiválasztott fizetési mód nem elérhető");
+  });
+
+  it("applies product price coupon to matching lines", async () => {
+    productFindByIdMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({
+        _id: "507f1f77bcf86cd799439011",
+        name: "Termek",
+        isActive: true,
+        isVisible: true,
+        netPrice: 1000,
+        grossPrice: 1270,
+        discount: 0,
+        vatPercent: 27,
+        stock: 10,
+        variants: [],
+      }),
+    });
+    couponFindOneMock.mockResolvedValueOnce({
+      code: "PROD10",
+      isActive: true,
+      startDate: new Date(Date.now() - 1000),
+      endDate: new Date(Date.now() + 1000),
+      type: "product_price",
+      value: 0,
+      usedCount: 0,
+      productPriceRules: [
+        {
+          product: { toString: () => "507f1f77bcf86cd799439011" },
+          mode: "percentage",
+          value: 10,
+        },
+      ],
+    });
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const result = await validateAndNormalizeCheckoutInput({
+      items: [{ product: "507f1f77bcf86cd799439011", quantity: 2 }],
+      billingInfo: {
+        type: "personal",
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingAddress: {
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingMethod: "507f1f77bcf86cd799439012",
+      paymentMethod: "507f1f77bcf86cd799439013",
+      couponCodes: ["PROD10"],
+    });
+
+    expect(result.items[0].price).toBe(1143);
+    expect(result.subtotal).toBe(2286);
+    expect(result.discount).toBe(254);
+    expect(result.total).toBe(result.subtotal + result.shippingFee + result.paymentFee);
+  });
+
+  it("applies percentage coupon to line item prices for stripe and invoice parity", async () => {
+    productFindByIdMock.mockReturnValue({
+      lean: vi.fn().mockResolvedValue({
+        _id: "507f1f77bcf86cd799439011",
+        name: "Termek",
+        isActive: true,
+        isVisible: true,
+        netPrice: 1000,
+        grossPrice: 1270,
+        discount: 0,
+        vatPercent: 27,
+        stock: 10,
+        variants: [],
+      }),
+    });
+    couponFindOneMock.mockResolvedValueOnce({
+      code: "TEN",
+      isActive: true,
+      startDate: new Date(Date.now() - 1000),
+      endDate: new Date(Date.now() + 1000),
+      type: "percentage",
+      value: 10,
+      usedCount: 0,
+    });
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const result = await validateAndNormalizeCheckoutInput({
+      items: [{ product: "507f1f77bcf86cd799439011", quantity: 2 }],
+      billingInfo: {
+        type: "personal",
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingAddress: {
+        name: "Teszt",
+        zip: "1111",
+        city: "Bp",
+        street: "Fo 1",
+        email: "a@a.com",
+        phone: "111",
+      },
+      shippingMethod: "507f1f77bcf86cd799439012",
+      paymentMethod: "507f1f77bcf86cd799439013",
+      couponCodes: ["TEN"],
+    });
+
+    expect(result.items[0].price).toBeLessThan(1270);
+    expect(result.discount).toBeGreaterThan(0);
+    expect(result.total).toBe(result.subtotal + result.shippingFee + result.paymentFee);
+    expect(result.subtotal).toBe(result.items[0].price * 2);
+  });
+
+  it("allows stripe checkout with a coupon applied", async () => {
+    couponFindOneMock.mockResolvedValueOnce({
+      code: "SAVE",
+      isActive: true,
+      startDate: new Date(Date.now() - 1000),
+      endDate: new Date(Date.now() + 1000),
+      type: "fixed_amount",
+      value: 100,
+      usedCount: 0,
+    });
+    const { validateAndNormalizeCheckoutInput, STRIPE_FIXED_PAYMENT_METHOD_ID } = await import(
+      "@/services/checkout-validation"
+    );
+    const result = await validateAndNormalizeCheckoutInput(
+      {
+        items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
+        billingInfo: {
+          type: "personal",
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingAddress: {
+          name: "Teszt",
+          zip: "1111",
+          city: "Bp",
+          street: "Fo 1",
+          email: "a@a.com",
+          phone: "111",
+        },
+        shippingMethod: "507f1f77bcf86cd799439012",
+        paymentMethod: STRIPE_FIXED_PAYMENT_METHOD_ID,
+        couponCodes: ["SAVE"],
+      },
+      { allowStripeFixed: true }
+    );
+
+    expect(result.paymentProvider).toBe("stripe");
+    expect(result.discount).toBe(100);
+    expect(result.total).toBe(result.subtotal + result.shippingFee + result.paymentFee);
   });
 
   it("handles free shipping coupon", async () => {

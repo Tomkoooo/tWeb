@@ -24,6 +24,8 @@ const paymentUpdateMock = vi.fn();
 const paymentDeleteMock = vi.fn();
 const couponCreateMock = vi.fn();
 const couponDeleteMock = vi.fn();
+const couponFindOneMock = vi.fn();
+const couponFindByIdAndUpdateMock = vi.fn();
 
 const revalidateTagMock = vi.fn();
 vi.mock("next/cache", () => ({
@@ -72,7 +74,20 @@ vi.mock("@/models/PaymentMethod", () => ({
     findByIdAndDelete: paymentDeleteMock,
   },
 }));
-vi.mock("@/models/Coupon", () => ({ default: { create: couponCreateMock, findByIdAndDelete: couponDeleteMock } }));
+vi.mock("@/models/Coupon", () => ({
+  default: {
+    create: couponCreateMock,
+    findByIdAndDelete: couponDeleteMock,
+    findOne: couponFindOneMock,
+    findByIdAndUpdate: couponFindByIdAndUpdateMock,
+  },
+  DiscountType: {
+    PERCENTAGE: "percentage",
+    FIXED_AMOUNT: "fixed_amount",
+    FREE_SHIPPING: "free_shipping",
+    PRODUCT_PRICE: "product_price",
+  },
+}));
 const glsManagerEnabledMock = vi.fn();
 const foxpostManagerEnabledMock = vi.fn();
 vi.mock("@/lib/parcel-feature-flags", () => ({
@@ -142,6 +157,7 @@ describe("admin actions and routes", () => {
       updatePaymentMethod,
       deletePaymentMethod,
       createCoupon,
+      updateCoupon,
       deleteCoupon,
     } = await import("@/actions/admin-checkout");
     const fd = new FormData();
@@ -155,7 +171,23 @@ describe("admin actions and routes", () => {
     await createPaymentMethod(fd);
     await updatePaymentMethod("id1", fd);
     await deletePaymentMethod("id1");
-    await createCoupon({ code: "A" });
+    couponFindOneMock.mockResolvedValue(null);
+    couponFindByIdAndUpdateMock.mockResolvedValue({ _id: "cid1" });
+    await createCoupon({
+      code: "A",
+      type: "percentage",
+      value: 10,
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-12-31"),
+    });
+    await updateCoupon("cid1", {
+      code: "A",
+      type: "percentage",
+      value: 15,
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-12-31"),
+      maxUsesPerUser: 2,
+    });
     await deleteCoupon("cid1");
 
     expect(shippingCreateMock).toHaveBeenCalled();
@@ -165,6 +197,7 @@ describe("admin actions and routes", () => {
     expect(paymentUpdateMock).toHaveBeenCalled();
     expect(paymentDeleteMock).toHaveBeenCalled();
     expect(couponCreateMock).toHaveBeenCalled();
+    expect(couponFindByIdAndUpdateMock).toHaveBeenCalled();
     expect(couponDeleteMock).toHaveBeenCalled();
   });
 

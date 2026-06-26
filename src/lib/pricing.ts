@@ -269,3 +269,42 @@ export function listingHasPriceRange(lines: ListingPriceLine[], vatPercent?: num
 export function formatHuf(value: number): string {
   return `${roundHuf(value).toLocaleString("hu-HU")} FT`
 }
+
+type DiscountAllocatableLine = {
+  price?: number;
+  quantity: number;
+};
+
+/** Spread a cart-level gross discount across line items so Stripe/invoices use paid unit prices. */
+export function distributeCheckoutDiscountToItems<T extends DiscountAllocatableLine>(
+  items: T[],
+  discountGross: number
+): T[] {
+  const discount = Math.max(0, roundHuf(Number(discountGross || 0)));
+  if (discount <= 0 || items.length === 0) return items;
+
+  const lineGrossTotals = items.map(
+    (item) => roundHuf(Number(item.price || 0) * Number(item.quantity || 0))
+  );
+  const subtotal = lineGrossTotals.reduce((sum, value) => sum + value, 0);
+  if (subtotal <= 0) return items;
+
+  const appliedDiscount = Math.min(discount, subtotal);
+  let remainingDiscount = appliedDiscount;
+
+  return items.map((item, index) => {
+    const lineGross = lineGrossTotals[index];
+    const quantity = Math.max(1, Number(item.quantity || 1));
+    const isLast = index === items.length - 1;
+    const lineDiscount = isLast
+      ? remainingDiscount
+      : roundHuf(appliedDiscount * (lineGross / subtotal));
+    remainingDiscount = Math.max(0, remainingDiscount - lineDiscount);
+
+    const nextLineGross = Math.max(0, lineGross - lineDiscount);
+    return {
+      ...item,
+      price: roundHuf(nextLineGross / quantity),
+    };
+  });
+}

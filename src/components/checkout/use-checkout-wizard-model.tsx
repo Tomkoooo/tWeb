@@ -358,21 +358,33 @@ export function useCheckoutWizardModel(
     const paymentFee = selectedPayment?.grossPrice || 0
     let shippingFee = selectedShipping?.grossPrice || 0
     let discount = 0
+    let effectiveSubtotal = subtotal
     if (formData.coupon) {
       if (formData.coupon.type === "percentage") {
         discount = subtotal * (formData.coupon.value / 100)
       } else if (formData.coupon.type === "fixed") {
         discount = formData.coupon.value
+      } else if (formData.coupon.type === "product_price") {
+        const adjusted =
+          formData.coupon.adjustedSubtotal ??
+          subtotal - Number(formData.coupon.discount || 0)
+        discount = Math.max(0, subtotal - adjusted)
+        effectiveSubtotal = adjusted
       } else if (formData.coupon.type === "free_shipping") {
         shippingFee = 0
       }
     }
+    const base = effectiveSubtotal + shippingFee + paymentFee
+    const total =
+      formData.coupon?.type === "product_price"
+        ? base
+        : Math.max(0, subtotal + shippingFee + paymentFee - discount)
     return {
-      subtotal,
+      subtotal: formData.coupon?.type === "product_price" ? effectiveSubtotal : subtotal,
       shippingFee,
       paymentFee,
       discount,
-      total: subtotal + shippingFee + paymentFee - discount,
+      total,
     }
   }, [cartTotalPrice, formData.coupon, selectedPayment?.grossPrice, selectedShipping?.grossPrice])
 

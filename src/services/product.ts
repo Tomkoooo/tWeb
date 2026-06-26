@@ -13,6 +13,8 @@ import { toStorefrontProduct } from "@/lib/storefront-product";
 
 export interface ProductFilters {
   search?: string;
+  /** `text` uses MongoDB full-text index; `substring` matches name/slug partially (admin pickers). */
+  searchStyle?: "text" | "substring";
   isActive?: boolean;
   isVisible?: boolean;
   deleted?: boolean;
@@ -21,6 +23,10 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalizeProductForListing(product: Record<string, unknown> | object) {
@@ -63,7 +69,17 @@ async function buildProductListingQuery(filters: ProductFilters): Promise<Record
 
   const search = filters.search?.trim();
   if (search && search.length >= 2) {
-    query.$text = { $search: search };
+    if (filters.searchStyle === "substring") {
+      const re = new RegExp(escapeRegExp(search), "i");
+      query.$or = [
+        { name: re },
+        { slug: re },
+        { searchText: re },
+        { "variants.sku": re },
+      ];
+    } else {
+      query.$text = { $search: search };
+    }
   }
 
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
