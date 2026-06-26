@@ -46,6 +46,7 @@ import {
   isFoxpostParcelManagerEnabled,
   isGlsParcelManagerEnabled,
 } from "@/lib/parcel-feature-flags"
+import { recordOrderStatusChange } from "@/lib/order-status-history"
 import { OrderCancellationService } from "@/services/order-cancellation"
 import {
   addOrderItem as addOrderItemService,
@@ -138,10 +139,9 @@ async function notifyOrderStatusChange(order: any, oldStatus: string, newStatus:
 
 async function applyOrderStatusChange(order: any, newStatus: OrderStatusValue) {
   const oldStatus = order.status
-  if (oldStatus === newStatus) return false
+  const changed = recordOrderStatusChange(order, oldStatus, newStatus)
+  if (!changed) return false
 
-  order.status = newStatus
-  order.statusChangedAt = new Date()
   await order.save()
   await notifyOrderStatusChange(order, oldStatus, newStatus)
   return true

@@ -76,6 +76,8 @@ const FILTER_KEYS: (keyof AdminOrderFilters)[] = [
   "updatedFrom",
   "updatedTo",
   "statusChangedOn",
+  "statusChangedFrom",
+  "statusChangedTo",
   "unitsMin",
   "unitsMax",
   "kindsMin",
@@ -764,16 +766,28 @@ function FilterBar({
           <input type="date" value={draft.dateTo || ""} onChange={(e) => set("dateTo", e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Módosítva – tól</label>
+          <label className={labelClass}>Utoljára módosítva – tól</label>
           <input type="date" value={draft.updatedFrom || ""} onChange={(e) => set("updatedFrom", e.target.value)} className={inputClass} />
+          <p className="mt-1 text-[9px] italic text-neutral-600">Bármilyen mező (címke, kapcsolat, tétel…)</p>
         </div>
         <div>
-          <label className={labelClass}>Módosítva – ig</label>
+          <label className={labelClass}>Utoljára módosítva – ig</label>
           <input type="date" value={draft.updatedTo || ""} onChange={(e) => set("updatedTo", e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Státusz változás napja</label>
+          <label className={labelClass}>Státusz átállítás napja</label>
           <input type="date" value={draft.statusChangedOn || ""} onChange={(e) => set("statusChangedOn", e.target.value)} className={inputClass} />
+          <p className="mt-1 text-[9px] italic text-neutral-600">
+            A kiválasztott státuszra váltás napja (pl. kiszállítva + keddi dátum)
+          </p>
+        </div>
+        <div>
+          <label className={labelClass}>Státusz átállítás – tól</label>
+          <input type="date" value={draft.statusChangedFrom || ""} onChange={(e) => set("statusChangedFrom", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Státusz átállítás – ig</label>
+          <input type="date" value={draft.statusChangedTo || ""} onChange={(e) => set("statusChangedTo", e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Rendezés</label>

@@ -72,7 +72,6 @@ export class OrderService {
       const order = new Order({
         ...orderPayload,
         user: userId ? new mongoose.Types.ObjectId(userId) : undefined,
-        statusChangedAt: new Date(),
       });
       if (order?._id) {
         orderIdForAlert = String(order._id);

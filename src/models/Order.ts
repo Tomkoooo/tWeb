@@ -111,6 +111,11 @@ export interface IOrder extends Document {
   invoiceEmailSentAt?: Date;
   /** Last time order.status was changed (admin or cancellation). */
   statusChangedAt?: Date;
+  statusHistory?: Array<{
+    from: string;
+    to: string;
+    changedAt: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -238,6 +243,13 @@ const OrderSchema = new Schema<IOrder>(
     invoiceLastError: { type: String },
     invoiceEmailSentAt: { type: Date },
     statusChangedAt: { type: Date },
+    statusHistory: [
+      {
+        from: { type: String, required: true },
+        to: { type: String, required: true },
+        changedAt: { type: Date, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -246,5 +258,6 @@ OrderSchema.index({ createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ statusChangedAt: -1 });
 OrderSchema.index({ updatedAt: -1 });
+OrderSchema.index({ "statusHistory.changedAt": -1, "statusHistory.to": 1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);

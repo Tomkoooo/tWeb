@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import TempOrder from "@/models/TempOrder";
 import { ADMIN_ORDER_DELETED_STATUS, isAdminDeletedOrder } from "@/lib/admin-orders-filters";
+import { recordOrderStatusChange } from "@/lib/order-status-history";
 import { formatOrderNumber } from "@/lib/order-number";
 import {
   releaseReservationsForTempOrder,
@@ -180,8 +181,7 @@ export class OrderCancellationService {
       stockRestored = true;
     }
 
-    order.status = ADMIN_ORDER_DELETED_STATUS;
-    order.statusChangedAt = new Date();
+    recordOrderStatusChange(order, oldStatus, ADMIN_ORDER_DELETED_STATUS);
     order.cancelledAt = order.cancelledAt ?? new Date();
     order.cancellationReason = cancellationReason;
     await order.save();

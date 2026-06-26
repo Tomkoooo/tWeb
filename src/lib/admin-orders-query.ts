@@ -4,6 +4,8 @@ import {
   type OrderShippingTypeFilter,
 } from "@/lib/parcel-locker"
 import { formatOrderNumber } from "@/lib/order-number"
+import { buildStatusTransitionQuery } from "@/lib/admin-order-status-filters"
+import { shopDateRangeUtc } from "@/lib/shop-timezone"
 import {
   ADMIN_ORDER_DELETED_STATUS,
   resolveAdminOrderDeletedFilter,
@@ -36,39 +38,20 @@ function parseOptionalNumber(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-function appendDateRange(
+function appendShopDateRange(
   query: Record<string, unknown>,
   field: string,
   from?: string,
   to?: string
 ) {
-  if (!from && !to) return
-  const range: Record<string, Date> = {}
-  if (from) {
-    const start = new Date(from)
-    start.setHours(0, 0, 0, 0)
-    range.$gte = start
-  }
-  if (to) {
-    const end = new Date(to)
-    end.setHours(23, 59, 59, 999)
-    range.$lte = end
-  }
+  const range = shopDateRangeUtc(from, to)
+  if (!range.$gte && !range.$lte) return
   query[field] = range
 }
 
-function appendCalendarDay(
-  query: Record<string, unknown>,
-  field: string,
-  day?: string
-) {
-  if (!day) return
-  const start = new Date(day)
-  if (Number.isNaN(start.getTime())) return
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(day)
-  end.setHours(23, 59, 59, 999)
-  query[field] = { $gte: start, $lte: end }
+function appendAndClause(query: Record<string, unknown>, clause: Record<string, unknown>) {
+  const existing = query.$and
+  query.$and = Array.isArray(existing) ? [...existing, clause] : [clause]
 }
 
 /** Maps URL/admin filter params to in-memory workspace smart filters. */
@@ -112,12 +95,16 @@ export function buildAdminOrdersMongoQuery(filters: AdminOrderFilters = {}): Rec
     }
   }
   if (filters.dateFrom || filters.dateTo) {
-    appendDateRange(query, "createdAt", filters.dateFrom, filters.dateTo)
+    appendShopDateRange(query, "createdAt", filters.dateFrom, filters.dateTo)
   }
   if (filters.updatedFrom || filters.updatedTo) {
-    appendDateRange(query, "updatedAt", filters.updatedFrom, filters.updatedTo)
+    appendShopDateRange(query, "updatedAt", filters.updatedFrom, filters.updatedTo)
   }
-  appendCalendarDay(query, "statusChangedAt", filters.statusChangedOn)
+
+  const statusTransitionQuery = buildStatusTransitionQuery(filters)
+  if (statusTransitionQuery) {
+    appendAndClause(query, statusTransitionQuery)
+  }
 
   return query
 }

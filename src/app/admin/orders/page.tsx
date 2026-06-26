@@ -26,6 +26,8 @@ const FILTER_KEYS: Array<keyof AdminOrderFilters> = [
   "updatedFrom",
   "updatedTo",
   "statusChangedOn",
+  "statusChangedFrom",
+  "statusChangedTo",
   "unitsMin",
   "unitsMax",
   "kindsMin",
