@@ -11,6 +11,7 @@ import { generateFoxpostShipment as generateFoxpostShipmentAction } from "@/acti
 import mongoose from "mongoose"
 import Product from "@/models/Product"
 import {
+  adminFiltersToWorkspaceFilters,
   buildAdminOrdersMongoQuery,
   filterAdminOrders,
   type AdminOrderFilters,
@@ -26,15 +27,10 @@ import {
   sortWorkspaceOrders,
   summarizeOrder,
   type AdminOrderSummary,
-  type BillingTypeFilter,
-  type LabelStateFilter,
   type OrderMixGroup,
   type OrderShippingMixSection,
-  type WorkspaceFilters,
-  type WorkspaceSortKey,
   type WorkspaceStats,
 } from "@/lib/admin-orders-workspace"
-import type { OrderShippingTypeFilter } from "@/lib/parcel-locker"
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
@@ -51,6 +47,11 @@ import {
   isGlsParcelManagerEnabled,
 } from "@/lib/parcel-feature-flags"
 import { OrderCancellationService } from "@/services/order-cancellation"
+import {
+  addOrderItem as addOrderItemService,
+  getOrderAddableProducts as getOrderAddableProductsService,
+  removeOrderItem as removeOrderItemService,
+} from "@/services/order-items-edit"
 
 const ORDER_STATUS_VALUES = ["pending", "processing", "shipped", "delivered", "cancelled"] as const
 
@@ -140,6 +141,7 @@ async function applyOrderStatusChange(order: any, newStatus: OrderStatusValue) {
   if (oldStatus === newStatus) return false
 
   order.status = newStatus
+  order.statusChangedAt = new Date()
   await order.save()
   await notifyOrderStatusChange(order, oldStatus, newStatus)
   return true
@@ -183,32 +185,6 @@ export type AdminOrdersWorkspaceData = {
   deletedFilter: AdminOrderDeletedFilter
 }
 
-function parseOptionalNumber(value?: string): number | undefined {
-  if (value == null || value === "") return undefined
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
-function toWorkspaceFilters(filters: AdminOrderFilters): WorkspaceFilters {
-  const shippingType = (filters.shippingType || "all") as OrderShippingTypeFilter
-  const labelState = (filters.labelState || "all") as LabelStateFilter
-  const billingType = (filters.billingType || "all") as BillingTypeFilter
-  return {
-    q: filters.q,
-    shippingType,
-    unitsMin: parseOptionalNumber(filters.unitsMin),
-    unitsMax: parseOptionalNumber(filters.unitsMax),
-    kindsMin: parseOptionalNumber(filters.kindsMin),
-    kindsMax: parseOptionalNumber(filters.kindsMax),
-    totalMin: parseOptionalNumber(filters.totalMin),
-    totalMax: parseOptionalNumber(filters.totalMax),
-    labelState,
-    billingType,
-    mix: filters.mix || undefined,
-    sort: (filters.sort as WorkspaceSortKey) || "newest",
-  }
-}
-
 /** Powers the recreated order management workspace (list / mix / assignment views). */
 export async function getOrdersWorkspace(
   filters: AdminOrderFilters = {}
@@ -234,7 +210,7 @@ export async function getOrdersWorkspace(
   const summaries = rawOrders.map((order) =>
     summarizeOrder(order as unknown as Parameters<typeof summarizeOrder>[0])
   )
-  const workspaceFilters = toWorkspaceFilters(filters)
+  const workspaceFilters = adminFiltersToWorkspaceFilters(filters)
   const filtered = applyWorkspaceFilters(summaries, workspaceFilters)
   const sorted = sortWorkspaceOrders(filtered, workspaceFilters.sort)
   const shippingMixSections = groupOrdersByShippingAndMix(sorted)
@@ -748,6 +724,36 @@ export async function uploadManualInvoicePdf(orderId: string, formData: FormData
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${orderId}`)
   revalidatePath(`/profile/orders/${orderId}`)
+}
+
+export async function getOrderAddableProducts() {
+  await checkAdmin()
+  return getOrderAddableProductsService()
+}
+
+export async function removeOrderItem(orderId: string, itemIndex: number) {
+  await checkAdmin()
+  const result = await removeOrderItemService(orderId, itemIndex)
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath(`/profile/orders/${orderId}`)
+
+  return result
+}
+
+export async function addOrderItem(
+  orderId: string,
+  input: { productId: string; variantId?: string; quantity: number }
+) {
+  await checkAdmin()
+  const result = await addOrderItemService(orderId, input)
+
+  revalidatePath("/admin/orders")
+  revalidatePath(`/admin/orders/${orderId}`)
+  revalidatePath(`/profile/orders/${orderId}`)
+
+  return result
 }
 
 export async function updateOrderContactInfo(orderId: string, formData: FormData) {

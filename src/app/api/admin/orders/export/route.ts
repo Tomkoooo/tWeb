@@ -9,7 +9,7 @@ import "@/models/PaymentMethod"
 import { format } from "date-fns"
 import {
   buildAdminOrdersMongoQuery,
-  filterAdminOrders,
+  filterAdminOrdersWithWorkspace,
   parseAdminOrderFiltersFromSearchParams,
 } from "@/lib/admin-orders-query"
 import { buildAdminOrdersExcelBuffer } from "@/lib/admin-orders-export"
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .lean()
 
-    const orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
+    const orders = filterAdminOrdersWithWorkspace(JSON.parse(JSON.stringify(rawOrders)), filters)
     const buffer = await buildAdminOrdersExcelBuffer(orders, filters)
     const filename = `rendelesek-${format(new Date(), "yyyy-MM-dd-HHmm")}.xlsx`
 

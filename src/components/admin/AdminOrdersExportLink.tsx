@@ -155,7 +155,7 @@ export function AdminOrdersExportLink({
         disabled={isExporting || isExportingLabelsZip}
         onClick={handleExport}
         className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
-        title="A címke linkekhez admin bejelentkezés szükséges."
+        title="Az aktuális szűrők alapján exportál (lista, mix, címke állapot, összeg, dátumok, stb.)."
       >
         {isExporting ? (
           <LoadingSpinner className="mr-2 h-4 w-4" />

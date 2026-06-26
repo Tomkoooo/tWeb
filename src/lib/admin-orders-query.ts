@@ -9,6 +9,14 @@ import {
   resolveAdminOrderDeletedFilter,
   type AdminOrderFilters,
 } from "@/lib/admin-orders-filters"
+import {
+  applyWorkspaceFilters,
+  summarizeOrder,
+  type BillingTypeFilter,
+  type LabelStateFilter,
+  type WorkspaceFilters,
+  type WorkspaceSortKey,
+} from "@/lib/admin-orders-workspace"
 
 export type {
   AdminOrderDeletedFilter,
@@ -21,6 +29,68 @@ export {
   parseAdminOrderFiltersFromSearchParams,
   resolveAdminOrderDeletedFilter,
 } from "@/lib/admin-orders-filters"
+
+function parseOptionalNumber(value?: string): number | undefined {
+  if (value == null || value === "") return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function appendDateRange(
+  query: Record<string, unknown>,
+  field: string,
+  from?: string,
+  to?: string
+) {
+  if (!from && !to) return
+  const range: Record<string, Date> = {}
+  if (from) {
+    const start = new Date(from)
+    start.setHours(0, 0, 0, 0)
+    range.$gte = start
+  }
+  if (to) {
+    const end = new Date(to)
+    end.setHours(23, 59, 59, 999)
+    range.$lte = end
+  }
+  query[field] = range
+}
+
+function appendCalendarDay(
+  query: Record<string, unknown>,
+  field: string,
+  day?: string
+) {
+  if (!day) return
+  const start = new Date(day)
+  if (Number.isNaN(start.getTime())) return
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(day)
+  end.setHours(23, 59, 59, 999)
+  query[field] = { $gte: start, $lte: end }
+}
+
+/** Maps URL/admin filter params to in-memory workspace smart filters. */
+export function adminFiltersToWorkspaceFilters(filters: AdminOrderFilters = {}): WorkspaceFilters {
+  const shippingType = (filters.shippingType || "all") as OrderShippingTypeFilter
+  const labelState = (filters.labelState || "all") as LabelStateFilter
+  const billingType = (filters.billingType || "all") as BillingTypeFilter
+  return {
+    q: filters.q,
+    shippingType,
+    unitsMin: parseOptionalNumber(filters.unitsMin),
+    unitsMax: parseOptionalNumber(filters.unitsMax),
+    kindsMin: parseOptionalNumber(filters.kindsMin),
+    kindsMax: parseOptionalNumber(filters.kindsMax),
+    totalMin: parseOptionalNumber(filters.totalMin),
+    totalMax: parseOptionalNumber(filters.totalMax),
+    labelState,
+    billingType,
+    mix: filters.mix || undefined,
+    sort: (filters.sort as WorkspaceSortKey) || "newest",
+  }
+}
 
 export function buildAdminOrdersMongoQuery(filters: AdminOrderFilters = {}): Record<string, unknown> {
   const query: Record<string, unknown> = {}
@@ -42,19 +112,30 @@ export function buildAdminOrdersMongoQuery(filters: AdminOrderFilters = {}): Rec
     }
   }
   if (filters.dateFrom || filters.dateTo) {
-    const createdAt: Record<string, Date> = {}
-    if (filters.dateFrom) {
-      createdAt.$gte = new Date(filters.dateFrom)
-    }
-    if (filters.dateTo) {
-      const dateTo = new Date(filters.dateTo)
-      dateTo.setHours(23, 59, 59, 999)
-      createdAt.$lte = dateTo
-    }
-    query.createdAt = createdAt
+    appendDateRange(query, "createdAt", filters.dateFrom, filters.dateTo)
   }
+  if (filters.updatedFrom || filters.updatedTo) {
+    appendDateRange(query, "updatedAt", filters.updatedFrom, filters.updatedTo)
+  }
+  appendCalendarDay(query, "statusChangedAt", filters.statusChangedOn)
 
   return query
+}
+
+/**
+ * Applies the same in-memory smart filters as the admin orders workspace
+ * (units, mix, label state, billing type, text search, etc.).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- admin order snapshots are dynamic JSON
+export function filterAdminOrdersWithWorkspace(orders: any[], filters: AdminOrderFilters = {}): any[] {
+  const workspaceFilters = adminFiltersToWorkspaceFilters(filters)
+  const summaries = orders.map((order) =>
+    summarizeOrder(order as Parameters<typeof summarizeOrder>[0])
+  )
+  const allowedIds = new Set(
+    applyWorkspaceFilters(summaries, workspaceFilters).map((summary) => summary.id)
+  )
+  return orders.filter((order) => allowedIds.has(String(order._id)))
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- admin order snapshots are dynamic JSON

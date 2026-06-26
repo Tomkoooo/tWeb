@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
-import { Calendar, CreditCard, ExternalLink, MapPin, Package, Truck, User } from "lucide-react"
+import { Calendar, CreditCard, ExternalLink, MapPin, Truck, User } from "lucide-react"
 import { toast } from "sonner"
 import {
   generateOrderGlsLabel,
@@ -18,6 +18,7 @@ import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
 import { OrderCancelButton } from "@/components/admin/OrderCancelButton"
 import { OrderParcelPanel } from "@/components/admin/OrderParcelPanel"
 import { OrderContactEditor } from "@/components/admin/OrderContactEditor"
+import { OrderItemsEditor } from "@/components/admin/OrderItemsEditor"
 import { StandardShippingLabelPanel } from "@/components/admin/StandardShippingLabelPanel"
 import { FoxpostShipmentPanel } from "@/components/admin/foxpost/FoxpostShipmentPanel"
 import { Button } from "@/components/ui/button"
@@ -31,13 +32,8 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import {
-  clampVatPercent,
-  DEFAULT_VAT_PERCENT,
-  formatHuf,
-  priceBreakdownFromGross,
-  totalsBreakdownForOrderSnapshot,
-} from "@/lib/pricing"
+import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
+import { canEditOrderItems } from "@/lib/order-items-edit"
 import {
   getOrderParcelProvider,
   getOrderShippingTypeLabel,
@@ -142,6 +138,10 @@ export function AdminOrderDetailSheet({
   const parcelProvider = order ? getOrderParcelProvider(order) : null
   const parcelDelivery = order ? getOrderParcelDeliveryDisplay(order) : null
   const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
+  const itemsEditable = order ? canEditOrderItems(order) : false
+  const invoiceIssued = order
+    ? Boolean(order.invoiceId?.trim()) && order.invoiceStatus !== "reversed"
+    : false
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -284,86 +284,29 @@ export function AdminOrderDetailSheet({
 
               <section className="border border-white/10 bg-white/5 p-5">
                 <SectionTitle>Rendelt tételek</SectionTitle>
-                <div className="space-y-3">
-                  {order.items.map(
-                    (
-                      item: {
-                        name: string
-                        quantity: number
-                        variantLabel?: string
-                        price: number
-                        vatPercent?: number
-                      },
-                      index: number
-                    ) => {
-                      const breakdown = priceBreakdownFromGross(
-                        item.price,
-                        item.quantity,
-                        clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
-                      )
-                      return (
-                        <div
-                          key={index}
-                          className="flex gap-4 border border-white/5 bg-black/40 p-3"
-                        >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-white/10 bg-neutral-950">
-                            <Package className="h-5 w-5 text-neutral-700" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-heading text-sm font-black uppercase tracking-wider text-white">
-                              {item.name}
-                            </p>
-                            {item.variantLabel ? (
-                              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                                {item.variantLabel}
-                              </p>
-                            ) : null}
-                            <p className="text-[10px] text-neutral-600">{item.quantity} db</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-white">{formatHuf(breakdown.lineGross)}</p>
-                            <p className="text-[9px] text-neutral-600">
-                              {formatHuf(breakdown.unitGross)} / db
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    }
-                  )}
-                </div>
-
-                <div className="mt-4 space-y-2 border-t border-white/5 pt-4 text-sm">
-                  <div className="flex justify-between text-neutral-500">
-                    <span>Részösszeg</span>
-                    <span>{formatHuf(order.subtotal)}</span>
-                  </div>
-                  {totalBreakdown ? (
-                    <>
-                      <div className="flex justify-between text-neutral-500">
-                        <span>Nettó</span>
-                        <span>{formatHuf(totalBreakdown.net)}</span>
-                      </div>
-                      <div className="flex justify-between text-neutral-500">
-                        <span>ÁFA</span>
-                        <span>{formatHuf(totalBreakdown.vat)}</span>
-                      </div>
-                    </>
-                  ) : null}
-                  <div className="flex justify-between text-neutral-500">
-                    <span>Szállítás</span>
-                    <span>{order.shippingFee === 0 ? "INGYENES" : formatHuf(order.shippingFee)}</span>
-                  </div>
-                  {order.discount > 0 ? (
-                    <div className="flex justify-between text-highlight">
-                      <span>Kedvezmény</span>
-                      <span>-{formatHuf(order.discount)}</span>
+                <OrderItemsEditor
+                  orderId={orderIdStr}
+                  items={order.items}
+                  subtotal={order.subtotal}
+                  shippingFee={order.shippingFee}
+                  discount={order.discount}
+                  total={order.total}
+                  editable={itemsEditable}
+                  invoiceIssued={invoiceIssued}
+                  onSaved={handleUpdated}
+                />
+                {totalBreakdown ? (
+                  <div className="mt-4 space-y-2 border-t border-white/5 pt-4 text-sm text-neutral-500">
+                    <div className="flex justify-between">
+                      <span>Nettó</span>
+                      <span>{formatHuf(totalBreakdown.net)}</span>
                     </div>
-                  ) : null}
-                  <div className="flex justify-between pt-2 text-lg font-black text-white">
-                    <span>Végösszeg</span>
-                    <span className="admin-headline-accent">{formatHuf(order.total)}</span>
+                    <div className="flex justify-between">
+                      <span>ÁFA</span>
+                      <span>{formatHuf(totalBreakdown.vat)}</span>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </section>
 
               <section className="border border-white/10 bg-white/5 p-5">

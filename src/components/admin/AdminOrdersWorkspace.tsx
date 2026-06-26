@@ -73,6 +73,9 @@ const FILTER_KEYS: (keyof AdminOrderFilters)[] = [
   "productId",
   "dateFrom",
   "dateTo",
+  "updatedFrom",
+  "updatedTo",
+  "statusChangedOn",
   "unitsMin",
   "unitsMax",
   "kindsMin",
@@ -748,17 +751,29 @@ function FilterBar({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         <NumberRange label="Darabszám (db)" minKey="unitsMin" maxKey="unitsMax" draft={draft} set={set} />
         <NumberRange label="Tételféle" minKey="kindsMin" maxKey="kindsMax" draft={draft} set={set} />
         <NumberRange label="Összeg (Ft)" minKey="totalMin" maxKey="totalMax" draft={draft} set={set} step={1000} />
         <div>
-          <label className={labelClass}>Dátumtól</label>
+          <label className={labelClass}>Rendelés – tól</label>
           <input type="date" value={draft.dateFrom || ""} onChange={(e) => set("dateFrom", e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Dátumig</label>
+          <label className={labelClass}>Rendelés – ig</label>
           <input type="date" value={draft.dateTo || ""} onChange={(e) => set("dateTo", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Módosítva – tól</label>
+          <input type="date" value={draft.updatedFrom || ""} onChange={(e) => set("updatedFrom", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Módosítva – ig</label>
+          <input type="date" value={draft.updatedTo || ""} onChange={(e) => set("updatedTo", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Státusz változás napja</label>
+          <input type="date" value={draft.statusChangedOn || ""} onChange={(e) => set("statusChangedOn", e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Rendezés</label>

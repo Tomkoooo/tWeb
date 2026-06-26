@@ -322,6 +322,8 @@ export type TemplateCapabilities = {
   hasBlog: boolean
   staticPages: string[]
   restyles: RestyledPage[]
+  /** Optional human labels for `/admin/cms` static page nav (slug → label). */
+  staticPageLabels?: Record<string, string>
   /** When true, each product may have scoped visual CMS at `page:pdp:product:{slug}`. */
   perProductPdpCms?: boolean
 }

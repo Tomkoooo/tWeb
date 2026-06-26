@@ -59,6 +59,14 @@
       "defaultTemplateId": "erdweg",
       "enabledPlugins": [],
       "pluginConfig": {}
+    },
+    {
+      "key": "keramia-dental",
+      "label": "Kerámia Dental kampányok",
+      "allowedTemplates": ["keramia-dental"],
+      "defaultTemplateId": "keramia-dental",
+      "enabledPlugins": [],
+      "pluginConfig": {}
     }
   ],
   "hostMap": {}

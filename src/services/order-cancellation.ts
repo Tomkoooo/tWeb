@@ -181,6 +181,7 @@ export class OrderCancellationService {
     }
 
     order.status = ADMIN_ORDER_DELETED_STATUS;
+    order.statusChangedAt = new Date();
     order.cancelledAt = order.cancelledAt ?? new Date();
     order.cancellationReason = cancellationReason;
     await order.save();

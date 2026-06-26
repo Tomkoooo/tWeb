@@ -1,0 +1,227 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+.keramia-root {
+  --keramia-beige: #f9f6f0;
+  --keramia-cream: #fffdf9;
+  --keramia-gold: #c5a880;
+  --keramia-gold-dark: #a0835b;
+  --keramia-bronze: #8d7658;
+  --keramia-brown: #332415;
+  --keramia-charcoal: #1f1916;
+  --keramia-dark: #120d0b;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  scroll-behavior: smooth;
+}
+
+.keramia-root .keramia-serif {
+  font-family: var(--font-serif);
+}
+
+.keramia-root .keramia-display {
+  font-family: var(--font-display);
+}
+
+.keramia-root .keramia-sans {
+  font-family: var(--font-sans);
+}
+
+/* globals.css sets unlayered h1–h6 { color: var(--foreground) }, which beats Tailwind
+   utilities on dark hero/CTA bands — headings inherit the section text color instead. */
+.keramia-root h1,
+.keramia-root h2,
+.keramia-root h3,
+.keramia-root h4,
+.keramia-root h5,
+.keramia-root h6 {
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+
+.keramia-root ::selection {
+  background: color-mix(in oklab, var(--keramia-gold) 55%, transparent);
+  color: var(--keramia-dark);
+}
+
+.keramia-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--keramia-gold);
+}
+
+.keramia-hero-gradient {
+  background: linear-gradient(to bottom, var(--keramia-dark), #1c1411);
+}
+
+/* Hero copy column — cream text on dark gradient */
+.keramia-hero-gradient .keramia-hero-copy {
+  color: var(--keramia-cream);
+}
+
+.keramia-hero-gradient .keramia-hero-copy :is(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
+
+/* Light cards floating inside the dark hero */
+.keramia-hero-surface {
+  color: var(--keramia-charcoal);
+  background: var(--keramia-cream);
+}
+
+.keramia-hero-surface.keramia-card-beige {
+  background: var(--keramia-beige);
+}
+
+.keramia-hero-surface :is(h1, h2, h3, h4, h5, h6, p, span) {
+  color: inherit;
+}
+
+.keramia-hero-surface .keramia-hero-promo-value {
+  font-family: var(--font-serif);
+  color: var(--keramia-gold-dark);
+}
+
+.keramia-hero-surface .keramia-hero-promo-label {
+  font-family: var(--font-display);
+  color: var(--keramia-bronze);
+}
+
+.keramia-hero-muted {
+  color: color-mix(in oklab, var(--keramia-cream) 80%, transparent);
+}
+
+.keramia-hero-subtle {
+  color: color-mix(in oklab, var(--keramia-cream) 60%, transparent);
+}
+
+.keramia-section-cream {
+  background-color: var(--keramia-cream);
+}
+
+.keramia-section-beige {
+  background-color: var(--keramia-beige);
+}
+
+.keramia-gold-rule {
+  height: 2px;
+  width: 5rem;
+  background: var(--keramia-gold);
+}
+
+.keramia-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--keramia-gold);
+  color: var(--keramia-dark);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1rem 1.5rem;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--keramia-gold) 25%, transparent);
+}
+
+.keramia-btn-primary:hover {
+  background: var(--keramia-gold-dark);
+}
+
+.keramia-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--keramia-gold) 35%, transparent);
+  color: var(--keramia-cream);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1rem 1.5rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.keramia-btn-outline:hover {
+  border-color: var(--keramia-gold);
+  color: var(--keramia-gold);
+}
+
+.keramia-card {
+  border: 1px solid color-mix(in oklab, var(--keramia-gold) 15%, transparent);
+  background: var(--keramia-cream);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 24px color-mix(in oklab, var(--keramia-dark) 8%, transparent);
+}
+
+.keramia-card-beige {
+  border: 1px solid color-mix(in oklab, var(--keramia-gold) 12%, transparent);
+  background: var(--keramia-beige);
+  border-radius: 0.75rem;
+}
+
+.keramia-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--keramia-gold) 30%, transparent);
+  background: color-mix(in oklab, var(--keramia-gold) 10%, transparent);
+  padding: 0.375rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--keramia-gold);
+}
+
+.keramia-trust-bar {
+  margin-top: -2.5rem;
+  position: relative;
+  z-index: 20;
+}
+
+.keramia-cta-band {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--keramia-gold) 25%, transparent);
+  background: linear-gradient(to right, var(--keramia-dark), #1d1613);
+  color: var(--keramia-cream);
+  box-shadow: 0 20px 50px color-mix(in oklab, var(--keramia-dark) 35%, transparent);
+}
+
+.keramia-cta-band :is(h1, h2, h3, h4, h5, h6, p) {
+  color: inherit;
+}
+
+.keramia-chrome-header {
+  background: color-mix(in oklab, var(--keramia-dark) 95%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--keramia-bronze) 12%, transparent);
+  backdrop-filter: blur(12px);
+  color: var(--keramia-cream);
+}
+
+.keramia-chrome-header :is(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
+
+.keramia-chrome-footer {
+  background: var(--keramia-dark);
+  color: var(--keramia-cream);
+  border-top: 1px solid color-mix(in oklab, var(--keramia-bronze) 12%, transparent);
+}
+
+.keramia-chrome-footer :is(h1, h2, h3, h4, h5, h6, p, a) {
+  color: inherit;
+}

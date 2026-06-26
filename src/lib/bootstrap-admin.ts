@@ -2,8 +2,6 @@ import clientPromise from "@/lib/mongodb"
 
 export const BOOTSTRAP_ADMIN_ENV = "BOOTSTRAP_ADMIN_EMAILS"
 
-let warnedAboutLeftoverEnv = false
-
 /** Parse comma-, semicolon-, or newline-separated admin allowlist from env. */
 export function parseBootstrapAdminEmails(value: string | undefined): string[] {
   if (!value?.trim()) return []
@@ -28,11 +26,8 @@ export function getBootstrapAdminEmails(): string[] {
 /**
  * Promote the signing-in user to ADMIN when their email is on
  * `BOOTSTRAP_ADMIN_EMAILS` (comma-separated allowlist). Idempotent and safe
- * to call on every sign-in.
- *
- * Every allowlisted email is promoted on first login while the env var is set.
- * Once at least one ADMIN exists, a one-time warning reminds operators to
- * remove the env var after onboarding.
+ * to call on sign-in. Leaving the env var set after onboarding does not affect
+ * login — it only promotes allowlisted users who are not yet ADMIN.
  */
 export async function maybeBootstrapAdmin(email: string | undefined | null): Promise<void> {
   const allowlist = getBootstrapAdminEmails()
@@ -44,14 +39,6 @@ export async function maybeBootstrapAdmin(email: string | undefined | null): Pro
     const client = await clientPromise
     const db = client.db()
     const users = db.collection("users")
-
-    const existingAdmin = await users.findOne({ role: "ADMIN" })
-    if (existingAdmin && !warnedAboutLeftoverEnv) {
-      warnedAboutLeftoverEnv = true
-      console.warn(
-        `[bootstrap-admin] ${BOOTSTRAP_ADMIN_ENV} is set but at least one ADMIN already exists. Remove ${BOOTSTRAP_ADMIN_ENV} from the environment after onboarding.`
-      )
-    }
 
     const candidateUser = await users.findOne({ email: candidateEmail })
     if (!candidateUser || candidateUser.role === "ADMIN") return

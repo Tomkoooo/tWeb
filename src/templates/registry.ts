@@ -15,6 +15,7 @@ const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
   sakkmed: () => import("./sakkmed/template.config").then((m) => m.sakkmed),
   erdweg: () => import("./erdweg/template.config").then((m) => m.erdweg),
   cabinova: () => import("./cabinova/template.config").then((m) => m.cabinova),
+  "keramia-dental": () => import("./keramia-dental/template.config").then((m) => m.keramiaDental),
 }
 
 export async function loadTemplateModule(id: string): Promise<TemplateModule> {

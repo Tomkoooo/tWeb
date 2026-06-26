@@ -80,10 +80,11 @@ export function listEditablePages(
 
   for (const slug of template.manifest.capabilities.staticPages) {
     if (!template.staticPages[slug]) continue
+    const customLabel = template.manifest.capabilities.staticPageLabels?.[slug]
     pages.push({
       adminSegment: slug,
       pageKey: `page:${slug}`,
-      label: staticPageAdminLabel(slug),
+      label: customLabel ?? staticPageAdminLabel(slug),
       category: "static",
       editorKind: "surface-json",
     })

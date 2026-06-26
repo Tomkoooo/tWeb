@@ -10,6 +10,7 @@ type ExportOrder = {
   _id: unknown
   createdAt?: Date | string
   updatedAt?: Date | string
+  statusChangedAt?: Date | string
   status?: string
   user?: { email?: string; name?: string } | null
   billingInfo?: Record<string, unknown>
@@ -156,6 +157,7 @@ function baseOrderRow(order: ExportOrder) {
     "Rendelés szám": formatOrderNumber(order._id),
     Létrehozva: formatDateTime(order.createdAt),
     Frissítve: formatDateTime(order.updatedAt),
+    "Státusz változás": formatDateTime(order.statusChangedAt),
     Státusz: STATUS_LABELS[String(order.status || "")] || String(order.status || ""),
     "Regisztrált felhasználó email": order.user?.email || "",
     "Regisztrált felhasználó név": order.user?.name || "",

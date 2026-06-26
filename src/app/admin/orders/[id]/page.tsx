@@ -7,12 +7,13 @@ import {
 } from "@/actions/admin-orders"
 import { OrderStatusButtons } from "@/components/admin/OrderStatusButtons"
 import { OrderCancelButton } from "@/components/admin/OrderCancelButton"
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Calendar } from "lucide-react"
+import { ArrowLeft, User, MapPin, CreditCard, Truck, Calendar } from "lucide-react"
 import {
   OrderParcelPanel,
 } from "@/components/admin/OrderParcelPanel"
 import { FoxpostShipmentPanel } from "@/components/admin/foxpost/FoxpostShipmentPanel"
 import { OrderContactEditor } from "@/components/admin/OrderContactEditor"
+import { OrderItemsEditor } from "@/components/admin/OrderItemsEditor"
 import { StandardShippingLabelPanel } from "@/components/admin/StandardShippingLabelPanel"
 import { getOrderParcelProvider, getOrderShippingTypeLabel, orderHasParcelShipping } from "@/lib/parcel-locker"
 import { getOrderParcelDeliveryDisplay } from "@/lib/parcel-locker-checkout-display"
@@ -26,7 +27,8 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@/lib/order-number"
-import { formatHuf, priceBreakdownFromGross, totalsBreakdownForOrderSnapshot, clampVatPercent, DEFAULT_VAT_PERCENT } from "@/lib/pricing"
+import { formatHuf, totalsBreakdownForOrderSnapshot } from "@/lib/pricing"
+import { canEditOrderItems } from "@/lib/order-items-edit"
 import { isAdminDeletedOrder } from "@/lib/admin-orders-filters"
 
 export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +43,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
   const parcelDelivery = order ? getOrderParcelDeliveryDisplay(order) : null
   const totalBreakdown = order ? totalsBreakdownForOrderSnapshot(order) : null
   const isDeletedOrder = order ? isAdminDeletedOrder(order.status) : false
+  const itemsEditable = order ? canEditOrderItems(order) : false
+  const invoiceIssued = order
+    ? Boolean(order.invoiceId?.trim()) && order.invoiceStatus !== "reversed"
+    : false
 
   if (!order) {
     return (
@@ -230,97 +236,28 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <div className="w-1.5 h-6 admin-section-marker rounded-full" />
               Rendelt Tételek
             </h2>
-            <div className="space-y-4">
-              {order.items.map(
-                (
-                  item: {
-                    name: string
-                    quantity: number
-                    variantLabel?: string
-                    price: number
-                    vatPercent?: number
-                  },
-                  index: number
-                ) => {
-                  const breakdown = priceBreakdownFromGross(
-                    item.price,
-                    item.quantity,
-                    clampVatPercent(item.vatPercent ?? DEFAULT_VAT_PERCENT)
-                  )
-                  const isLimitedLine = item.name.toLowerCase().includes("limitált")
-                  return (
-                <div key={index} className="flex items-center gap-6 p-4 bg-black/40 border border-white/5 group hover:border-white/25 transition-all">
-                  <div className="w-16 h-16 bg-neutral-950 flex items-center justify-center border border-white/10 group-hover:border-white/25 transition-colors overflow-hidden shrink-0">
-                    <Package className="w-8 h-8 text-neutral-800" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-heading font-black text-white uppercase tracking-wider text-base">{item.name}</h3>
-                      {isLimitedLine ? (
-                        <span className="border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-amber-300">
-                          Limitált ár
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-[10px] text-neutral-600 font-black tracking-[0.2em] uppercase mt-0.5">Mennység: {item.quantity} DB</p>
-                    {item.variantLabel ? (
-                      <p className="text-[10px] admin-value font-black tracking-[0.2em] uppercase mt-1">
-                        Varians: {item.variantLabel}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="text-right">
-                    <p className="font-black text-white text-lg tracking-tighter">{formatHuf(breakdown.lineGross)}</p>
-                    <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest">
-                      Rögzített rendelési ár: {formatHuf(breakdown.unitGross)} / DB bruttó
-                    </p>
-                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">
-                      Egység nettó {formatHuf(breakdown.unitNet)} · Egység ÁFA {formatHuf(breakdown.unitVat)}
-                    </p>
-                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">Sor nettó {formatHuf(breakdown.lineNet)} · Sor ÁFA {formatHuf(breakdown.lineVat)}</p>
-                  </div>
+            <OrderItemsEditor
+              orderId={order._id.toString()}
+              items={order.items}
+              subtotal={order.subtotal}
+              shippingFee={order.shippingFee}
+              discount={order.discount}
+              total={order.total}
+              editable={itemsEditable}
+              invoiceIssued={invoiceIssued}
+            />
+            {totalBreakdown ? (
+              <div className="mt-6 space-y-3 border-t border-white/5 pt-6">
+                <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
+                  <span>Nettó összesen:</span>
+                  <span>{formatHuf(totalBreakdown.net)}</span>
                 </div>
-                )
-              })}
-            </div>
-            
-            <div className="mt-8 pt-8 border-t border-white/5 space-y-3">
-              <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
-                <span>Részösszeg:</span>
-                <span>{formatHuf(order.subtotal)}</span>
-              </div>
-              {totalBreakdown && (
-                <>
-                  <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
-                    <span>Nettó összesen:</span>
-                    <span>{formatHuf(totalBreakdown.net)}</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
-                    <span>ÁFA összesen:</span>
-                    <span>{formatHuf(totalBreakdown.vat)}</span>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
-                <span>Szállítás:</span>
-                <span>{order.shippingFee === 0 ? "INGYENES" : formatHuf(order.shippingFee)}</span>
-              </div>
-              {order.discount > 0 && (
-                <div className="flex justify-between text-highlight text-sm font-bold uppercase italic">
-                  <span>Kedvezmény:</span>
-                  <span>-{formatHuf(order.discount)}</span>
+                <div className="flex justify-between text-neutral-500 text-sm font-bold uppercase italic">
+                  <span>ÁFA összesen:</span>
+                  <span>{formatHuf(totalBreakdown.vat)}</span>
                 </div>
-              )}
-              <div className="flex justify-between text-white text-2xl font-black uppercase italic pt-2">
-                <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  Végösszeg:
-                </span>
-                <span className="admin-headline-accent">
-                  {formatHuf(order.total)}
-                </span>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
 

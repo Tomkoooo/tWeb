@@ -113,6 +113,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } catch (error) {
         console.error("[auth] link guest orders failed", error)
       }
+      try {
+        await maybeBootstrapAdmin(email)
+      } catch (error) {
+        console.error("[auth] bootstrap admin on signIn failed", error)
+      }
     },
   },
   callbacks: {
@@ -153,8 +158,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!lookupEmail) {
           return session
         }
-
-        await maybeBootstrapAdmin(lookupEmail)
 
         try {
           const client = await clientPromise;

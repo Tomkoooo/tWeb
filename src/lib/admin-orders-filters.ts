@@ -12,6 +12,11 @@ export type AdminOrderFilters = {
   shippingType?: string
   dateFrom?: string
   dateTo?: string
+  /** Filter by mongoose `updatedAt` (any order field change). */
+  updatedFrom?: string
+  updatedTo?: string
+  /** Calendar day when `status` was last changed (`statusChangedAt`). */
+  statusChangedOn?: string
   productId?: string
   /** active (default): hide cancelled. deleted: cancelled orders only. */
   deletedFilter?: AdminOrderDeletedFilter | string
@@ -50,6 +55,9 @@ export function parseAdminOrderFiltersFromSearchParams(
     productId: get("productId"),
     dateFrom: get("dateFrom"),
     dateTo: get("dateTo"),
+    updatedFrom: get("updatedFrom"),
+    updatedTo: get("updatedTo"),
+    statusChangedOn: get("statusChangedOn"),
     deletedFilter: get("deletedFilter") as AdminOrderDeletedFilter | undefined,
     unitsMin: get("unitsMin"),
     unitsMax: get("unitsMax"),

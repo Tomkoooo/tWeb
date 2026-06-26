@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import mongoose from "mongoose"
 import {
   buildAdminOrdersMongoQuery,
-  filterAdminOrders,
+  filterAdminOrdersWithWorkspace,
   parseAdminOrderFiltersFromSearchParams,
   ADMIN_ORDER_DELETED_STATUS,
 } from "@/lib/admin-orders-query"
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .lean()
 
-      orders = filterAdminOrders(JSON.parse(JSON.stringify(rawOrders)), filters)
+      orders = filterAdminOrdersWithWorkspace(JSON.parse(JSON.stringify(rawOrders)), filters)
     }
 
     const buffer = await buildAdminOrderLabelsZipBuffer(orders)
