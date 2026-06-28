@@ -78,6 +78,12 @@ const FILTER_KEYS: (keyof AdminOrderFilters)[] = [
   "statusChangedOn",
   "statusChangedFrom",
   "statusChangedTo",
+  "foxpostLabelOn",
+  "foxpostLabelFrom",
+  "foxpostLabelTo",
+  "glsLabelOn",
+  "glsLabelFrom",
+  "glsLabelTo",
   "unitsMin",
   "unitsMax",
   "kindsMin",
@@ -778,7 +784,7 @@ function FilterBar({
           <label className={labelClass}>Státusz átállítás napja</label>
           <input type="date" value={draft.statusChangedOn || ""} onChange={(e) => set("statusChangedOn", e.target.value)} className={inputClass} />
           <p className="mt-1 text-[9px] italic text-neutral-600">
-            A kiválasztott státuszra váltás napja (pl. kiszállítva + keddi dátum)
+            Státuszváltás napja (statusHistory). Régi rendeléseknél futtasd a backfill scriptet.
           </p>
         </div>
         <div>
@@ -788,6 +794,25 @@ function FilterBar({
         <div>
           <label className={labelClass}>Státusz átállítás – ig</label>
           <input type="date" value={draft.statusChangedTo || ""} onChange={(e) => set("statusChangedTo", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Foxpost címke napja</label>
+          <input type="date" value={draft.foxpostLabelOn || ""} onChange={(e) => set("foxpostLabelOn", e.target.value)} className={inputClass} />
+          <p className="mt-1 text-[9px] italic text-neutral-600">
+            Tömeges címkegenerálás napja (foxpostShipment.generatedAt)
+          </p>
+        </div>
+        <div>
+          <label className={labelClass}>Foxpost címke – tól</label>
+          <input type="date" value={draft.foxpostLabelFrom || ""} onChange={(e) => set("foxpostLabelFrom", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Foxpost címke – ig</label>
+          <input type="date" value={draft.foxpostLabelTo || ""} onChange={(e) => set("foxpostLabelTo", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>GLS címke napja</label>
+          <input type="date" value={draft.glsLabelOn || ""} onChange={(e) => set("glsLabelOn", e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Rendezés</label>

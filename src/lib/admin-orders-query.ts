@@ -5,6 +5,10 @@ import {
 } from "@/lib/parcel-locker"
 import { formatOrderNumber } from "@/lib/order-number"
 import { buildStatusTransitionQuery } from "@/lib/admin-order-status-filters"
+import {
+  buildFoxpostLabelGeneratedQuery,
+  buildGlsLabelGeneratedQuery,
+} from "@/lib/admin-order-label-filters"
 import { shopDateRangeUtc } from "@/lib/shop-timezone"
 import {
   ADMIN_ORDER_DELETED_STATUS,
@@ -104,6 +108,16 @@ export function buildAdminOrdersMongoQuery(filters: AdminOrderFilters = {}): Rec
   const statusTransitionQuery = buildStatusTransitionQuery(filters)
   if (statusTransitionQuery) {
     appendAndClause(query, statusTransitionQuery)
+  }
+
+  const foxpostLabelQuery = buildFoxpostLabelGeneratedQuery(filters)
+  if (foxpostLabelQuery) {
+    appendAndClause(query, foxpostLabelQuery)
+  }
+
+  const glsLabelQuery = buildGlsLabelGeneratedQuery(filters)
+  if (glsLabelQuery) {
+    appendAndClause(query, glsLabelQuery)
   }
 
   return query

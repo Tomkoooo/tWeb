@@ -20,6 +20,14 @@ export type AdminOrderFilters = {
   /** Date range when order transitioned to the selected status (Budapest TZ). */
   statusChangedFrom?: string
   statusChangedTo?: string
+  /** Foxpost shipping label generated (bulk label day). Budapest TZ. */
+  foxpostLabelOn?: string
+  foxpostLabelFrom?: string
+  foxpostLabelTo?: string
+  /** GLS shipping label generated. Budapest TZ. */
+  glsLabelOn?: string
+  glsLabelFrom?: string
+  glsLabelTo?: string
   productId?: string
   /** active (default): hide cancelled. deleted: cancelled orders only. */
   deletedFilter?: AdminOrderDeletedFilter | string
@@ -63,6 +71,12 @@ export function parseAdminOrderFiltersFromSearchParams(
     statusChangedOn: get("statusChangedOn"),
     statusChangedFrom: get("statusChangedFrom"),
     statusChangedTo: get("statusChangedTo"),
+    foxpostLabelOn: get("foxpostLabelOn"),
+    foxpostLabelFrom: get("foxpostLabelFrom"),
+    foxpostLabelTo: get("foxpostLabelTo"),
+    glsLabelOn: get("glsLabelOn"),
+    glsLabelFrom: get("glsLabelFrom"),
+    glsLabelTo: get("glsLabelTo"),
     deletedFilter: get("deletedFilter") as AdminOrderDeletedFilter | undefined,
     unitsMin: get("unitsMin"),
     unitsMax: get("unitsMax"),

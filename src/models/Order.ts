@@ -259,5 +259,7 @@ OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ statusChangedAt: -1 });
 OrderSchema.index({ updatedAt: -1 });
 OrderSchema.index({ "statusHistory.changedAt": -1, "statusHistory.to": 1 });
+OrderSchema.index({ "foxpostShipment.generatedAt": -1 });
+OrderSchema.index({ "glsLabel.generatedAt": -1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
