@@ -36,6 +36,19 @@ export {
   resolveAdminOrderDeletedFilter,
 } from "@/lib/admin-orders-filters"
 
+/** Comma-separated Mongo order ids from export/download query params. */
+export function parseAdminOrderIdsParam(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) return []
+  return Array.from(
+    new Set(
+      raw
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    )
+  )
+}
+
 function parseOptionalNumber(value?: string): number | undefined {
   if (value == null || value === "") return undefined
   const parsed = Number(value)

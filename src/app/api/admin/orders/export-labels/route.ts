@@ -3,13 +3,13 @@ import { auth } from "@/auth"
 import dbConnect from "@/lib/db"
 import Order from "@/models/Order"
 import { format } from "date-fns"
-import mongoose from "mongoose"
 import {
   buildAdminOrdersMongoQuery,
   filterAdminOrdersWithWorkspace,
   parseAdminOrderFiltersFromSearchParams,
-  ADMIN_ORDER_DELETED_STATUS,
+  parseAdminOrderIdsParam,
 } from "@/lib/admin-orders-query"
+import { ADMIN_ORDER_DELETED_STATUS } from "@/lib/admin-orders-filters"
 import { buildAdminOrderLabelsZipBuffer } from "@/lib/admin-orders-labels-zip"
 
 function parseFilters(searchParams: URLSearchParams) {
@@ -17,17 +17,7 @@ function parseFilters(searchParams: URLSearchParams) {
 }
 
 function parseOrderIds(searchParams: URLSearchParams): string[] {
-  const raw = searchParams.get("ids")
-  if (!raw) return []
-
-  return Array.from(
-    new Set(
-      raw
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-    )
-  )
+  return parseAdminOrderIdsParam(searchParams.get("ids"))
 }
 
 export const runtime = "nodejs"

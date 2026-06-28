@@ -26,6 +26,7 @@ import {
 import { bulkGenerateParcelLabels, bulkGenerateStandardShippingLabels, bulkUpdateOrderStatuses } from "@/actions/admin-orders"
 import type { AdminOrdersWorkspaceData } from "@/actions/admin-orders"
 import { AdminOrderDetailSheet } from "@/components/admin/AdminOrderDetailSheet"
+import { AdminOrdersExportLink } from "@/components/admin/AdminOrdersExportLink"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { cn } from "@/lib/utils"
@@ -439,6 +440,14 @@ export function AdminOrdersWorkspace({
         onReset={resetFilters}
         isNavigating={isNavigating}
       />
+
+      <div className="flex justify-end">
+        <AdminOrdersExportLink
+          exportQuery={exportQuery}
+          labelsZipEnabled={glsManagerEnabled || foxpostManagerEnabled}
+          selectedOrderIds={Array.from(selectedIds)}
+        />
+      </div>
 
       {isDeletedView && (
         <div className="border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">

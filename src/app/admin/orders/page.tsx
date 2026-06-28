@@ -1,6 +1,5 @@
 import { getOrderFilterProducts, getOrdersWorkspace } from "@/actions/admin-orders"
 import { AdminOrdersWorkspace } from "@/components/admin/AdminOrdersWorkspace"
-import { AdminOrdersExportLink } from "@/components/admin/AdminOrdersExportLink"
 import type { AdminOrderFilters } from "@/lib/admin-orders-filters"
 import {
   isFoxpostParcelManagerEnabled,
@@ -85,24 +84,16 @@ export default async function AdminOrders({ searchParams }: { searchParams: Admi
   const view = parseView(viewParam)
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <AdminOrdersExportLink
-          exportQuery={exportQuery}
-          labelsZipEnabled={glsManagerEnabled || foxpostManagerEnabled}
-        />
-      </div>
-      <AdminOrdersWorkspace
-        data={data}
-        filters={filters}
-        products={products}
-        glsManagerEnabled={glsManagerEnabled}
-        foxpostManagerEnabled={foxpostManagerEnabled}
-        exportQuery={exportQuery}
-        view={view}
-        assignStart={parseIndex(assignStartParam)}
-        assignEnd={parseIndex(assignEndParam)}
-      />
-    </div>
+    <AdminOrdersWorkspace
+      data={data}
+      filters={filters}
+      products={products}
+      glsManagerEnabled={glsManagerEnabled}
+      foxpostManagerEnabled={foxpostManagerEnabled}
+      exportQuery={exportQuery}
+      view={view}
+      assignStart={parseIndex(assignStartParam)}
+      assignEnd={parseIndex(assignEndParam)}
+    />
   )
 }

@@ -13,6 +13,8 @@ const XLSX_MIME =
 type AdminOrdersExportLinkProps = {
   exportQuery: string
   labelsZipEnabled?: boolean
+  /** When non-empty, Excel and label ZIP export only these orders (ignores filters). */
+  selectedOrderIds?: string[]
 }
 
 function parseFilename(contentDisposition: string | null): string | null {
@@ -39,19 +41,28 @@ async function readExportError(response: Response): Promise<string> {
   return `Az export sikertelen (HTTP ${response.status}).`
 }
 
+function buildExportUrl(basePath: string, exportQuery: string, selectedOrderIds: string[]): string {
+  const params = new URLSearchParams(exportQuery)
+  if (selectedOrderIds.length > 0) {
+    params.set("ids", selectedOrderIds.join(","))
+  }
+  const qs = params.toString()
+  return qs ? `${basePath}?${qs}` : basePath
+}
+
 export function AdminOrdersExportLink({
   exportQuery,
   labelsZipEnabled = false,
+  selectedOrderIds = [],
 }: AdminOrdersExportLinkProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [isExportingLabelsZip, setIsExportingLabelsZip] = useState(false)
+  const selectionActive = selectedOrderIds.length > 0
 
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const url = exportQuery
-        ? `/api/admin/orders/export?${exportQuery}`
-        : "/api/admin/orders/export"
+      const url = buildExportUrl("/api/admin/orders/export", exportQuery, selectedOrderIds)
 
       const response = await fetch(url, {
         method: "GET",
@@ -91,7 +102,11 @@ export function AdminOrdersExportLink({
       anchor.remove()
       URL.revokeObjectURL(objectUrl)
 
-      toast.success("Excel export letöltve.")
+      toast.success(
+        selectionActive
+          ? `Excel export letöltve (${selectedOrderIds.length} kijelölt rendelés).`
+          : "Excel export letöltve."
+      )
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Az Excel export nem sikerült."
@@ -104,9 +119,7 @@ export function AdminOrdersExportLink({
   const handleLabelsZipExport = async () => {
     setIsExportingLabelsZip(true)
     try {
-      const url = exportQuery
-        ? `/api/admin/orders/export-labels?${exportQuery}`
-        : "/api/admin/orders/export-labels"
+      const url = buildExportUrl("/api/admin/orders/export-labels", exportQuery, selectedOrderIds)
 
       const response = await fetch(url, {
         method: "GET",
@@ -137,7 +150,11 @@ export function AdminOrdersExportLink({
       anchor.remove()
       URL.revokeObjectURL(objectUrl)
 
-      toast.success("Címke ZIP letöltve.")
+      toast.success(
+        selectionActive
+          ? `Címke ZIP letöltve (${selectedOrderIds.length} kijelölt rendelés).`
+          : "Címke ZIP letöltve."
+      )
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "A címke ZIP export nem sikerült."
@@ -147,15 +164,28 @@ export function AdminOrdersExportLink({
     }
   }
 
+  const excelTitle = selectionActive
+    ? `${selectedOrderIds.length} kijelölt rendelés exportálása Excelbe.`
+    : "Az aktuális szűrők alapján exportál (lista, mix, címke állapot, összeg, dátumok, stb.)."
+
+  const zipTitle = selectionActive
+    ? `${selectedOrderIds.length} kijelölt rendelés címkéinek letöltése ZIP-ben.`
+    : "Az aktuális szűrők alapján exportálja az összes letölthető címkét."
+
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      {selectionActive ? (
+        <p className="text-[9px] font-bold uppercase tracking-widest text-primary sm:mr-2">
+          Export: {selectedOrderIds.length} kijelölt
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="outline"
         disabled={isExporting || isExportingLabelsZip}
         onClick={handleExport}
         className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
-        title="Az aktuális szűrők alapján exportál (lista, mix, címke állapot, összeg, dátumok, stb.)."
+        title={excelTitle}
       >
         {isExporting ? (
           <LoadingSpinner className="mr-2 h-4 w-4" />
@@ -171,13 +201,14 @@ export function AdminOrdersExportLink({
           disabled={isExporting || isExportingLabelsZip}
           onClick={handleLabelsZipExport}
           className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
+          title={zipTitle}
         >
           {isExportingLabelsZip ? (
             <LoadingSpinner className="mr-2 h-4 w-4" />
           ) : (
             <Download className="mr-2 h-4 w-4" />
           )}
-          Címkék ZIP (szűrés)
+          Címkék ZIP
         </Button>
       ) : null}
     </div>
