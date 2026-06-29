@@ -14,6 +14,7 @@ import { EditableListInline } from "@/features/homepage-cms/components/primitive
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { DynamicLucideIcon, IconPicker } from "@/features/homepage-cms/components/primitives/IconPicker"
+import { PlainTextWithLinks } from "@/lib/linkify-plain-text"
 
 interface StoryProps {
   title?: string
@@ -84,7 +85,9 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                     displayTitle
                   )}
                 </h2>
-                <p className="text-neutral-400 text-xl mb-12 leading-relaxed max-w-xl">{displayContent}</p>
+                <p className="text-neutral-400 text-xl mb-12 leading-relaxed max-w-xl">
+                  <PlainTextWithLinks text={displayContent} />
+                </p>
               </>
             )}
 
@@ -134,7 +137,7 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                           </Button>
                         </div>
                       ) : (
-                        item.content
+                        <PlainTextWithLinks text={item.content} />
                       )}
                     </AccordionContent>
                   </AccordionItem>
@@ -202,7 +205,9 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                   ) : (
                     <>
                       <h3 className="text-foreground font-heading font-black mb-4 tracking-widest uppercase">{item.title}</h3>
-                      <p className="text-neutral-500 text-sm leading-relaxed">{item.description}</p>
+                      <p className="text-neutral-500 text-sm leading-relaxed">
+                        <PlainTextWithLinks text={item.description} />
+                      </p>
                     </>
                   )}
                 </div>
