@@ -13,6 +13,8 @@ import {
 import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
 import type { HomePageDeps } from "@/templates/types"
+import { normalizeCampaignContent } from "@/templates/keramia-shared/lib/normalize-campaign-content"
+import type { CampaignPageContent } from "@/templates/keramia-shared/static-pages/shared/schema"
 import type { FooterSettings } from "@/services/footer-settings"
 import type { SeoSettings } from "@/services/seo-settings"
 import type { ThemeTokens } from "@/services/theme"
@@ -57,6 +59,15 @@ export function HomeVisualSurfaceEditor({
   const router = useRouter()
   const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
   const HomeRender = mod.pages.home.Render
+  const campaignFallback =
+    mod.manifest.id.startsWith("keramia-")
+      ? (mod.pages.home.defaultContent as CampaignPageContent)
+      : null
+
+  const normalizeDraft = (value: Record<string, unknown>) => {
+    if (!campaignFallback) return value
+    return normalizeCampaignContent(value, campaignFallback) as Record<string, unknown>
+  }
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -171,10 +182,10 @@ export function HomeVisualSurfaceEditor({
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>
-            <HomeRender content={draft} deps={homeDeps} />
+            <HomeRender content={normalizeDraft(draft)} deps={homeDeps} />
           </SurfaceDocEditProvider>
         ) : (
-          <HomeRender content={draft} deps={homeDeps} />
+          <HomeRender content={normalizeDraft(draft)} deps={homeDeps} />
         )
       }
     />

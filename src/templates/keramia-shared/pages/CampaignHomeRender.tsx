@@ -1,13 +1,18 @@
 import type { RenderProps, HomePageDeps } from "@/templates/types"
+import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@/templates/registry"
 import { CampaignLanding } from "../components/CampaignLanding"
 import { KeramiaRoot } from "../components/KeramiaRoot"
 import { KERAMIA_ADDRESS, KERAMIA_EMAIL, KERAMIA_PHONE } from "../lib/constants"
+import { normalizeCampaignContent } from "../lib/normalize-campaign-content"
 import type { CampaignPageContent } from "../static-pages/shared/schema"
 
 export function CampaignHomeRender({
   content,
   deps,
 }: RenderProps<CampaignPageContent, HomePageDeps>) {
+  const mod = getTemplateById(deps.templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
+  const fallback = mod.pages.home.defaultContent as CampaignPageContent
+  const normalized = normalizeCampaignContent(content, fallback)
   const emails =
     deps.siteContact.emails.length > 0
       ? deps.siteContact.emails
@@ -16,7 +21,7 @@ export function CampaignHomeRender({
   return (
     <KeramiaRoot>
       <CampaignLanding
-        content={content}
+        content={normalized}
         siteContact={{
           emails,
           phone: KERAMIA_PHONE,

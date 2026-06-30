@@ -11,6 +11,7 @@ import {
 import { homepageSnapshotSchema } from "@/features/homepage-cms/types/homepage-schema"
 import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
 import type { PageDefinition } from "@/templates/types"
+import { deepMergeRecords } from "@/lib/deep-merge-records"
 
 async function findPageDefinitionByTemplateId(
   templateId: string,
@@ -41,7 +42,14 @@ function parseWithDef<T>(
   }
   try {
     const parsed = JSON.parse(raw)
-    const data = def.schema.parse(parsed) as T
+    const merged =
+      def && parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? deepMergeRecords(
+            def.defaultContent as Record<string, unknown>,
+            parsed as Record<string, unknown>
+          )
+        : parsed
+    const data = def.schema.parse(merged) as T
     if (pageKey === "page:home") {
       const ref = def.defaultContent as HomepageSnapshot
       const homeParsed = homepageSnapshotSchema.safeParse(data)

@@ -77,9 +77,10 @@ export default async function CmsPageEditor({
     if (template.pages.home.cmsPageKind !== "homepage-blocks") notFound()
 
     const initialDraft = await PageContentService.getDraft(template.manifest.id, fullPageKey)
+    const draftSnapshot = initialDraft as HomepageSnapshot
     const hydratedSnapshot: HomepageSnapshot = {
-      ...(initialDraft as HomepageSnapshot),
-      blocks: (initialDraft as HomepageSnapshot).blocks.map((block) =>
+      ...draftSnapshot,
+      blocks: (draftSnapshot.blocks ?? []).map((block) =>
         block.type === "contact"
           ? {
               ...block,

@@ -95,6 +95,7 @@ function FaqItem({
 
 function CampaignFormLabelsEditor({ contact }: { contact: CampaignPageContent["contact"] }) {
   const cms = useSurfaceDocEdit()
+  const interestOptions = contact.interestOptions ?? []
   if (!cms.enabled) return null
   return (
     <div className="mb-4 space-y-4 rounded-lg border border-dashed border-primary/30 bg-muted/30 p-3 text-xs">
@@ -133,32 +134,32 @@ function CampaignFormLabelsEditor({ contact }: { contact: CampaignPageContent["c
           label="Új opció"
           onClick={() =>
             cms.setPath("contact.interestOptions", [
-              ...contact.interestOptions,
+              ...interestOptions,
               { ...EMPTY_INTEREST_OPTION },
             ])
           }
         />
-        {contact.interestOptions.map((option, idx) => (
+        {interestOptions.map((option, idx) => (
           <div key={idx} className="flex flex-wrap items-start gap-2 rounded border border-border/60 p-2">
             <CmsListItemToolbar
               canMoveUp={idx > 0}
-              canMoveDown={idx < contact.interestOptions.length - 1}
+              canMoveDown={idx < interestOptions.length - 1}
               onMoveUp={() =>
                 cms.setPath(
                   "contact.interestOptions",
-                  moveArrayItem(contact.interestOptions, idx, -1)
+                  moveArrayItem(interestOptions, idx, -1)
                 )
               }
               onMoveDown={() =>
                 cms.setPath(
                   "contact.interestOptions",
-                  moveArrayItem(contact.interestOptions, idx, 1)
+                  moveArrayItem(interestOptions, idx, 1)
                 )
               }
               onRemove={() =>
                 cms.setPath(
                   "contact.interestOptions",
-                  contact.interestOptions.filter((_, i) => i !== idx)
+                  interestOptions.filter((_, i) => i !== idx)
                 )
               }
             />
