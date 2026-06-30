@@ -13,6 +13,9 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isShopEnabled } from "@/lib/features/shop"
 import { resolveShopDisabledAdminLanding } from "@/lib/admin-plugin-navigation"
+import { TemplateService } from "@/services/template"
+import { PluginService } from "@/services/plugin"
+import { listEditablePages } from "@/templates/cms-pages"
 import { AdminContentModeHub } from "@/components/admin/AdminContentModeHub"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
@@ -78,7 +81,11 @@ export default async function AdminDashboard({
       redirect(landing.href)
     }
     if (landing.plugins.length === 0) {
-      redirect("/admin/cms/home")
+      const template = await TemplateService.getActive()
+      const campBookingEnabled = await PluginService.isEnabled("camp-booking")
+      const editablePages = listEditablePages(template, false, campBookingEnabled)
+      const firstCms = editablePages[0]
+      redirect(firstCms ? `/admin/cms/${firstCms.adminSegment}` : "/admin/cms")
     }
     return <AdminContentModeHub plugins={landing.plugins} />
   }

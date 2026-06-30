@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 import { getPinnedTemplateIdForRequest } from "@/config/deployments-registry"
+import { listEditablePages } from "@/templates/cms-pages"
+import { keramiaFogfeherites } from "@/templates/keramia-fogfeherites/template.config"
 
 describe("Kerámia dental deployment (shared DB, pinned templates)", () => {
   const originalDeploymentKey = process.env.DEPLOYMENT_KEY
@@ -47,5 +49,14 @@ describe("Kerámia dental deployment (shared DB, pinned templates)", () => {
       getPinnedTemplateIdForRequest("fogfeherites.keramiadental.hu")
     ).toBe("keramia-fogfeherites")
     expect(getPinnedTemplateIdForRequest("implant.keramiadental.hu")).toBe("keramia-implant")
+  })
+
+  it("lists surface-json home CMS for campaign landing templates", () => {
+    const pages = listEditablePages(keramiaFogfeherites, false)
+    const home = pages.find((p) => p.adminSegment === "home")
+    expect(home).toMatchObject({
+      pageKey: "page:home",
+      editorKind: "surface-json",
+    })
   })
 })

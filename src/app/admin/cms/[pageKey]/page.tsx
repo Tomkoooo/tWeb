@@ -13,6 +13,7 @@ import { StaticPageVisualSurfaceEditor } from "@/features/template-cms/editors/S
 import { PdpVisualSurfaceEditor } from "@/features/template-cms/editors/PdpVisualSurfaceEditor"
 import { FlowShellVisualSurfaceEditor } from "@/features/template-cms/editors/FlowShellVisualSurfaceEditor"
 import { CampSurfaceVisualEditor } from "@/features/template-cms/editors/CampSurfaceVisualEditor"
+import { HomeVisualSurfaceEditor } from "@/features/template-cms/editors/HomeVisualSurfaceEditor"
 import { AdminCmsPageNav } from "@/components/admin/AdminCmsPageNav"
 import { PluginService } from "@/services/plugin"
 import { getHomepageRenderDependencies } from "@/features/homepage-cms/render/homepage-deps"
@@ -155,6 +156,37 @@ export default async function CmsPageEditor({
   ])
 
   switch (fullPageKey) {
+    case "page:home": {
+      if (entry.editorKind !== "surface-json") notFound()
+
+      return (
+        <SurfacePageLayout
+          label={entry.label}
+          subtitle="Főoldal · JSON felület"
+          editablePages={editablePages}
+          settingsSections={cmsSettingsSections}
+          pageKey={pageKey}
+          manifestName={template.manifest.name}
+          fullPageKey={fullPageKey}
+        >
+          <HomeVisualSurfaceEditor
+            hydrationKey={editorHydrationKey}
+            templateId={template.manifest.id}
+            shopEnabled={shopEnabled}
+            pageKey={fullPageKey}
+            pageLabel={entry.label}
+            initialDraft={initialDraftUnknown as Record<string, unknown>}
+            branding={branding}
+            footer={footer}
+            seo={seo}
+            theme={theme}
+            themeResetBaseline={themeResetBaseline}
+            homepageDeps={dependencies}
+          />
+        </SurfacePageLayout>
+      )
+    }
+
     case "page:shop": {
       const initialDraft = initialDraftUnknown as ShopContent
       const shopDeps = await getShopCmsPreviewDeps(template, initialDraft.pageSize, shopEnabled)
