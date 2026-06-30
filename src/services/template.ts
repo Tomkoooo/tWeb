@@ -15,6 +15,8 @@ import { readPreviewTemplateId } from "@/services/template-preview"
 import { ThemeService } from "@/services/theme"
 import {
   getDefaultTemplateIdForDeployment,
+  getDeploymentDefinition,
+  getPinnedTemplateIdForRequest,
   isTemplateAllowedForDeployment,
   listAllowedTemplateIdsForDeployment,
 } from "@/config/deployments-registry"
@@ -27,11 +29,46 @@ export type ActiveTemplateInfo = {
   activatedBy: string | null
 }
 
+async function getRequestHost(): Promise<string | null> {
+  try {
+    const h = await headers()
+    return h.get("host")
+  } catch {
+    return null
+  }
+}
+
 const readActiveTemplateRecord = cache(async (): Promise<ActiveTemplateInfo> => {
+  const host = await getRequestHost()
+  const deployment = getDeploymentDefinition(host)
+
+  const pinnedTemplateId = getPinnedTemplateIdForRequest(host)
+  if (pinnedTemplateId) {
+    const template = await loadTemplateModule(pinnedTemplateId)
+    return {
+      templateId: template.manifest.id,
+      templateVersion: template.manifest.version,
+      activatedAt: null,
+      activatedBy: null,
+    }
+  }
+
+  // One-template landing deployments always use their fixed template (no ActiveTemplate row).
+  if (deployment.allowedTemplates.length === 1) {
+    const templateId = deployment.allowedTemplates[0]!
+    const template = await loadTemplateModule(templateId)
+    return {
+      templateId: template.manifest.id,
+      templateVersion: template.manifest.version,
+      activatedAt: null,
+      activatedBy: null,
+    }
+  }
+
   await dbConnect()
   const doc = await ActiveTemplate.findOne({ key: "active" }).lean()
   if (!doc) {
-    const deploymentDefault = getDefaultTemplateIdForDeployment()
+    const deploymentDefault = getDefaultTemplateIdForDeployment(host)
     const templateId =
       isRegisteredTemplateId(deploymentDefault) ? deploymentDefault : FALLBACK_TEMPLATE_ID
     const template =
@@ -80,7 +117,7 @@ export class TemplateService {
   }
 
   static async listForDeployment(): Promise<TemplateModule[]> {
-    const host = await TemplateService.getRequestHost()
+    const host = await getRequestHost()
     const allowed = new Set(listAllowedTemplateIdsForDeployment(host))
     const all = await listAllTemplates()
     return all.filter((t) => allowed.has(t.manifest.id))
@@ -96,21 +133,12 @@ export class TemplateService {
   }
 
   static async getSuggestedTemplateId(): Promise<string> {
-    const host = await TemplateService.getRequestHost()
+    const host = await getRequestHost()
     return getDefaultTemplateIdForDeployment(host)
   }
 
-  private static async getRequestHost(): Promise<string | null> {
-    try {
-      const h = await headers()
-      return h.get("host")
-    } catch {
-      return null
-    }
-  }
-
   static async activate(templateId: string, activatedBy?: string): Promise<TemplateModule> {
-    const host = await TemplateService.getRequestHost()
+    const host = await getRequestHost()
     if (!isTemplateAllowedForDeployment(templateId, host)) {
       throw new Error(
         `Template '${templateId}' is not allowed for this deployment. Check deployments.config.json and DEPLOYMENT_KEY.`

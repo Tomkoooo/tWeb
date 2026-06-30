@@ -1,8 +1,8 @@
 export const KERAMIA_BRAND = "Kerámia Dental"
 export const KERAMIA_BRAND_SHORT = "KERÁMIA"
 export const KERAMIA_BRAND_SUB = "D E N T A L"
-export const KERAMIA_LOGO = "/templates/keramia-dental/logo.png"
-export const KERAMIA_HERO_HUB = "/templates/keramia-dental/hero-hub.jpg"
+export const KERAMIA_LOGO = "/templates/keramia-shared/logo.png"
+export const KERAMIA_HERO_HUB = "/templates/keramia-shared/hero-hub.jpg"
 export const KERAMIA_PHONE = "+36 20 244 8888"
 export const KERAMIA_PHONE_HREF = "tel:+36202448888"
 export const KERAMIA_EMAIL = "fogaszat@keramiadental.hu"
@@ -30,7 +30,7 @@ export const CAMPAIGN_LINKS = [
     descriptionEn: "10% + 10% off whitening and scaling.",
     promoBadge: "10% + 10%",
     promoDetail: "fogkőleszedés + fehérítés",
-    image: "/templates/keramia-dental/campaign-fogfeherites.jpg",
+    image: "/templates/keramia-shared/campaign-fogfeherites.jpg",
     locale: "hu" as const,
     featured: true,
   },
@@ -44,7 +44,7 @@ export const CAMPAIGN_LINKS = [
     descriptionEn: "10% off the full prosthetics palette.",
     promoBadge: "10%",
     promoDetail: "teljes fogpótlás",
-    image: "/templates/keramia-dental/campaign-implant.jpg",
+    image: "/templates/keramia-shared/campaign-implant.jpg",
     locale: "hu" as const,
     featured: false,
   },
@@ -58,7 +58,7 @@ export const CAMPAIGN_LINKS = [
     descriptionEn: "Complete first visit for 30,000 Ft instead of 55,000 Ft.",
     promoBadge: "30 000 Ft",
     promoDetail: "helyett 55 000 Ft",
-    image: "/templates/keramia-dental/campaign-newpatient.jpg",
+    image: "/templates/keramia-shared/campaign-newpatient.jpg",
     locale: "en" as const,
     featured: false,
   },

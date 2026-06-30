@@ -11,7 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..")
 
 const config = JSON.parse(readFileSync(join(root, "deployments.config.json"), "utf8"))
 
-const templateIds = new Set(["default-modern", "atelier-showcase", "minecraft-camp", "sakkmed", "cabinova", "erdweg", "keramia-dental"])
+const templateIds = new Set(["default-modern", "atelier-showcase", "minecraft-camp", "sakkmed", "cabinova", "erdweg", "keramia-fogfeherites", "keramia-implant"])
 const pluginIds = new Set(["camp-booking", "press-kit", "order-lab"])
 
 const errors = []
@@ -53,6 +53,32 @@ for (const raw of config.deployments ?? []) {
 
 if (!keys.has(config.defaultDeploymentKey)) {
   errors.push(`defaultDeploymentKey '${config.defaultDeploymentKey}' not found in deployments`)
+}
+
+const deploymentByKey = new Map((config.deployments ?? []).map((d) => [d.key, d]))
+for (const [host, templateId] of Object.entries(config.hostTemplateMap ?? {})) {
+  if (!templateIds.has(templateId)) {
+    errors.push(`hostTemplateMap '${host}': unknown template '${templateId}'`)
+    continue
+  }
+  const deploymentKey = config.hostMap?.[host]
+  if (!deploymentKey) {
+    errors.push(`hostTemplateMap '${host}': host missing from hostMap`)
+    continue
+  }
+  const deployment = deploymentByKey.get(deploymentKey)
+  if (!deployment) {
+    errors.push(`hostTemplateMap '${host}': hostMap points to unknown deployment '${deploymentKey}'`)
+    continue
+  }
+  const allowed = deployment.allowedTemplates?.length
+    ? deployment.allowedTemplates
+    : [deployment.defaultTemplateId ?? deployment.templateId]
+  if (!allowed?.includes(templateId)) {
+    errors.push(
+      `hostTemplateMap '${host}': template '${templateId}' not in deployment '${deploymentKey}' allowedTemplates`
+    )
+  }
 }
 
 if (errors.length > 0) {

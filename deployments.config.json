@@ -62,12 +62,19 @@
     },
     {
       "key": "keramia-dental",
-      "label": "Kerámia Dental kampányok",
-      "allowedTemplates": ["keramia-dental"],
-      "defaultTemplateId": "keramia-dental",
+      "label": "Kerámia Dental",
+      "allowedTemplates": ["keramia-fogfeherites", "keramia-implant"],
+      "defaultTemplateId": "keramia-fogfeherites",
       "enabledPlugins": [],
       "pluginConfig": {}
     }
   ],
-  "hostMap": {}
+  "hostMap": {
+    "fogfeherites.keramiadental.hu": "keramia-dental",
+    "implant.keramiadental.hu": "keramia-dental"
+  },
+  "hostTemplateMap": {
+    "fogfeherites.keramiadental.hu": "keramia-fogfeherites",
+    "implant.keramiadental.hu": "keramia-implant"
+  }
 }

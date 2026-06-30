@@ -142,6 +142,11 @@ export function CampaignLanding({ content, siteContact }: Props) {
             <h1 className="keramia-serif text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
               <EditableDocText path="hero.title" value={content.hero.title} />
             </h1>
+            {(content.hero.tagline || cms.enabled) && (
+              <p className="keramia-display text-lg font-semibold tracking-wide text-primary sm:text-xl">
+                <EditableDocText path="hero.tagline" value={content.hero.tagline} />
+              </p>
+            )}
             {(content.hero.subtitle || cms.enabled) && (
               <p className="keramia-hero-muted max-w-xl whitespace-pre-line text-base leading-relaxed sm:text-lg">
                 <EditableDocText path="hero.subtitle" value={content.hero.subtitle} multiline />
@@ -172,7 +177,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
                 <EditableDocText path="hero.promoHighlight" value={content.hero.promoHighlight} />
               </p>
               {(content.hero.promoSubtext || cms.enabled) && (
-                <p className="keramia-hero-promo-label mt-2 text-[10px] uppercase tracking-[0.2em]">
+                <p className="keramia-hero-promo-label mt-2 whitespace-pre-line text-[10px] uppercase tracking-[0.2em]">
                   <EditableDocText path="hero.promoSubtext" value={content.hero.promoSubtext} />
                 </p>
               )}
@@ -230,7 +235,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
       ) : null}
 
       {showOffer ? (
-        <section className="keramia-section-cream py-24">
+        <section id="akcio" className="keramia-section-cream scroll-mt-28 py-24">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 lg:grid-cols-2 lg:items-center lg:px-8">
             <div>
               <EditableEyebrow path="offer.eyebrow" value={content.offer.eyebrow} />
@@ -391,12 +396,17 @@ export function CampaignLanding({ content, siteContact }: Props) {
       ) : null}
 
       {showServices ? (
-        <section className="keramia-section-cream py-24">
+        <section id="kezelesek" className="keramia-section-cream scroll-mt-28 py-24">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <EditableEyebrow path="services.eyebrow" value={content.services.eyebrow} />
             <h2 className="keramia-serif text-3xl font-semibold md:text-4xl">
               <EditableDocText path="services.title" value={content.services.title} />
             </h2>
+            {(content.services.subtitle || cms.enabled) && (
+              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                <EditableDocText path="services.subtitle" value={content.services.subtitle} multiline />
+              </p>
+            )}
             {cms.enabled ? (
               <CmsListAddButton
                 label="Új szolgáltatás"
@@ -485,6 +495,11 @@ export function CampaignLanding({ content, siteContact }: Props) {
             <h2 className="keramia-serif text-3xl font-semibold md:text-4xl">
               <EditableDocText path="results.title" value={content.results.title} />
             </h2>
+            {(content.results.body || cms.enabled) && (
+              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                <EditableDocText path="results.body" value={content.results.body} multiline />
+              </p>
+            )}
             {(content.results.stats.length > 0 || cms.enabled) && (
               <div className="mt-8 flex flex-wrap gap-6">
                 {cms.enabled ? (

@@ -1,21 +1,19 @@
 "use client"
 
-import Link from "next/link"
 import { Clock, Mail, MapPin, Phone, Star } from "lucide-react"
 import type { ChromeProps } from "@/templates/types"
 import { FooterLegalLinks } from "@/templates/chrome/FooterLegalLinks"
 import { KeramiaBrandLogo } from "../components/KeramiaBrandLogo"
 import {
-  CAMPAIGN_LINKS,
   KERAMIA_ADDRESS,
   KERAMIA_EMAIL,
   KERAMIA_PHONE,
   KERAMIA_PHONE_HREF,
 } from "../lib/constants"
 import { ChromeAuthActions } from "./ChromeAuthActions"
-import "../keramia-dental.css"
+import "../keramia.css"
 
-export function Footer({
+export function LandingFooter({
   logoSrc,
   email,
   phone,
@@ -48,30 +46,7 @@ export function Footer({
           </div>
         </div>
 
-        <div className="lg:col-span-3">
-          <p className="keramia-display mb-4 text-xs font-bold uppercase tracking-widest text-primary">
-            Akciók
-          </p>
-          <ul className="space-y-2.5">
-            {CAMPAIGN_LINKS.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="text-xs tracking-wide text-[#fffdf9]/70 transition hover:text-primary"
-                >
-                  {item.labelHu}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <Link href="/" className="text-xs tracking-wide text-[#fffdf9]/70 transition hover:text-primary">
-                Összes kampány
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        <div className="space-y-4 text-xs text-[#fffdf9]/70 lg:col-span-4">
+        <div className="space-y-4 text-xs text-[#fffdf9]/70 lg:col-span-7">
           <p className="keramia-display text-xs font-bold uppercase tracking-widest text-primary">
             Kapcsolat
           </p>

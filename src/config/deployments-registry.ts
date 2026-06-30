@@ -36,6 +36,8 @@ type DeploymentsFile = {
   defaultDeploymentKey: string
   deployments: RawDeployment[]
   hostMap?: Record<string, string>
+  /** Maps public host → template id (same deployment, shared DB, multiple containers). */
+  hostTemplateMap?: Record<string, string>
 }
 
 const file = deploymentsFile as unknown as DeploymentsFile
@@ -77,12 +79,19 @@ export const DEFAULT_DEPLOYMENT_KEY = file.defaultDeploymentKey
 const deploymentsByKey = new Map(DEPLOYMENTS_REGISTRY.map((d) => [d.key, d]))
 
 const hostMap: Record<string, string> = file.hostMap ?? {}
+const hostTemplateMap: Record<string, string> = file.hostTemplateMap ?? {}
 
-function resolveDeploymentKeyFromHost(host: string | null | undefined): string | null {
+function normalizeHost(host: string | null | undefined): string | null {
   if (!host) return null
   const normalized = host.split(":")[0]?.toLowerCase()
   if (!normalized) return null
-  return hostMap[normalized] ?? hostMap[host.toLowerCase()] ?? null
+  return normalized
+}
+
+function resolveDeploymentKeyFromHost(host: string | null | undefined): string | null {
+  const normalized = normalizeHost(host)
+  if (!normalized) return null
+  return hostMap[normalized] ?? hostMap[host!.toLowerCase()] ?? null
 }
 
 /** Maps env typos/aliases (e.g. `nagyarcu_shop`) to canonical deployment keys. */
@@ -143,7 +152,30 @@ export function isPluginAllowlistedForDeployment(
 }
 
 export function getDefaultTemplateIdForDeployment(host?: string | null): string {
-  return getDeploymentDefinition(host).defaultTemplateId
+  return getPinnedTemplateIdForRequest(host) ?? getDeploymentDefinition(host).defaultTemplateId
+}
+
+/**
+ * Fixed template for this request — from `TEMPLATE_PIN` env or `hostTemplateMap`.
+ * Used when one deployment runs multiple landing templates on one DB (separate containers).
+ */
+export function getPinnedTemplateIdForRequest(host?: string | null): string | null {
+  const deployment = getDeploymentDefinition(host)
+
+  const fromEnv = process.env.TEMPLATE_PIN?.trim()
+  if (fromEnv && deployment.allowedTemplates.includes(fromEnv)) {
+    return fromEnv
+  }
+
+  const normalized = normalizeHost(host)
+  if (normalized) {
+    const fromHost = hostTemplateMap[normalized] ?? hostTemplateMap[host!.toLowerCase()]
+    if (fromHost && deployment.allowedTemplates.includes(fromHost)) {
+      return fromHost
+    }
+  }
+
+  return null
 }
 
 export function listAllowedTemplateIdsForDeployment(host?: string | null): string[] {

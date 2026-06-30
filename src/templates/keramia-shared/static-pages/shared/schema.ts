@@ -46,6 +46,8 @@ export const campaignPageSchema = z.object({
     .object({
       badge: z.string().default(""),
       title: z.string().default(""),
+      /** Gold semibold line directly under the headline (reference demos). */
+      tagline: z.string().default(""),
       subtitle: z.string().default(""),
       promoHighlight: z.string().default(""),
       promoSubtext: z.string().default(""),
@@ -57,6 +59,7 @@ export const campaignPageSchema = z.object({
     .default({
       badge: "",
       title: "",
+      tagline: "",
       subtitle: "",
       promoHighlight: "",
       promoSubtext: "",
@@ -95,9 +98,10 @@ export const campaignPageSchema = z.object({
     .object({
       eyebrow: z.string().default(""),
       title: z.string().default(""),
+      subtitle: z.string().default(""),
       items: z.array(serviceItemSchema).max(12).default([]),
     })
-    .default({ eyebrow: "", title: "", items: [] }),
+    .default({ eyebrow: "", title: "", subtitle: "", items: [] }),
   beforeAfter: z
     .object({
       eyebrow: z.string().default(""),
@@ -117,10 +121,11 @@ export const campaignPageSchema = z.object({
     .object({
       eyebrow: z.string().default(""),
       title: z.string().default(""),
+      body: z.string().default(""),
       stats: z.array(z.object({ value: z.string().default(""), label: z.string().default("") })).max(6).default([]),
       items: z.array(resultItemSchema).max(8).default([]),
     })
-    .default({ eyebrow: "", title: "", stats: [], items: [] }),
+    .default({ eyebrow: "", title: "", body: "", stats: [], items: [] }),
   why: z
     .object({
       eyebrow: z.string().default(""),
