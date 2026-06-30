@@ -4,6 +4,7 @@ import Link from "next/link"
 import { ChevronDown, MapPin, Phone } from "lucide-react"
 import { useState } from "react"
 import { ContactInquiryForm } from "@/components/site-contact/ContactInquiryForm"
+import { EditableDocImage } from "@/features/template-cms/primitives/EditableDocImage"
 import { EditableDocText } from "@/features/template-cms/primitives/EditableDocText"
 import {
   CmsListAddButton,
@@ -34,6 +35,7 @@ const EMPTY_SERVICE = { badge: "", title: "", description: "", ctaLabel: "" }
 const EMPTY_RESULT = { category: "", title: "", description: "" }
 const EMPTY_STAT = { value: "", label: "" }
 const EMPTY_FAQ = { question: "", answer: "" }
+const EMPTY_INTEREST_OPTION = { value: "", label: "" }
 
 function EditableEyebrow({ path, value }: { path: string; value: string }) {
   const cms = useSurfaceDocEdit()
@@ -95,19 +97,78 @@ function CampaignFormLabelsEditor({ contact }: { contact: CampaignPageContent["c
   const cms = useSurfaceDocEdit()
   if (!cms.enabled) return null
   return (
-    <div className="mb-4 grid gap-2 rounded-lg border border-dashed border-primary/30 bg-muted/30 p-3 text-xs">
-      <p>
-        Név: <EditableDocText path="contact.nameLabel" value={contact.nameLabel} />
+    <div className="mb-4 space-y-4 rounded-lg border border-dashed border-primary/30 bg-muted/30 p-3 text-xs">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Űrlap feliratok
       </p>
-      <p>
-        E-mail: <EditableDocText path="contact.emailLabel" value={contact.emailLabel} />
-      </p>
-      <p>
-        Üzenet: <EditableDocText path="contact.messageLabel" value={contact.messageLabel} />
-      </p>
-      <p>
-        Küldés: <EditableDocText path="contact.submitLabel" value={contact.submitLabel} />
-      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <p>
+          Név: <EditableDocText path="contact.nameLabel" value={contact.nameLabel} />
+        </p>
+        <p>
+          Telefon: <EditableDocText path="contact.phoneLabel" value={contact.phoneLabel} />
+        </p>
+        <p>
+          E-mail: <EditableDocText path="contact.emailLabel" value={contact.emailLabel} />
+        </p>
+        <p>
+          Érdeklődés: <EditableDocText path="contact.interestLabel" value={contact.interestLabel} />
+        </p>
+        <p className="sm:col-span-2">
+          Üzenet: <EditableDocText path="contact.messageLabel" value={contact.messageLabel} />
+        </p>
+        <p className="sm:col-span-2">
+          Adatkezelés:{" "}
+          <EditableDocText path="contact.privacyText" value={contact.privacyText} multiline />
+        </p>
+        <p>
+          Küldés: <EditableDocText path="contact.submitLabel" value={contact.submitLabel} />
+        </p>
+      </div>
+      <div className="space-y-2 border-t border-primary/10 pt-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Érdeklődés opciók
+        </p>
+        <CmsListAddButton
+          label="Új opció"
+          onClick={() =>
+            cms.setPath("contact.interestOptions", [
+              ...contact.interestOptions,
+              { ...EMPTY_INTEREST_OPTION },
+            ])
+          }
+        />
+        {contact.interestOptions.map((option, idx) => (
+          <div key={idx} className="flex flex-wrap items-start gap-2 rounded border border-border/60 p-2">
+            <CmsListItemToolbar
+              canMoveUp={idx > 0}
+              canMoveDown={idx < contact.interestOptions.length - 1}
+              onMoveUp={() =>
+                cms.setPath(
+                  "contact.interestOptions",
+                  moveArrayItem(contact.interestOptions, idx, -1)
+                )
+              }
+              onMoveDown={() =>
+                cms.setPath(
+                  "contact.interestOptions",
+                  moveArrayItem(contact.interestOptions, idx, 1)
+                )
+              }
+              onRemove={() =>
+                cms.setPath(
+                  "contact.interestOptions",
+                  contact.interestOptions.filter((_, i) => i !== idx)
+                )
+              }
+            />
+            <span className="text-muted-foreground">Érték:</span>
+            <EditableDocText path={`contact.interestOptions.${idx}.value`} value={option.value} />
+            <span className="text-muted-foreground">Felirat:</span>
+            <EditableDocText path={`contact.interestOptions.${idx}.label`} value={option.label} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -171,7 +232,19 @@ export function CampaignLanding({ content, siteContact }: Props) {
             )}
           </div>
 
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 space-y-6">
+            {(content.hero.image || cms.enabled) && (
+              <EditableDocImage
+                path="hero.image"
+                src={content.hero.image}
+                alt={content.hero.title}
+                usageLabel="Hero kampánykép"
+                width={800}
+                height={1000}
+                flexibleCrop
+                frameClassName="relative aspect-[4/5] overflow-hidden rounded-2xl border border-primary/20 shadow-2xl"
+              />
+            )}
             <div className="keramia-hero-surface keramia-card-beige rounded-2xl border border-primary/20 p-8 text-center shadow-2xl">
               <p className="keramia-hero-promo-value text-5xl font-bold md:text-6xl">
                 <EditableDocText path="hero.promoHighlight" value={content.hero.promoHighlight} />
@@ -323,9 +396,25 @@ export function CampaignLanding({ content, siteContact }: Props) {
                   <EditableDocText path={`offer.bullets.${idx}`} value={bullet} multiline className="flex-1" />
                 </p>
               ))}
+              {cms.enabled ? (
+                <CmsListAddButton
+                  label="Új lábjegyzet"
+                  onClick={() => cms.setPath("offer.footnotes", [...content.offer.footnotes, ""])}
+                />
+              ) : null}
               {content.offer.footnotes.map((note, idx) => (
-                <p key={idx} className="pt-2 text-xs text-muted-foreground">
-                  <EditableDocText path={`offer.footnotes.${idx}`} value={note} multiline />
+                <p key={idx} className="flex gap-2 pt-2 text-xs text-muted-foreground">
+                  {cms.enabled ? (
+                    <CmsListItemToolbar
+                      onRemove={() =>
+                        cms.setPath(
+                          "offer.footnotes",
+                          content.offer.footnotes.filter((_, i) => i !== idx)
+                        )
+                      }
+                    />
+                  ) : null}
+                  <EditableDocText path={`offer.footnotes.${idx}`} value={note} multiline className="flex-1" />
                 </p>
               ))}
             </div>
@@ -475,8 +564,34 @@ export function CampaignLanding({ content, siteContact }: Props) {
                 beforeLabel={content.beforeAfter.beforeLabel}
                 afterLabel={content.beforeAfter.afterLabel}
                 caption={content.beforeAfter.caption}
+                beforeImage={content.beforeAfter.beforeImage}
+                afterImage={content.beforeAfter.afterImage}
               />
             </div>
+            {cms.enabled ? (
+              <div className="mt-6 grid gap-6 md:grid-cols-2">
+                <EditableDocImage
+                  path="beforeAfter.beforeImage"
+                  src={content.beforeAfter.beforeImage}
+                  alt={content.beforeAfter.beforeLabel}
+                  usageLabel="Előtte kép"
+                  width={1600}
+                  height={1000}
+                  flexibleCrop
+                  frameClassName="relative aspect-[16/10] overflow-hidden rounded-xl border border-border bg-muted"
+                />
+                <EditableDocImage
+                  path="beforeAfter.afterImage"
+                  src={content.beforeAfter.afterImage}
+                  alt={content.beforeAfter.afterLabel}
+                  usageLabel="Utána kép"
+                  width={1600}
+                  height={1000}
+                  flexibleCrop
+                  frameClassName="relative aspect-[16/10] overflow-hidden rounded-xl border border-border bg-muted"
+                />
+              </div>
+            ) : null}
             {cms.enabled ? (
               <div className="mt-4 grid gap-2 text-center text-xs">
                 <EditableDocText path="beforeAfter.beforeLabel" value={content.beforeAfter.beforeLabel} />
@@ -737,6 +852,11 @@ export function CampaignLanding({ content, siteContact }: Props) {
           </div>
           <div>
             <CampaignFormLabelsEditor contact={content.contact} />
+            {content.contact.privacyText && !cms.enabled ? (
+              <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+                {content.contact.privacyText}
+              </p>
+            ) : null}
             <ContactInquiryForm
               contactEmails={siteContact.emails}
               nameLabel={content.contact.nameLabel}

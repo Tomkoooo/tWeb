@@ -39,6 +39,19 @@ When you add a **`TemplateModule`** to `src/templates/registry.ts`, **`pages.hom
 
 **Never** replace `home` with a bespoke JSON schema unless you fork the entire homepage CMS feature.
 
+### Campaign landing templates (`surface-json` home) — allowed exception
+
+Single-page campaign landings (e.g. **Kerámia Dental** subdomains) may use a **custom JSON schema** on `pages.home` instead of `homepage-blocks`. That is **not** “no CMS” — it uses the **surface JSON visual editor** (click-to-edit on the live page), same machinery as static pages and shop shells.
+
+When you choose this path, **all** of the following are **mandatory**:
+
+1. **`pages.home.Render`** — Wire **every** operator-editable field with [`EditableDocText`](../../src/features/template-cms/primitives/EditableDocText.tsx) / [`EditableDocImage`](../../src/features/template-cms/primitives/EditableDocImage.tsx) / [`EditableDocRichText`](../../src/features/template-cms/primitives/EditableDocRichText.tsx) behind [`useSurfaceDocEdit`](../../src/features/template-cms/surface-doc-edit-context.tsx). Use [`CmsListAddButton`](../../src/features/template-cms/primitives/CmsListItemToolbar.tsx) / [`CmsListItemToolbar`](../../src/features/template-cms/primitives/CmsListItemToolbar.tsx) for list sections. Reference: [`keramia-shared/components/CampaignLanding.tsx`](../../src/templates/keramia-shared/components/CampaignLanding.tsx).
+2. **Do not** set `cmsPageKind: "homepage-blocks"` on `pages.home` (omit it → `listEditablePages` reports `editorKind: "surface-json"`).
+3. **Admin route** — [`src/app/admin/cms/[pageKey]/page.tsx`](../../src/app/admin/cms/[pageKey]/page.tsx) must handle `page:home` + `surface-json` via [`HomeVisualSurfaceEditor`](../../src/features/template-cms/editors/HomeVisualSurfaceEditor.tsx). **Shipping the Render without this route case causes `/admin/cms/home` → 404** even when inline primitives exist.
+4. **Verify** — Open `/admin/cms/home` (or shop-disabled `/admin` redirect) and confirm click-to-edit, draft save, and publish work before declaring the template done.
+
+Persistence uses **`/api/admin/template-content`** with `pageKey: page:home` (same as other surfaces), not legacy homepage draft APIs.
+
 ### On-canvas copy (`HomepageRenderer` / section components)
 
 When `HomeRender` uses [`HomepageRenderer`](../../src/features/homepage-cms/render/HomepageRenderer.tsx) or shared sections with inline editing, wire [`useCmsEdit`](../../src/features/homepage-cms/components/editor/cms-edit-context.tsx) and [`EditableTextInline`](../../src/features/homepage-cms/components/primitives/EditableTextInline.tsx) / [`EditableLinkInline`](../../src/features/homepage-cms/components/primitives/EditableLinkInline.tsx) (see [`HeroBlockView`](../../src/features/homepage-cms/blocks/hero/View.tsx)). `updateField` only supports **top-level keys on `block.data`**; nested structures use [`patchBlockData`](../../src/features/homepage-cms/components/editor/cms-edit-context.tsx). The provider targets the **first enabled block of that `type`**.
@@ -198,7 +211,7 @@ This is the part LLMs typically get wrong. Imitate the rigor of [src/templates/m
 - ❌ **Chrome-only (or chrome + one static page) “templates.”** Shipping a new registry template where only **`Navbar`/`Footer`** (and at most **one** static page like `/about`) differ from the scaffold while **`pages/home`**, **`pages/shop`**, and **`pages/pdp`** `Render` components still look like the **uncustomized base** — that is not acceptable; see *Full-site branding* above.
 - ❌ Generic "card grid" layouts that look like every Bootstrap site from 2019. If your template doesn't have a strong point of view, it doesn't belong in the registry.
 - ❌ Pulling product/category/review data from anywhere except `deps`.
-- ❌ Removing or breaking **`cmsPageKind: "homepage-blocks"`** / **`homepageSnapshotSchema`** on **`pages.home`** for registry templates (that is the only admin CMS surface).
+- ❌ Removing or breaking **`cmsPageKind: "homepage-blocks"`** / **`homepageSnapshotSchema`** on **`pages.home`** for registry templates **without** implementing the full **`surface-json`** visual CMS path (inline `EditableDoc*` + **`HomeVisualSurfaceEditor`** admin route).
 - ❌ Treating **`EditorPanel`** on shop/PDP/static as an operator workflow — **`/admin/cms`** does not route there; those panels exist for typing and potential future tools only.
 - ❌ Hard-coding colors. Use theme tokens.
 - ❌ Multiple `<h1>` elements per page. One per route.
@@ -209,12 +222,14 @@ This is the part LLMs typically get wrong. Imitate the rigor of [src/templates/m
 
 ## Definition of done
 
-- [ ] **Home CMS:** **`cmsPageKind: "homepage-blocks"`**, **`homepageSnapshotSchema`**, and a real **`HomeRender`** (`RealHomepageSections` / `HomepageRenderer` — not an empty scaffold).
+- [ ] **Home CMS (pick one):**
+  - **Block home:** **`cmsPageKind: "homepage-blocks"`**, **`homepageSnapshotSchema`**, and a real **`HomeRender`** (`RealHomepageSections` / `HomepageRenderer` — not an empty scaffold). Confirm **`/admin/cms/home`** block editor (device preview + inline fields + publish).
+  - **Campaign / JSON home:** Custom `pages.home` schema + **`CampaignLanding`-style** inline `EditableDoc*` on the Render + **`HomeVisualSurfaceEditor`** wired for `page:home`. Confirm **`/admin/cms/home`** click-to-edit + draft/publish (not 404).
 - [ ] `npm run test:unit -- templates-contract` passes (validates manifest, schemas, defaults, slugs, homepage-blocks policy).
 - [ ] `npx eslint src/templates/<your-id>` passes (no restricted imports, no `any`).
 - [ ] `npx tsc --noEmit` passes.
 - [ ] You manually previewed the template at `/admin/templates/<your-id>` after adding it to the registry.
-- [ ] You manually opened **`/admin/cms/home`** and confirmed the **block editor** (device preview + inline fields + publish path).
+- [ ] You manually opened **`/admin/cms/home`** and confirmed the **visual editor** works (block editor *or* surface JSON click-to-edit — see *Definition of done* above).
 - [ ] A screenshot exists at `public/template-previews/<your-id>.svg`.
 - [ ] The README for the template documents its design intent in 3-5 lines.
 - [ ] Chrome exposes account/admin navigation like the canonical [`Navbar`](../../src/components/layout/Navbar.tsx) (unless your fork README documents an intentional deviation).

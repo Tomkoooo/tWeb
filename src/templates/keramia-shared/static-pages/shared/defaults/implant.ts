@@ -19,7 +19,7 @@ export const implantDefault: CampaignPageContent = {
     ctaLabel: "Kérek időpontot",
     phone: KERAMIA_PHONE,
     location: KERAMIA_ADDRESS,
-    image: "",
+    image: "/templates/keramia-shared/campaign-implant.jpg",
   },
   benefits: [
     {
@@ -154,6 +154,8 @@ export const implantDefault: CampaignPageContent = {
     beforeLabel: "Foghiánnyal",
     afterLabel: "Pótlás után",
     caption: "Húzza a csúszkát az összehasonlításhoz · illusztráció",
+    beforeImage: "",
+    afterImage: "",
   },
   results: {
     eyebrow: "AZ EREDMÉNY",

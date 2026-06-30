@@ -19,7 +19,7 @@ export const fogfeheritesDefault: CampaignPageContent = {
     ctaLabel: "Kérek időpontot",
     phone: KERAMIA_PHONE,
     location: KERAMIA_ADDRESS,
-    image: "",
+    image: "/templates/keramia-shared/campaign-fogfeherites.jpg",
   },
   benefits: [
     {
@@ -131,6 +131,8 @@ export const fogfeheritesDefault: CampaignPageContent = {
     beforeLabel: "Előtte",
     afterLabel: "Utána",
     caption: "Húzza a csúszkát az összehasonlításhoz · illusztráció",
+    beforeImage: "",
+    afterImage: "",
   },
   results: {
     eyebrow: "AZ EREDMÉNY",

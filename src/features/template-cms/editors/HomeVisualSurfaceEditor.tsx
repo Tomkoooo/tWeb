@@ -88,14 +88,37 @@ export function HomeVisualSurfaceEditor({
     depth: 0,
   }))
 
+  const meta = (draft as { meta?: { seoTitle?: string; seoDescription?: string } }).meta ?? {
+    seoTitle: "",
+    seoDescription: "",
+  }
+
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs text-neutral-400 space-y-2">
+    <div className="space-y-3 border-b border-white/10 bg-black/25 px-4 py-3 text-xs text-neutral-400">
       <p className="text-[10px] uppercase tracking-widest text-neutral-500">
         Főoldal JSON felület: <span className="text-neutral-200">{pageLabel}</span>
       </p>
       <p>
         Kattintással szerkeszthető szövegek és képek — előnézet mód a jobb oldali eszközöknél.
       </p>
+      <div className="flex flex-wrap gap-3">
+        <label className="min-w-[180px] flex-1 space-y-1 text-xs">
+          <span className="text-neutral-500">SEO cím</span>
+          <input
+            className="h-9 w-full rounded border border-white/15 bg-black/50 px-2 text-white"
+            value={meta.seoTitle ?? ""}
+            onChange={(e) => setPath("meta.seoTitle", e.target.value)}
+          />
+        </label>
+        <label className="min-w-[220px] flex-1 space-y-1 text-xs">
+          <span className="text-neutral-500">SEO leírás</span>
+          <input
+            className="h-9 w-full rounded border border-white/15 bg-black/50 px-2 text-white"
+            value={meta.seoDescription ?? ""}
+            onChange={(e) => setPath("meta.seoDescription", e.target.value)}
+          />
+        </label>
+      </div>
     </div>
   )
 

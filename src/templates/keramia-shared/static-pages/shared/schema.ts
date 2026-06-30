@@ -109,6 +109,8 @@ export const campaignPageSchema = z.object({
       beforeLabel: z.string().default(""),
       afterLabel: z.string().default(""),
       caption: z.string().default(""),
+      beforeImage: z.string().default(""),
+      afterImage: z.string().default(""),
     })
     .default({
       eyebrow: "",
@@ -116,6 +118,8 @@ export const campaignPageSchema = z.object({
       beforeLabel: "",
       afterLabel: "",
       caption: "",
+      beforeImage: "",
+      afterImage: "",
     }),
   results: z
     .object({

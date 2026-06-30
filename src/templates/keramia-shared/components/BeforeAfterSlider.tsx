@@ -1,18 +1,33 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
+import { FallbackImage } from "@/components/common/FallbackImage"
+import { mediaImageSrc } from "@/lib/images"
 import { cn } from "@/lib/utils"
 
 type Props = {
   beforeLabel: string
   afterLabel: string
   caption?: string
+  beforeImage?: string
+  afterImage?: string
   className?: string
 }
 
-export function BeforeAfterSlider({ beforeLabel, afterLabel, caption, className }: Props) {
+export function BeforeAfterSlider({
+  beforeLabel,
+  afterLabel,
+  caption,
+  beforeImage = "",
+  afterImage = "",
+  className,
+}: Props) {
   const [position, setPosition] = useState(50)
   const trackRef = useRef<HTMLDivElement>(null)
+  const resolvedBefore = mediaImageSrc(beforeImage)
+  const resolvedAfter = mediaImageSrc(afterImage)
+  const hasBefore = Boolean(beforeImage.trim())
+  const hasAfter = Boolean(afterImage.trim())
 
   const updateFromClientX = useCallback((clientX: number) => {
     const track = trackRef.current
@@ -36,11 +51,26 @@ export function BeforeAfterSlider({ beforeLabel, afterLabel, caption, className 
           updateFromClientX(e.clientX)
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-muted via-surface to-muted-foreground/20" />
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/25 via-background to-primary/10"
-          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-        />
+        {hasBefore ? (
+          <FallbackImage
+            src={resolvedBefore}
+            alt={beforeLabel}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-muted via-surface to-muted-foreground/20" />
+        )}
+        {hasAfter ? (
+          <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+            <FallbackImage src={resolvedAfter} alt={afterLabel} fill className="object-cover" />
+          </div>
+        ) : (
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-primary/25 via-background to-primary/10"
+            style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
+          />
+        )}
         <div
           className="absolute inset-y-0 w-0.5 bg-primary shadow-[0_0_12px_rgba(0,0,0,0.15)]"
           style={{ left: `${position}%` }}
@@ -52,10 +82,10 @@ export function BeforeAfterSlider({ beforeLabel, afterLabel, caption, className 
         >
           ↔
         </div>
-        <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+        <span className="absolute bottom-3 left-3 z-10 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
           {beforeLabel}
         </span>
-        <span className="absolute bottom-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
+        <span className="absolute bottom-3 right-3 z-10 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
           {afterLabel}
         </span>
       </div>
