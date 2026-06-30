@@ -54,6 +54,45 @@ type LeanThemeDoc = {
   overridesOnly?: boolean
 } & Partial<ThemeTokens>
 
+const LEGACY_THEME_KEY = "theme"
+
+function themeKeyForTemplate(templateId: string): string {
+  return `theme:${templateId}`
+}
+
+function themeDocSort() {
+  return { updatedAt: -1 as const, _id: -1 as const }
+}
+
+/** Per-template row (`theme:<id>`) first; legacy global `theme` only without `defaultTheme`. */
+async function findStoredThemeDoc(
+  templateId: string,
+  skipLegacyGlobalFallback: boolean
+): Promise<LeanThemeDoc | null> {
+  const scoped = (await ThemeSetting.findOne({ key: themeKeyForTemplate(templateId) })
+    .sort(themeDocSort())
+    .lean()) as LeanThemeDoc | null
+  if (scoped) return scoped
+  if (skipLegacyGlobalFallback) return null
+
+  return (await ThemeSetting.findOne({ key: LEGACY_THEME_KEY })
+    .sort(themeDocSort())
+    .lean()) as LeanThemeDoc | null
+}
+
+async function upsertThemeDoc(
+  templateId: string,
+  colors: ThemeTokens,
+  overridesOnly: boolean
+): Promise<void> {
+  const key = themeKeyForTemplate(templateId)
+  await ThemeSetting.findOneAndUpdate(
+    { key },
+    { $set: { key, colors, overridesOnly } },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+  )
+}
+
 function legacyTopLevelFromRaw(raw: Record<string, unknown>): Partial<ThemeTokens> {
   return {
     primary: typeof raw.primary === "string" ? (raw.primary as string) : undefined,
@@ -126,9 +165,7 @@ export class ThemeService {
   static async getMergedForTemplate(template: TemplateModule): Promise<ThemeTokens> {
     const base = getEffectiveThemeBase(template)
     await dbConnect()
-    const doc = (await ThemeSetting.findOne({ key: "theme" })
-      .sort({ updatedAt: -1, _id: -1 })
-      .lean()) as LeanThemeDoc | null
+    const doc = await findStoredThemeDoc(template.manifest.id, Boolean(template.defaultTheme))
 
     if (!doc ||
         doc.colors === undefined ||
@@ -156,29 +193,14 @@ export class ThemeService {
   ): Promise<ThemeTokens> {
     const palette = fullPaletteFromDesired(desired)
     await dbConnect()
-    const latest = await ThemeSetting.findOne({ key: "theme" }).sort({ updatedAt: -1, _id: -1 })
-    if (latest?._id) {
-      await ThemeSetting.findByIdAndUpdate(latest._id, {
-        $set: { key: "theme", colors: palette, overridesOnly: true },
-      })
-    } else {
-      await ThemeSetting.create({
-        key: "theme",
-        colors: palette,
-        overridesOnly: true,
-      })
-    }
+    await upsertThemeDoc(template.manifest.id, palette, true)
     return this.getMergedForTemplate(template)
   }
 
-  /** Clears stored overrides so the active template baseline is used. */
-  static async clearStoredOverrides(): Promise<void> {
+  /** Clears stored overrides so the template baseline is used. */
+  static async clearStoredOverrides(template: TemplateModule): Promise<void> {
     await dbConnect()
-    await ThemeSetting.findOneAndUpdate(
-      { key: "theme" },
-      { $set: { key: "theme", colors: {}, overridesOnly: true } },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
-    )
+    await upsertThemeDoc(template.manifest.id, {} as ThemeTokens, true)
   }
 
   /**
@@ -186,13 +208,11 @@ export class ThemeService {
    * the new template's `defaultTheme`. Clear overrides so the new baseline shows immediately.
    * Rows already stored as `overridesOnly: true` are left unchanged.
    */
-  static async clearStoredIfLegacySnapshot(): Promise<void> {
+  static async clearStoredIfLegacySnapshot(template: TemplateModule): Promise<void> {
     await dbConnect()
-    const doc = (await ThemeSetting.findOne({ key: "theme" })
-      .sort({ updatedAt: -1, _id: -1 })
-      .lean()) as LeanThemeDoc | null
+    const doc = await findStoredThemeDoc(template.manifest.id, Boolean(template.defaultTheme))
     if (!doc || doc.overridesOnly === true) return
-    await this.clearStoredOverrides()
+    await this.clearStoredOverrides(template)
   }
 
   /**

@@ -205,6 +205,15 @@
   color: inherit;
 }
 
+/* Chrome sits outside `.keramia-root` — ship palette tokens locally so header/footer stay readable. */
+.keramia-chrome-header,
+.keramia-chrome-footer {
+  --keramia-cream: #fffdf9;
+  --keramia-gold: #c5a880;
+  --keramia-bronze: #8d7658;
+  --keramia-dark: #120d0b;
+}
+
 .keramia-chrome-header {
   background: color-mix(in oklab, var(--keramia-dark) 95%, transparent);
   border-bottom: 1px solid color-mix(in oklab, var(--keramia-bronze) 12%, transparent);
@@ -220,6 +229,10 @@
   background: var(--keramia-dark);
   color: var(--keramia-cream);
   border-top: 1px solid color-mix(in oklab, var(--keramia-bronze) 12%, transparent);
+}
+
+.keramia-chrome-footer .text-primary {
+  color: var(--keramia-gold);
 }
 
 .keramia-chrome-footer :is(h1, h2, h3, h4, h5, h6, p, a) {

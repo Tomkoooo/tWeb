@@ -157,7 +157,7 @@ export class TemplateService {
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     )
-    await ThemeService.clearStoredIfLegacySnapshot()
+    await ThemeService.clearStoredIfLegacySnapshot(template)
     revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.template, STOREFRONT_CACHE_TAGS.theme)
     return template
   }

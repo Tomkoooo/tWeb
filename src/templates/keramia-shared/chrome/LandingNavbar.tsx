@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useId, useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
 import { Menu, Phone, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChromeProps } from "@/templates/types"
@@ -85,18 +86,26 @@ export function LandingNavbar({ logoSrc, cmsChromePreview }: ChromeProps) {
         </div>
       </div>
 
+      <AnimatePresence>
       {mobileOpen ? (
         <>
-          <button
+          <motion.button
             type="button"
             aria-label="Menü bezárása"
             className="fixed inset-0 top-20 z-40 bg-black/50 lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={closeMobile}
           />
-          <nav
+          <motion.nav
             id={mobilePanelId}
             aria-label="Mobil navigáció"
             className="relative z-50 border-t border-primary/10 bg-[#120d0b] px-4 py-6 lg:hidden"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
           >
             <div className="flex flex-col gap-1">
               {SECTION_LINKS.map((item) => (
@@ -120,9 +129,10 @@ export function LandingNavbar({ logoSrc, cmsChromePreview }: ChromeProps) {
                 Kérek időpontot
               </Link>
             </div>
-          </nav>
+          </motion.nav>
         </>
       ) : null}
+      </AnimatePresence>
     </header>
   )
 }

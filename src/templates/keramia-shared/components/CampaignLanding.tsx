@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ChevronDown, MapPin, Phone } from "lucide-react"
 import { useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
 import { ContactInquiryForm } from "@/components/site-contact/ContactInquiryForm"
 import { EditableDocImage } from "@/features/template-cms/primitives/EditableDocImage"
 import { EditableDocText } from "@/features/template-cms/primitives/EditableDocText"
@@ -15,6 +16,7 @@ import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-cont
 import { cn } from "@/lib/utils"
 import { KERAMIA_PHONE_HREF } from "../lib/constants"
 import { BeforeAfterSlider } from "./BeforeAfterSlider"
+import { KeramiaHoverLift, KeramiaReveal } from "./KeramiaMotion"
 import type { CampaignPageContent } from "../static-pages/shared/schema"
 
 type SiteContact = {
@@ -36,6 +38,17 @@ const EMPTY_RESULT = { category: "", title: "", description: "" }
 const EMPTY_STAT = { value: "", label: "" }
 const EMPTY_FAQ = { question: "", answer: "" }
 const EMPTY_INTEREST_OPTION = { value: "", label: "" }
+
+const WHITENING_SHADE_SWATCHES = [
+  "#cdb98c",
+  "#d9caa0",
+  "#e4d8b6",
+  "#ede4cb",
+  "#f4eedb",
+  "#faf6ea",
+  "#fdfbf4",
+  "#ffffff",
+] as const
 
 function EditableEyebrow({ path, value }: { path: string; value: string }) {
   const cms = useSurfaceDocEdit()
@@ -85,10 +98,23 @@ function FaqItem({
       >
         <span className="keramia-serif text-lg font-medium text-foreground">{question}</span>
         <ChevronDown
-          className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+          className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")}
         />
       </button>
-      {open ? <p className="pb-5 text-sm leading-relaxed text-muted-foreground">{answer}</p> : null}
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="answer"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <p className="pb-5 text-sm leading-relaxed text-muted-foreground">{answer}</p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }
@@ -195,7 +221,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
         <div className="pointer-events-none absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]" />
         <div className="pointer-events-none absolute bottom-0 left-10 h-[300px] w-[300px] rounded-full bg-accent/10 blur-[100px]" />
         <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 lg:grid-cols-12 lg:items-center lg:px-8">
-          <div className="keramia-hero-copy space-y-6 lg:col-span-7">
+          <KeramiaReveal variant="fade-left" className="keramia-hero-copy space-y-6 lg:col-span-7">
             {(content.hero.badge || cms.enabled) && (
               <p className="keramia-promo-badge">
                 <EditableDocText path="hero.badge" value={content.hero.badge} />
@@ -231,9 +257,9 @@ export function CampaignLanding({ content, siteContact }: Props) {
                 <EditableDocText path="hero.location" value={content.hero.location} />
               </p>
             )}
-          </div>
+          </KeramiaReveal>
 
-          <div className="lg:col-span-5 space-y-6">
+          <KeramiaReveal variant="fade-scale" delay={0.2} className="space-y-6 lg:col-span-5">
             {(content.hero.image || cms.enabled) && (
               <EditableDocImage
                 path="hero.image"
@@ -256,7 +282,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
                 </p>
               )}
             </div>
-          </div>
+          </KeramiaReveal>
         </div>
       </section>
 
@@ -445,7 +471,8 @@ export function CampaignLanding({ content, siteContact }: Props) {
             ) : null}
             <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {content.process.steps.map((step, idx) => (
-                <article key={idx} className="rounded-2xl border border-border bg-background p-6">
+                <KeramiaHoverLift key={idx}>
+                <article className="h-full rounded-2xl border border-border bg-background p-6 shadow-md">
                   {cms.enabled ? (
                     <CmsListItemToolbar
                       canMoveUp={idx > 0}
@@ -479,6 +506,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
                     </p>
                   )}
                 </article>
+                </KeramiaHoverLift>
               ))}
             </div>
           </div>
@@ -507,9 +535,9 @@ export function CampaignLanding({ content, siteContact }: Props) {
             ) : null}
             <div className="mt-12 grid gap-6 md:grid-cols-2">
               {content.services.items.map((item, idx) => (
+                <KeramiaHoverLift key={idx}>
                 <article
-                  key={idx}
-                  className="flex flex-col rounded-2xl border border-border bg-surface/50 p-6"
+                  className="flex h-full flex-col rounded-2xl border border-border bg-surface/50 p-6 shadow-md"
                 >
                   {cms.enabled ? (
                     <CmsListItemToolbar
@@ -547,6 +575,7 @@ export function CampaignLanding({ content, siteContact }: Props) {
                     <EditableDocText path={`services.items.${idx}.ctaLabel`} value={item.ctaLabel} />
                   </Link>
                 </article>
+                </KeramiaHoverLift>
               ))}
             </div>
           </div>
@@ -616,6 +645,19 @@ export function CampaignLanding({ content, siteContact }: Props) {
                 <EditableDocText path="results.body" value={content.results.body} multiline />
               </p>
             )}
+            {!cms.enabled && content.results.stats.length === 0 ? (
+              <div className="mt-8 max-w-xl">
+                <div className="flex overflow-hidden rounded-lg border border-primary/20 shadow-sm">
+                  {WHITENING_SHADE_SWATCHES.map((color) => (
+                    <div key={color} className="h-10 flex-1" style={{ backgroundColor: color }} />
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <span>Sötétebb árnyalat</span>
+                  <span>Ragyogó fehér</span>
+                </div>
+              </div>
+            ) : null}
             {(content.results.stats.length > 0 || cms.enabled) && (
               <div className="mt-8 flex flex-wrap gap-6">
                 {cms.enabled ? (

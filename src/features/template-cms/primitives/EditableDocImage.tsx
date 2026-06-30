@@ -2,6 +2,7 @@
 
 import { UploadSheet } from "@/features/site-settings/components/UploadSheet"
 import { FallbackImage } from "@/components/common/FallbackImage"
+import { MediaFillFrame } from "@/components/common/MediaFillFrame"
 import { mediaImageSrc } from "@/lib/images"
 import { cn } from "@/lib/utils"
 import { useSurfaceDocEdit } from "@/features/template-cms/surface-doc-edit-context"
@@ -37,49 +38,43 @@ export function EditableDocImage({
   const resolved = mediaImageSrc(src)
   const useFill = fill || Boolean(frameClassName)
 
-  if (!cms.enabled) {
-    if (useFill) {
-      return (
-        <FallbackImage
-          src={resolved}
-          alt={alt}
-          fill
-          className={cn("object-cover", imageClassName)}
-        />
-      )
-    }
-    return (
-      <FallbackImage
-        src={resolved}
-        alt={alt}
-        width={width}
-        height={height}
-        className={imageClassName}
-      />
-    )
-  }
-
-  const preview = (
-    <div
-      className={cn(
-        frameClassName,
-        !frameClassName && fill && "relative min-h-[120px] w-full overflow-hidden",
-        !frameClassName && !fill && "relative overflow-hidden"
-      )}
-    >
-      <FallbackImage
-        src={resolved}
-        alt={alt}
-        {...(useFill ? { fill: true } : { width, height })}
-        className={cn(useFill ? "h-full w-full object-cover" : imageClassName)}
-        showFallbackOnError={false}
-      />
-    </div>
+  const imageNode = useFill ? (
+    <FallbackImage
+      src={resolved}
+      alt={alt}
+      fill
+      className={cn("object-cover", imageClassName)}
+      showFallbackOnError={cms.enabled ? false : undefined}
+    />
+  ) : (
+    <FallbackImage
+      src={resolved}
+      alt={alt}
+      width={width}
+      height={height}
+      className={imageClassName}
+      showFallbackOnError={cms.enabled ? false : undefined}
+    />
   )
+
+  const framedImage = useFill ? (
+    <MediaFillFrame
+      className={frameClassName ?? "w-full"}
+      aspectRatio={frameClassName ? undefined : width / height}
+    >
+      {imageNode}
+    </MediaFillFrame>
+  ) : (
+    imageNode
+  )
+
+  if (!cms.enabled) {
+    return framedImage
+  }
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {preview}
+      {framedImage}
       <div className="cms-admin-control relative z-10 space-y-2">
         <UploadSheet
           onUploaded={(next) => cms.setPath(path, next)}

@@ -49,8 +49,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE() {
   await requireAdmin()
-  await ThemeService.clearStoredOverrides()
   const template = await TemplateService.getDbActive()
+  await ThemeService.clearStoredOverrides(template)
   const merged = await ThemeService.getMergedForTemplate(template)
   revalidatePath("/", "layout")
   revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.theme)
