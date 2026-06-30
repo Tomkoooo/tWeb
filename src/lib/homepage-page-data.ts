@@ -39,7 +39,7 @@ export async function getHomepagePageData(): Promise<HomepagePageData> {
     )
   )
 
-  const productGridBlock = content.blocks.find(
+  const productGridBlock = content.blocks?.find(
     (b) => b.type === "productGrid" && b.enabled !== false
   )
   const productGridData =
