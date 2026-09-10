@@ -111,6 +111,10 @@ export type AdminHotel = {
   currency: string
   bookingCapacity: number | null
   roomInventory: number | null
+  /** Rooms/packages already sold against `roomInventory` (active bookings). Null when unlimited. */
+  soldRoomUnits: number | null
+  /** `roomInventory - soldRoomUnits`, floored at 0. Null when unlimited. */
+  remainingRoomInventory: number | null
   registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
   status: "draft" | "active" | "archived"

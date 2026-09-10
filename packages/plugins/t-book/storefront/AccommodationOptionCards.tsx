@@ -250,6 +250,9 @@ function HotelCard({
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const description = hotel.description?.trim()
   const badges = hotelAddonBadges(hotel)
+  const remaining =
+    typeof hotel.remainingRoomInventory === "number" ? hotel.remainingRoomInventory : null
+  const soldOut = remaining === 0
 
   return (
     <>
@@ -272,12 +275,25 @@ function HotelCard({
         />
         <button
           type="button"
-          className="flex flex-1 flex-col gap-1.5 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+          className="flex flex-1 flex-col gap-1.5 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
           aria-pressed={selected}
+          disabled={soldOut}
           onClick={onSelect}
         >
           <span className="line-clamp-2 text-sm font-semibold leading-snug">{hotel.name}</span>
           <span className="line-clamp-1 text-xs text-muted-foreground">{hotelHint(hotel, locale)}</span>
+          {remaining != null ? (
+            <span
+              className={cn(
+                "text-xs",
+                soldOut ? "font-medium text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {soldOut
+                ? tbookT(locale, "soldOut")
+                : tbookT(locale, "roomsLeft", { remaining, plural: remaining === 1 ? "" : "s" })}
+            </span>
+          ) : null}
           {badges.length > 0 ? (
             <span className="flex flex-wrap gap-1 pt-0.5">
               {badges.map((badge) => (

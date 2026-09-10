@@ -97,7 +97,22 @@ function serializeEvent(e: ITBookEvent) {
   }
 }
 
-function serializeHotel(h: ITBookHotel) {
+async function serializeHotel(h: ITBookHotel) {
+  const roomInventory =
+    typeof h.roomInventory === "number" && h.roomInventory >= 0 ? h.roomInventory : null
+
+  let soldRoomUnits: number | null = null
+  let remainingRoomInventory: number | null = null
+  if (roomInventory != null) {
+    const { normalizeHotelPricing } = await import("../lib/hotel-pricing")
+    const { countSoldRoomUnitsForHotel, remainingHotelRoomInventory } = await import(
+      "../lib/package-inventory"
+    )
+    const packages = normalizeHotelPricing(h.pricing).packages ?? []
+    soldRoomUnits = await countSoldRoomUnitsForHotel(h._id, packages)
+    remainingRoomInventory = remainingHotelRoomInventory(roomInventory, soldRoomUnits)
+  }
+
   return {
     id: String(h._id),
     groupId: h.groupId ? String(h.groupId) : null,
@@ -111,7 +126,9 @@ function serializeHotel(h: ITBookHotel) {
     gallery: h.gallery,
     currency: h.currency ?? "HUF",
     bookingCapacity: h.bookingCapacity ?? null,
-    roomInventory: h.roomInventory ?? null,
+    roomInventory,
+    soldRoomUnits,
+    remainingRoomInventory,
     registrationFieldSchema: h.registrationFieldSchema ?? [],
     pricing: h.pricing,
     status: h.status,
@@ -541,7 +558,7 @@ async function handleTBookAdminApi(
     const hotels = await TBookEventService.listHotelsForGroup(path[1], orgId)
     return json({
       ok: true,
-      hotels: hotels.map(serializeHotel),
+      hotels: await Promise.all(hotels.map(serializeHotel)),
     })
   }
 
@@ -560,7 +577,7 @@ async function handleTBookAdminApi(
     const hotels = await TBookEventService.listHotels(path[1], orgId)
     return json({
       ok: true,
-      hotels: hotels.map(serializeHotel),
+      hotels: await Promise.all(hotels.map(serializeHotel)),
     })
   }
 
@@ -577,7 +594,7 @@ async function handleTBookAdminApi(
     const orgId = orgIdFromAuth(authResult)
     const hotel = await TBookEventService.getHotel(path[1], orgId)
     if (!hotel) return json({ error: "Szállás nem található" }, 404)
-    return json({ ok: true, hotel: serializeHotel(hotel) })
+    return json({ ok: true, hotel: await serializeHotel(hotel) })
   }
 
   if (segment === "hotels" && path[1] && method === "PUT" && path.length === 2) {

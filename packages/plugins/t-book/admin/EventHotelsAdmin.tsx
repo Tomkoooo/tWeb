@@ -292,6 +292,18 @@ function HotelEditor({
                     Közös szobaallokáció minden csomagra (pl. 20 szoba single + double
                     együtt). Üres = korlátlan. Csomagonkénti készlet továbbra is szűkíthet.
                   </p>
+                  {hotel?.remainingRoomInventory != null ? (
+                    <p className="text-xs font-medium text-foreground">
+                      Eddig eladva: {hotel.soldRoomUnits} szoba · Szabad:{" "}
+                      <span
+                        className={
+                          hotel.remainingRoomInventory === 0 ? "text-destructive" : undefined
+                        }
+                      >
+                        {hotel.remainingRoomInventory}
+                      </span>
+                    </p>
+                  ) : null}
                 </TBookField>
                 <TBookRichTextField
                   label="Leírás"

@@ -137,6 +137,10 @@ export function HotelFormPage({
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<HotelDraft>(() => hotelToDraft(null))
   const [saving, setSaving] = useState(false)
+  const [roomInventoryStats, setRoomInventoryStats] = useState<{
+    soldRoomUnits: number | null
+    remainingRoomInventory: number | null
+  } | null>(null)
 
   useEffect(() => {
     const loads: Promise<void>[] = [
@@ -151,6 +155,10 @@ export function HotelFormPage({
       loads.push(
         tBookAdminApi<{ hotel: AdminHotel }>(`hotels/${hotelId}`).then((res) => {
           setDraft(hotelToDraft(res.hotel))
+          setRoomInventoryStats({
+            soldRoomUnits: res.hotel.soldRoomUnits,
+            remainingRoomInventory: res.hotel.remainingRoomInventory,
+          })
         })
       )
     }
@@ -331,6 +339,20 @@ export function HotelFormPage({
                       együtt). Üres = korlátlan. Csomagonkénti készlet továbbra is
                       szűkíthet.
                     </p>
+                    {isEdit && roomInventoryStats?.remainingRoomInventory != null ? (
+                      <p className="text-xs font-medium text-foreground">
+                        Eddig eladva: {roomInventoryStats.soldRoomUnits} szoba · Szabad:{" "}
+                        <span
+                          className={
+                            roomInventoryStats.remainingRoomInventory === 0
+                              ? "text-destructive"
+                              : undefined
+                          }
+                        >
+                          {roomInventoryStats.remainingRoomInventory}
+                        </span>
+                      </p>
+                    ) : null}
                   </TBookField>
                   <TBookRichTextField
                     label="Leírás"
