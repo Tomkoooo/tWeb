@@ -88,7 +88,8 @@ export async function handleTBookOrgApi(
               name: org.name,
               slug: org.slug,
               status: org.status,
-              settings: org.settings,
+              // Never expose encrypted integration secrets on the context endpoint.
+              settings: { currency: org.settings?.currency || "HUF" },
             }
           : null,
         permissions: [...ctx.permissions],
@@ -293,16 +294,15 @@ export async function handleTBookSystemApi(
     if (segment === "organizations" && path[1] && method === "GET" && path.length === 2) {
       const org = await TBookOrgService.getOrganization(path[1]!)
       if (!org) return json({ error: "Szervezet nem található." }, 404)
-      const stats = await TBookOrgService.getOrganizationStats(path[1]!)
-      const members = await TBookOrgService.listMembers(path[1]!)
+      const [organization, stats, members] = await Promise.all([
+        TBookOrgService.getOrgSettingsPublic(path[1]!),
+        TBookOrgService.getOrganizationStats(path[1]!),
+        TBookOrgService.listMembers(path[1]!),
+      ])
       return json({
         ok: true,
         organization: {
-          id: String(org._id),
-          name: org.name,
-          slug: org.slug,
-          status: org.status,
-          settings: org.settings,
+          ...organization!,
           createdAt: org.createdAt,
         },
         stats,

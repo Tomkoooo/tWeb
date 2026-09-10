@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
@@ -60,6 +60,7 @@ export function TBookOrgSettingsScreen() {
   const [tab, setTab] = useState<Tab>("general")
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
 
   const [name, setName] = useState("")
   const [currency, setCurrency] = useState("HUF")
@@ -100,44 +101,60 @@ export function TBookOrgSettingsScreen() {
   const [invoiceSubject, setInvoiceSubject] = useState("")
   const [invoiceBody, setInvoiceBody] = useState("")
 
-  useEffect(() => {
-    void tbookOrgApi
-      .settings()
-      .then((res) => {
-        const org = res.organization as unknown as OrgSettingsPayload
-        const s = org.settings
-        setName(org.name)
-        setCurrency(s.currency || "HUF")
-        setStripeEnabled(s.stripe?.enabled ?? false)
-        setStripePublishable(s.stripe?.publishableKey || "")
-        setStripeSecretHint(s.stripe?.secretKey?.hint || "")
-        setStripeWebhookHint(s.stripe?.webhookSecret?.hint || "")
-        setSmtpHost(s.smtp?.host || "")
-        setSmtpPort(s.smtp?.port || 587)
-        setSmtpUser(s.smtp?.user || "")
-        setSmtpPassHint(s.smtp?.pass?.hint || "")
-        setSmtpFromEmail(s.smtp?.fromEmail || "")
-        setSmtpFromName(s.smtp?.fromName || "")
-        setSzEnabled(s.szamlazz?.enabled ?? false)
-        setSzAgentHint(s.szamlazz?.agentKey?.hint || "")
-        setSzAgentNeedsResave(Boolean(s.szamlazz?.agentKey?.needsResave))
-        setSzSeller(s.szamlazz?.sellerName || "")
-        setTdEnabled(s.tdarts?.enabled ?? false)
-        setTdApiBaseUrl(s.tdarts?.apiBaseUrl || "")
-        setTdEmbedClientId(s.tdarts?.embedClientId || "")
-        setTdPartnerClientId(s.tdarts?.partnerClientId || "")
-        setTdPartnerClientSecretHint(s.tdarts?.partnerClientSecret?.hint || "")
-        setTdPartnerClientSecretNeedsResave(Boolean(s.tdarts?.partnerClientSecret?.needsResave))
-        setBookingSubject(s.emailTemplates?.bookingConfirmation?.subject || "")
-        setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
-        setVoucherSubject(s.emailTemplates?.voucherDelivery?.subject || "")
-        setVoucherBody(s.emailTemplates?.voucherDelivery?.body || "")
-        setInvoiceSubject(s.emailTemplates?.invoiceSent?.subject || "")
-        setInvoiceBody(s.emailTemplates?.invoiceSent?.body || "")
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false))
+  const applySettings = useCallback((org: OrgSettingsPayload) => {
+    const s = org.settings
+    setOrganizationId(org.id)
+    setName(org.name)
+    setCurrency(s.currency || "HUF")
+    setStripeEnabled(s.stripe?.enabled ?? false)
+    setStripePublishable(s.stripe?.publishableKey || "")
+    setStripeSecret("")
+    setStripeWebhook("")
+    setStripeSecretHint(s.stripe?.secretKey?.hint || "")
+    setStripeWebhookHint(s.stripe?.webhookSecret?.hint || "")
+    setSmtpHost(s.smtp?.host || "")
+    setSmtpPort(s.smtp?.port || 587)
+    setSmtpUser(s.smtp?.user || "")
+    setSmtpPass("")
+    setSmtpPassHint(s.smtp?.pass?.hint || "")
+    setSmtpFromEmail(s.smtp?.fromEmail || "")
+    setSmtpFromName(s.smtp?.fromName || "")
+    setSzEnabled(s.szamlazz?.enabled ?? false)
+    setSzAgent("")
+    setSzAgentHint(s.szamlazz?.agentKey?.hint || "")
+    setSzAgentNeedsResave(Boolean(s.szamlazz?.agentKey?.needsResave))
+    setSzSeller(s.szamlazz?.sellerName || "")
+    setTdEnabled(s.tdarts?.enabled ?? false)
+    setTdApiBaseUrl(s.tdarts?.apiBaseUrl || "")
+    setTdEmbedClientId(s.tdarts?.embedClientId || "")
+    setTdPartnerClientId(s.tdarts?.partnerClientId || "")
+    setTdPartnerClientSecret("")
+    setTdPartnerClientSecretHint(s.tdarts?.partnerClientSecret?.hint || "")
+    setTdPartnerClientSecretNeedsResave(Boolean(s.tdarts?.partnerClientSecret?.needsResave))
+    setBookingSubject(s.emailTemplates?.bookingConfirmation?.subject || "")
+    setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
+    setVoucherSubject(s.emailTemplates?.voucherDelivery?.subject || "")
+    setVoucherBody(s.emailTemplates?.voucherDelivery?.body || "")
+    setInvoiceSubject(s.emailTemplates?.invoiceSent?.subject || "")
+    setInvoiceBody(s.emailTemplates?.invoiceSent?.body || "")
   }, [])
+
+  const loadSettings = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await tbookOrgApi.settings()
+      applySettings(res.organization as unknown as OrgSettingsPayload)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Hiba")
+    } finally {
+      setLoading(false)
+    }
+  }, [applySettings])
+
+  useEffect(() => {
+    void loadSettings()
+  }, [loadSettings])
 
   async function save() {
     setSaving(true)
@@ -179,13 +196,9 @@ export function TBookOrgSettingsScreen() {
           invoiceSent: { subject: invoiceSubject, body: invoiceBody },
         },
       })
-      setStripeSecret("")
-      setStripeWebhook("")
-      setSmtpPass("")
-      setSzAgent("")
-      setSzAgentNeedsResave(false)
-      setTdPartnerClientSecret("")
-      setTdPartnerClientSecretNeedsResave(false)
+      // Re-load this org only — never keep previous-org secret hints in React state.
+      const res = await tbookOrgApi.settings()
+      applySettings(res.organization as unknown as OrgSettingsPayload)
       setOk("Mentve.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hiba")
@@ -210,6 +223,9 @@ export function TBookOrgSettingsScreen() {
     { id: "tdarts", label: "tDarts" },
     { id: "emails", label: "E-mail sablonok" },
   ]
+
+  // Org-scoped field names reduce password-manager cross-org autofill on the same URL.
+  const fieldScope = organizationId || "org"
 
   return (
     <AdminPageScaffold
@@ -259,26 +275,33 @@ export function TBookOrgSettingsScreen() {
           </label>
           <div className="grid gap-2">
             <Label>Publishable key</Label>
-            <Input value={stripePublishable} onChange={(e) => setStripePublishable(e.target.value)} />
+            <Input
+              name={`${fieldScope}-stripe-publishable`}
+              value={stripePublishable}
+              onChange={(e) => setStripePublishable(e.target.value)}
+              autoComplete="off"
+            />
           </div>
           <div className="grid gap-2">
             <Label>Secret key {stripeSecretHint ? `(beállítva: ${stripeSecretHint})` : ""}</Label>
             <Input
               type="password"
+              name={`${fieldScope}-stripe-secret`}
               placeholder={stripeSecretHint ? "Új kulcs megadása…" : "sk_live_…"}
               value={stripeSecret}
               onChange={(e) => setStripeSecret(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
             />
           </div>
           <div className="grid gap-2">
             <Label>Webhook secret {stripeWebhookHint ? `(beállítva: ${stripeWebhookHint})` : ""}</Label>
             <Input
               type="password"
+              name={`${fieldScope}-stripe-webhook`}
               placeholder={stripeWebhookHint ? "Új secret megadása…" : "whsec_…"}
               value={stripeWebhook}
               onChange={(e) => setStripeWebhook(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
             />
           </div>
           <p className="text-muted-foreground text-sm">
@@ -310,9 +333,10 @@ export function TBookOrgSettingsScreen() {
             <Label>Jelszó {smtpPassHint ? `(beállítva: ${smtpPassHint})` : ""}</Label>
             <Input
               type="password"
+              name={`${fieldScope}-smtp-pass`}
               value={smtpPass}
               onChange={(e) => setSmtpPass(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
             />
           </div>
           <div className="grid gap-2">
@@ -343,9 +367,10 @@ export function TBookOrgSettingsScreen() {
             </Label>
             <Input
               type="password"
+              name={`${fieldScope}-szamlazz-agent`}
               value={szAgent}
               onChange={(e) => setSzAgent(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
               placeholder={szAgentNeedsResave ? "Agent kulcs újra megadása kötelező" : undefined}
             />
             {szAgentNeedsResave ? (
@@ -420,9 +445,10 @@ export function TBookOrgSettingsScreen() {
             </Label>
             <Input
               type="password"
+              name={`${fieldScope}-tdarts-secret`}
               value={tdPartnerClientSecret}
               onChange={(e) => setTdPartnerClientSecret(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
               placeholder={tdPartnerClientSecretNeedsResave ? "Secret újra megadása kötelező" : undefined}
             />
             <p className="text-muted-foreground text-sm">

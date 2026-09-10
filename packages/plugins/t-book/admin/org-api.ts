@@ -3,6 +3,7 @@ const SYSTEM_API = "/api/plugins/t-book/system"
 
 async function orgFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${ORG_API}${path}`, {
+    cache: "no-store",
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   })
@@ -13,6 +14,7 @@ async function orgFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function systemFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SYSTEM_API}${path}`, {
+    cache: "no-store",
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   })

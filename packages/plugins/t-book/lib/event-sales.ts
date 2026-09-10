@@ -43,7 +43,7 @@ export type TicketKind = "standard" | "vip" | "table"
 export function classifyTicketKind(name: string): TicketKind {
   const n = name.toLowerCase()
   if (n.includes("asztal") || n.includes("table")) return "table"
-  if (n.includes("vip")) return "vip"
+  if (n.includes("vip") || n.includes("sörimádó") || n.includes("sorimado")) return "vip"
   return "standard"
 }
 
