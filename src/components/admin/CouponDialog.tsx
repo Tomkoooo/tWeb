@@ -29,6 +29,7 @@ export type CouponFormValues = {
   maxUses: number | null
   maxUsesPerUser: number | null
   isActive: boolean
+  freeShipping?: boolean
   productPriceRules?: CouponProductRuleDraft[]
 }
 
@@ -50,6 +51,7 @@ function emptyFormValues(): CouponFormValues {
     maxUses: null,
     maxUsesPerUser: null,
     isActive: true,
+    freeShipping: false,
     productPriceRules: [],
   }
 }
@@ -72,6 +74,7 @@ export function CouponDialog({
   const [open, setOpen] = React.useState(false)
   const [type, setType] = React.useState<CouponType>("percentage")
   const [isActive, setIsActive] = React.useState(true)
+  const [freeShipping, setFreeShipping] = React.useState(false)
   const [productPriceRules, setProductPriceRules] = React.useState<CouponProductRuleDraft[]>([])
   const [error, setError] = React.useState<string | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
@@ -82,6 +85,7 @@ export function CouponDialog({
     const values = initialValues ?? emptyFormValues()
     setType(values.type)
     setIsActive(values.isActive)
+    setFreeShipping(values.freeShipping ?? false)
     setProductPriceRules(values.productPriceRules ?? [])
     setError(null)
   }, [open, initialValues])
@@ -106,6 +110,7 @@ export function CouponDialog({
       maxUses: parseInt(formData.get("maxUses") as string) || null,
       maxUsesPerUser: parseInt(formData.get("maxUsesPerUser") as string) || null,
       isActive,
+      freeShipping: type === "free_shipping" ? true : freeShipping,
       productPriceRules:
         type === "product_price"
           ? productPriceRules.map((rule) => ({
@@ -123,6 +128,7 @@ export function CouponDialog({
       if (!isEdit) {
         setProductPriceRules([])
         setType("percentage")
+        setFreeShipping(false)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hiba a kupon mentésekor")
@@ -200,6 +206,27 @@ export function CouponDialog({
             {type === "product_price" ? (
               <CouponProductRulesEditor rules={productPriceRules} onChange={setProductPriceRules} />
             ) : null}
+
+            {type !== "free_shipping" && (
+              <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 h-12 md:col-span-2">
+                <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Ingyenes szállítás is</p>
+                <button
+                  type="button"
+                  onClick={() => setFreeShipping(!freeShipping)}
+                  className={cn(
+                    "w-12 h-6 rounded-none p-1 transition-colors duration-200 focus:outline-none",
+                    freeShipping ? "bg-primary" : "bg-neutral-800"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-4 h-4 bg-white transition-transform duration-200",
+                      freeShipping ? "translate-x-6" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Min. Kosárérték</Label>

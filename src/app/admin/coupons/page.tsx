@@ -51,12 +51,13 @@ export default async function AdminCouponsPage() {
                     </div>
                   </div>
                   <p className="admin-value font-black uppercase tracking-widest text-xs">
-                    {coupon.type === "percentage" ? `${coupon.value}% KEDVEZMÉNY` : 
-                     coupon.type === "fixed_amount" ? `${coupon.value.toLocaleString("hu-HU")} FT KEDVEZMÉNY` : 
+                    {coupon.type === "percentage" ? `${coupon.value}% KEDVEZMÉNY` :
+                     coupon.type === "fixed_amount" ? `${coupon.value.toLocaleString("hu-HU")} FT KEDVEZMÉNY` :
                      coupon.type === "product_price" ? (
                        `${(coupon.productPriceRules || []).length} TERMÉKÁRAS SZABÁLY`
                      ) :
                      "INGYENES SZÁLLÍTÁS"}
+                    {coupon.type !== "free_shipping" && coupon.freeShipping ? " + INGYENES SZÁLLÍTÁS" : ""}
                   </p>
                   {coupon.type === "product_price" && Array.isArray(coupon.productPriceRules) && coupon.productPriceRules.length > 0 ? (
                     <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">

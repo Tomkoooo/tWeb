@@ -120,12 +120,12 @@ export function applyCouponToCart(
   const base: CouponApplyResult = {
     couponCodes: [coupon.code],
     discount: 0,
-    freeShipping: false,
+    freeShipping: coupon.type === DiscountType.FREE_SHIPPING || coupon.freeShipping === true,
     type: coupon.type,
   };
 
   if (coupon.type === DiscountType.FREE_SHIPPING) {
-    return { ...base, freeShipping: true };
+    return base;
   }
 
   if (coupon.type === DiscountType.PRODUCT_PRICE) {
@@ -213,6 +213,7 @@ export function normalizeCouponPayload(data: {
   maxUses?: number | null;
   maxUsesPerUser?: number | null;
   isActive?: boolean;
+  freeShipping?: boolean;
   productPriceRules?: Array<{
     product: string;
     variantId?: string | null;
@@ -266,6 +267,7 @@ export function normalizeCouponPayload(data: {
     maxUses: data.maxUses ?? undefined,
     maxUsesPerUser: data.maxUsesPerUser ?? undefined,
     isActive: data.isActive !== false,
+    freeShipping: type === DiscountType.FREE_SHIPPING ? true : Boolean(data.freeShipping),
     productPriceRules,
   };
 }

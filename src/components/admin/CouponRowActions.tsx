@@ -17,6 +17,7 @@ type CouponRow = {
   maxUses?: number | null
   maxUsesPerUser?: number | null
   isActive: boolean
+  freeShipping?: boolean
   productPriceRules?: Array<{
     product: string | { toString(): string }
     variantId?: string
@@ -45,6 +46,7 @@ function mapCouponToFormValues(coupon: CouponRow): CouponFormValues {
     maxUses: coupon.maxUses ?? null,
     maxUsesPerUser: coupon.maxUsesPerUser ?? null,
     isActive: coupon.isActive !== false,
+    freeShipping: coupon.freeShipping === true,
     productPriceRules: (coupon.productPriceRules || []).map((rule) => ({
       product: String(rule.product),
       variantId: rule.variantId,

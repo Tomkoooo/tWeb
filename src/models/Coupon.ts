@@ -31,6 +31,8 @@ export interface ICoupon extends Document {
   applicableProducts: mongoose.Types.ObjectId[];
   applicableUsers: mongoose.Types.ObjectId[];
   productPriceRules?: ICouponProductPriceRule[];
+  /** When true, shipping is free regardless of `type` (e.g. combined with PRODUCT_PRICE). */
+  freeShipping: boolean;
   maxUses?: number;
   /** Max redemptions per user (matched by account or billing e-mail). */
   maxUsesPerUser?: number;
@@ -65,6 +67,7 @@ const CouponSchema = new Schema<ICoupon>(
         value: { type: Number, required: true, min: 0 },
       },
     ],
+    freeShipping: { type: Boolean, default: false },
     maxUses: { type: Number },
     maxUsesPerUser: { type: Number },
     usedCount: { type: Number, default: 0 },
