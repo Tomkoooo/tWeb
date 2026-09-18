@@ -155,6 +155,7 @@ export async function updateCoupon(id: string, data: any) {
           maxUses: payload.maxUses,
           maxUsesPerUser: payload.maxUsesPerUser,
           isActive: payload.isActive,
+          freeShipping: payload.freeShipping,
           productPriceRules: payload.productPriceRules ?? [],
         },
       },

@@ -575,33 +575,35 @@ export function useCheckoutWizardModel(
       if (res.ok) {
         const payload = await res.json()
         const totals = calculateTotal()
-        if (isStripe) {
-          if (payload?.checkoutUrl) {
-            if (payload.tempOrderId) {
-              saveCheckoutSnapshotFromCart(String(payload.tempOrderId), items, {
-                total: totals.total,
-                shipping: totals.shippingFee,
-                coupon: formData.coupon?.code,
-              })
-              try {
-                sessionStorage.setItem("stripeTempOrderId", String(payload.tempOrderId))
-              } catch {
-                /* ignore */
-              }
+        if (isStripe && payload?.checkoutUrl) {
+          if (payload.tempOrderId) {
+            saveCheckoutSnapshotFromCart(String(payload.tempOrderId), items, {
+              total: totals.total,
+              shipping: totals.shippingFee,
+              coupon: formData.coupon?.code,
+            })
+            try {
+              sessionStorage.setItem("stripeTempOrderId", String(payload.tempOrderId))
+            } catch {
+              /* ignore */
             }
-            if (payload.reservationExpiresAt) {
-              setStripeRedirectHold({
-                checkoutUrl: payload.checkoutUrl,
-                reservationExpiresAt: String(payload.reservationExpiresAt),
-                serverTime: payload.serverTime != null ? String(payload.serverTime) : null,
-              })
-              return
-            }
-            window.location.href = payload.checkoutUrl
+          }
+          if (payload.reservationExpiresAt) {
+            setStripeRedirectHold({
+              checkoutUrl: payload.checkoutUrl,
+              reservationExpiresAt: String(payload.reservationExpiresAt),
+              serverTime: payload.serverTime != null ? String(payload.serverTime) : null,
+            })
             return
           }
+          window.location.href = payload.checkoutUrl
+          return
+        } else if (isStripe && !payload?.orderId) {
+          // Stripe was selected but no checkout session (nor a free-order fallback) came back.
           toast.error("Nem sikerült átirányítani a Stripe fizetéshez.")
         } else {
+          // Non-Stripe order, or a Stripe-selected order that came back free (total = 0)
+          // and was placed directly without starting a Stripe checkout session.
           if (payload?.orderId) {
             saveCheckoutSnapshotFromCart(String(payload.orderId), items, {
               total: totals.total,

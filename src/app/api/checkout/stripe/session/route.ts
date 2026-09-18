@@ -7,6 +7,7 @@ import TempOrder from "@/models/TempOrder";
 import { FeatureFlagService } from "@/services/feature-flags";
 import { applyCheckoutPriceAllocations, validateAndNormalizeCheckoutInput } from "@/services/checkout-validation";
 import { getAppBaseUrl, getStripeClient } from "@/services/stripe";
+import { OrderService } from "@/services/order";
 import { shopCommerceBlockedResponse } from "@/lib/features/shop";
 import {
   allocateReservationsForStripeTempOrder,
@@ -69,6 +70,19 @@ export async function POST(req: NextRequest) {
           { error: "A kiválasztott fizetési mód nem Stripe." },
           { status: 400 }
         );
+      }
+
+      // Stripe requires a non-zero minimum charge per checkout session. When a
+      // coupon (e.g. free item + free shipping) brings the total to 0, there is
+      // nothing to charge, so skip Stripe entirely and place the order directly.
+      if (validatedOrderData.total <= 0) {
+        await dbConnect();
+        const order = await OrderService.createOrder(validatedOrderData, checkoutUserId ?? undefined);
+        return NextResponse.json({
+          success: true,
+          orderId: String(order._id),
+          guestAccessToken: order.guestAccessToken ?? null,
+        });
       }
 
       await dbConnect();
