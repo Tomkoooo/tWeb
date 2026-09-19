@@ -2,9 +2,14 @@ import type { HomeContent } from "./schema"
 
 /**
  * Ported from the original Krausz Barkácsmester storefront (main@1fae4a56:
- * src/components/sections/{Hero,Story,Features,Contact}.tsx and scripts/seed.ts).
- * Real copy, not placeholder — operators can still edit every field from
- * /admin/cms/home.
+ * src/components/sections/{Hero,Story,Features,Contact}.tsx).
+ *
+ * Contact block uses the real values from the production `krausz_webshop`
+ * DB's `shopcontents` collection (contact_email/phone/address). Hero/story
+ * copy was never actually filled in on production (empty strings there) —
+ * those fields here fall back to scripts/seed.ts's placeholder text and the
+ * component's hardcoded defaults, so operators should review/replace them
+ * from /admin/cms/home rather than treat them as real marketing copy.
  */
 export const homeDefaultContent: HomeContent = {
   meta: {
@@ -141,9 +146,9 @@ export const homeDefaultContent: HomeContent = {
         description:
           "Kérdésed van a szerszámokkal kapcsolatban? Egyedi projekthez keresel megoldást? Szakértő csapatunk készen áll a segítségre.",
         companyName: "Krausz Barkácsmester",
-        address: "1052 Budapest, Barkács utca 1.",
-        phone: "+36 1 234 5678",
-        email: "info@krauszbarkacs.hu",
+        address: "8000 Székesfehérvár szárcsa utca 31.",
+        phone: "+36307890399",
+        email: "krauszbarkacs@gmail.com",
         sendButtonLabel: "Üzenet küldése",
         nameLabel: "Teljes név",
         emailLabel: "E-mail cím",
