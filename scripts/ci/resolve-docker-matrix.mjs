@@ -23,6 +23,7 @@ export const ENGINE_V2_IMAGES = [
   { site_app: "apps/sorfeszt", site_server: "apps/sorfeszt/server.js", image_tag: "sorfeszt" },
   { site_app: "apps/eventstructure", site_server: "apps/eventstructure/server.js", image_tag: "eventstructure" },
   { site_app: "apps/dr-zsanett", site_server: "apps/dr-zsanett/server.js", image_tag: "dr-zsanett" },
+  { site_app: "apps/krausz", site_server: "apps/krausz/server.js", image_tag: "krausz" },
 ]
 
 export const MAIN_IMAGES = [

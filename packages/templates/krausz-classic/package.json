@@ -1,0 +1,22 @@
+{
+  "name": "@wse/template-krausz-classic",
+  "version": "2.0.0",
+  "description": "Webshop Engine template package: krausz-classic.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/templates/krausz-classic"
+  }
+}

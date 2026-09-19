@@ -10,6 +10,7 @@ const syncRegistry: Partial<Record<string, TemplateModule>> = {
 }
 
 const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
+  "krausz-classic": () => import("@wse/template-krausz-classic/template.config").then((m) => m.krauszClassic),
   sorfeszt: () => import("@wse/template-sorfeszt/template.config").then((m) => m.sorfeszt),
   "eventstructure-v2": () => import("@wse/template-eventstructure-v2/template.config").then((m) => m.eventstructureV2),
   "dr-zsanett": () => import("@wse/template-dr-zsanett/template.config").then((m) => m.drZsanett),
