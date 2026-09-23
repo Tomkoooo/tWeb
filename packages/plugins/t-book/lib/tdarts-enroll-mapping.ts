@@ -124,6 +124,18 @@ export type TDartsParticipantContact = {
   country?: string
   /** ISO date (YYYY-MM-DD), only when the schema has a genuine `date`-type field. */
   birthDate?: string
+  /**
+   * True when the schema defines a name field for this participant but they
+   * left it blank, so `name` fell back to the booking buyer/contact — i.e.
+   * the buyer may not be the actual player. False when the event genuinely
+   * collects no separate name (buyer == player by design). Callers should
+   * treat a true value as a data problem, not enroll silently under it —
+   * otherwise a contact who books on behalf of someone else can end up
+   * registered on tDarts as the player.
+   */
+  nameIsFallback: boolean
+  /** Same as `nameIsFallback`, for the email field. */
+  emailIsFallback: boolean
 }
 
 /**
@@ -143,13 +155,17 @@ export function extractParticipantContact(
   const values = fields ?? {}
 
   const emailField = schema.find((f) => f.type === "email") ?? findFieldByKeywords(schema, ["email", "mail"])
-  const email = (emailField ? String(values[emailField.key] ?? "") : "").trim() || fallback.email
+  const rawEmail = (emailField ? String(values[emailField.key] ?? "") : "").trim()
+  const email = rawEmail || fallback.email
+  const emailIsFallback = Boolean(emailField) && !rawEmail
 
   const nameField =
     findFieldByKeywords(schema, NAME_KEYWORDS, ["text"]) ??
     schema.find((f) => f.type === "text" && f.required) ??
     schema.find((f) => f.type === "text")
-  const name = (nameField ? String(values[nameField.key] ?? "") : "").trim() || fallback.name
+  const rawName = (nameField ? String(values[nameField.key] ?? "") : "").trim()
+  const name = rawName || fallback.name
+  const nameIsFallback = Boolean(nameField) && !rawName
 
   const countryField = findFieldByKeywords(schema, COUNTRY_KEYWORDS, ["text", "select"])
   let country: string | undefined
@@ -173,5 +189,5 @@ export function extractParticipantContact(
     }
   }
 
-  return { email, name, country, birthDate }
+  return { email, name, country, birthDate, nameIsFallback, emailIsFallback }
 }

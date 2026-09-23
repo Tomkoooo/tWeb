@@ -98,6 +98,19 @@ export async function syncBookingToTDarts(bookingId: string): Promise<void> {
       name: customer.name,
       email: customer.email,
     })
+    if (contact.nameIsFallback || contact.emailIsFallback) {
+      results.push(
+        entry(
+          { participantKey: key, tournamentCode: tournamentCode! },
+          {
+            status: "failed",
+            error:
+              "Attendee left their name/email blank on this ticket — refusing to enroll them on tDarts as the booking buyer. Fill in the attendee's own details and retry sync.",
+          }
+        )
+      )
+      return
+    }
     const orderId = `${bookingId}:${key}`
     try {
       const enrolled = await enrollTDartsPlayer(creds!, {
@@ -155,6 +168,19 @@ export async function syncBookingToTDarts(bookingId: string): Promise<void> {
         email: customer.email,
       })
     ) as [ReturnType<typeof extractParticipantContact>, ReturnType<typeof extractParticipantContact>]
+    if (c1.nameIsFallback || c1.emailIsFallback || c2.nameIsFallback || c2.emailIsFallback) {
+      const badMember = c1.nameIsFallback || c1.emailIsFallback ? 1 : 2
+      results.push(
+        entry(
+          { participantKey: key, tournamentCode: tournamentCode! },
+          {
+            status: "failed",
+            error: `Team member ${badMember} left their name/email blank on this ticket — refusing to enroll them on tDarts as the booking buyer. Fill in that member's own details and retry sync.`,
+          }
+        )
+      )
+      return
+    }
     const orderId = `${bookingId}:${key}`
     try {
       const enrolled = await enrollTDartsPair(creds!, {

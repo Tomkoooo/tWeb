@@ -21,7 +21,7 @@ describe("extractParticipantContact", () => {
     expect(contact.country).toBe("HU")
   })
 
-  it("falls back to the booking buyer's contact when fields are missing", () => {
+  it("falls back to the booking buyer's contact when fields are missing, and flags it as such", () => {
     const contact = extractParticipantContact(schema, undefined, {
       name: "Buyer Name",
       email: "buyer@example.com",
@@ -29,6 +29,11 @@ describe("extractParticipantContact", () => {
     expect(contact.email).toBe("buyer@example.com")
     expect(contact.name).toBe("Buyer Name")
     expect(contact.country).toBeUndefined()
+    // The schema DOES define name/email fields — the attendee just left them
+    // blank, so this fallback must be caught by callers rather than silently
+    // enrolling the buyer as the player.
+    expect(contact.nameIsFallback).toBe(true)
+    expect(contact.emailIsFallback).toBe(true)
   })
 
   it("omits country rather than guessing when the label isn't a known country", () => {
@@ -54,7 +59,23 @@ describe("extractParticipantContact", () => {
       name: "Solo Buyer",
       country: undefined,
       birthDate: undefined,
+      // No schema field for name/email at all — buyer == player by design,
+      // this is not a data problem.
+      nameIsFallback: false,
+      emailIsFallback: false,
     })
+  })
+
+  it("flags the fallback as a data problem when the schema has a name/email field the attendee left blank", () => {
+    const contact = extractParticipantContact(
+      schema,
+      { [countryField.key]: countryField.choices?.[0]?.value ?? "" },
+      { name: "Buyer Name", email: "buyer@example.com" }
+    )
+    expect(contact.name).toBe("Buyer Name")
+    expect(contact.email).toBe("buyer@example.com")
+    expect(contact.nameIsFallback).toBe(true)
+    expect(contact.emailIsFallback).toBe(true)
   })
 })
 
