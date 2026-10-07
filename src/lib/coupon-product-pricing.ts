@@ -5,11 +5,23 @@ export function couponProductRuleKey(product: string, variantId?: string | null)
   return `${String(product)}:${variantId?.trim() || ""}`;
 }
 
+export type CouponProductPriceConditionInput = {
+  product: string;
+  variantId?: string | null;
+  /** Required quantity of the condition product in the cart. Defaults to 1. */
+  minQuantity?: number;
+};
+
 export type CouponProductPriceRuleInput = {
   product: string;
   variantId?: string | null;
   mode: CouponProductPriceMode | string;
   value: number;
+  /**
+   * The rule only applies when every listed product is also in the cart.
+   * Empty / missing means the rule is unconditional.
+   */
+  requiresProducts?: CouponProductPriceConditionInput[] | null;
 };
 
 export function findProductPriceRule(
@@ -29,6 +41,40 @@ export function findProductPriceRule(
   }
 
   return forProduct.find((rule) => !rule.variantId?.trim()) ?? null;
+}
+
+export function cartQuantityForCondition(
+  lines: CheckoutLineForCoupon[],
+  condition: Pick<CouponProductPriceConditionInput, "product" | "variantId">
+): number {
+  const variantKey = condition.variantId?.trim() || "";
+  return lines.reduce((sum, line) => {
+    if (String(line.product) !== String(condition.product)) return sum;
+    if (variantKey && (line.variantId?.trim() || "") !== variantKey) return sum;
+    return sum + Math.max(0, Number(line.quantity || 0));
+  }, 0);
+}
+
+export function isRuleEligibleForCart(
+  rule: Pick<CouponProductPriceRuleInput, "requiresProducts">,
+  lines: CheckoutLineForCoupon[]
+): boolean {
+  const conditions = Array.isArray(rule.requiresProducts) ? rule.requiresProducts : [];
+  if (conditions.length === 0) return true;
+
+  return conditions.every((condition) => {
+    if (!condition?.product) return true;
+    const needed = Math.max(1, Math.floor(Number(condition.minQuantity || 1)));
+    return cartQuantityForCondition(lines, condition) >= needed;
+  });
+}
+
+export function filterEligibleProductPriceRules(
+  rules: CouponProductPriceRuleInput[] | undefined,
+  lines: CheckoutLineForCoupon[]
+): CouponProductPriceRuleInput[] {
+  if (!Array.isArray(rules)) return [];
+  return rules.filter((rule) => isRuleEligibleForCart(rule, lines));
 }
 
 export function computeCouponUnitGross(
@@ -63,21 +109,47 @@ export type CheckoutLineForCoupon = {
 export function applyProductPriceRulesToLines<T extends CheckoutLineForCoupon>(
   lines: T[],
   rules: CouponProductPriceRuleInput[] | undefined
-): { lines: T[]; adjustedSubtotal: number; matchedLineCount: number } {
-  if (!Array.isArray(rules) || rules.length === 0) {
-    const subtotal = lines.reduce(
-      (sum, line) => sum + Number(line.price || 0) * Number(line.quantity || 0),
-      0
+): {
+  lines: T[];
+  adjustedSubtotal: number;
+  matchedLineCount: number;
+  /** Indexes of `lines` an eligible rule was applied to (order preserved). */
+  appliedLineIndexes: number[];
+  /** Rules whose cart conditions are satisfied. */
+  eligibleRules: CouponProductPriceRuleInput[];
+} {
+  const plainSubtotal = () =>
+    roundHuf(
+      lines.reduce((sum, line) => sum + Number(line.price || 0) * Number(line.quantity || 0), 0)
     );
-    return { lines, adjustedSubtotal: roundHuf(subtotal), matchedLineCount: 0 };
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return {
+      lines,
+      adjustedSubtotal: plainSubtotal(),
+      matchedLineCount: 0,
+      appliedLineIndexes: [],
+      eligibleRules: [],
+    };
   }
 
-  let matchedLineCount = 0;
-  const nextLines = lines.map((line) => {
-    const rule = findProductPriceRule(rules, line.product, line.variantId);
+  const eligibleRules = filterEligibleProductPriceRules(rules, lines);
+  if (eligibleRules.length === 0) {
+    return {
+      lines,
+      adjustedSubtotal: plainSubtotal(),
+      matchedLineCount: 0,
+      appliedLineIndexes: [],
+      eligibleRules,
+    };
+  }
+
+  const appliedLineIndexes: number[] = [];
+  const nextLines = lines.map((line, index) => {
+    const rule = findProductPriceRule(eligibleRules, line.product, line.variantId);
     if (!rule) return line;
 
-    matchedLineCount += 1;
+    appliedLineIndexes.push(index);
     const unitGross = computeCouponUnitGross(
       Number(line.price || 0),
       line.vatPercent ?? 27,
@@ -90,5 +162,11 @@ export function applyProductPriceRulesToLines<T extends CheckoutLineForCoupon>(
     nextLines.reduce((sum, line) => sum + Number(line.price || 0) * Number(line.quantity || 0), 0)
   );
 
-  return { lines: nextLines, adjustedSubtotal, matchedLineCount };
+  return {
+    lines: nextLines,
+    adjustedSubtotal,
+    matchedLineCount: appliedLineIndexes.length,
+    appliedLineIndexes,
+    eligibleRules,
+  };
 }

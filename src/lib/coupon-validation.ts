@@ -56,6 +56,13 @@ function normalizeCouponRules(
     variantId: rule.variantId?.trim() || undefined,
     mode: rule.mode,
     value: Number(rule.value || 0),
+    requiresProducts: (Array.isArray(rule.requiresProducts) ? rule.requiresProducts : [])
+      .filter((condition) => Boolean(condition?.product))
+      .map((condition) => ({
+        product: String(condition.product),
+        variantId: condition.variantId?.trim() || undefined,
+        minQuantity: Math.max(1, Math.floor(Number(condition.minQuantity || 1))),
+      })),
   }));
 }
 
@@ -137,7 +144,13 @@ export function applyCouponToCart(
     const lines = mapCouponCartLines(items);
     const applied = applyProductPriceRulesToLines(lines, rules);
     if (applied.matchedLineCount === 0) {
-      throw new Error("A kupon egyik kosár tételére sem érvényes");
+      // Some rules may be gated behind a companion product that is not in the cart;
+      // say so instead of the generic "no matching line" message.
+      throw new Error(
+        applied.eligibleRules.length < rules.length
+          ? "A kupon feltételei nem teljesülnek: a kedvezményhez szükséges termék nincs a kosárban"
+          : "A kupon egyik kosár tételére sem érvényes"
+      );
     }
 
     return {
@@ -145,21 +158,15 @@ export function applyCouponToCart(
       discount: Math.max(0, roundCurrency(subtotal - applied.adjustedSubtotal)),
       adjustedSubtotal: applied.adjustedSubtotal,
       adjustedLines: applied.lines,
-      lineAdjustments: applied.lines
-        .filter((line) =>
-          rules.some(
-            (rule) =>
-              String(rule.product) === String(line.product) &&
-              (!rule.variantId?.trim() ||
-                rule.variantId.trim() === (line.variantId?.trim() || ""))
-          )
-        )
-        .map((line) => ({
+      lineAdjustments: applied.appliedLineIndexes.map((index) => {
+        const line = applied.lines[index];
+        return {
           productId: String(line.product),
           variantId: line.variantId,
           unitGross: Number(line.price || 0),
           quantity: Number(line.quantity || 0),
-        })),
+        };
+      }),
     };
   }
 
@@ -219,6 +226,11 @@ export function normalizeCouponPayload(data: {
     variantId?: string | null;
     mode: string;
     value: number;
+    requiresProducts?: Array<{
+      product: string;
+      variantId?: string | null;
+      minQuantity?: number | null;
+    }> | null;
   }>;
 }) {
   const type =
@@ -240,6 +252,17 @@ export function normalizeCouponPayload(data: {
               variantId: rule.variantId?.trim() || undefined,
               mode: rule.mode,
               value: Number(rule.value || 0),
+              requiresProducts: dedupeProductPriceRules(
+                (rule.requiresProducts || [])
+                  .filter((condition) =>
+                    mongoose.Types.ObjectId.isValid(condition?.product || "")
+                  )
+                  .map((condition) => ({
+                    product: new mongoose.Types.ObjectId(condition.product),
+                    variantId: condition.variantId?.trim() || undefined,
+                    minQuantity: Math.max(1, Math.floor(Number(condition.minQuantity || 1))),
+                  }))
+              ),
             }))
         )
       : undefined;

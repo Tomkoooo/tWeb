@@ -13,12 +13,25 @@ export enum CouponProductPriceMode {
   FIXED_GROSS = "fixed_gross",
 }
 
+export interface ICouponProductPriceCondition {
+  product: mongoose.Types.ObjectId;
+  /** When omitted, any variant of the product satisfies the condition. */
+  variantId?: string;
+  /** Required quantity in the cart. Defaults to 1. */
+  minQuantity?: number;
+}
+
 export interface ICouponProductPriceRule {
   product: mongoose.Types.ObjectId;
   /** When omitted, the rule applies to every variant of the product. */
   variantId?: string;
   mode: CouponProductPriceMode;
   value: number;
+  /**
+   * The rule is only applied when every listed product is also in the cart.
+   * Lets a coupon say "product B is free when product A is bought".
+   */
+  requiresProducts?: ICouponProductPriceCondition[];
 }
 
 export interface ICoupon extends Document {
@@ -65,6 +78,13 @@ const CouponSchema = new Schema<ICoupon>(
           required: true,
         },
         value: { type: Number, required: true, min: 0 },
+        requiresProducts: [
+          {
+            product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+            variantId: { type: String },
+            minQuantity: { type: Number, default: 1, min: 1 },
+          },
+        ],
       },
     ],
     freeShipping: { type: Boolean, default: false },

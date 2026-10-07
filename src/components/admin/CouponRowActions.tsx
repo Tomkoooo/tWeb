@@ -23,6 +23,11 @@ type CouponRow = {
     variantId?: string
     mode: "percentage" | "fixed_net" | "fixed_gross"
     value: number
+    requiresProducts?: Array<{
+      product: string | { toString(): string }
+      variantId?: string
+      minQuantity?: number
+    }>
   }>
 }
 
@@ -52,6 +57,11 @@ function mapCouponToFormValues(coupon: CouponRow): CouponFormValues {
       variantId: rule.variantId,
       mode: rule.mode,
       value: Number(rule.value || 0),
+      requiresProducts: (rule.requiresProducts || []).map((condition) => ({
+        product: String(condition.product),
+        variantId: condition.variantId,
+        minQuantity: Number(condition.minQuantity || 1),
+      })),
     })),
   }
 }

@@ -76,9 +76,28 @@ Ez a fejezet akkor releváns, ha a telepítésedben a **webshop be van kapcsolva
 
 **Belépés:** [/admin/coupons](/admin/coupons)
 
-- Kedvezménykód létrehozása (százalék vagy fix összeg)
+- Kedvezménykód létrehozása (százalék, fix összeg, ingyenes szállítás vagy termékár)
 - Érvényességi idő, felhasználási limit
 - Aktiválás / deaktiválás
+
+### Termékáras kupon (kombinált akciók)
+
+A **Termékár** típusnál szabályonként adod meg, mennyibe kerüljön egy termék a kupon
+mellett: `%` kedvezmény, fix nettó vagy fix bruttó ár (a `0` bruttó ár = ingyenes termék).
+
+Minden szabályhoz **feltétel termékeket** is megadhatsz: a szabály csak akkor él, ha a
+megadott termék(ek) is ugyanabban a kosárban vannak (megadható minimum darabszám is).
+
+Példa – „A termék 20 000 Ft, és akkor a B termék ingyenes":
+
+| Szabály | Termék | Mód | Érték | Feltétel |
+| --- | --- | --- | --- | --- |
+| 1 | A termék | Fix bruttó | 20000 | – |
+| 2 | B termék | Fix bruttó | 0 | A termék (min. 1 db) |
+
+Ha a kosárban csak a B termék van, a 2. szabály nem él, és a kupon elutasításra kerül
+(„A kupon feltételei nem teljesülnek…"). Ugyanez használható „vedd meg 3 db-ot, 50%
+kedvezmény" akcióra is: a szabály feltétele saját maga, min. 3 db darabszámmal.
 
 ## Emailek
 

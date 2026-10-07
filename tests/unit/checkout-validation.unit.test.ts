@@ -572,6 +572,103 @@ describe("checkout-validation unit", () => {
     expect(result.total).toBe(result.subtotal + result.shippingFee + result.paymentFee);
   });
 
+  it("makes a product free only when the required companion product is in the same cart", async () => {
+    const PRIMARY = "507f1f77bcf86cd799439011";
+    const GIFT = "507f1f77bcf86cd799439014";
+    const productById: Record<string, Record<string, unknown>> = {
+      [PRIMARY]: {
+        _id: PRIMARY,
+        name: "Fo termek",
+        isActive: true,
+        isVisible: true,
+        netPrice: 10000,
+        grossPrice: 12700,
+        discount: 0,
+        vatPercent: 27,
+        stock: 10,
+        variants: [],
+      },
+      [GIFT]: {
+        _id: GIFT,
+        name: "Ajandek",
+        isActive: true,
+        isVisible: true,
+        netPrice: 2000,
+        grossPrice: 2540,
+        discount: 0,
+        vatPercent: 27,
+        stock: 10,
+        variants: [],
+      },
+    };
+    productFindByIdMock.mockImplementation((id: string) => ({
+      lean: vi.fn().mockResolvedValue(productById[String(id)] ?? null),
+    }));
+
+    const couponDoc = {
+      code: "COMBO",
+      isActive: true,
+      startDate: new Date(Date.now() - 1000),
+      endDate: new Date(Date.now() + 1000),
+      type: "product_price",
+      value: 0,
+      usedCount: 0,
+      productPriceRules: [
+        {
+          product: { toString: () => PRIMARY },
+          mode: "fixed_gross",
+          value: 10000,
+        },
+        {
+          product: { toString: () => GIFT },
+          mode: "fixed_gross",
+          value: 0,
+          requiresProducts: [{ product: { toString: () => PRIMARY }, minQuantity: 1 }],
+        },
+      ],
+    };
+
+    const address = {
+      name: "Teszt",
+      zip: "1111",
+      city: "Bp",
+      street: "Fo 1",
+      email: "a@a.com",
+      phone: "111",
+    };
+    const basePayload = {
+      billingInfo: { type: "personal" as const, ...address },
+      shippingAddress: address,
+      shippingMethod: "507f1f77bcf86cd799439012",
+      paymentMethod: "507f1f77bcf86cd799439013",
+      couponCodes: ["COMBO"],
+    };
+
+    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+
+    couponFindOneMock.mockResolvedValueOnce(couponDoc);
+    const both = await validateAndNormalizeCheckoutInput({
+      ...basePayload,
+      items: [
+        { product: PRIMARY, quantity: 1 },
+        { product: GIFT, quantity: 1 },
+      ],
+    });
+    expect(both.items.map((item) => item.price)).toEqual([10000, 0]);
+    expect(both.subtotal).toBe(10000);
+    expect(both.discount).toBe(5240);
+
+    // Without the companion product the gift rule is gated off, so nothing is
+    // discounted and the coupon is rejected rather than silently zeroing the gift.
+    couponFindOneMock.mockResolvedValueOnce(couponDoc);
+    await expect(
+      validateAndNormalizeCheckoutInput({
+        ...basePayload,
+        items: [{ product: GIFT, quantity: 1 }],
+      })
+    ).rejects.toThrow(/feltételei nem teljesülnek/);
+  });
+
   it("applies percentage coupon to line item prices for stripe and invoice parity", async () => {
     productFindByIdMock.mockReturnValue({
       lean: vi.fn().mockResolvedValue({

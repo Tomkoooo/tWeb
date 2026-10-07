@@ -118,6 +118,11 @@ export function CouponDialog({
               variantId: rule.variantId || null,
               mode: rule.mode,
               value: rule.value,
+              requiresProducts: (rule.requiresProducts || []).map((condition) => ({
+                product: condition.product,
+                variantId: condition.variantId || null,
+                minQuantity: condition.minQuantity ?? 1,
+              })),
             }))
           : undefined,
     }

@@ -13,12 +13,21 @@ import { couponProductRuleKey } from "@/lib/coupon-product-pricing"
 
 type MiniProduct = { id: string; name: string; slug: string; image: string }
 
+export type CouponProductRuleConditionDraft = {
+  product: string
+  productName?: string
+  variantId?: string
+  minQuantity?: number
+}
+
 export type CouponProductRuleDraft = {
   product: string
   productName?: string
   variantId?: string
   mode: "percentage" | "fixed_net" | "fixed_gross"
   value: number
+  /** The rule only applies when all of these products are in the same cart. */
+  requiresProducts?: CouponProductRuleConditionDraft[]
 }
 
 const MODE_LABELS: Record<CouponProductRuleDraft["mode"], string> = {
@@ -31,12 +40,12 @@ function ruleKey(rule: Pick<CouponProductRuleDraft, "product" | "variantId">): s
   return couponProductRuleKey(rule.product, rule.variantId)
 }
 
-export function CouponProductRulesEditor({
-  rules,
-  onChange,
+function ProductSearchPicker({
+  placeholder,
+  onPick,
 }: {
-  rules: CouponProductRuleDraft[]
-  onChange: (rules: CouponProductRuleDraft[]) => void
+  placeholder: string
+  onPick: (product: MiniProduct) => void
 }) {
   const [q, setQ] = React.useState("")
   const [results, setResults] = React.useState<MiniProduct[]>([])
@@ -72,6 +81,68 @@ export function CouponProductRulesEditor({
     return () => clearTimeout(t)
   }, [q])
 
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+        <Input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value)
+            setDropdownOpen(true)
+          }}
+          onFocus={() => setDropdownOpen(true)}
+          placeholder={placeholder}
+          className="bg-black border-white/5 h-12 pl-10 text-white rounded-none"
+        />
+      </div>
+      {dropdownOpen && q.trim().length >= 2 ? (
+        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-white/10 bg-black shadow-xl">
+          {searching ? (
+            <div className="flex items-center justify-center gap-2 p-4 text-neutral-500">
+              <LoadingSpinner className="h-4 w-4" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Keresés…</span>
+            </div>
+          ) : results.length === 0 ? (
+            <p className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              Nincs találat
+            </p>
+          ) : (
+            results.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                onClick={() => {
+                  onPick(product)
+                  setQ("")
+                  setResults([])
+                  setDropdownOpen(false)
+                }}
+                className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-3 text-left hover:bg-white/5"
+              >
+                <div className="min-w-0">
+                  <span className="block text-sm font-bold text-white">{product.name}</span>
+                  <span className="block text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+                    {product.slug}
+                  </span>
+                </div>
+                <Plus className="ml-auto h-4 w-4 shrink-0 text-primary" />
+              </button>
+            ))
+          )}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export function CouponProductRulesEditor({
+  rules,
+  onChange,
+}: {
+  rules: CouponProductRuleDraft[]
+  onChange: (rules: CouponProductRuleDraft[]) => void
+}) {
   const addProductRule = (product: MiniProduct, variantId?: string) => {
     const draft: CouponProductRuleDraft = {
       product: product.id,
@@ -83,9 +154,6 @@ export function CouponProductRulesEditor({
     const key = ruleKey(draft)
     if (rules.some((rule) => ruleKey(rule) === key)) return
     onChange([...rules, draft])
-    setQ("")
-    setResults([])
-    setDropdownOpen(false)
   }
 
   const addProduct = (product: MiniProduct) => {
@@ -118,55 +186,14 @@ export function CouponProductRulesEditor({
       </Label>
       <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600">
         Egy kupon alatt több termék és variáns kombináció is lehet (pl. A termék minden variánsa + B
-        termék egy variánsa).
+        termék egy variánsa). Szabályonként feltételt is adhatsz: a szabály csak akkor él, ha a
+        megadott termék(ek) is a kosárban vannak (pl. „B termék ingyenes, ha A terméket is megveszik”).
       </p>
 
-      <div ref={wrapRef} className="relative">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-          <Input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value)
-              setDropdownOpen(true)
-            }}
-            onFocus={() => setDropdownOpen(true)}
-            placeholder="Termék keresése név vagy slug alapján (min. 2 karakter)"
-            className="bg-black border-white/5 h-12 pl-10 text-white rounded-none"
-          />
-        </div>
-        {dropdownOpen && q.trim().length >= 2 ? (
-          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-white/10 bg-black shadow-xl">
-            {searching ? (
-              <div className="flex items-center justify-center gap-2 p-4 text-neutral-500">
-                <LoadingSpinner className="h-4 w-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Keresés…</span>
-              </div>
-            ) : results.length === 0 ? (
-              <p className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                Nincs találat
-              </p>
-            ) : (
-              results.map((product) => (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => addProduct(product)}
-                  className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-3 text-left hover:bg-white/5"
-                >
-                  <div className="min-w-0">
-                    <span className="block text-sm font-bold text-white">{product.name}</span>
-                    <span className="block text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-                      {product.slug}
-                    </span>
-                  </div>
-                  <Plus className="ml-auto h-4 w-4 shrink-0 text-primary" />
-                </button>
-              ))
-            )}
-          </div>
-        ) : null}
-      </div>
+      <ProductSearchPicker
+        placeholder="Termék keresése név vagy slug alapján (min. 2 karakter)"
+        onPick={addProduct}
+      />
 
       {rules.length === 0 ? (
         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
@@ -335,6 +362,108 @@ function CouponProductRuleRow({
           />
         </div>
       </div>
+
+      <CouponRuleConditionsEditor
+        conditions={rule.requiresProducts ?? []}
+        onChange={(requiresProducts) => onChange({ requiresProducts })}
+      />
+    </div>
+  )
+}
+
+function CouponRuleConditionsEditor({
+  conditions,
+  onChange,
+}: {
+  conditions: CouponProductRuleConditionDraft[]
+  onChange: (conditions: CouponProductRuleConditionDraft[]) => void
+}) {
+  const [adding, setAdding] = React.useState(false)
+
+  const addCondition = (product: MiniProduct) => {
+    if (conditions.some((condition) => condition.product === product.id)) {
+      setAdding(false)
+      return
+    }
+    onChange([
+      ...conditions,
+      { product: product.id, productName: product.name, minQuantity: 1 },
+    ])
+    setAdding(false)
+  }
+
+  const updateCondition = (index: number, patch: Partial<CouponProductRuleConditionDraft>) => {
+    onChange(conditions.map((condition, i) => (i === index ? { ...condition, ...patch } : condition)))
+  }
+
+  return (
+    <div className="space-y-2 border-t border-white/10 pt-3">
+      <Label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
+        Feltétel: csak akkor él, ha a kosárban van
+      </Label>
+
+      {conditions.length === 0 ? (
+        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600">
+          Nincs feltétel – a szabály mindig érvényes.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {conditions.map((condition, index) => (
+            <div
+              key={`${condition.product}-${index}`}
+              className="flex items-center gap-2 border border-white/10 bg-black/40 px-3 py-2"
+            >
+              <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
+                {condition.productName || condition.product}
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+                  min. db
+                </span>
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={condition.minQuantity ?? 1}
+                  onChange={(e) =>
+                    updateCondition(index, {
+                      minQuantity: Math.max(1, parseInt(e.target.value, 10) || 1),
+                    })
+                  }
+                  className="h-8 w-16 bg-black border-white/5 text-white rounded-none"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange(conditions.filter((_, i) => i !== index))}
+                className="h-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <ProductSearchPicker
+          placeholder="Feltétel termék keresése (min. 2 karakter)"
+          onPick={addCondition}
+        />
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAdding(true)}
+          className="h-8 px-0 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-transparent hover:text-primary/80"
+        >
+          <Plus className="mr-1 h-3 w-3" />
+          Feltétel termék hozzáadása
+        </Button>
+      )}
     </div>
   )
 }

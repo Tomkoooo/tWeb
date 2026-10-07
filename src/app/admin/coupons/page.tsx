@@ -8,6 +8,14 @@ import { deleteCoupon, createCoupon } from "@/actions/admin-checkout"
 import { CouponDialog } from "@/components/admin/CouponDialog"
 import { CouponRowActions } from "@/components/admin/CouponRowActions"
 
+type CouponRuleDoc = {
+  product: unknown
+  variantId?: string
+  mode: "percentage" | "fixed_net" | "fixed_gross"
+  value: number
+  requiresProducts?: Array<{ product: unknown; variantId?: string; minQuantity?: number }>
+}
+
 export default async function AdminCouponsPage() {
   await dbConnect()
   const coupons = await Coupon.find({}).sort({ createdAt: -1 }).lean()
@@ -61,11 +69,14 @@ export default async function AdminCouponsPage() {
                   </p>
                   {coupon.type === "product_price" && Array.isArray(coupon.productPriceRules) && coupon.productPriceRules.length > 0 ? (
                     <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
-                      {coupon.productPriceRules.map((rule: { mode: string; value: number; variantId?: string }, i: number) => (
+                      {coupon.productPriceRules.map((rule: { mode: string; value: number; variantId?: string; requiresProducts?: unknown[] }, i: number) => (
                         <span key={i}>
                           {i > 0 ? " · " : ""}
                           {rule.mode === "percentage" ? `${rule.value}%` : rule.mode === "fixed_net" ? `${rule.value} FT nettó` : `${rule.value} FT bruttó`}
                           {rule.variantId ? " (1 variáns)" : " (összes variáns)"}
+                          {Array.isArray(rule.requiresProducts) && rule.requiresProducts.length > 0
+                            ? ` [${rule.requiresProducts.length} feltétel]`
+                            : ""}
                         </span>
                       ))}
                     </p>
@@ -106,6 +117,19 @@ export default async function AdminCouponsPage() {
                     coupon={{
                       ...coupon,
                       _id: coupon._id.toString(),
+                      productPriceRules: (
+                        (coupon.productPriceRules || []) as CouponRuleDoc[]
+                      ).map((rule) => ({
+                        product: String(rule.product),
+                        variantId: rule.variantId,
+                        mode: rule.mode,
+                        value: Number(rule.value || 0),
+                        requiresProducts: (rule.requiresProducts || []).map((condition) => ({
+                          product: String(condition.product),
+                          variantId: condition.variantId,
+                          minQuantity: Number(condition.minQuantity || 1),
+                        })),
+                      })),
                     }}
                   />
                 </div>
