@@ -118,6 +118,15 @@ export function playerFieldSchema(event: HeadcountEventLike): TBookAttendeeField
   return event.teamMemberFieldSchema ?? []
 }
 
+/**
+ * Clamp a number-input's raw value into [1, max], falling back to 1 for
+ * non-finite input (empty, NaN, or out-of-range values from paste/autofill).
+ */
+export function clampGuestInput(value: number, max: number): number {
+  if (!Number.isFinite(value)) return 1
+  return Math.max(1, Math.min(max, Math.floor(value)))
+}
+
 export function needsPlayerMemberForms(event: HeadcountEventLike): boolean {
   if (usesFixedPlayerRoster(event)) {
     return playerFieldSchema(event).length > 0

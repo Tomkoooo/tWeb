@@ -70,3 +70,6 @@ next-env.d.ts
 # Standalone site exports (large media + generated Next apps)
 /exports/
 scripts/seed/backups/
+
+# Ad-hoc customer data exports dropped at repo root (never commit customer PII)
+/product-buyers-*.csv

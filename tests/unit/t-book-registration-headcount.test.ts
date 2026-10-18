@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   accommodationGuestCount,
+  clampGuestInput,
   countRosterPlayers,
   initialPlayerMemberCount,
   needsPlayerMemberForms,
@@ -123,6 +124,18 @@ describe("registration-headcount", () => {
       playersPerTicket: null,
     })
     expect(issues).toHaveLength(0)
+  })
+
+  it("clamps guest-count input so it can never produce an invalid array length", () => {
+    // Regression: the number-of-entries input had a visual min/max but no
+    // clamp on change, so autofill/paste of an out-of-range value flowed
+    // straight into Array.from({ length }) and crashed with RangeError.
+    expect(clampGuestInput(5, 50)).toBe(5)
+    expect(clampGuestInput(999999999999, 50)).toBe(50)
+    expect(clampGuestInput(-3, 50)).toBe(1)
+    expect(clampGuestInput(0, 50)).toBe(1)
+    expect(clampGuestInput(Number.NaN, 50)).toBe(1)
+    expect(clampGuestInput(2.7, 50)).toBe(2)
   })
 })
 

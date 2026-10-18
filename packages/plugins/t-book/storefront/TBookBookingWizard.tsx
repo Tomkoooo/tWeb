@@ -36,6 +36,7 @@ import {
 } from "../lib/stay-recommendation"
 import {
   accommodationGuestCount,
+  clampGuestInput,
   countRosterPlayers,
   needsPlayerMemberForms,
   playerFieldSchema,
@@ -820,7 +821,7 @@ export function TBookBookingWizard({
               max={50}
               className={INPUT}
               value={guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
+              onChange={(e) => setGuests(clampGuestInput(Number(e.target.value), 50))}
             />
             <p className="text-xs text-muted-foreground">
               {playersPerTicket > 1
@@ -1039,7 +1040,7 @@ export function TBookBookingWizard({
                   className={INPUT}
                   value={accommodationGuestOverride}
                   onChange={(e) => {
-                    setAccommodationGuestOverride(Number(e.target.value) || 1)
+                    setAccommodationGuestOverride(clampGuestInput(Number(e.target.value), maxAccommodationGuests))
                     setQuote(null)
                   }}
                 />
@@ -1068,7 +1069,7 @@ export function TBookBookingWizard({
                   className={INPUT}
                   value={nights}
                   onChange={(e) => {
-                    setNights(Number(e.target.value))
+                    setNights(clampGuestInput(Number(e.target.value), 60))
                     setQuote(null)
                   }}
                 />

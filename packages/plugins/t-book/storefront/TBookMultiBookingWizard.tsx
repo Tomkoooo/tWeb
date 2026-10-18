@@ -38,6 +38,7 @@ import {
 } from "../lib/stay-recommendation"
 import {
   accommodationGuestCount,
+  clampGuestInput,
   countRosterPlayers,
   needsPlayerMemberForms,
   playerFieldSchema,
@@ -652,7 +653,7 @@ function HotelLodgingPanel({
                   className={INPUT}
                   value={lodging.accommodationGuestOverride}
                   onChange={(e) => {
-                    const next = Number(e.target.value) || 1
+                    const next = clampGuestInput(Number(e.target.value), maxAccommodationGuests)
                     onLodgingChange(patchLodging(lodging, { accommodationGuestOverride: next }))
                     onQuoteReset()
                   }}
@@ -683,7 +684,7 @@ function HotelLodgingPanel({
                   value={lodging.nights}
                   onChange={(e) => {
                     onLodgingChange(
-                      patchLodging(lodging, { nights: Number(e.target.value) })
+                      patchLodging(lodging, { nights: clampGuestInput(Number(e.target.value), 60) })
                     )
                     onQuoteReset()
                   }}
@@ -1643,7 +1644,7 @@ export function TBookMultiBookingWizard({
                     className={INPUT}
                     value={guestCount}
                     onChange={(e) => {
-                      const next = Number(e.target.value) || 1
+                      const next = clampGuestInput(Number(e.target.value), 50)
                       setGuestsByEvent((prev) => ({ ...prev, [event.id]: next }))
                       resetQuote()
                     }}
