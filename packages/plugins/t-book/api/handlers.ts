@@ -13,6 +13,7 @@ import { parseBookingFilters } from "../lib/booking-query"
 import { buildBookingCsv, buildBookingExcelBuffer } from "../lib/booking-export"
 import { buildTBookOpenApiSpec } from "../lib/openapi"
 import { geocodeAddress } from "../lib/geocode"
+import { EMPTY_EVENT_SALES } from "../lib/event-sales-stats"
 import type { ITBookEventGroup } from "../models/TBookEventGroup"
 import type { ITBookEvent } from "../models/TBookEvent"
 import type { ITBookHotel } from "../models/TBookHotel"
@@ -491,9 +492,13 @@ async function handleTBookAdminApi(
     const orgId = orgIdFromAuth(authResult)
     const groupId = url.searchParams.get("groupId") || undefined
     const events = await TBookEventService.listEvents({ groupId, organizationId: orgId })
+    const sales = await TBookEventService.getEventSalesStats(events.map((e) => String(e._id)))
     return json({
       ok: true,
-      events: events.map(serializeEvent),
+      events: events.map((e) => ({
+        ...serializeEvent(e),
+        sales: sales.get(String(e._id)) ?? EMPTY_EVENT_SALES,
+      })),
     })
   }
 

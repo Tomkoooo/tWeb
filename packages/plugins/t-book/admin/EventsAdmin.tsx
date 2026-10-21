@@ -21,6 +21,7 @@ import {
   TBookPrimaryButton,
   TBookSelect,
   TBookStatusBadge,
+  TBookEventSalesSummary,
 } from "./t-book-admin-ui"
 import { EventHotelsAdmin } from "./EventHotelsAdmin"
 import { EventVouchersAdmin } from "./EventVouchersAdmin"
@@ -160,6 +161,11 @@ export function EventsAdmin({ path }: { path: string[] }) {
                   {event.ticketFeeMode === "per_person" ? " / fő" : " / foglalás"}
                   {event.capacity != null ? ` · kapacitás: ${event.capacity} fő` : ""}
                 </p>
+                <TBookEventSalesSummary
+                  sales={event.sales}
+                  capacity={event.capacity}
+                  unit={event.registrationUnit ?? "person"}
+                />
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <div className="flex gap-1 mr-1">

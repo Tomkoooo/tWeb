@@ -31,6 +31,11 @@ import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
 import { resolveTDartsEmbedConfig } from "../lib/tdarts-client"
+import {
+  SOLD_BOOKING_STATUSES,
+  summarizeEventSales,
+  type EventSalesStats,
+} from "../lib/event-sales-stats"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -247,6 +252,35 @@ export class TBookEventService {
     const query: Record<string, unknown> = { ...orgFilter(filter?.organizationId) }
     if (filter?.groupId) query.groupId = oid(filter.groupId)
     return TBookEvent.find(query).sort({ sortOrder: 1, startDate: 1 }).lean<ITBookEvent[]>()
+  }
+
+  /** Tickets sold, bookings and unique buyers per event (paid + confirmed bookings). */
+  static async getEventSalesStats(eventIds: string[]): Promise<Map<string, EventSalesStats>> {
+    const ids = eventIds.filter((id) => mongoose.Types.ObjectId.isValid(id)).map(oid)
+    if (ids.length === 0) return new Map()
+    await dbConnect()
+    const rows = await TBookBooking.aggregate<{
+      _id: { eventId: mongoose.Types.ObjectId; email: string | null }
+      tickets: number
+      bookings: number
+    }>([
+      { $match: { eventId: { $in: ids }, status: { $in: [...SOLD_BOOKING_STATUSES] } } },
+      {
+        $group: {
+          _id: { eventId: "$eventId", email: "$customer.email" },
+          tickets: { $sum: "$guests" },
+          bookings: { $sum: 1 },
+        },
+      },
+    ])
+    return summarizeEventSales(
+      rows.map((r) => ({
+        eventId: String(r._id.eventId),
+        email: r._id.email,
+        tickets: r.tickets,
+        bookings: r.bookings,
+      }))
+    )
   }
 
   static async getEvent(id: string, organizationId?: string): Promise<ITBookEvent | null> {

@@ -21,6 +21,7 @@ import {
   TBookPageHeader,
   TBookPrimaryButton,
   TBookStatusBadge,
+  TBookEventSalesSummary,
 } from "./t-book-admin-ui"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 
@@ -139,6 +140,11 @@ export function GroupEventsAdmin({ groupId }: { groupId: string }) {
                     ? ` · ${event.attendeeFieldSchema.length} foglalási mező`
                     : ""}
                 </p>
+                <TBookEventSalesSummary
+                  sales={event.sales}
+                  capacity={event.capacity}
+                  unit={event.registrationUnit ?? "person"}
+                />
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <div className="flex gap-1 mr-1">

@@ -95,6 +95,8 @@ export type AdminEvent = {
   publicEntryList: boolean
   status: "draft" | "active" | "archived"
   sortOrder: number
+  /** Only present on the events list endpoint (paid + confirmed bookings). */
+  sales?: { ticketsSold: number; bookingCount: number; uniqueBuyers: number }
 }
 
 export type AdminHotel = {

@@ -247,3 +247,30 @@ export function TBookStatusBadge({
     </span>
   )
 }
+
+/** Sold tickets / unique buyers / bookings summary for an event list row. */
+export function TBookEventSalesSummary({
+  sales,
+  capacity,
+  unit = "person",
+}: {
+  sales?: { ticketsSold: number; bookingCount: number; uniqueBuyers: number } | null
+  capacity?: number | null
+  unit?: "person" | "team"
+}) {
+  const ticketsSold = sales?.ticketsSold ?? 0
+  const uniqueBuyers = sales?.uniqueBuyers ?? 0
+  const bookingCount = sales?.bookingCount ?? 0
+  const ticketLabel = unit === "team" ? "Eladott nevezés" : "Eladott jegy"
+  return (
+    <p className="text-xs text-muted-foreground mt-1">
+      {ticketLabel}:{" "}
+      <span className="text-foreground font-semibold">
+        {ticketsSold}
+        {capacity != null ? ` / ${capacity}` : ""}
+      </span>
+      {" · "}Egyedi vásárló: <span className="text-foreground font-semibold">{uniqueBuyers}</span>
+      {" · "}Foglalás: <span className="text-foreground font-semibold">{bookingCount}</span>
+    </p>
+  )
+}
