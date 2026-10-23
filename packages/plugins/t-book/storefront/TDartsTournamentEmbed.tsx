@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Calendar, LayoutGrid, List, MapPin, Radio, Trophy, Users } from "lucide-react"
 import { cn } from "@wse/core/lib/utils"
 import {
@@ -11,6 +11,8 @@ import {
   tdartsParticipationModeInfo,
   tdartsStatusInfo,
 } from "../lib/tdarts-format-labels"
+import { resolveBracketPanels, type TDartsBracketDto } from "../lib/tdarts-bracket-layout"
+import { TDartsBracketPanels, type TDartsBracketCopy } from "./TDartsBracketDiagram"
 
 /**
  * Read-only live tournament view, sourced directly from tDarts' `@tdarts/api`
@@ -133,6 +135,53 @@ const DEFAULT_COPY_EN: TDartsEmbedCopy = {
   legsLabel: "LEGS",
 }
 
+function bracketCopyFor(locale: string | undefined, statusLabels: Record<string, string>): TDartsBracketCopy {
+  if (locale?.startsWith("hu")) {
+    return {
+      rounds: {
+        final: "Döntő",
+        semiFinal: "Elődöntő",
+        quarterFinal: "Negyeddöntő",
+        roundOf: (n) => `Legjobb ${n}`,
+        roundN: (n) => `${n}. forduló`,
+      },
+      bronzeMatch: "Bronzmeccs",
+      tbd: "Később",
+      bye: "Erőnyerő",
+      board: (n) => `Tábla ${n}`,
+      walkover: "w/o",
+      pathHint: "Kattints egy játékos nevére az útvonala kiemeléséhez.",
+      pathActive: (name) => `Útvonal: ${name}`,
+      clearPath: "Kiemelés törlése",
+      zoomIn: "Nagyítás",
+      zoomOut: "Kicsinyítés",
+      zoomReset: "Eredeti méret",
+      statusLabels,
+    }
+  }
+  return {
+    rounds: {
+      final: "Final",
+      semiFinal: "Semi-finals",
+      quarterFinal: "Quarter-finals",
+      roundOf: (n) => `Last ${n}`,
+      roundN: (n) => `Round ${n}`,
+    },
+    bronzeMatch: "Bronze match",
+    tbd: "TBD",
+    bye: "Bye",
+    board: (n) => `Board ${n}`,
+    walkover: "w/o",
+    pathHint: "Tap a player's name to highlight their path.",
+    pathActive: (name) => `Path: ${name}`,
+    clearPath: "Clear highlight",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    zoomReset: "Reset zoom",
+    statusLabels,
+  }
+}
+
 function defaultCopyFor(locale?: string): TDartsEmbedCopy {
   return locale?.startsWith("hu") ? DEFAULT_COPY_HU : DEFAULT_COPY_EN
 }
@@ -173,17 +222,6 @@ type MatchItem = {
 
 type LiveMatches = { live: MatchItem[]; upcoming: MatchItem[]; recent: MatchItem[] }
 
-type BracketMatch = {
-  player1Name?: string | null
-  player2Name?: string | null
-  status?: "pending" | "ongoing" | "finished"
-  player1LegsWon?: number
-  player2LegsWon?: number
-}
-
-type BracketPanel = { bracketId: string; label: string; rounds: { round: number; matches: BracketMatch[] }[] }
-type Bracket = { rounds: { round: number; bracketId?: string; matches: BracketMatch[] }[]; brackets?: BracketPanel[] }
-
 type GroupPlayer = {
   id: string
   displayName: string
@@ -202,10 +240,6 @@ type PlayerRow = { id: string; displayName: string; avatarUrl: string | null }
 type Players = { players: PlayerRow[]; waitingListCount: number }
 
 type Tab = "overview" | "live" | "groups" | "bracket" | "players"
-
-function isPlaceholderName(name: string | null | undefined): boolean {
-  return name === "BYE" || name === "TBD" || !name
-}
 
 function normalizeFormat(format: string | null | undefined): string {
   return String(format ?? "").trim().toLowerCase().replace(/[-\s]+/g, "_")
@@ -250,7 +284,7 @@ export function TDartsTournamentEmbed({
   const [overview, setOverview] = useState<Overview | null>(null)
   const [live, setLive] = useState<LiveMatches | null>(null)
   const [groups, setGroups] = useState<Groups | null>(null)
-  const [bracket, setBracket] = useState<Bracket | null>(null)
+  const [bracket, setBracket] = useState<TDartsBracketDto | null>(null)
   const [players, setPlayers] = useState<Players | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [revoked, setRevoked] = useState<string | null>(null)
@@ -258,6 +292,11 @@ export function TDartsTournamentEmbed({
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([0]))
 
   const format = normalizeFormat(overview?.format)
+  const bracketPanels = useMemo(
+    () => (bracket ? resolveBracketPanels(bracket, c.tabBracket) : []),
+    [bracket, c.tabBracket]
+  )
+  const bracketCopy = bracketCopyFor(locale, c.statusLabels)
   const showGroupsTab = format === "group" || format === "group_knockout"
   const showBracketTab = !overview || format === "knockout" || format === "group_knockout"
 
@@ -280,7 +319,7 @@ export function TDartsTournamentEmbed({
   }, [embedFetch, tournamentCode, c.loadError])
 
   const loadBracket = useCallback(() => {
-    embedFetch<Bracket>(`/embed/tournaments/${tournamentCode}/bracket`)
+    embedFetch<TDartsBracketDto>(`/embed/tournaments/${tournamentCode}/bracket`)
       .then(setBracket)
       .catch(() => setError(c.loadError))
   }, [embedFetch, tournamentCode, c.loadError])
@@ -580,61 +619,18 @@ export function TDartsTournamentEmbed({
         ) : null}
 
         {tab === "bracket" ? (
-          <div className="space-y-8 overflow-x-auto">
+          <div className="space-y-4">
             {!bracket ? <p className="text-sm text-muted-foreground">{c.loading}</p> : null}
-            {bracket && bracket.rounds.length === 0 && (!bracket.brackets || bracket.brackets.length === 0) ? (
+            {bracket && bracketPanels.length === 0 ? (
               <p className="text-sm text-muted-foreground">{c.bracketEmpty}</p>
             ) : null}
-            {(bracket?.brackets && bracket.brackets.length > 0
-              ? bracket.brackets
-              : bracket
-                ? [{ bracketId: "main", label: c.tabBracket, rounds: bracket.rounds }]
-                : []
-            ).map((panel) => (
-              <div key={panel.bracketId} className="space-y-4">
-                {bracket?.brackets && bracket.brackets.length > 1 ? (
-                  <h3 className="text-sm font-semibold text-foreground">{panel.label}</h3>
-                ) : null}
-                <div className="flex gap-4">
-                  {panel.rounds.map((round) => (
-                    <div key={round.round} className="min-w-[220px] space-y-2">
-                      <h4 className="text-sm font-semibold text-foreground">
-                        {round.round}. {c.tabBracket}
-                      </h4>
-                      <div className="space-y-2">
-                        {round.matches.map((m, i) => (
-                          <div
-                            key={i}
-                            className="grid grid-cols-[1fr_auto] gap-x-3 rounded-xl border border-border/60 bg-background/50 p-2 text-sm"
-                          >
-                            <span
-                              className={
-                                m.status === "finished" || isPlaceholderName(m.player1Name)
-                                  ? "text-muted-foreground"
-                                  : "text-foreground"
-                              }
-                            >
-                              {isPlaceholderName(m.player1Name) ? "—" : m.player1Name}
-                            </span>
-                            <span className="font-mono tabular-nums text-foreground">{m.player1LegsWon ?? "-"}</span>
-                            <span
-                              className={
-                                m.status === "finished" || isPlaceholderName(m.player2Name)
-                                  ? "text-muted-foreground"
-                                  : "text-foreground"
-                              }
-                            >
-                              {isPlaceholderName(m.player2Name) ? "—" : m.player2Name}
-                            </span>
-                            <span className="font-mono tabular-nums text-foreground">{m.player2LegsWon ?? "-"}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {bracket && bracketPanels.length > 0 ? (
+              <TDartsBracketPanels
+                panels={bracketPanels}
+                bronzeMatch={bracket.bronzeMatch ?? null}
+                copy={bracketCopy}
+              />
+            ) : null}
           </div>
         ) : null}
 
